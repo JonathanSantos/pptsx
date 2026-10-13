@@ -135,14 +135,71 @@ const pathsOfResult = (outDir: string, deckName: string, result: RenderResult): 
 
 const SEVERITY_ICON: Readonly<Record<Severity, string>> = { error: '✖', warning: '▲', info: '•' };
 
-const formatDiagnostic = (d: Diagnostic): string =>
-  `  ${SEVERITY_ICON[d.severity]} [${d.size} · slide ${d.slide}] ${d.code} em ${d.path}\n    ${d.message}`;
+const formatDiagnostic = (d: Diagnostic, indent: string = '  ', marker: string = ''): string =>
+  `${indent}${marker}${SEVERITY_ICON[d.severity]} [${d.size} · slide ${d.slide}] ${d.code} em ${d.path}\n${indent}  ${d.message}`;
+
+const formatDerived = (d: Diagnostic): string => formatDiagnostic(d, '    ', '↳ ');
+
+/** Uma causa (ou diagnóstico solto) e os derivados que o resumo imprime logo abaixo dela. */
+export interface DiagnosticGroup {
+  readonly diagnostic: Diagnostic;
+  readonly derived: readonly Diagnostic[];
+}
+
+export const isDerived = (d: Diagnostic): boolean => d.data?.causedBy !== undefined;
+
+const sameSlide = (a: Diagnostic, b: Diagnostic): boolean => a.size === b.size && a.slide === b.slide;
+
+const isExactCauseOf = (cause: Diagnostic, derived: Diagnostic): boolean => cause.path === derived.data?.causedBy;
+
+// A causa costuma ser um Box sem diagnóstico próprio; o estouro real está num descendente dele.
+const isInsideCauseOf = (cause: Diagnostic, derived: Diagnostic): boolean =>
+  derived.data?.causedBy !== undefined && cause.path.startsWith(`${derived.data.causedBy} > `);
+
+/** Só não derivados ancoram: assim todo derivado fica a um nível de `↳`, sem cadeias nem ciclos. */
+export const isCauseOf = (cause: Diagnostic, derived: Diagnostic): boolean =>
+  isDerived(derived) &&
+  !isDerived(cause) &&
+  sameSlide(cause, derived) &&
+  (isExactCauseOf(cause, derived) || isInsideCauseOf(cause, derived));
+
+// Índice (não o objeto) porque a causa pode ter vários diagnósticos; vale o primeiro de path exato, senão o
+// primeiro dentro dela. -1 = imprime no lugar normal.
+const causeIndexOf = (diagnostics: readonly Diagnostic[], index: number): number => {
+  const derived = diagnostics[index]!;
+  const candidates = (match: (cause: Diagnostic) => boolean): number =>
+    diagnostics.findIndex((cause) => isCauseOf(cause, derived) && match(cause));
+  const exact = candidates((cause) => isExactCauseOf(cause, derived));
+  return exact !== -1 ? exact : candidates((cause) => isInsideCauseOf(cause, derived));
+};
+
+/** Não derivados (e derivados órfãos) na ordem original, cada um seguido dos seus derivados na ordem original. */
+export const groupByCause = (diagnostics: readonly Diagnostic[]): readonly DiagnosticGroup[] => {
+  const anchors = diagnostics.map((_, index) => causeIndexOf(diagnostics, index));
+  return diagnostics.flatMap((diagnostic, index) => {
+    if (anchors[index] !== -1) return [];
+    const derived = diagnostics.filter((_, other) => anchors[other] === index);
+    return [{ diagnostic, derived }];
+  });
+};
+
+const formatGroup = (group: DiagnosticGroup): readonly string[] => [
+  formatDiagnostic(group.diagnostic),
+  ...group.derived.map(formatDerived),
+];
+
+// Derivados somem da contagem para o cabeçalho mostrar quantos problemas há de fato para corrigir.
+const headerOf = (diagnostics: readonly Diagnostic[]): string => {
+  const primary = diagnostics.filter((d) => !isDerived(d));
+  const derivedCount = diagnostics.length - primary.length;
+  const count = (severity: Severity) => primary.filter((d) => d.severity === severity).length;
+  const derivedNote = derivedCount > 0 ? ` (+${derivedCount} ${derivedCount === 1 ? 'derivado' : 'derivados'})` : '';
+  return `Diagnósticos: ${count('error')} error${derivedNote}, ${count('warning')} warning, ${count('info')} info`;
+};
 
 export const summaryOf = (diagnostics: readonly Diagnostic[]): string => {
   if (diagnostics.length === 0) return 'Nenhum diagnóstico.';
-  const count = (severity: Severity) => diagnostics.filter((d) => d.severity === severity).length;
-  const header = `Diagnósticos: ${count('error')} error, ${count('warning')} warning, ${count('info')} info`;
-  return [header, ...diagnostics.map(formatDiagnostic)].join('\n');
+  return [headerOf(diagnostics), ...groupByCause(diagnostics).flatMap(formatGroup)].join('\n');
 };
 
 // Código de saída 1 com qualquer error: agentes e CI dependem disso.

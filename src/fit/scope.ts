@@ -23,6 +23,12 @@ export const selfAndAncestors = (path: string): readonly string[] => {
   return segments.slice(1).map((_, index) => joinSegments(segments.slice(0, segments.length - index)));
 };
 
+/** Ancestrais estritos, do mais próximo ao mais distante, incluindo o slide. */
+export const ancestorsOf = (path: string): readonly string[] => {
+  const segments = segmentsOf(path);
+  return segments.slice(1).map((_, index) => joinSegments(segments.slice(0, segments.length - 1 - index)));
+};
+
 /** O nó é o próprio escopo ou está dentro dele. */
 export const isWithin = (path: string, scope: string): boolean =>
   path === scope || path.startsWith(`${scope}${SEPARATOR}`);

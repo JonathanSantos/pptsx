@@ -42,6 +42,16 @@ export const segmentsOf = (paragraph: string): readonly Segment[] =>
     .filter((word) => word.length > 0)
     .flatMap(segmentsOfWord);
 
+/**
+ * Largura do maior trecho indivisível do conteúdo inteiro, antes de qualquer quebra por
+ * caractere ou corte: o fit usa para saber direto em que size a palavra caberia.
+ */
+export const widestSegmentOf = (content: string, measureWidth: MeasureWidth): Pt =>
+  content
+    .split('\n')
+    .flatMap(segmentsOf)
+    .reduce((widest, { text }) => Math.max(widest, measureWidth(text)), 0);
+
 /** Quebra um trecho que não cabe na linha, caractere a caractere (mínimo de 1 por linha). */
 export const breakWord = (word: string, maxWidth: Pt, measureWidth: MeasureWidth): readonly string[] =>
   [...word].reduce<readonly string[]>((pieces, char) => {

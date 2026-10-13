@@ -1,0 +1,88 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`examples/overflow.tsx — diagnostics regression > snapshot of (slide, code, severity, path) per size 1`] = `
+[
+  {
+    "diagnostics": [
+      [
+        1,
+        "text-shrunk",
+        "info",
+        "Slide > Bullets > Box[0..3] > Text",
+      ],
+      [
+        2,
+        "text-overflow",
+        "error",
+        "Slide > Box > Text",
+      ],
+      [
+        3,
+        "text-truncated",
+        "warning",
+        "Slide > Text",
+      ],
+      [
+        4,
+        "text-truncated",
+        "warning",
+        "Slide > Box > Box[0] > Text",
+      ],
+      [
+        4,
+        "text-overflow",
+        "error",
+        "Slide > Box > Box[1] > Text",
+      ],
+      [
+        4,
+        "text-truncated",
+        "warning",
+        "Slide > Text",
+      ],
+      [
+        5,
+        "box-overflow",
+        "error",
+        "Slide > Box",
+      ],
+    ],
+    "size": "16x9",
+  },
+  {
+    "diagnostics": [
+      [
+        3,
+        "text-truncated",
+        "warning",
+        "Slide > Text",
+      ],
+      [
+        4,
+        "text-truncated",
+        "warning",
+        "Slide > Box > Box[0] > Text",
+      ],
+      [
+        4,
+        "text-overflow",
+        "error",
+        "Slide > Box > Box[1] > Text",
+      ],
+      [
+        4,
+        "text-truncated",
+        "warning",
+        "Slide > Text",
+      ],
+      [
+        5,
+        "box-overflow",
+        "error",
+        "Slide > Box",
+      ],
+    ],
+    "size": "4x3",
+  },
+]
+`;

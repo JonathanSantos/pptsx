@@ -1,7 +1,14 @@
 import { DEFAULTS } from '../core/defaults.ts';
 import type { Diagnostic, FitPolicy, PositionedText, Pt } from '../core/types.ts';
 import type { Overflow } from './detect.ts';
-import { textOverflowKept, textOverflowShrunk, textOverflowTruncated, textShrunk } from './diagnostics.ts';
+import {
+  textIllegible,
+  textOverflowKept,
+  textOverflowShrunk,
+  textOverflowTruncated,
+  textShrunk,
+  withZeroArea,
+} from './diagnostics.ts';
 import type { DiagnosticContext } from './diagnostics.ts';
 import type { TextPatch } from './rewrite.ts';
 
@@ -14,15 +21,14 @@ export interface TextOutcome {
   /** size final */
   readonly to: Pt;
   readonly min: Pt;
-  readonly maxSteps: number;
 }
 
 /** Strategy por `fit`. */
 export interface OverflowPolicy {
-  /** Text estourado com esta política dispara um passo de shrink no seu escopo. */
+  /** Text estourado (ou com palavra partida) com esta política dispara a busca de shrink no seu escopo. */
   readonly triggersShrink: boolean;
-  /** Novo size num passo do loop; undefined = não age neste passo. */
-  readonly step: (current: Pt, min: Pt) => Pt | undefined;
+  /** Size do Text quando o escopo desce `delta` passos a partir do size do autor; undefined = não encolhe. */
+  readonly resize: (from: Pt, min: Pt, delta: number) => Pt | undefined;
   /** Ajuste único depois do loop (antes do relayout final). */
   readonly settle: (text: PositionedText, overflow: Overflow | undefined) => TextPatch | undefined;
   /** Diagnóstico de overflow/ajuste no fim (truncamento e fonte são comuns a todas). */
@@ -31,14 +37,28 @@ export interface OverflowPolicy {
 
 const never = () => undefined;
 
+/** Altura que o Text tinha de fato: a medida menos o que passou. */
+const availableOf = (outcome: TextOutcome, overflow: Overflow): Pt => outcome.text.text.height - overflow.overflowPt;
+
+const overflowOrShrunk = (outcome: TextOutcome, ctx: DiagnosticContext): readonly Diagnostic[] => {
+  if (outcome.overflow !== undefined) {
+    return [withZeroArea(textOverflowShrunk(ctx, outcome.overflow, outcome), availableOf(outcome, outcome.overflow))];
+  }
+  return outcome.to < outcome.from ? [textShrunk(ctx, outcome.text.path, outcome.from, outcome.to)] : [];
+};
+
+// Só o que o ajuste reduziu: size do autor já abaixo do piso é escolha dele.
+const isIllegible = (outcome: TextOutcome): boolean =>
+  outcome.to < outcome.from && outcome.to < DEFAULTS.text.minLegibleSize;
+
 const shrink: OverflowPolicy = {
   triggersShrink: true,
-  step: (current, min) => (current > min ? Math.max(min, current - DEFAULTS.fit.shrinkStep) : undefined),
+  resize: (from, min, delta) => Math.max(min, from - delta * DEFAULTS.fit.shrinkStep),
   settle: never,
-  diagnose: (outcome, ctx) => {
-    if (outcome.overflow !== undefined) return [textOverflowShrunk(ctx, outcome.overflow, outcome)];
-    return outcome.to < outcome.from ? [textShrunk(ctx, outcome.text.path, outcome.from, outcome.to)] : [];
-  },
+  diagnose: (outcome, ctx) => [
+    ...overflowOrShrunk(outcome, ctx),
+    ...(isIllegible(outcome) ? [textIllegible(ctx, outcome.text.path, outcome.from, outcome.to)] : []),
+  ],
 };
 
 /**
@@ -53,16 +73,22 @@ const linesThatFit = (text: PositionedText, overflow: Overflow): number => {
 
 const truncate: OverflowPolicy = {
   triggersShrink: false,
-  step: never,
+  resize: never,
   settle: (text, overflow) => (overflow === undefined ? undefined : { maxLines: linesThatFit(text, overflow) }),
-  diagnose: (outcome, ctx) => (outcome.overflow === undefined ? [] : [textOverflowTruncated(ctx, outcome.overflow)]),
+  diagnose: (outcome, ctx) =>
+    outcome.overflow === undefined
+      ? []
+      : [withZeroArea(textOverflowTruncated(ctx, outcome.overflow), availableOf(outcome, outcome.overflow))],
 };
 
 const error: OverflowPolicy = {
   triggersShrink: false,
-  step: never,
+  resize: never,
   settle: never,
-  diagnose: (outcome, ctx) => (outcome.overflow === undefined ? [] : [textOverflowKept(ctx, outcome.overflow, outcome.to)]),
+  diagnose: (outcome, ctx) =>
+    outcome.overflow === undefined
+      ? []
+      : [withZeroArea(textOverflowKept(ctx, outcome.overflow, outcome.to), availableOf(outcome, outcome.overflow))],
 };
 
 export const POLICIES: Readonly<Record<FitPolicy, OverflowPolicy>> = { shrink, truncate, error };

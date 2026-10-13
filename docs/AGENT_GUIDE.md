@@ -100,7 +100,7 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 - Para colunas iguais numa row: `grow={1}` em cada uma (não use `width="50%"` + gap, que soma mais de 100%).
 - Proporção 2:1: `grow={2}` e `grow={1}`.
 - Para preencher o resto da altura de um slide: `grow={1}` no Box do corpo.
-- Text dentro de `direction="row"`: dê `grow={1}` para ele ocupar a largura que sobra e quebrar linha nela.
+- Text dentro de `direction="row"`: dê `grow={1}` para ele ocupar a largura que sobra e quebrar linha nela. **Só em row**: numa coluna, `grow` num Text pode colapsá-lo (§9).
 - Tamanho fixo que **não pode** encolher (ícone, marcador, barra): `shrink={0}`.
 
 ## 4. Texto
@@ -115,14 +115,15 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 | `align` | `'left' \| 'center' \| 'right'` | `'left'` | alinhamento horizontal das linhas (não confundir com `align` de Box) |
 | `lineHeight` | número | 1 | multiplicador da altura natural da linha |
 | `fit` | `'shrink' \| 'truncate' \| 'error'` | `'shrink'` | o que fazer se não couber |
-| `minSize` | pt | `floor(size × 0.75)` | piso do `shrink` |
+| `minSize` | pt | `max(floor(size × 0.75), 10)` | piso do `shrink`; abaixo de 10 só se você passar explícito (gera `text-illegible`) |
 | `maxLines` | número | — | corta com `…` após N linhas |
 
 - **Quebra de linha é automática**, pela largura do frame. Não use `\n` para quebrar linha; use `\n` só para separar **parágrafos**: `<Text>{'Primeiro parágrafo.\nSegundo.'}</Text>`.
 - Filhos são concatenados sem separador: `<Text>Gerado em {ctx.name}.</Text>` funciona; `{a}{b}` cola as strings.
 - Sem rich text: um `Text` tem um só estilo. Para trechos com estilos diferentes, use vários `Text` numa `Box direction="row"`.
 - Políticas de `fit`:
-  - `shrink` (padrão): reduz 1 pt por vez até caber ou chegar em `minSize`. Textos do mesmo componente (ex.: todos os itens de `Bullets`) encolhem **juntos**, mantendo a hierarquia; o título fora dele não muda. Coube → `text-shrunk` (info). Não coube no mínimo → `text-overflow` (error).
+  - `shrink` (padrão): procura o **maior** size entre `size` e `minSize` em que o texto cabe (busca direta, sem limite de passos); se precisar, chega sempre ao `minSize`. Também reage a **palavra partida** (palavra ou número sem espaço mais largo que a linha): vai direto ao size em que a palavra cabe. Textos da mesma **instância** de componente (ex.: todos os itens de um `Bullets`, ou label/valor/delta de um mesmo `KpiCard`) encolhem **juntos**, mantendo a hierarquia; o título fora dele não muda e outra instância (o `KpiCard` ao lado) só encolhe se ela mesma não couber. Por isso cartões vizinhos podem terminar com tamanhos diferentes: um `text-shrunk` agrupado em `KpiCard[0,1,2,4]` quer dizer que o `KpiCard[3]` ficou maior. Palavra partida só leva o próprio Text ao size em que ela cabe; os vizinhos só descem o que a altura exigir. Coube → `text-shrunk` (info). Não coube no mínimo → `text-overflow` (error). Palavra ainda partida no mínimo → `text-word-broken` (warning).
+  - Piso de legibilidade: sem `minSize`, o mínimo é `max(floor(0.75 × size), 10)` (um caption de 11 pt para em 10). Com `minSize` abaixo de 10 o texto pode descer até ele; se ficar abaixo de 10, vem `text-illegible` (warning).
   - `truncate`: corta a última linha visível com `…` → `text-truncated` (warning).
   - `error`: não ajusta; se estourar → `text-overflow` (error).
 
@@ -163,7 +164,7 @@ Tamanhos do `KpiCard` (pt):
 | `'md'` (padrão) | 20 | 14 | 44 (28) | 2–3 cartões em 16:9/4:3 |
 | `'lg'` | 20 | 16 | 56 (36) | 3 cartões com área sobrando (wide, 4:3); valores curtos |
 
-Largura útil do cartão = largura do cartão − 2 × padding. Ex.: 3 cards `md` em 16:9 (corpo 640 pt, gaps 20) → cartão ≈ 200 pt, útil ≈ 160 pt. Se um valor ou label partir no meio da palavra, use `size="sm"` (ou menos cartões por linha).
+Largura útil do cartão = largura do cartão − 2 × padding. Ex.: 3 cards `md` em 16:9 (corpo 640 pt, gaps 20) → cartão ≈ 200 pt, útil ≈ 160 pt. Se um valor ou label partir no meio da palavra (`text-word-broken`), use `size="sm"` (ou menos cartões por linha).
 
 ```tsx
 <CoverLayout ctx={ctx} title="Plano 2027" subtitle="Proposta para o conselho" caption="Diretoria financeira · 2026" />
@@ -326,6 +327,11 @@ Formato (cada item de `diagnostics.json` / `diagnostics` do `--json`):
 
 `slide` começa em 1 (ordem no `<Deck>`). `severity`: `error` (precisa corrigir), `warning` (aceitável se intencional), `info` (só aviso).
 
+Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou), `fromSize`/`toSize` (size do autor → size final) e:
+
+- `causedBy`: path do nó que **provocou** este estouro (um irmão que pede mais espaço do que há e espreme os outros). Este diagnóstico é **consequência**: corrija a causa primeiro; os derivados costumam sumir sozinhos. A causa em si não tem `causedBy`. Só `text-overflow` e `box-overflow` recebem.
+- `count` e `paths`: diagnóstico **agrupado**. Irmãos homônimos com o mesmo problema (mesmo `code`, `severity` e `causedBy`) viram um item só: o segmento repetido junta os índices no `path` (`Box[0..7]` contíguos, `Box[0,2,5]` não contíguos), `count` diz quantos são e `paths` lista cada path individual. `message` e números são os do pior. Corrija uma vez, no `.map` ou componente que gera os irmãos.
+
 ### Como ler o `path`
 
 - Segmentos separados por ` > `, do slide até o nó. O `Deck` não aparece.
@@ -339,22 +345,34 @@ Formato (cada item de `diagnostics.json` / `diagnostics` do `--json`):
 | code | severity | causa | correção típica |
 |---|---|---|---|
 | `text-shrunk` | info | o texto foi reduzido e coube | nada; se a fonte ficou pequena, encurte o texto ou dê mais área |
-| `text-overflow` | error | `shrink` chegou em `minSize` e ainda não cabe, ou `fit="error"` estourou | encurte o texto; dê área (`grow={1}` no contêiner, menos padding/gap, menos irmãos); baixe `minSize`; divida em dois slides; ou use `fit="truncate"` |
+| `text-overflow` | error | `shrink` chegou em `minSize` e ainda não cabe, `fit="error"` estourou, ou a área do texto é 0 pt | com `causedBy`: corrija a causa primeiro. Senão: encurte o texto; dê área (`grow={1}` no contêiner, menos padding/gap, menos irmãos); baixe `minSize`; divida em dois slides; ou use `fit="truncate"`. Área 0 pt: tire `grow` do Text em coluna (§9) |
+| `text-word-broken` | warning | palavra ou número sem espaço mais largo que a linha, partido por caractere (mesmo no mínimo, no `shrink`) | abrevie ("R$ 52,4 mi"); dê largura (menos colunas, `grow`); `size="sm"` no `KpiCard`; ou size menor |
+| `text-illegible` | warning | o `shrink` reduziu o texto abaixo de 10 pt (só com `minSize` explícito < 10) | encurte o texto ou dê mais área; se a fonte pequena é intencional, ignore |
 | `text-truncated` | warning | `truncate`/`maxLines` cortou com `…` | se não era a intenção: encurte, aumente a área ou `maxLines` |
 | `box-overflow` | error | tamanhos fixos (com `shrink={0}`), gap e padding somam mais que o contêiner | reduza `width`/`height` fixos ou gap/padding; troque fixos por `grow`/`%`; tire `shrink={0}`; empilhe em 4:3 |
 | `out-of-slide` | error | nó **em fluxo** fora dos limites do slide | reduza o tamanho; use `%`/`grow`; se for decoração, `position="absolute"` |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi (pode borrar) | arquivo com mais resolução ou área menor |
-| `font-missing` | error | `font` com família não registrada | remova `font` (padrão Arial) |
+| `font-missing` | error | `font` com família não registrada; é o **único** diagnóstico desse Text (estouro e redução dele não são reportados: a medição é estimada) | remova `font` (padrão Arial) |
 
 Mensagens reais:
 
 ```
 ✖ text-overflow em Slide > Box > Text
   Texto estourou 0.5% (1.2 pt) da altura disponível mesmo em 19 pt (mínimo); reduza o conteúdo, aumente a área ou baixe minSize.
+✖ text-overflow em Slide > Text[0]
+  Texto estourou 73.9% (10.7 pt) da altura disponível mesmo em 22 pt (mínimo); reduza o conteúdo, aumente a área ou baixe minSize. Esse estouro é consequência: Slide > Text[1] pede 131.9 pt a mais do que a área tem; corrija Slide > Text[1] primeiro.
+✖ text-overflow em Slide > Box > Text[1]
+  A área disponível para o texto é 0 pt: o contêiner não deu altura a ele (grow={1} em coluna com altura pelo conteúdo, shrink dos irmãos ou height fixo). Remova grow do Text ou dê altura ao contêiner.
+✖ text-overflow em Slide > Box > Box[0..7] > Text
+  Texto estourou 94.7% (67.1 pt) da altura disponível em 24 pt (fit="error" não ajusta); reduza o conteúdo, aumente a área ou troque para fit="shrink" ou fit="truncate". Esse estouro é consequência: Slide > Text[1] pede 131.9 pt a mais do que a área tem; corrija Slide > Text[1] primeiro. (×8: mesmo problema em Box[0..7])
 ✖ text-overflow em Slide > Box > Box[1] > Text
   Texto estourou 16.8% (21.2 pt) da altura disponível em 16 pt (fit="error" não ajusta); reduza o conteúdo, aumente a área ou troque para fit="shrink" ou fit="truncate".
-• text-shrunk em Slide > Bullets > Box[0] > Text
-  Texto reduzido de 20 pt para 19 pt para caber na área. Se a redução incomodar, encurte o conteúdo ou aumente a área.
+• text-shrunk em Slide > Bullets > Box[0..3] > Text
+  Texto reduzido de 20 pt para 19 pt para caber na área. Se a redução incomodar, encurte o conteúdo ou aumente a área. (×4: mesmo problema em Box[0..3])
+▲ text-word-broken em ContentLayout > Box[1] > KpiRow > KpiCard[0,1,2,4] > Text[1]
+  Palavra partida no meio por falta de largura: "52.400.000,00" não cabe inteira numa linha de 72 pt mesmo reduzido de 44 pt para 28 pt. Encurte a palavra/valor (abrevie, ex.: "R$ 52,4 mi"), alargue a área (menos colunas, grow, width maior) ou reduza o size. (×4: mesmo problema em KpiCard[0,1,2,4])
+▲ text-illegible em Slide > Text
+  Texto reduzido de 11 pt para 8 pt, abaixo do piso legível de 10 pt; encurte o conteúdo, aumente a área ou aceite com minSize explícito.
 ▲ text-truncated em Slide > Text
   Texto cortado com reticências: mostradas 3 de 8 linhas (~63% do conteúdo oculto). Encurte o conteúdo, aumente a área, aumente maxLines ou use fit="shrink".
 ✖ box-overflow em Slide > Box
@@ -365,6 +383,22 @@ Mensagens reais:
   Imagem desenhada com 700 pt de largura, acima do natural (800 px = 600 pt a 96 dpi); pode sair borrada. Use um arquivo com mais resolução ou reduza a área da imagem.
 ✖ font-missing em Slide > Text
   Fonte "Helvetica Neue regular" não está registrada; o texto foi medido por estimativa e a quebra de linha pode não bater com o PowerPoint. Registre a fonte em options.fonts ou use uma família registrada.
+```
+
+Sem `--json`, a CLI imprime um resumo em que os derivados (com `causedBy`) aparecem **sob a causa**, com `↳`, e não contam no cabeçalho (`+N derivados`); o exit code conta todos:
+
+```
+Diagnósticos: 2 error (+2 derivados), 1 warning, 0 info
+  ▲ [16x9 · slide 1] text-word-broken em Slide > Box > Box[0..7] > Text
+    Palavra partida no meio por falta de largura: … (×8: mesmo problema em Box[0..7])
+  ✖ [16x9 · slide 1] text-overflow em Slide > Text[1]
+    Texto estourou … mesmo em 15 pt (mínimo); …
+    ↳ ✖ [16x9 · slide 1] text-overflow em Slide > Text[0]
+      Texto estourou … Esse estouro é consequência: Slide > Text[1] pede 131.9 pt a mais …
+    ↳ ✖ [16x9 · slide 1] text-overflow em Slide > Box > Box[0..7] > Text
+      Texto estourou … corrija Slide > Text[1] primeiro. (×8: mesmo problema em Box[0..7])
+  ✖ [16x9 · slide 1] font-missing em Slide > Text[2]
+    Fonte "Inter regular" não está registrada; …
 ```
 
 Erros de estrutura (o deck não chega a ser medido; exit 1, sem `diagnostics.json` novo):
@@ -380,17 +414,17 @@ Sem duplicatas: um texto estourado é reportado no `Text`, não na Box pai; algo
 
 ### O overview PNG
 
-`<deck>.<size>.overview.png`: miniaturas numeradas (o número = `slide`). **Selo vermelho** "!" no canto = o slide tem `error`; **selo amarelo** = `warning`; sem selo = ok (ou só `info`). Use o overview para conferir visualmente (texto pequeno demais, área vazia, imagem deslocada) e para achar o slide; use `diagnostics.json` para saber o quê e onde. Com `--debug`, cada caixa tem contorno vermelho tracejado e o texto que estoura fica em vermelho translúcido.
+`<deck>.<size>.overview.png`: miniaturas numeradas (o número = `slide`). **Selo vermelho** "!" no canto = o slide tem `error`; **selo amarelo** = `warning`; sem selo = ok (ou só `info`). Use o overview para conferir visualmente (texto pequeno demais, área vazia, imagem deslocada) e para achar o slide; use `diagnostics.json` para saber o quê e onde. Com `--debug`, cada caixa tem contorno vermelho tracejado, o texto que estoura fica em vermelho translúcido e o frame dele ganha contorno sólido.
 
 ### Checklist de correção
 
 1. Rode o build com `--size 16x9,4x3 --json` e leia o exit code.
 2. Se houver `{ "error": … }`: é erro de estrutura/sintaxe; a mensagem traz o path entre parênteses. Corrija e rode de novo.
-3. Filtre `severity: "error"`. Para cada um: ache o slide (`slide`), siga o `path` no seu código segmento por segmento (contando `[i]` entre irmãos do mesmo tipo/nome).
-   Vários `error` no mesmo slide costumam ter **uma causa só** (um texto enorme espreme os irmãos, que também estouram): corrija o maior estouro primeiro e rode de novo.
-4. Aplique a correção que a `message` sugere (tabela acima). Prefira mudar estrutura (`grow`, menos texto, empilhar com `ctx.aspect`) a mexer em números mágicos.
-5. Veja o overview do tamanho afetado para confirmar que ficou bom.
-6. Repita até **exit 0**. Depois revise `warning` (truncamento intencional?) e `info` (fonte reduzida demais?).
+3. Filtre `severity: "error"` e, entre eles, primeiro os **sem `causedBy`**: são as causas. Os derivados (com `causedBy`) somem quando você corrige a causa; não mexa neles antes de rodar de novo.
+4. Para cada causa: ache o slide (`slide`), siga o `path` no seu código segmento por segmento (contando `[i]` entre irmãos do mesmo tipo/nome). Agrupado (`count`, `[a..b]`): corrija uma vez, no `.map`/componente.
+5. Aplique a correção que a `message` sugere (tabela acima). Prefira mudar estrutura (`grow`, menos texto, empilhar com `ctx.aspect`) a mexer em números mágicos.
+6. Veja o overview do tamanho afetado para confirmar que ficou bom.
+7. Repita até **exit 0**. Depois revise `warning` (palavra partida, fonte ilegível, truncamento intencional?) e `info` (fonte reduzida demais?).
 
 ## 9. Armadilhas comuns
 
@@ -403,13 +437,16 @@ Sem duplicatas: um texto estourado é reportado no `Text`, não na Box pai; algo
 
 - **Texto sempre dentro de `<Text>`**, e `<Text>` só com strings/números. (o TypeScript já acusa elemento dentro de `<Text>`.) Negrito parcial = dois `Text` numa row.
 - **Shape/Box com tamanho fixo encolhe** (`shrink` padrão é 1, como no CSS): um marcador `width={8}` numa row apertada vira uma elipse achatada; uma barra some. Use `shrink={0}` em tudo que tem tamanho que deve ser respeitado. Mas `shrink={0}` em itens grandes gera `box-overflow` se não couberem.
+- **`grow={1}` em Text dentro de coluna** de altura pelo conteúdo colapsa o texto (área 0 pt → `text-overflow` "A área disponível para o texto é 0 pt"): `grow={1}` tem base 0 e, sem altura sobrando na coluna, o Text fica com 0. Use `grow` em Text só dentro de `row`; numa coluna, deixe o Text sem `grow` (dê `grow` ao Box, se quiser ocupar a altura).
+- **`grow={1}` num filho anula o `justify`** do contêiner: o filho ocupa a sobra, então não há o que centralizar. `ContentLayout justify="center"` com um Box `grow={1}` dentro fica no topo; tire o `grow` do que deve ser centralizado.
+- **`top/left/right/bottom` de `position="absolute"`** são medidos a partir da **borda do pai** (o padding do pai não desloca o absoluto), em pt ou `%` do tamanho do pai; negativos saem do pai.
 - **Esquecer `grow`**: Text numa row sem `grow={1}` fica estreito; cards sem `grow={1}` ficam com larguras diferentes; corpo do slide sem `grow={1}` não ocupa a altura e o texto não tem área.
 - **`width="50%"` + `gap`** numa row soma mais que 100%: use `grow={1}`.
 - **Larguras fixas somadas**: três itens `width={260}` + gaps passam dos 640 pt úteis de um slide 720 com `padding={40}`. Prefira `grow`.
 - **Padding grande**: `padding={80}` tira 160 pt de cada eixo; em 16:9 sobram só 245 pt de altura. Use `tokens.space.page` (40).
 - **Duas colunas de texto longo** ficam apertadas; em 4:3 há altura sobrando: empilhe com `stacked={ctx.aspect < 1.5}` (ou `direction` condicional). Nunca escreva um arquivo por tamanho.
 - **`\n` para quebrar linha**: não precisa (a quebra é automática); `\n` cria parágrafo novo.
-- **Fonte diferente de Arial** → `font-missing` (error). Omita `font`.
+- **Fonte diferente de Arial** → `font-missing` (error), e nenhum outro diagnóstico desse Text. Omita `font`.
 - **`position="absolute"` para posicionar conteúdo**: não faça; absoluto é só decoração (não participa do layout nem dos diagnósticos de caixa). Conteúdo vai em fluxo.
 - **`fit="error"`** só se você quer ser avisado em vez de ajuste; o padrão `shrink` é o mais seguro.
 - **Caminhos de imagem** são relativos ao arquivo do deck: de `examples/agent-test/`, use `'../assets/chart.png'`.

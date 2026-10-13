@@ -29,6 +29,7 @@ const layout = (lineCount: number, lineHeight = 20): TextLayout => {
     ascent: 16,
     width: 100,
     height: lineCount * lineHeight,
+    widestSegment: 0,
     truncated: false,
     fontMissing: false,
     wordBroken: false,

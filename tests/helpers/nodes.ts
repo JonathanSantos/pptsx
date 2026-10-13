@@ -83,6 +83,7 @@ export const fakeParagraphLayout = (
     ascent: 16,
     width: 100,
     height: lines.length * FAKE_LINE_HEIGHT,
+    widestSegment: 0,
     truncated,
     fontMissing: false,
     wordBroken: false,

@@ -17,6 +17,7 @@ import { createFontRegistry, createFontkitMeasurer } from '../../src/text/index.
 import { DEFAULT_FONTS } from '../../src/fonts.ts';
 import { KpiRow } from '../../examples/components/index.ts';
 import { SIZE_16X9, SIZE_4X3 } from '../helpers/nodes.ts';
+import { allMemberPaths, memberPaths } from '../helpers/diagnostics.ts';
 
 /**
  * CONTRACTS §fit "Palavra partida conta como estouro (M5-F)" e a linha
@@ -67,7 +68,7 @@ const oneText = (width: number, props: Parameters<typeof Text>[0]) => (
 
 /** Propriedade geral: todo Text final com palavra partida tem um text-word-broken com o mesmo path. */
 const expectEveryBrokenWordReported = (r: FitResult) => {
-  const reported = new Set(byCode(r, 'text-word-broken').map((d) => d.path));
+  const reported = new Set(allMemberPaths(byCode(r, 'text-word-broken')));
   const broken = texts(r.slide).filter((t) => t.text.wordBroken);
   for (const t of broken) expect(reported, `sem text-word-broken para ${t.path}`).toContain(t.path);
 };
@@ -187,8 +188,9 @@ describe('fit — KpiRow with 5 long values never ships broken words silently', 
       SIZE_4X3,
     );
     for (const d of byCode(r, 'text-word-broken')) {
-      const t = texts(r.slide).find((n) => n.path === d.path)!;
-      if ((t.props.fit ?? 'shrink') !== 'shrink') continue;
+      // Agrupado (M6): todos os membros têm de ser shrink para a regra valer ao grupo.
+      const members = memberPaths(d).map((path) => texts(r.slide).find((n) => n.path === path)!);
+      if (members.some((t) => (t.props.fit ?? 'shrink') !== 'shrink')) continue;
       expect(d.data!.toSize).toBeLessThan(d.data!.fromSize!);
     }
   });

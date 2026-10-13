@@ -3,7 +3,7 @@ import { DEFAULTS } from '../core/defaults.ts';
 import type { Pt, TextLayout, TextMeasureInput, TextMeasurer, TextStyle } from '../core/types.ts';
 import { brokenWordsOf } from './broken.ts';
 import { createEstimateMeasurer } from './estimate.ts';
-import { layoutLines, type MeasureWidth, widestLine } from './lines.ts';
+import { layoutLines, type MeasureWidth, widestLine, widestSegmentOf } from './lines.ts';
 import type { FontRegistry } from './registry.ts';
 
 export interface FontkitMeasurerOptions {
@@ -93,6 +93,7 @@ const measureWithFont = (
     ascent: baselineOffset(metrics, size, multiplier),
     width: boxWidthOf(widestLine(lines, measureWidth), input.maxWidth, safety),
     height: lines.length * lineHeight,
+    widestSegment: widestSegmentOf(input.content, measureWidth),
     wordBroken: brokenWordsOf(input.content, paragraphs).length > 0,
     truncated,
     fontMissing: false,

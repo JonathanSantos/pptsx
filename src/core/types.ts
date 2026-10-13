@@ -300,6 +300,11 @@ export interface TextLayout {
   readonly width: Pt;
   /** lines.length * lineHeight */
   readonly height: Pt;
+  /**
+   * Largura (pt) do maior trecho indivisível (segmento sem ponto de quebra) no size
+   * atual, medido no texto inteiro. Permite ao fit ir direto ao size em que a palavra cabe.
+   */
+  readonly widestSegment: Pt;
   /** true se alguma palavra precisou ser quebrada por caractere (não coube na linha). */
   readonly wordBroken: boolean;
   /** true se maxLines cortou o texto (reticências aplicadas). */
@@ -356,6 +361,8 @@ export type DiagnosticCode =
   | 'text-shrunk'
   | 'text-truncated'
   | 'text-word-broken'
+  /** Fonte reduzida pelo ajuste abaixo de DEFAULTS.text.minLegibleSize (warning). */
+  | 'text-illegible'
   | 'box-overflow'
   | 'out-of-slide'
   | 'image-upscaled'
@@ -367,6 +374,7 @@ export interface Diagnostic {
   readonly size: string;
   /** Índice do slide, começando em 1. */
   readonly slide: number;
+  /** Agrupado: índices entre colchetes, ex.: 'Slide > Box > Box[0..7] > Text' ou 'Box[0,2,5]'. */
   readonly path: string;
   /** Escrita para um LLM ler e agir. */
   readonly message: string;
@@ -375,6 +383,12 @@ export interface Diagnostic {
     readonly overflowPct?: number;
     readonly fromSize?: number;
     readonly toSize?: number;
+    /** Path do nó cuja demanda de espaço provocou este estouro (ver CONTRACTS §fit "Causa"). */
+    readonly causedBy?: string;
+    /** Quantos irmãos homônimos este diagnóstico representa (≥ 2 quando agrupado). */
+    readonly count?: number;
+    /** Paths individuais quando agrupado, na ordem dos índices. */
+    readonly paths?: readonly string[];
   };
 }
 

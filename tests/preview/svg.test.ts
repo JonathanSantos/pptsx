@@ -29,6 +29,7 @@ const textLayout = (lines: readonly string[], over: Partial<TextLayout> = {}): T
   ascent: 17,
   width: 100,
   height: lines.length * 24,
+  widestSegment: 0,
   truncated: false,
   fontMissing: false,
   wordBroken: false,

@@ -1,3 +1,4 @@
+import { DEFAULTS } from '../core/defaults.ts';
 import type { Diagnostic, Pt, TextStyle } from '../core/types.ts';
 import type { Overflow } from './detect.ts';
 import type { ContainerExcess, Side, SideExcess } from './geometry.ts';
@@ -36,24 +37,47 @@ export const textShrunk = (ctx: DiagnosticContext, path: string, fromSize: Pt, t
     data: { fromSize: round(fromSize), toSize: round(toSize) },
   });
 
-/** shrink que chegou ao mínimo (ou ao limite de passos) e ainda estoura. */
+/**
+ * shrink que ainda estoura. A busca só desiste no mínimo; acima dele só sobra o caso
+ * raro de esgotar as rodadas, que não pede ação diferente do autor.
+ */
 export const textOverflowShrunk = (
   ctx: DiagnosticContext,
   overflow: Overflow,
-  sizes: { readonly from: Pt; readonly to: Pt; readonly min: Pt; readonly maxSteps: number },
+  sizes: { readonly from: Pt; readonly to: Pt; readonly min: Pt },
 ): Diagnostic => {
-  const atMin = sizes.to <= sizes.min;
-  const message = atMin
-    ? `Texto estourou ${amount(overflow)} da altura disponível mesmo em ${round(sizes.to)} pt (mínimo); reduza o conteúdo, aumente a área ou baixe minSize.`
-    : `Texto estourou ${amount(overflow)} da altura disponível em ${round(sizes.to)} pt: o ajuste parou após ${sizes.maxSteps} passos, ainda acima do mínimo de ${round(sizes.min)} pt; reduza o conteúdo, aumente a área ou use um size inicial menor (se o texto vem de um componente pronto, passe um size menor a ele ou componha o trecho com primitivas Box/Text).`;
+  const where = sizes.to <= sizes.min ? `mesmo em ${round(sizes.to)} pt (mínimo)` : `em ${round(sizes.to)} pt`;
   return make(ctx, {
     severity: 'error',
     code: 'text-overflow',
     path: overflow.path,
-    message,
+    message: `Texto estourou ${amount(overflow)} da altura disponível ${where}; reduza o conteúdo, aumente a área ou baixe minSize.`,
     data: { ...overflowData(overflow), fromSize: round(sizes.from), toSize: round(sizes.to) },
   });
 };
+
+const ZERO_AREA_MESSAGE =
+  'A área disponível para o texto é 0 pt: o contêiner não deu altura a ele (grow={1} em coluna com altura pelo conteúdo, shrink dos irmãos ou height fixo). Remova grow do Text ou dê altura ao contêiner.';
+
+/** Com área 0 pt o conteúdo não é o problema: falar em minSize ou em encurtar desviaria o autor. */
+export const withZeroArea = (diagnostic: Diagnostic, available: Pt): Diagnostic =>
+  available <= DEFAULTS.fit.epsilon ? { ...diagnostic, message: ZERO_AREA_MESSAGE } : diagnostic;
+
+/** Estouro que só existe porque outro nó tomou o espaço: aponta a causa para o autor corrigir primeiro. */
+export const withCause = (diagnostic: Diagnostic, cause: { readonly path: string; readonly demand: Pt }): Diagnostic => ({
+  ...diagnostic,
+  message: `${diagnostic.message} Esse estouro é consequência: ${cause.path} pede ${round(cause.demand)} pt a mais do que a área tem; corrija ${cause.path} primeiro.`,
+  data: { ...diagnostic.data, causedBy: cause.path },
+});
+
+export const textIllegible = (ctx: DiagnosticContext, path: string, fromSize: Pt, toSize: Pt): Diagnostic =>
+  make(ctx, {
+    severity: 'warning',
+    code: 'text-illegible',
+    path,
+    message: `Texto reduzido de ${round(fromSize)} pt para ${round(toSize)} pt, abaixo do piso legível de ${DEFAULTS.text.minLegibleSize} pt; encurte o conteúdo, aumente a área ou aceite com minSize explícito.`,
+    data: { fromSize: round(fromSize), toSize: round(toSize) },
+  });
 
 export const textOverflowKept = (ctx: DiagnosticContext, overflow: Overflow, size: Pt): Diagnostic =>
   make(ctx, {

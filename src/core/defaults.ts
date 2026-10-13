@@ -28,8 +28,13 @@ export const DEFAULTS = {
     lineHeight: 1,
     align: 'left' as TextAlign,
     fit: 'shrink' as FitPolicy,
-    /** minSize = floor(size * minSizeRatio) quando não informado */
+    /** minSize = max(floor(size * minSizeRatio), minLegibleSize) quando não informado */
     minSizeRatio: 0.75,
+    /**
+     * Piso de legibilidade (pt). O shrink sem minSize explícito não desce abaixo;
+     * com minSize explícito menor, desce e avisa com text-illegible.
+     */
+    minLegibleSize: 10,
   },
   container: {
     direction: 'column' as FlexDirection,
@@ -50,8 +55,9 @@ export const DEFAULTS = {
   lang: 'pt-BR',
   /** Largura de quebra = disponível * textSafety; a caixa sai com a largura cheia. */
   textSafety: 0.97,
+  /** Limite de RODADAS do loop de ajuste (uma rodada = uma busca binária por escopo disparado). */
   maxFitIterations: 12,
-  /** Tolerância (pt) na detecção de overflow, para ruído de ponto flutuante. */
+  /** epsilon: tolerância (pt) na detecção de overflow. shrinkStep: granularidade (pt) do size na busca. */
   fit: { epsilon: 0.5, shrinkStep: 1 },
   /** 16:9 de referência para ctx.scale */
   referenceSize: { width: 720, height: 405 },
@@ -72,8 +78,10 @@ export const textStyleOf = (props: TextProps): TextStyle => ({
 
 export const fitPolicyOf = (props: TextProps): FitPolicy => props.fit ?? DEFAULTS.text.fit;
 
+/** Sem minSize do autor, o piso é o maior entre a proporção e o mínimo legível; com minSize, vale o do autor. */
 export const minSizeOf = (props: TextProps): Pt =>
-  props.minSize ?? Math.floor((props.size ?? DEFAULTS.text.size) * DEFAULTS.text.minSizeRatio);
+  props.minSize ??
+  Math.max(Math.floor((props.size ?? DEFAULTS.text.size) * DEFAULTS.text.minSizeRatio), DEFAULTS.text.minLegibleSize);
 
 export const imageFitOf = (props: ImageProps): ImageFit => props.fit ?? DEFAULTS.imageFit;
 

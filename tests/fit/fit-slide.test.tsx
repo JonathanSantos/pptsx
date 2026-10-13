@@ -16,6 +16,7 @@ import { resolveDeck } from '../../src/resolve/index.ts';
 import { createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
 import { DEFAULT_FONTS } from '../../src/fonts.ts';
 import { SIZE_16X9, SIZE_4X3 } from '../helpers/nodes.ts';
+import { allMemberPaths } from '../helpers/diagnostics.ts';
 
 // ───────────── ambiente real ─────────────
 
@@ -152,11 +153,12 @@ describe('fitSlide — shrink policy (scope = component)', () => {
     expect(detectOverflow(r.slide)).toEqual([]);
   });
 
-  it('one text-shrunk info per bullet with fromSize/toSize and its path', () => {
+  it('text-shrunk info covering every bullet with fromSize/toSize and its path', () => {
     const final = bullets()[0]!.text.fontSize;
     const shrunk = byCode(r, 'text-shrunk');
-    expect(shrunk.map((d) => d.path).sort()).toEqual(bullets().map((t) => t.path).sort());
-    expect(shrunk.map((d) => d.path)).toContain('Slide > Bullets > Text[0]');
+    // M6: os 12 irmãos viram um diagnóstico agrupado; os paths individuais ficam em data.paths.
+    expect(allMemberPaths(shrunk).sort()).toEqual(bullets().map((t) => t.path).sort());
+    expect(allMemberPaths(shrunk)).toContain('Slide > Bullets > Text[0]');
     for (const d of shrunk) {
       expect(d.severity).toBe('info');
       expect(d.data?.fromSize).toBe(BULLET_SIZE);
@@ -214,8 +216,8 @@ describe('fitSlide — shrink cannot fit', () => {
   });
 });
 
-describe('fitSlide — iteration limit', () => {
-  // Só caberia em ~20 pt; o loop para depois de 12 passos de 1 pt (60 → 48).
+describe('fitSlide — binary search reaches the size that fits (M6)', () => {
+  // Só cabe em ~20 pt: 40 pt abaixo do original, muito além de 12 passos de 1 pt.
   const height = () => lineHeightAt(20) + 0.5;
   const slide = () => (
     <Slide padding={40}>
@@ -227,17 +229,20 @@ describe('fitSlide — iteration limit', () => {
     </Slide>
   );
 
-  it('stops at 60 − maxFitIterations = 48 and reports an error', () => {
+  it('ends at the largest size that fits (20), with text-shrunk and no text-overflow', () => {
     expect(lineHeightAt(21)).toBeGreaterThan(height());
     expect(lineHeightAt(20)).toBeLessThanOrEqual(height());
     const r = fit(slide());
     const t = textAt(r.slide, 'Slide > Box > Text');
-    expect(t.text.fontSize).toBe(60 - DEFAULTS.maxFitIterations);
-    const errs = byCode(r, 'text-overflow');
-    expect(errs).toHaveLength(1);
-    expect(errs[0]!.severity).toBe('error');
-    expect(errs[0]!.data?.fromSize).toBe(60);
-    expect(errs[0]!.data?.toSize).toBe(48);
+    expect(t.text.fontSize).toBe(20);
+    expect(byCode(r, 'text-overflow')).toEqual([]);
+    const [shrunk] = byCode(r, 'text-shrunk');
+    expect(shrunk).toMatchObject({ severity: 'info', path: 'Slide > Box > Text', data: { fromSize: 60, toSize: 20 } });
+  });
+
+  it('no message about stopping after N steps', () => {
+    const r = fit(slide());
+    for (const d of r.diagnostics) expect(d.message).not.toMatch(/parou após/);
   });
 });
 
@@ -457,7 +462,7 @@ describe('fitSlide — Diagnostic fields', () => {
     for (const d of all) {
       expect(d.size).toBe('4x3');
       expect(d.slide).toBe(3);
-      expect(d.path).toMatch(/^Slide( > [A-Z][A-Za-z]*(\[\d+\])?)+$/);
+      expect(d.path).toMatch(/^Slide( > [A-Z][A-Za-z]*(\[[\d.,]+\])?)+$/);
       expect(typeof d.message).toBe('string');
       expect(d.message.trim().length).toBeGreaterThan(0);
     }
