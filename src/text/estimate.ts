@@ -1,4 +1,5 @@
 import type { TextLayout, TextMeasureInput, TextMeasurer } from '../core/types.ts';
+import { brokenWordsOf } from './broken.ts';
 import { layoutLines, type MeasureWidth, widestLine } from './lines.ts';
 
 // Proporções da estimativa (CONTRACTS §text): sem fonte real, tudo é fração do corpo.
@@ -24,6 +25,7 @@ const measureEstimate = (input: TextMeasureInput): TextLayout => {
     ascent: ASCENT_RATIO * size * multiplier,
     width: widestLine(lines, measureWidth),
     height: lines.length * lineHeight,
+    wordBroken: brokenWordsOf(input.content, paragraphs).length > 0,
     truncated,
     fontMissing: false,
   };

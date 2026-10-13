@@ -85,6 +85,7 @@ export const fakeParagraphLayout = (
     height: lines.length * FAKE_LINE_HEIGHT,
     truncated,
     fontMissing: false,
+    wordBroken: false,
   };
 };
 

@@ -300,6 +300,8 @@ export interface TextLayout {
   readonly width: Pt;
   /** lines.length * lineHeight */
   readonly height: Pt;
+  /** true se alguma palavra precisou ser quebrada por caractere (não coube na linha). */
+  readonly wordBroken: boolean;
   /** true se maxLines cortou o texto (reticências aplicadas). */
   readonly truncated: boolean;
   /** true se a família/peso não estava registrada (medição foi estimada). */
@@ -353,6 +355,7 @@ export type DiagnosticCode =
   | 'text-overflow'
   | 'text-shrunk'
   | 'text-truncated'
+  | 'text-word-broken'
   | 'box-overflow'
   | 'out-of-slide'
   | 'image-upscaled'

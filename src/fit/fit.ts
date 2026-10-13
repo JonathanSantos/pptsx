@@ -13,9 +13,10 @@ import type {
   SlideSize,
 } from '../core/types.ts';
 import { layoutSlide } from '../layout/index.ts';
+import { brokenWordsOf } from '../text/index.ts';
 import { detectOverflow } from './detect.ts';
 import type { Overflow } from './detect.ts';
-import { boxOverflow, fontMissing, imageUpscaled, outOfSlide, textTruncated } from './diagnostics.ts';
+import { boxOverflow, fontMissing, imageUpscaled, outOfSlide, textTruncated, textWordBroken } from './diagnostics.ts';
 import type { DiagnosticContext } from './diagnostics.ts';
 import { containerExcessOf, sidesOutside } from './geometry.ts';
 import type { Container } from './geometry.ts';
@@ -88,9 +89,22 @@ const textOverflowsOf = (pass: Pass): ReadonlyMap<string, Overflow> =>
 const patchesOf = (entries: readonly (readonly [string, TextPatch | undefined])[]): ReadonlyMap<string, TextPatch> =>
   new Map(entries.filter((entry): entry is readonly [string, TextPatch] => entry[1] !== undefined));
 
-/** Um passo: em cada escopo com Text estourado, todos os Text que podem encolher descem juntos. */
+const positionedTexts = (pass: Pass): readonly PositionedText[] =>
+  positionedNodes(pass.positioned.children).filter(isPositionedText);
+
+// Palavra partida por caractere é tão ruim quanto estouro: encolher pode fazê-la caber na linha.
+const shrinkTriggersOf = (pass: Pass): readonly string[] => [
+  ...new Set([
+    ...textOverflowsOf(pass).keys(),
+    ...positionedTexts(pass)
+      .filter((text) => text.text.wordBroken)
+      .map((text) => text.path),
+  ]),
+];
+
+/** Um passo: em cada escopo com Text estourado ou palavra partida, todos os Text que podem encolher descem juntos. */
 const shrinkStep = (pass: Pass, plans: Plans): ReadonlyMap<string, TextPatch> => {
-  const scopes = [...textOverflowsOf(pass).keys()]
+  const scopes = shrinkTriggersOf(pass)
     .filter((path) => plans.get(path)?.policy.triggersShrink === true)
     .map(scopeOf);
   if (scopes.length === 0) return new Map();
@@ -116,9 +130,7 @@ const shrinkLoop = (pass: Pass, plans: Plans, input: FitInput, remaining: number
 const settle = (pass: Pass, plans: Plans, input: FitInput): Pass => {
   const overflows = textOverflowsOf(pass);
   const patches = patchesOf(
-    positionedNodes(pass.positioned.children)
-      .filter(isPositionedText)
-      .map((text) => [text.path, plans.get(text.path)?.policy.settle(text, overflows.get(text.path))] as const),
+    positionedTexts(pass).map((text) => [text.path, plans.get(text.path)?.policy.settle(text, overflows.get(text.path))] as const),
   );
   return patches.size === 0 ? pass : passOf(patchTexts(pass.resolved, patches), input);
 };
@@ -128,6 +140,13 @@ const truncationOf = (text: PositionedText, env: LayoutEnv) => ({
   shown: text.text.lines.length,
   total: env.measureText({ content: text.content, style: textStyleOf(text.props), maxWidth: text.frame.width }).lines.length,
 });
+
+const wordBrokenDiagnostics = (text: PositionedText, plan: TextPlan, ctx: DiagnosticContext): readonly Diagnostic[] => {
+  if (!text.text.wordBroken) return [];
+  const words = brokenWordsOf(text.content, text.text.paragraphs);
+  const to = textStyleOf(text.props).size;
+  return [textWordBroken(ctx, text.path, { words, from: plan.from, to, width: text.frame.width })];
+};
 
 const textDiagnostics = (
   text: PositionedText,
@@ -141,6 +160,7 @@ const textDiagnostics = (
     ctx,
   ),
   ...(text.text.truncated ? [textTruncated(ctx, text.path, truncationOf(text, env))] : []),
+  ...wordBrokenDiagnostics(text, plan, ctx),
   ...(text.text.fontMissing ? [fontMissing(ctx, text.path, textStyleOf(text.props))] : []),
 ];
 

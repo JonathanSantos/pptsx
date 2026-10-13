@@ -1,5 +1,11 @@
 import type { Pt } from '../core/types.ts';
 
+/**
+ * O Yoga devolve larguras em float32: a caixa de um texto medido com largura W
+ * volta como W − 1e-6 e a remedição quebraria a linha. 0.01 pt é invisível.
+ */
+const FIT_TOLERANCE = 0.01;
+
 /** Largura de um trecho de texto em pt; o medidor decide como (estimativa, fontkit...). */
 export type MeasureWidth = (text: string) => Pt;
 
@@ -42,7 +48,7 @@ export const breakWord = (word: string, maxWidth: Pt, measureWidth: MeasureWidth
     const current = lastOf(pieces);
     if (current === undefined) return [char];
     const candidate = current + char;
-    return measureWidth(candidate) <= maxWidth ? replaceLast(pieces, candidate) : [...pieces, char];
+    return measureWidth(candidate) <= maxWidth + FIT_TOLERANCE ? replaceLast(pieces, candidate) : [...pieces, char];
   }, []);
 
 const appendSegment =
@@ -51,9 +57,9 @@ const appendSegment =
     const current = lastOf(lines);
     if (current !== undefined) {
       const candidate = current + glue + text;
-      if (measureWidth(candidate) <= maxWidth) return replaceLast(lines, candidate);
+      if (measureWidth(candidate) <= maxWidth + FIT_TOLERANCE) return replaceLast(lines, candidate);
     }
-    if (measureWidth(text) <= maxWidth) return [...lines, text];
+    if (measureWidth(text) <= maxWidth + FIT_TOLERANCE) return [...lines, text];
     // O último pedaço vira a linha corrente para que o próximo trecho possa continuar nela.
     return [...lines, ...breakWord(text, maxWidth, measureWidth)];
   };
@@ -85,7 +91,7 @@ const wrappedOf = (paragraphs: Paragraphs, truncated: boolean): WrappedText => (
 const withEllipsis = (line: string, maxWidth: Pt, measureWidth: MeasureWidth): string => {
   const trimmed = line.trimEnd();
   const candidate = trimmed + ELLIPSIS;
-  if (trimmed.length === 0 || measureWidth(candidate) <= maxWidth) return candidate;
+  if (trimmed.length === 0 || measureWidth(candidate) <= maxWidth + FIT_TOLERANCE) return candidate;
   return withEllipsis(trimmed.slice(0, -1), maxWidth, measureWidth);
 };
 

@@ -31,6 +31,7 @@ const layout = (lineCount: number, lineHeight = 20): TextLayout => {
     height: lineCount * lineHeight,
     truncated: false,
     fontMissing: false,
+    wordBroken: false,
   };
 };
 

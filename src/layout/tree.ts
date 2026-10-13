@@ -11,7 +11,7 @@ import type {
   ResolvedText,
 } from '../core/types.ts';
 import { applyStyle } from './apply.ts';
-import { toImageStyle, toItemStyle, toYogaStyle } from './style.ts';
+import { toImageStyle, toItemStyle, toTextStyle, toYogaStyle } from './style.ts';
 
 /** Nó resolvido pareado com seu nó Yoga (e o que foi lido do env na construção). */
 export interface BuiltNode {
@@ -52,7 +52,7 @@ const buildBox: Builder<ResolvedBox> = (source, yoga, ctx) => {
 };
 
 const buildText: Builder<ResolvedText> = (source, yoga, { env, parentDirection }) => {
-  applyStyle(yoga, toItemStyle(source.props, parentDirection));
+  applyStyle(yoga, toTextStyle(source.props, parentDirection));
   yoga.setMeasureFunc(textMeasureFunc(source, env));
   return { source, yoga, children: [] };
 };

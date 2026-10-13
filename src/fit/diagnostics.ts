@@ -45,7 +45,7 @@ export const textOverflowShrunk = (
   const atMin = sizes.to <= sizes.min;
   const message = atMin
     ? `Texto estourou ${amount(overflow)} da altura disponível mesmo em ${round(sizes.to)} pt (mínimo); reduza o conteúdo, aumente a área ou baixe minSize.`
-    : `Texto estourou ${amount(overflow)} da altura disponível em ${round(sizes.to)} pt: o ajuste parou após ${sizes.maxSteps} passos, ainda acima do mínimo de ${round(sizes.min)} pt; reduza o conteúdo, aumente a área ou use um size inicial menor.`;
+    : `Texto estourou ${amount(overflow)} da altura disponível em ${round(sizes.to)} pt: o ajuste parou após ${sizes.maxSteps} passos, ainda acima do mínimo de ${round(sizes.min)} pt; reduza o conteúdo, aumente a área ou use um size inicial menor (se o texto vem de um componente pronto, passe um size menor a ele ou componha o trecho com primitivas Box/Text).`;
   return make(ctx, {
     severity: 'error',
     code: 'text-overflow',
@@ -82,6 +82,25 @@ export const textTruncated = (ctx: DiagnosticContext, path: string, lines: { rea
     code: 'text-truncated',
     path,
     message: `Texto cortado com reticências: mostradas ${lines.shown} de ${lines.total} linhas (~${hidden}% do conteúdo oculto). Encurte o conteúdo, aumente a área, aumente maxLines ou use fit="shrink".`,
+  });
+};
+
+const quoted = (words: readonly string[]): string => words.map((word) => `"${word}"`).join(', ');
+
+/** Palavra quebrada por caractere que sobreviveu ao ajuste (ou que o fit da política não tenta resolver). */
+export const textWordBroken = (
+  ctx: DiagnosticContext,
+  path: string,
+  broken: { readonly words: readonly string[]; readonly from: Pt; readonly to: Pt; readonly width: Pt },
+): Diagnostic => {
+  const plural = broken.words.length > 1;
+  const sizes = broken.to < broken.from ? `mesmo reduzido de ${round(broken.from)} pt para ${round(broken.to)} pt` : `em ${round(broken.to)} pt`;
+  return make(ctx, {
+    severity: 'warning',
+    code: 'text-word-broken',
+    path,
+    message: `${plural ? 'Palavras partidas' : 'Palavra partida'} no meio por falta de largura: ${quoted(broken.words)} não ${plural ? 'cabem' : 'cabe'} inteira${plural ? 's' : ''} numa linha de ${round(broken.width)} pt ${sizes}. Encurte a palavra/valor (abrevie, ex.: "R$ 52,4 mi"), alargue a área (menos colunas, grow, width maior) ou reduza o size.`,
+    data: { fromSize: round(broken.from), toSize: round(broken.to) },
   });
 };
 

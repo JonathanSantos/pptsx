@@ -14,6 +14,8 @@ const { space } = tokens;
 
 /**
  * Duas colunas proporcionais por grow (grow = flex: n); vira coluna única quando stacked.
+ * Lado a lado, as duas colunas começam no topo: o primeiro item de texto alinha com o
+ * topo da imagem/cartão ao lado (centralizar fazia o texto "flutuar").
  * Empilhado, a parte de cima fica do tamanho do conteúdo e a de baixo (em geral uma
  * imagem com grow) ocupa o resto: dividir a altura pela proporção deixaria buracos.
  */
@@ -28,7 +30,7 @@ export function TwoColumn({ left, right, stacked = false, ratio = 0.5 }: TwoColu
   }
   return (
     <Box direction="row" gap={space.gap * 1.5} grow={1}>
-      <Box grow={ratio} justify="center">{left}</Box>
+      <Box grow={ratio}>{left}</Box>
       <Box grow={1 - ratio}>{right}</Box>
     </Box>
   );

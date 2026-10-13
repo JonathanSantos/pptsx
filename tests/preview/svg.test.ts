@@ -31,6 +31,7 @@ const textLayout = (lines: readonly string[], over: Partial<TextLayout> = {}): T
   height: lines.length * 24,
   truncated: false,
   fontMissing: false,
+  wordBroken: false,
   ...over,
 });
 

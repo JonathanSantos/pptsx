@@ -62,6 +62,11 @@ describe('Bullets', () => {
     const small = resolveOne(<Bullets items={['a']} size={16} />);
     expect(texts(small)[0]!.props.size).toBe(16);
   });
+
+  it('gap defaults to 0.7 × size and can be overridden', () => {
+    expect((resolveOne(<Bullets items={['a', 'b']} size={20} />)[0] as ResolvedBox).props.gap).toBeCloseTo(14);
+    expect((resolveOne(<Bullets items={['a', 'b']} size={20} gap={30} />)[0] as ResolvedBox).props.gap).toBe(30);
+  });
 });
 
 describe('TwoColumn', () => {
@@ -83,33 +88,79 @@ describe('TwoColumn', () => {
 });
 
 describe('KpiCard', () => {
-  const cardTexts = (trend: 'up' | 'down' | undefined) =>
-    texts(resolveOne(<KpiCard label="Receita" value="R$ 10 mi" delta="+5%" {...(trend ? { trend } : {})} />));
+  type CardProps = Parameters<typeof KpiCard>[0];
+  const cardTexts = (props: Partial<CardProps> = {}) =>
+    texts(resolveOne(<KpiCard label="Receita" value="R$ 10 mi" delta="+5%" {...props} />));
+  const deltaOf = (props: Partial<CardProps> = {}) => cardTexts(props).find((t) => t.content.includes('+5%'))!;
+  const valueOf = (props: Partial<CardProps> = {}) => cardTexts(props).find((t) => t.content === 'R$ 10 mi')!;
+  const labelOf = (props: Partial<CardProps> = {}) => cardTexts(props).find((t) => t.content === 'Receita')!;
+  const rootOf = (props: Partial<CardProps> = {}) => resolveOne(<KpiCard label="L" value="V" {...props} />)[0] as ResolvedBox;
 
   it('surface box with radius 8 and padding', () => {
-    const [root] = resolveOne(<KpiCard label="L" value="V" />) as [ResolvedBox];
+    const root = rootOf();
     expect(root.path.split(' > ').pop()).toBe('KpiCard');
     expect(root.props).toMatchObject({ fill: tokens.color.surface, radius: 8 });
     expect(root.props.padding).toBeDefined();
   });
 
-  it('value is bold and larger than the small muted label', () => {
-    const all = cardTexts(undefined);
-    const label = all.find((t) => t.content === 'Receita')!;
-    const value = all.find((t) => t.content === 'R$ 10 mi')!;
-    expect(label.props).toMatchObject({ size: tokens.font.small, color: tokens.color.muted });
-    expect(value.props.weight).toBe('bold');
-    expect(value.props.size!).toBeGreaterThan(label.props.size!);
+  it('value is bold and larger than the muted label', () => {
+    expect(labelOf().props.color).toBe(tokens.color.muted);
+    expect(valueOf().props.weight).toBe('bold');
+    expect(valueOf().props.size!).toBeGreaterThan(labelOf().props.size!);
   });
 
-  it('trend down colors the delta with tokens.color.negative', () => {
-    const delta = cardTexts('down').find((t) => t.content.includes('+5%'))!;
-    expect(delta.props.color).toBe(tokens.color.negative);
+  describe('trend → arrow, sentiment → color', () => {
+    it('trend up → ▲ and (default) positive color', () => {
+      const delta = deltaOf({ trend: 'up' });
+      expect(delta.content).toBe('▲ +5%');
+      expect(delta.props.color).toBe(tokens.color.positive);
+    });
+
+    it('trend down → ▼ and (default) negative color', () => {
+      const delta = deltaOf({ trend: 'down' });
+      expect(delta.content).toBe('▼ +5%');
+      expect(delta.props.color).toBe(tokens.color.negative);
+    });
+
+    it('no trend → no arrow and neutral (muted) color', () => {
+      const delta = deltaOf();
+      expect(delta.content).toBe('+5%');
+      expect(delta.props.color).toBe(tokens.color.muted);
+    });
+
+    it('sentiment overrides the color but not the arrow', () => {
+      expect(deltaOf({ trend: 'up', sentiment: 'negative' })).toMatchObject({ content: '▲ +5%', props: { color: tokens.color.negative } });
+      expect(deltaOf({ trend: 'down', sentiment: 'positive' })).toMatchObject({ content: '▼ +5%', props: { color: tokens.color.positive } });
+      expect(deltaOf({ trend: 'up', sentiment: 'neutral' }).props.color).toBe(tokens.color.muted);
+    });
+
+    it('sentiment without trend colors the delta with no arrow', () => {
+      expect(deltaOf({ sentiment: 'positive' })).toMatchObject({ content: '+5%', props: { color: tokens.color.positive } });
+    });
   });
 
-  it('trend up colors the delta with tokens.color.positive', () => {
-    const delta = cardTexts('up').find((t) => t.content.includes('+5%'))!;
-    expect(delta.props.color).toBe(tokens.color.positive);
+  describe('size', () => {
+    // Contrato M5: padding / label / valor (pt).
+    const SPEC = { sm: [14, 12, 32], md: [20, 14, 44], lg: [20, 16, 56] } as const;
+
+    it.each(Object.entries(SPEC))('%s → padding %s, label/value sizes', (size, [padding, label, value]) => {
+      const props = { size: size as CardProps['size'] };
+      expect(rootOf(props).props.padding).toBe(padding);
+      expect(labelOf(props).props.size).toBe(label);
+      expect(valueOf(props).props.size).toBe(value);
+    });
+
+    it("defaults to 'md'", () => {
+      expect(rootOf().props.padding).toBe(SPEC.md[0]);
+      expect(labelOf().props.size).toBe(SPEC.md[1]);
+      expect(valueOf().props.size).toBe(SPEC.md[2]);
+    });
+
+    it('value grows sm < md < lg', () => {
+      const v = (size: CardProps['size']) => valueOf({ size }).props.size!;
+      expect(v('sm')).toBeLessThan(v('md'));
+      expect(v('md')).toBeLessThan(v('lg'));
+    });
   });
 
   it('no delta → no delta text', () => {
@@ -133,5 +184,19 @@ describe('KpiRow', () => {
       expect(growing).toBe(true);
     }
     expect(descendants([root]).filter((n) => n.path.split(' > ').pop()?.replace(/\[\d+\]$/, '') === 'KpiCard')).toHaveLength(3);
+  });
+
+  const valueSizes = (node: Child) =>
+    texts(resolveOne(node))
+      .filter((t) => t.props.weight === 'bold' && /^\d$/.test(t.content))
+      .map((t) => t.props.size);
+
+  it("cards default to size 'md'", () => {
+    expect(valueSizes(<KpiRow items={[{ label: 'A', value: '1' }, { label: 'B', value: '2' }]} />)).toEqual([44, 44]);
+  });
+
+  it('size is passed to every card; an item size wins', () => {
+    const items = [{ label: 'A', value: '1' }, { label: 'B', value: '2', size: 'lg' as const }];
+    expect(valueSizes(<KpiRow items={items} size="sm" />)).toEqual([32, 56]);
   });
 });

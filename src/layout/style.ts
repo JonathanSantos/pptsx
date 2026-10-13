@@ -119,6 +119,17 @@ export const toItemStyle = (props: FlexItemProps, parentDirection: FlexDirection
     position: positionOf(props),
   });
 
+/**
+ * Text: numa column a altura é o próprio conteúdo; basis 0 com shrink zeraria a
+ * altura (grow só deve distribuir a sobra). Na row, grow reparte a largura como flex: n.
+ */
+export const toTextStyle = (props: FlexItemProps, parentDirection: FlexDirection): YogaStyle => {
+  const item = toItemStyle(props, parentDirection);
+  if (parentDirection === 'row') return item;
+  const { flexBasis: _ignored, ...auto } = item;
+  return auto;
+};
+
 /** Box: item flex e contêiner ao mesmo tempo. */
 export const toYogaStyle = (props: FlexItemProps & ContainerProps, parentDirection: FlexDirection): YogaStyle => ({
   ...toItemStyle(props, parentDirection),

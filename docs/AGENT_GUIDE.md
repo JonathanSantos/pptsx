@@ -140,25 +140,37 @@ Layouts (`'../layouts/index.ts'`) — cada um **devolve um `<Slide>`**, então �
 
 | layout | props | o que faz |
 |---|---|---|
-| `CoverLayout` | `title: string; subtitle?: string` | fundo `brand`, elipse decorativa, Box central com título `display` bold branco (shrink, minSize 32), subtítulo `h2` (truncate, maxLines 2) |
-| `ContentLayout` | `title: string; children` | fundo branco, padding `page`, cabeçalho (barra `accent` + título `h1` bold), corpo `Box grow={1}` com os children (coluna) |
-| `ClosingLayout` | `title: string; subtitle?: string; contact?: string` | fundo `brand`, texto centralizado |
+| `CoverLayout` | `title: string; subtitle?: string; caption?: string; ctx?: DeckContext` | fundo `brand`, círculo decorativo no canto superior direito, bloco de título ancorado embaixo à esquerda: título `display` bold branco (shrink, minSize 32), subtítulo `h2` (truncate, maxLines 2); `caption` = linha pequena no topo (área, data) |
+| `ContentLayout` | `title: string; justify?: 'start' \| 'center'; children` | fundo branco, padding `page`, cabeçalho (barra `accent` + título `h1` bold), corpo `Box grow={1}` com os children (coluna). `justify="center"` centraliza conteúdo curto (ex.: uma lista) na altura que sobra; padrão `'start'` |
+| `ClosingLayout` | `title: string; subtitle?: string; contact?: string; ctx?: DeckContext` | fundo `brand`, texto centralizado (subtítulo com no máximo 80% da largura), círculo decorativo no canto inferior esquerdo |
+
+Passe `ctx={ctx}` para `CoverLayout`/`ClosingLayout`: o círculo decorativo é dimensionado pela altura do slide (mesmo valor em pt na largura e na altura), então continua redondo e proporcional em 16:9, 4:3 e wide. Sem `ctx`, usa a altura do 16:9 (405 pt).
 
 Componentes (`'../components/index.ts'`):
 
 | componente | props | o que faz |
 |---|---|---|
-| `Bullets` | `items: readonly string[]; size?: number` (padrão `font.body`) | coluna de itens: marcador elipse 8×8 + Text grow (shrink, minSize 14) |
-| `TwoColumn` | `left; right` (qualquer elemento); `stacked?: boolean`; `ratio?: number` (fração da largura da esquerda, padrão 0.5; só vale lado a lado) | row com gap, colunas por `grow`; `stacked` vira coluna: `left` com a altura do conteúdo em cima, `right` ocupa o resto (bom para imagem com `grow`) |
-| `KpiCard` | `label: string; value: string; delta?: string; trend?: 'up' \| 'down'` | cartão `surface` arredondado, `grow={1}`: label `small` muted, valor `display` bold (minSize 28), delta com ▲ verde (`up`) / ▼ vermelho (`down`) |
-| `KpiRow` | `items: readonly KpiCardProps[]` | row com gap; cada card `grow={1}` (larguras iguais) |
+| `Bullets` | `items: readonly string[]; size?: number` (padrão `font.body`); `gap?: number` (pt entre itens, padrão `0.7 × size`) | coluna de itens: marcador elipse 8×8 + Text grow (shrink, minSize 14) |
+| `TwoColumn` | `left; right` (qualquer elemento); `stacked?: boolean`; `ratio?: number` (fração da largura da esquerda, padrão 0.5; só vale lado a lado) | row com gap, colunas por `grow`, **ambas alinhadas ao topo**; `stacked` vira coluna: `left` com a altura do conteúdo em cima, `right` ocupa o resto (bom para imagem com `grow` ou `height="100%"`) |
+| `KpiCard` | `label: string; value: string; delta?: string; trend?: 'up' \| 'down'; sentiment?: 'positive' \| 'negative' \| 'neutral'; size?: 'sm' \| 'md' \| 'lg'` | cartão `surface` arredondado, `grow={1}`: label muted, valor bold grande, delta. **`trend` só define a seta** (▲ `up` / ▼ `down`); **`sentiment` define a cor** (verde `positive` / vermelho `negative` / cinza `neutral`). Sem `sentiment`: `up` → positive, `down` → negative, sem trend → neutral |
+| `KpiRow` | `items: readonly KpiCardProps[]; size?: 'sm' \| 'md' \| 'lg'` | row com gap; cada card `grow={1}` (larguras iguais); `size` vale para todos (o `size` de um item vence) |
+
+Tamanhos do `KpiCard` (pt):
+
+| `size` | padding | label e delta | valor (minSize) | quando usar |
+|---|---|---|---|---|
+| `'sm'` | 14 | 12 | 32 (22) | 4+ cartões numa linha, valores longos ("1.284.392"), cartões estreitos |
+| `'md'` (padrão) | 20 | 14 | 44 (28) | 2–3 cartões em 16:9/4:3 |
+| `'lg'` | 20 | 16 | 56 (36) | 3 cartões com área sobrando (wide, 4:3); valores curtos |
+
+Largura útil do cartão = largura do cartão − 2 × padding. Ex.: 3 cards `md` em 16:9 (corpo 640 pt, gaps 20) → cartão ≈ 200 pt, útil ≈ 160 pt. Se um valor ou label partir no meio da palavra, use `size="sm"` (ou menos cartões por linha).
 
 ```tsx
-<CoverLayout title="Plano 2027" subtitle="Proposta para o conselho" />
+<CoverLayout ctx={ctx} title="Plano 2027" subtitle="Proposta para o conselho" caption="Diretoria financeira · 2026" />
 ```
 
 ```tsx
-<ContentLayout title="Prioridades">
+<ContentLayout title="Prioridades" justify="center">
   <Bullets items={['Expandir para o Sul', 'Reduzir custo de aquisição', 'Lançar o app']} size={22} />
 </ContentLayout>
 ```
@@ -166,9 +178,11 @@ Componentes (`'../components/index.ts'`):
 ```tsx
 <ContentLayout title="Indicadores">
   <KpiRow
+    size="sm"
     items={[
-      { label: 'Receita', value: 'R$ 4,2 mi', delta: '+18%', trend: 'up' },
-      { label: 'Churn', value: '2,1%', delta: '-0,4 pp', trend: 'down' },
+      { label: 'Receita (R$ mi)', value: '4,2', delta: '+18%', trend: 'up' },
+      { label: 'Churn', value: '2,1%', delta: '−0,4 pp', trend: 'down', sentiment: 'positive' },
+      { label: 'Chamados', value: '1.240', delta: '+22%', trend: 'up', sentiment: 'negative' },
       { label: 'NPS', value: '64' },
     ]}
   />
@@ -176,11 +190,11 @@ Componentes (`'../components/index.ts'`):
 ```
 
 ```tsx
-<KpiCard label="Clientes ativos" value="12.430" delta="+6%" trend="up" />
+<KpiCard label="Clientes ativos" value="12.430" delta="+6%" trend="up" size="sm" />
 ```
 
 ```tsx
-<ClosingLayout title="Obrigado" subtitle="Perguntas?" contact="time@empresa.com" />
+<ClosingLayout ctx={ctx} title="Obrigado" subtitle="Perguntas?" contact="time@empresa.com" />
 ```
 
 `TwoColumn` está na receita 6.2.

@@ -31,12 +31,16 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M4 | M4-D | integração + overflow.tsx + resumo/exit code na CLI | ✅ |
 | M4 | M4-E | validação visual (Keynote: nenhum corte silencioso) | ✅ |
 | M5 | M5-0 | lang (pt-BR) + contrato de CLI e componentes | ✅ |
-| M5 | M5-A | CLI completa + config | 🔄 |
-| M5 | M5-B | tokens, layouts, componentes, demo.tsx | 🔄 |
-| M5 | M5-C | AGENT_GUIDE.md | 🔄 |
-| M5 | M5-D | testes M5 | 🔄 |
-| M5 | M5-E | validação visual 16x9 + 4x3 | ⬜ |
-| M5 | M5-F | teste do agente virgem | ⬜ |
+| M5 | M5-A | CLI completa + config | ✅ |
+| M5 | M5-B | tokens, layouts, componentes, demo.tsx | ✅ |
+| M5 | M5-C | AGENT_GUIDE.md | ✅ |
+| M5 | M5-D | testes M5 | ✅ |
+| M5 | M5-E | validação visual 16x9 + 4x3 + wide | ✅ |
+| M5 | M5-F | teste do agente virgem (2 tarefas, exit 0) | ✅ |
+| M5 | M5-G | fixes de engine: palavra partida, grow em column | ✅ |
+| M5 | M5-H | polimento do demo; KpiCard size/sentiment | ✅ |
+| M5 | M5-I | testes finais (685) | ✅ |
+| — | FINAL | relatório: docs/work/reports/FINAL.md | ✅ |
 
 ## Backlog / observações
 
