@@ -15,7 +15,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M2 | M2-B | preview SVG/PNG/overview | ✅ |
 | M2 | M2-C | testes M2 (358 testes) | ✅ |
 | M2 | M2-D | integração + layout-test.tsx | ✅ |
-| M2 | M2-E | validação visual | 🔄 |
+| M2 | M2-E | validação visual (nativo × Keynote ≤ 1 pt) | ✅ |
 | M3 | M3-A..F | medição fontkit, emissão neutra, calibração (GO/NO-GO) | ⬜ |
 | M4 | M4-A..E | fit, diagnósticos, selos | ⬜ |
 | M5 | M5-A..F | CLI, demo, guia de agente, teste de agente | ⬜ |
@@ -32,3 +32,5 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M2-A | Decidido: shrink padrão 1; grow={n} = flex: n (basis 0) | ✅ core/defaults + contrato |
 | M2-D | Image com grow não trava proporção (contain ≠ cover) | ✅ corrigido; falta teste do eixo cruzado → M3-D |
 | M1-C | Line sem stroke usa preto (`DEFAULTS.lineStroke`) | ✅ |
+| M2-E | Keynote exporta em Display P3; converter para sRGB no script de export | M3 (antes da calibração) |
+| M2-E | Debug: marcar linha de texto que passa do frame | M4-B |
