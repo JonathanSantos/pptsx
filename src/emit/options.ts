@@ -1,7 +1,7 @@
 import { basename } from 'node:path';
 import type * as Pptx from './pptx.ts';
 import { resolveAssetPath } from '../core/assets.ts';
-import { DEFAULTS, imageFitOf, textStyleOf } from '../core/defaults.ts';
+import { DEFAULTS, imageFitOf, strokeColorOf, textStyleOf } from '../core/defaults.ts';
 import type {
   Color,
   PositionedBox,
@@ -101,7 +101,8 @@ export const boxShapeOf = (node: PositionedBox): ShapeSpec | undefined => {
 };
 
 /** Shape 'line' usa o próprio frame: pptxgenjs desenha da quina sup. esq. à inf. dir. */
-export const shapeOf = (node: PositionedShape): ShapeSpec => shapeSpecOf(node.props.kind, node.props, node.frame);
+export const shapeOf = (node: PositionedShape): ShapeSpec =>
+  shapeSpecOf(node.props.kind, { ...node.props, stroke: strokeColorOf(node.props) }, node.frame);
 
 /**
  * Um run por parágrafo com breakLine explícito: passar a string com '\n'

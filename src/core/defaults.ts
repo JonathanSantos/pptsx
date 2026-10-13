@@ -7,6 +7,7 @@ import type {
   ImageProps,
   Justify,
   Pt,
+  ShapeProps,
   Spacing,
   TextAlign,
   TextProps,
@@ -38,6 +39,8 @@ export const DEFAULTS = {
     justify: 'start' as Justify,
   },
   strokeWidth: 1,
+  /** Shape 'line' sem stroke seria invisível; recebe esta cor. */
+  lineStroke: '#000000',
   imageFit: 'contain' as ImageFit,
   /** Largura de quebra = disponível * textSafety; a caixa sai com a largura cheia. */
   textSafety: 0.97,
@@ -84,3 +87,7 @@ export const containerOf = (props: ContainerProps) => ({
   align: props.align ?? DEFAULTS.container.align,
   justify: props.justify ?? DEFAULTS.container.justify,
 });
+
+/** Cor de contorno efetiva: a linha sempre tem cor, os demais só se o autor pediu. */
+export const strokeColorOf = (props: ShapeProps): string | undefined =>
+  props.stroke ?? (props.kind === 'line' ? DEFAULTS.lineStroke : undefined);

@@ -11,7 +11,11 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M1 | M1-D | testes M1 | ✅ |
 | M1 | M1-E | integração + hello.tsx | ✅ |
 | M1 | M1-F | validação visual (Keynote: passa, erro ≤ 1 px) | ✅ |
-| M2 | M2-A..E | layout Yoga, preview, testes, integração, visual | ⬜ |
+| M2 | M2-A | layout Yoga + medidor estimado | 🔄 |
+| M2 | M2-B | preview SVG/PNG/overview | 🔄 |
+| M2 | M2-C | testes M2 | 🔄 |
+| M2 | M2-D | integração + layout-test.tsx | ⬜ |
+| M2 | M2-E | validação visual | ⬜ |
 | M3 | M3-A..F | medição fontkit, emissão neutra, calibração (GO/NO-GO) | ⬜ |
 | M4 | M4-A..E | fit, diagnósticos, selos | ⬜ |
 | M5 | M5-A..F | CLI, demo, guia de agente, teste de agente | ⬜ |

@@ -105,7 +105,14 @@ export const layoutDeck: (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) =
 - Imagem: `intrinsic = env.imageSize(src)`. Se só uma dimensão foi dada, usa `aspectRatio`. Se nenhuma dimensão nem grow, tamanho natural em pt (`px × 0.75`).
 - Shape `line`: desenhada da quina superior esquerda à inferior direita do frame.
 - Yoga é liberado (`freeRecursive`) antes de retornar; nada de estado vazando.
-- **M1** (provisório): só nós com `position="absolute"` e tamanhos numéricos/%; texto mede com o medidor recebido.
+- **M1** (provisório, substituído no M2): só `position="absolute"`.
+- **M2 — detalhes Yoga** (`yoga-layout` v3, `import Yoga, { Edge, FlexDirection, ... } from 'yoga-layout'`):
+  - Um `Config` próprio por chamada com `setPointScaleFactor(0)` (sem arredondar para pixel: a unidade é pt e queremos frações exatas) e `setUseWebDefaults(false)`.
+  - Text e Image são folhas; Text com measure function. Text em fluxo usa a altura medida (não estica no eixo cruzado além do que o `align` mandar).
+  - Absoluto segue a semântica do Yoga/CSS (sem tamanho → encolhe ao conteúdo; `left`+`right` → largura derivada).
+  - `Shape` sem tamanho e sem grow tem 0×0 (o autor sempre dimensiona shapes).
+  - Box com `fill`/`stroke` não muda nada no layout.
+  - O frame do Text é o resultado do Yoga; `PositionedText.text` é medido de novo com `frame.width` para as linhas finais.
 
 ## `src/fit/` (M4)
 
@@ -139,7 +146,15 @@ export const emitPptx: (deck: PositionedDeck, options: EmitOptions) => Promise<B
 ## `src/preview/` (M2)
 
 ```ts
-export interface SvgOptions { widthPx: number; debug?: boolean; baseDir: string; fontFamilyMap?: Record<string, string> }
+export interface SvgOptions {
+  widthPx: number;
+  debug?: boolean;
+  baseDir: string;
+  /** família lógica → nome interno da fonte que o resvg conhece (ex.: Arial → Liberation Sans) */
+  fontFamilyMap?: Readonly<Record<string, string>>;
+  /** leitura de arquivo injetável (padrão fs.readFileSync) para manter o SVG testável */
+  readFile?: (path: string) => Buffer;
+}
 export const slideToSvg: (slide: PositionedSlide, size: SlideSize, options: SvgOptions) => string;  // pura exceto leitura de imagem (injetável)
 export const svgToPng: (svg: string, options: { widthPx: number; fontFiles: readonly string[] }) => Buffer;
 export const buildOverview: (slides: readonly OverviewItem[], options?: { columns?: number; thumbWidth?: number }) => Buffer;
@@ -149,7 +164,11 @@ export interface OverviewItem { png: Buffer; number: number; badge?: 'error' | '
 - Texto: um `<text>` por linha de `PositionedText.text.lines`, `y = frame.y + i × lineHeight + ascent`, `x` conforme `align` (`text-anchor`). O SVG nunca quebra linha sozinho.
 - Fonte no SVG: `font-family` = família do nó; resvg recebe os arquivos registrados (Liberation Sans responde como "Liberation Sans", então mapear `Arial` → `Liberation Sans` via `fontFamilyMap`, derivado dos `FontFace` registrados).
 - Imagem: `<image href="data:...base64">` com `preserveAspectRatio` `xMidYMid meet` (contain) / `slice` (cover) + clipPath.
-- Debug: contorno de cada frame; área fora do pai em vermelho translúcido.
+- Shapes: `rect`/`roundRect` (`rx`)/`ellipse`/`line` (do canto sup. esq. ao inf. dir.), com `strokeColorOf` de core/defaults. Box com fill/stroke vira `<rect>`. Fundo do slide: `<rect>` cor ou `<image>`.
+- Ordem de desenho = ordem da árvore (igual ao emit).
+- Debug: contorno de cada frame de Box/Text/Image (vermelho tracejado, igual ao emit); área fora do pai em vermelho translúcido (M4 aprofunda).
+- Overview: SVG com os PNGs embutidos (base64) em grade, número abaixo de cada miniatura, fundo cinza claro, rasterizado pelo resvg (sem sharp). `badge` desenha um círculo vermelho/amarelo no canto da miniatura.
+- Texto escapado para XML (`&`, `<`, `>`, aspas).
 
 ## `src/render.ts`
 
