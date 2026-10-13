@@ -366,6 +366,29 @@ describe('fitSlide — box, slide, decoration', () => {
     expect(d.data?.overflowPt).toBeCloseTo(80, 3);
   });
 
+  it('Box with a fixed child that leaves the slide → 1 box-overflow and 0 out-of-slide', () => {
+    const r = fit(
+      <Slide padding={40}>
+        <Box direction="row" width={200} height={60}>
+          <Shape kind="rect" width={800} height={50} shrink={0} />
+        </Box>
+      </Slide>,
+    );
+    expect(byCode(r, 'box-overflow')).toHaveLength(1);
+    expect(byCode(r, 'box-overflow')[0]!.path).toBe('Slide > Box');
+    expect(byCode(r, 'out-of-slide')).toHaveLength(0);
+  });
+
+  it('a node leaving the page at Slide level → out-of-slide, not box-overflow of the Slide', () => {
+    const r = fit(
+      <Slide>
+        <Shape kind="rect" width={800} height={50} />
+      </Slide>,
+    );
+    expect(byCode(r, 'out-of-slide').map((d) => d.path)).toEqual(['Slide > Shape']);
+    expect(byCode(r, 'box-overflow')).toEqual([]);
+  });
+
   it('absolute decoration outside the slide → no diagnostic', () => {
     const r = fit(
       <Slide padding={40}>
@@ -460,7 +483,7 @@ describe('fitSlide — Diagnostic fields', () => {
     expect(d.message).toMatch(/texto|fonte|reduza|aumente|estour/i);
   });
 
-  it('box-overflow message mentions the overflow', () => {
+  it('box-overflow message (vertical) cites the axis, the children sum and the content area in pt', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={100}>
@@ -470,8 +493,85 @@ describe('fitSlide — Diagnostic fields', () => {
       </Slide>,
     );
     const d = byCode(r, 'box-overflow')[0]!;
-    expect(d.message).toMatch(/\d/);
+    expect(d.message).toMatch(/vertical/i);
+    expect(d.message).toMatch(/\b160\b/);
+    expect(d.message).toMatch(/\b100\b/);
+    expect(d.message).toMatch(/pt/);
   });
+
+  it('box-overflow message (horizontal) cites the axis, the children sum and the content area', () => {
+    const r = fit(
+      <Slide padding={40}>
+        <Box direction="row" width={200} height={60}>
+          <Shape kind="rect" width={150} height={50} shrink={0} />
+          <Shape kind="rect" width={150} height={50} shrink={0} />
+        </Box>
+      </Slide>,
+    );
+    const d = byCode(r, 'box-overflow')[0]!;
+    expect(d.message).toMatch(/horizontal/i);
+    expect(d.message).toMatch(/\b300\b/);
+    expect(d.message).toMatch(/\b200\b/);
+  });
+
+  const absoluteIsOnlyACaveat = (message: string, sideIndex: number) => {
+    const abs = message.indexOf('absolute');
+    if (abs >= 0) expect(abs).toBeGreaterThan(sideIndex);
+  };
+
+  it('out-of-slide message cites the side (right) and how much; absolute only as a final caveat', () => {
+    const r = fit(
+      <Slide>
+        <Shape kind="rect" width={800} height={50} />
+      </Slide>,
+    );
+    const d = byCode(r, 'out-of-slide')[0]!;
+    const side = d.message.indexOf('pela direita');
+    expect(side).toBeGreaterThanOrEqual(0);
+    expect(d.message).toMatch(/\b80\b/);
+    absoluteIsOnlyACaveat(d.message, side);
+  });
+
+  it('out-of-slide message cites the bottom side', () => {
+    const r = fit(
+      <Slide>
+        <Shape kind="rect" width={100} height={500} shrink={0} />
+      </Slide>,
+    );
+    const d = byCode(r, 'out-of-slide')[0]!;
+    const side = d.message.indexOf('pela base');
+    expect(side).toBeGreaterThanOrEqual(0);
+    expect(d.message).toMatch(/\b95\b/);
+    absoluteIsOnlyACaveat(d.message, side);
+  });
+
+  it('text-truncated message: "mostradas N de M linhas (~P% do conteúdo oculto)"', () => {
+    const r = fit(
+      <Slide padding={40}>
+        <Box height={60}>
+          <Text size={18} fit="truncate">
+            {longText(3)}
+          </Text>
+        </Box>
+      </Slide>,
+    );
+    const t = textAt(r.slide, 'Slide > Box > Text');
+    const d = byCode(r, 'text-truncated')[0]!;
+    const m = /mostradas (\d+) de (\d+) linhas \(~(\d+)% do conteúdo oculto\)/.exec(d.message);
+    expect(m, d.message).not.toBeNull();
+    const shown = Number(m![1]);
+    const total = Number(m![2]);
+    const pct = Number(m![3]);
+    expect(shown).toBe(t.text.lines.length);
+    const full = env.measureText({
+      content: t.content,
+      style: textStyleOf(t.props),
+      maxWidth: t.frame.width,
+    }).lines.length;
+    expect(total).toBe(full);
+    expect(Math.abs(pct - ((total - shown) / total) * 100)).toBeLessThanOrEqual(1);
+  });
+
 });
 
 describe('fitSlide — purity', () => {

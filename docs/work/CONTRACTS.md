@@ -134,6 +134,8 @@ export const detectOverflow: (slide: PositionedSlide) => readonly Overflow[];   
 - `box`: Box/Slide cujos filhos **em fluxo** passam da área de conteúdo (frame − padding), no eixo vertical ou horizontal. Só reportado quando a causa não é um Text já reportado (ex.: tamanhos fixos que somam mais que o pai).
 - `slide`: nó **em fluxo** com frame fora de `0..size`.
 - Nós `position="absolute"` e seus descendentes são decoração: nunca geram `box`/`slide`.
+- Sem duplicatas: Text estourado não conta para o `box` do pai; nó fora do slide dentro de um **Box** com `box` não gera `slide`; no nível do **Slide**, o que sai da página vira `slide` e não conta para o `box` do Slide.
+- Mensagens dizem o eixo/lado e a conta (soma × área disponível; "pela direita"; "mostradas N de M linhas").
 
 **Escopo do shrink** (mantém a hierarquia tipográfica): para cada Text estourado, o escopo é o ancestral mais próximo que é **raiz de componente** (segmento do path que não é nome de primitiva, ex.: `Bullets`), excluindo o slide; sem nenhum, o filho de primeiro nível do slide que contém o texto. Todos os Text com `fit="shrink"` dentro do escopo e acima de `minSizeOf(props)` descem `DEFAULTS.fit.shrinkStep` (1 pt) juntos. Só um Text `shrink` estourado dispara o passo; `truncate`/`error` não fazem vizinhos encolherem. `fromSize`/`minSize` vêm sempre das props originais do autor.
 

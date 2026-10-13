@@ -27,9 +27,9 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M3 | gate | GO no Keynote (quebras idênticas); PowerPoint pendente com o dono | ✅ |
 | M4 | M4-A | fit: detecção, loop, políticas, diagnósticos | ✅ |
 | M4 | M4-B | preview: estouro de texto no debug + selos | ✅ |
-| M4 | M4-C | testes M4 (523 testes) | ✅ |
+| M4 | M4-C | testes M4 (531 testes) | ✅ |
 | M4 | M4-D | integração + overflow.tsx + resumo/exit code na CLI | ✅ |
-| M4 | M4-E | validação visual | 🔄 |
+| M4 | M4-E | validação visual (Keynote: nenhum corte silencioso) | ✅ |
 | M5 | M5-A..F | CLI, demo, guia de agente, teste de agente | ⬜ |
 
 ## Backlog / observações
@@ -52,3 +52,4 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M4-A | Aprovado: altura disponível do Text = frame recortado pela área de conteúdo do pai | ✅ contrato |
 | M4-A | box-overflow + out-of-slide podem sair juntos para a mesma causa (fatos distintos) | aceito |
 | M4-D | Shapes com width fixo encolhem (shrink 1, como CSS); para tamanho rígido use shrink={0} | documentar no AGENT_GUIDE (M5-C) |
+| M4-E | Mensagens: eixo/conta no box-overflow, lado no out-of-slide, linhas ocultas no truncate; sem duplicatas | ✅ |

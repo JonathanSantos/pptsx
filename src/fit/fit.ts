@@ -17,6 +17,8 @@ import { detectOverflow } from './detect.ts';
 import type { Overflow } from './detect.ts';
 import { boxOverflow, fontMissing, imageUpscaled, outOfSlide, textTruncated } from './diagnostics.ts';
 import type { DiagnosticContext } from './diagnostics.ts';
+import { containerExcessOf, sidesOutside } from './geometry.ts';
+import type { Container } from './geometry.ts';
 import { POLICIES } from './policies.ts';
 import type { OverflowPolicy } from './policies.ts';
 import { patchTexts } from './rewrite.ts';
@@ -64,6 +66,7 @@ const positionedNodes = (nodes: readonly PositionedNode[]): readonly PositionedN
   nodes.flatMap((node) => (node.kind === 'box' ? [node, ...positionedNodes(node.children)] : [node]));
 
 const isPositionedText = (node: PositionedNode): node is PositionedText => node.kind === 'text';
+const isContainer = (node: PositionedNode | PositionedSlide): node is Container => node.kind === 'box' || node.kind === 'slide';
 const isPositionedImage = (node: PositionedNode): node is PositionedImage => node.kind === 'image';
 
 const plansOf = (slide: ResolvedSlide): Plans =>
@@ -120,12 +123,24 @@ const settle = (pass: Pass, plans: Plans, input: FitInput): Pass => {
   return patches.size === 0 ? pass : passOf(patchTexts(pass.resolved, patches), input);
 };
 
-const textDiagnostics = (text: PositionedText, plan: TextPlan, overflow: Overflow | undefined, ctx: DiagnosticContext) => [
+/** Linhas mostradas contra as do texto inteiro, medido sem maxLines na mesma largura. */
+const truncationOf = (text: PositionedText, env: LayoutEnv) => ({
+  shown: text.text.lines.length,
+  total: env.measureText({ content: text.content, style: textStyleOf(text.props), maxWidth: text.frame.width }).lines.length,
+});
+
+const textDiagnostics = (
+  text: PositionedText,
+  plan: TextPlan,
+  overflow: Overflow | undefined,
+  ctx: DiagnosticContext,
+  env: LayoutEnv,
+) => [
   ...plan.policy.diagnose(
     { text, overflow, from: plan.from, to: textStyleOf(text.props).size, min: plan.min, maxSteps: DEFAULTS.maxFitIterations },
     ctx,
   ),
-  ...(text.text.truncated ? [textTruncated(ctx, text.path, text.text.lines.length)] : []),
+  ...(text.text.truncated ? [textTruncated(ctx, text.path, truncationOf(text, env))] : []),
   ...(text.text.fontMissing ? [fontMissing(ctx, text.path, textStyleOf(text.props))] : []),
 ];
 
@@ -152,10 +167,20 @@ const diagnosticsOf = (pass: Pass, plans: Plans, input: FitInput): readonly Diag
   const nodes = positionedNodes(pass.positioned.children);
   const texts = nodes.filter(isPositionedText).flatMap((text) => {
     const plan = plans.get(text.path);
-    return plan === undefined ? [] : textDiagnostics(text, plan, overflows.get(text.path), ctx);
+    return plan === undefined ? [] : textDiagnostics(text, plan, overflows.get(text.path), ctx, input.env);
   });
-  const boxes = pass.overflows.filter((overflow) => overflow.kind === 'box').map((overflow) => boxOverflow(ctx, overflow));
-  const outside = pass.overflows.filter((overflow) => overflow.kind === 'slide').map((overflow) => outOfSlide(ctx, overflow));
+  const byPath = new Map<string, PositionedNode | PositionedSlide>([
+    [pass.positioned.path, pass.positioned],
+    ...nodes.map((node) => [node.path, node] as const),
+  ]);
+  const boxes = pass.overflows.filter((overflow) => overflow.kind === 'box').flatMap((overflow) => {
+    const container = byPath.get(overflow.path);
+    return container === undefined || !isContainer(container) ? [] : [boxOverflow(ctx, overflow, containerExcessOf(container, new Set(overflows.keys())))];
+  });
+  const outside = pass.overflows.filter((overflow) => overflow.kind === 'slide').flatMap((overflow) => {
+    const node = byPath.get(overflow.path);
+    return node === undefined ? [] : [outOfSlide(ctx, overflow, sidesOutside(node.frame, pass.positioned.frame))];
+  });
   const images = nodes.filter(isPositionedImage).flatMap((image) => imageDiagnostic(image, ctx));
   return [...texts, ...boxes, ...outside, ...images];
 };

@@ -31,18 +31,24 @@ export default defineDeck(() => (
     {/* 1 · shrink que cabe: bullets encolhem juntas (info), título intacto */}
     <Slide padding={36} gap={18}>
       <Header>Bullets que encolhem juntas</Header>
-      <Bullets items={[long, 'Novo modelo de atendimento com SLA por região e painel público.', long, long.slice(0, 140)]} />
+      <Bullets items={[long, 'Novo modelo de atendimento com SLA por região e painel público.', long, 'Painel de indicadores publicado semanalmente para todas as áreas.']} />
     </Slide>
 
     {/* 2 · shrink que não cabe nem no mínimo: error com path */}
     <Slide padding={36} gap={18}>
       <Header>Conteúdo demais para a área</Header>
       <Box grow={1} fill="#F4F6FA" padding={12}>
-        <Text size={20} minSize={16} color={ink}>{[long, long, long].join(' ')}</Text>
+        <Text size={20} minSize={19} color={ink}>{[long, long, long].join(' ')}</Text>
       </Box>
     </Slide>
 
-    {/* 3 · truncate (warning) e fit="error" (error) lado a lado */}
+    {/* 3 · só truncate: selo amarelo (warning), nada de error */}
+    <Slide padding={36} gap={18}>
+      <Header>Resumo com limite de linhas</Header>
+      <Text size={18} maxLines={3} fit="truncate" color={ink}>{[long, long].join(' ')}</Text>
+    </Slide>
+
+    {/* 4 · truncate (warning) e fit="error" (error) lado a lado */}
     <Slide padding={36} gap={18}>
       <Header>Truncate e error</Header>
       <Box direction="row" gap={18} height={150}>
@@ -56,7 +62,7 @@ export default defineDeck(() => (
       <Text size={14} maxLines={1} fit="truncate" color={ink}>{long}</Text>
     </Slide>
 
-    {/* 4 · box-overflow por tamanhos fixos + decoração absoluta que sai do slide (sem diagnóstico) */}
+    {/* 5 · box-overflow por tamanhos fixos + decoração absoluta que sai do slide (sem diagnóstico) */}
     <Slide padding={36} gap={18}>
       <Shape kind="ellipse" position="absolute" right={-80} top={-80} width={240} height={240} fill="#E8EEFC" />
       <Header>Caixas fixas maiores que o espaço</Header>

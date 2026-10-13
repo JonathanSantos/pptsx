@@ -127,12 +127,32 @@ describe('detectOverflow — slide', () => {
     expect(out[0]!.overflowPt).toBeCloseTo(10, 6);
   });
 
-  it('nested in-flow node outside the slide', () => {
+  it('nested node outside the slide inside a Box that overflows → only box on the Box, no slide', () => {
     const inner = shape(650, 0, 100, 50, 'Slide > Box > Shape');
-    const box = pBox(rect(600, 0, 120, 100), { direction: 'row' }, [inner]);
-    const out = ofKind(detectOverflow(pSlide([box])), 'slide');
-    expect(out.map((o) => o.path)).toContain('Slide > Box > Shape');
-    expect(out.find((o) => o.path === 'Slide > Box > Shape')!.overflowPt).toBeCloseTo(30, 6);
+    const box = withPath(pBox(rect(600, 0, 120, 100), { direction: 'row' }, [inner]), 'Slide > Box');
+    const out = detectOverflow(pSlide([box]));
+    expect(ofKind(out, 'slide')).toEqual([]);
+    const boxes = ofKind(out, 'box');
+    expect(boxes.map((o) => o.path)).toEqual(['Slide > Box']);
+    expect(boxes[0]!.overflowPt).toBeCloseTo(30, 6);
+  });
+
+  it('nested out-of-slide where the Box does not overflow (Box itself off the page) → slide, no box', () => {
+    const inner = shape(700, 0, 80, 50, 'Slide > Box > Shape');
+    const box = withPath(pBox(rect(700, 0, 100, 100), { direction: 'row' }, [inner]), 'Slide > Box');
+    const out = detectOverflow(pSlide([box]));
+    expect(ofKind(out, 'box')).toEqual([]);
+    const slides = ofKind(out, 'slide');
+    expect(slides.length).toBeGreaterThanOrEqual(1);
+    expect(['Slide > Box', 'Slide > Box > Shape']).toContain(slides[0]!.path);
+    expect(slides[0]!.overflowPt).toBeGreaterThan(0);
+  });
+
+  it('at Slide level what leaves the page is slide, not box of the Slide (even with padding)', () => {
+    const s = shape(20, 380, 100, 50, 'Slide > Footer'); // passa do padding e da página
+    const out = detectOverflow(pSlide([s], { padding: 20 }));
+    expect(ofKind(out, 'slide').map((o) => o.path)).toEqual(['Slide > Footer']);
+    expect(ofKind(out, 'box')).toEqual([]);
   });
 
   it('absolute node and its descendants outside the slide → nothing', () => {

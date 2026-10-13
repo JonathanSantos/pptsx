@@ -1,5 +1,6 @@
 import type { Diagnostic, Pt, TextStyle } from '../core/types.ts';
 import type { Overflow } from './detect.ts';
+import type { ContainerExcess, Side, SideExcess } from './geometry.ts';
 
 // Fábrica de diagnósticos. As mensagens são lidas por um LLM que vai editar o deck:
 // cada uma diz o que aconteceu, quanto, e o que fazer.
@@ -73,13 +74,16 @@ export const textOverflowTruncated = (ctx: DiagnosticContext, overflow: Overflow
     data: overflowData(overflow),
   });
 
-export const textTruncated = (ctx: DiagnosticContext, path: string, lines: number): Diagnostic =>
-  make(ctx, {
+/** Linhas mostradas (com reticências) contra as linhas do texto inteiro na mesma largura. */
+export const textTruncated = (ctx: DiagnosticContext, path: string, lines: { readonly shown: number; readonly total: number }): Diagnostic => {
+  const hidden = lines.total > 0 ? Math.round(((lines.total - lines.shown) / lines.total) * 100) : 0;
+  return make(ctx, {
     severity: 'warning',
     code: 'text-truncated',
     path,
-    message: `Texto cortado em ${lines} ${lines === 1 ? 'linha' : 'linhas'} com reticências; parte do conteúdo não aparece. Encurte o conteúdo, aumente a área, aumente maxLines ou use fit="shrink".`,
+    message: `Texto cortado com reticências: mostradas ${lines.shown} de ${lines.total} linhas (~${hidden}% do conteúdo oculto). Encurte o conteúdo, aumente a área, aumente maxLines ou use fit="shrink".`,
   });
+};
 
 export const fontMissing = (ctx: DiagnosticContext, path: string, style: TextStyle): Diagnostic => {
   const face = `${style.family} ${style.weight}${style.italic ? ' italic' : ''}`;
@@ -91,21 +95,40 @@ export const fontMissing = (ctx: DiagnosticContext, path: string, style: TextSty
   });
 };
 
-export const boxOverflow = (ctx: DiagnosticContext, overflow: Overflow): Diagnostic =>
+const AXIS_NAME = { width: 'horizontal', height: 'vertical' } as const;
+
+const isMainAxis = (excess: ContainerExcess): boolean =>
+  (excess.direction === 'row') === (excess.axis === 'width');
+
+/** "somam 812 pt na horizontal (row)" no eixo principal; no cruzado é o maior filho. */
+const describeUse = (excess: ContainerExcess): string => {
+  const used = round(excess.available + excess.pt);
+  const axis = AXIS_NAME[excess.axis];
+  return isMainAxis(excess)
+    ? `Os filhos em fluxo somam ${used} pt na ${axis} (${excess.direction})`
+    : `O maior filho em fluxo ocupa ${used} pt na ${axis} (eixo cruzado da ${excess.direction})`;
+};
+
+export const boxOverflow = (ctx: DiagnosticContext, overflow: Overflow, excess: ContainerExcess): Diagnostic =>
   make(ctx, {
     severity: 'error',
     code: 'box-overflow',
     path: overflow.path,
-    message: `Os filhos passam ${amount(overflow)} da área de conteúdo do contêiner; reduza width/height fixos, gap ou padding, permita shrink nos filhos ou aumente o contêiner.`,
+    message: `${describeUse(excess)}, mas a área de conteúdo tem ${round(excess.available)} pt: estouro de ${round(overflow.overflowPt)} pt (${round(overflow.overflowPct)}%). Reduza width/height fixos ou gap/padding, permita shrink nos filhos (shrink={0} impede), ou aumente o contêiner.`,
     data: overflowData(overflow),
   });
 
-export const outOfSlide = (ctx: DiagnosticContext, overflow: Overflow): Diagnostic =>
+const SIDE_NAME: Readonly<Record<Side, string>> = { top: 'pelo topo', right: 'pela direita', bottom: 'pela base', left: 'pela esquerda' };
+
+const describeSides = (sides: readonly SideExcess[]): string =>
+  sides.map(({ side, pt }) => `${round(pt)} pt ${SIDE_NAME[side]}`).join(' e ');
+
+export const outOfSlide = (ctx: DiagnosticContext, overflow: Overflow, sides: readonly SideExcess[]): Diagnostic =>
   make(ctx, {
     severity: 'error',
     code: 'out-of-slide',
     path: overflow.path,
-    message: `O elemento sai ${round(overflow.overflowPt)} pt para fora do slide; reduza o tamanho ou o conteúdo ao redor. Se for decoração intencional, use position="absolute".`,
+    message: `O elemento sai do slide: ${describeSides(sides)}. Reduza o tamanho dele ou o conteúdo ao redor, ou ajuste top/left. Só se for decoração intencional fora do fluxo, use position="absolute".`,
     data: { overflowPt: round(overflow.overflowPt) },
   });
 
