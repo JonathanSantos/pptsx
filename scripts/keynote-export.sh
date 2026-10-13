@@ -21,4 +21,9 @@ on run argv
 end run
 APPLESCRIPT
 
+# O Keynote exporta em Display P3; converte para sRGB para comparar cores com o preview nativo.
+for png in "$output"/*.png; do
+  sips -m "/System/Library/ColorSync/Profiles/sRGB Profile.icc" "$png" >/dev/null
+done
+
 ls "$output"

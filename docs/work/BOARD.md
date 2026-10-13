@@ -16,7 +16,12 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M2 | M2-C | testes M2 (358 testes) | ✅ |
 | M2 | M2-D | integração + layout-test.tsx | ✅ |
 | M2 | M2-E | validação visual (nativo × Keynote ≤ 1 pt) | ✅ |
-| M3 | M3-A..F | medição fontkit, emissão neutra, calibração (GO/NO-GO) | ⬜ |
+| M3 | M3-A | registro de fontes + medidor fontkit | 🔄 |
+| M3 | M3-B | emissão neutra com estratégia de espaçamento | 🔄 |
+| M3 | M3-C | calibration.tsx | 🔄 |
+| M3 | M3-D | testes M3 | 🔄 |
+| M3 | M3-E | integração do medidor real | ⬜ |
+| M3 | M3-F | calibração nativo × Keynote (GO/NO-GO) | ⬜ |
 | M4 | M4-A..E | fit, diagnósticos, selos | ⬜ |
 | M5 | M5-A..F | CLI, demo, guia de agente, teste de agente | ⬜ |
 
