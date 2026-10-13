@@ -122,15 +122,38 @@ export const layoutDeck: (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) =
 ## `src/fit/` (M4)
 
 ```ts
-export interface FitInput { slide: ResolvedSlide; slideIndex: number; size: SlideSize; env: LayoutEnv; }
-export interface FitResult { slide: PositionedSlide; diagnostics: Diagnostic[] }
+export interface FitInput { slide: ResolvedSlide; slideIndex: number; size: SlideSize; env: LayoutEnv }
+export interface FitResult { slide: PositionedSlide; diagnostics: readonly Diagnostic[] }
 export const fitSlide: (input: FitInput) => FitResult;
-export const detectOverflow: (slide: PositionedSlide) => Overflow[];   // pura
+export interface Overflow { kind: 'text' | 'box' | 'slide'; path: string; overflowPt: number; overflowPct: number }
+export const detectOverflow: (slide: PositionedSlide) => readonly Overflow[];   // pura
 ```
-- Políticas como Strategy: `Record<FitPolicy, OverflowPolicy>`.
-- Shrink: passos de 1 pt em todos os textos `fit="shrink"` dentro do contêiner que estourou, até `DEFAULTS.maxFitIterations`.
-- O ajuste reescreve a árvore resolvida (`props.size` novo) — imutável — e refaz o layout.
-- Diagnósticos conforme tabela da spec; `size` = `size.name`.
+
+**Detecção** (tolerância `DEFAULTS.fit.epsilon` = 0.5 pt):
+- `text`: `text.height > frame.height` (com `shrink` 1 padrão, o Yoga espreme a caixa do texto quando o pai não cabe — o estouro aparece no próprio Text). `overflowPt` = diferença; `overflowPct` = diferença / frame.height × 100 (frame.height 0 → 100).
+- `box`: Box/Slide cujos filhos **em fluxo** passam da área de conteúdo (frame − padding), no eixo vertical ou horizontal. Só reportado quando a causa não é um Text já reportado (ex.: tamanhos fixos que somam mais que o pai).
+- `slide`: nó **em fluxo** com frame fora de `0..size`.
+- Nós `position="absolute"` e seus descendentes são decoração: nunca geram `box`/`slide`.
+
+**Escopo do shrink** (mantém a hierarquia tipográfica): para cada Text estourado, o escopo é o ancestral mais próximo que é **raiz de componente** (segmento do path que não é nome de primitiva, ex.: `Bullets`), excluindo o slide; sem nenhum, o filho de primeiro nível do slide que contém o texto. Todos os Text com `fit="shrink"` dentro do escopo e acima de `minSizeOf(props)` descem 1 pt juntos.
+
+**Loop:** layout → detectar → um passo de shrink por escopo estourado → repetir até não haver estouro, nenhum texto poder encolher, ou `DEFAULTS.maxFitIterations` (12). Depois: textos `fit="truncate"` estourados recebem `maxLines = max(1, floor(frame.height / text.lineHeight))` e há um relayout final.
+
+O ajuste reescreve a árvore **resolvida** (`props.size`, `props.maxLines`), imutável, por path; nunca a posicionada.
+
+**Diagnósticos** (`size` = `size.name`, `slide` = `slideIndex + 1`, `path` = path do nó; `message` em português, escrita para um LLM agir — diz o que aconteceu, quanto, e o que fazer):
+| Situação | code | severity | data |
+|---|---|---|---|
+| shrink coube | `text-shrunk` | info | fromSize, toSize |
+| shrink no mínimo e ainda estoura | `text-overflow` | error | overflowPt, overflowPct, fromSize, toSize |
+| truncate aplicado (ou `maxLines` cortou) | `text-truncated` | warning | — |
+| `fit="error"` estourado | `text-overflow` | error | overflowPt, overflowPct |
+| Box estourado | `box-overflow` | error | overflowPt, overflowPct |
+| nó em fluxo fora do slide | `out-of-slide` | error | overflowPt |
+| imagem desenhada maior que px × 0.75 (abaixo de 96 dpi) | `image-upscaled` | info | — |
+| `text.fontMissing` | `font-missing` | error | — |
+
+Exemplo de message: `"Texto estourou 18% da altura disponível mesmo em 14 pt (mínimo); reduza o conteúdo, aumente a área ou baixe minSize."`
 
 ## `src/emit/`
 

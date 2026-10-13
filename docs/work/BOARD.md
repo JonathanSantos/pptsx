@@ -25,7 +25,11 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M3 | M3-G | quebra forçada (<a:br/>) + quebra após - e / | ✅ |
 | M3 | M3-H | testes quebra forçada (455 testes) | ✅ |
 | M3 | gate | GO no Keynote (quebras idênticas); PowerPoint pendente com o dono | ✅ |
-| M4 | M4-A..E | fit, diagnósticos, selos | ⬜ |
+| M4 | M4-A | fit: detecção, loop, políticas, diagnósticos | 🔄 |
+| M4 | M4-B | preview: estouro de texto no debug | 🔄 |
+| M4 | M4-C | testes M4 | 🔄 |
+| M4 | M4-D | integração + overflow.tsx | ⬜ |
+| M4 | M4-E | validação visual | ⬜ |
 | M5 | M5-A..F | CLI, demo, guia de agente, teste de agente | ⬜ |
 
 ## Backlog / observações

@@ -50,6 +50,8 @@ export const DEFAULTS = {
   /** Largura de quebra = disponível * textSafety; a caixa sai com a largura cheia. */
   textSafety: 0.97,
   maxFitIterations: 12,
+  /** Tolerância (pt) na detecção de overflow, para ruído de ponto flutuante. */
+  fit: { epsilon: 0.5 },
   /** 16:9 de referência para ctx.scale */
   referenceSize: { width: 720, height: 405 },
   preview: { width: 1280, thumbWidth: 320, overviewColumns: 4 },
