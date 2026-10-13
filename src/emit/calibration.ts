@@ -19,8 +19,16 @@ export type LineSpacingStrategy = 'multiple' | 'exact';
 /** Subconjunto de opções do pptxgenjs que define o espaçamento de linha. */
 export type LineSpacingOptions = Pick<Pptx.TextPropsOptions, 'lineSpacing' | 'lineSpacingMultiple'>;
 
-/** Estratégia usada quando EmitOptions.lineSpacing não é informado. */
-export const ACTIVE_LINE_SPACING: LineSpacingStrategy = 'multiple';
+/**
+ * Estratégia usada quando EmitOptions.lineSpacing não é informado.
+ * 'exact' (calibração M3-F, docs/work/reports/M3-calibration.md): com spcPct o
+ * "100%" de cada renderizador é diferente (Keynote arredonda ascent/descent/
+ * lineGap para pt inteiro e não aplica o múltiplo ao lineGap nem ao topo da 1ª
+ * linha; PowerPoint usa outra base), enquanto spcPts é absoluto. O Keynote
+ * trunca spcPts para pt inteiro, então fica até 1 pt/linha mais baixo que o
+ * calculado, nunca mais alto.
+ */
+export const ACTIVE_LINE_SPACING: LineSpacingStrategy = 'exact';
 
 /**
  * Só vale para 'multiple': fator aplicado sobre style.lineHeight antes de ir
