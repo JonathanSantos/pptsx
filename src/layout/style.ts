@@ -4,7 +4,7 @@ import {
   Justify as YogaJustify,
   PositionType,
 } from 'yoga-layout';
-import { DEFAULTS, PT_PER_INCH, containerOf, type Edges } from '../core/defaults.ts';
+import { DEFAULTS, PT_PER_PX, containerOf, type Edges } from '../core/defaults.ts';
 import type {
   Align,
   ContainerProps,
@@ -68,8 +68,6 @@ const POSITION_TYPES: Readonly<Record<NonNullable<FlexItemProps['position']>, Po
 };
 
 // Imagens trazem tamanho em px CSS (96 por polegada); o natural em pt é px × 0.75.
-const CSS_PX_PER_INCH = 96;
-const PT_PER_PX = PT_PER_INCH / CSS_PX_PER_INCH;
 
 /** Remove chaves com valor `undefined` para a descrição só conter o que o autor pediu. */
 const compact = <T extends object>(value: T): T =>

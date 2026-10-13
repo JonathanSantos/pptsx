@@ -27,8 +27,9 @@ const GRID = {
   background: '#EEEEEE',
   border: '#C8C8C8',
   label: '#444444',
-  badgeRadius: 9,
-  badgeInset: 14,
+  badgeRadius: 12,
+  badgeInset: 18,
+  badgeBorder: 2.5,
 } as const;
 
 const BADGE_COLORS: Readonly<Record<NonNullable<OverviewItem['badge']>, string>> = {
@@ -80,16 +81,38 @@ const layoutCells = (items: readonly OverviewItem[], columns: number, thumbWidth
   return { cells, width: Math.max(width, GRID.margin * 2 + thumbWidth), height };
 };
 
+const BADGE_MARK = '#FFFFFF';
+
+/** "!" desenhado com formas (haste + ponto) para não depender de fonte no overview. */
+const exclamationSvg = (cx: number, cy: number): string => {
+  const r = GRID.badgeRadius;
+  const stemWidth = r * 0.28;
+  return [
+    element('rect', {
+      x: cx - stemWidth / 2,
+      y: cy - r * 0.6,
+      width: stemWidth,
+      height: r * 0.75,
+      rx: stemWidth / 2,
+      fill: BADGE_MARK,
+    }),
+    element('circle', { cx, cy: cy + r * 0.47, r: stemWidth * 0.62, fill: BADGE_MARK }),
+  ].join('');
+};
+
 const badgeSvg = (cell: Cell, thumbWidth: number): string => {
   if (cell.item.badge === undefined) return '';
-  return element('circle', {
-    cx: cell.x + thumbWidth - GRID.badgeInset,
-    cy: cell.y + GRID.badgeInset,
+  const cx = cell.x + thumbWidth - GRID.badgeInset;
+  const cy = cell.y + GRID.badgeInset;
+  const circle = element('circle', {
+    cx,
+    cy,
     r: GRID.badgeRadius,
     fill: BADGE_COLORS[cell.item.badge],
-    stroke: '#FFFFFF',
-    'stroke-width': 2,
+    stroke: BADGE_MARK,
+    'stroke-width': GRID.badgeBorder,
   });
+  return circle + exclamationSvg(cx, cy);
 };
 
 const cellSvg = (cell: Cell, thumbWidth: number, family: string | undefined): string => {

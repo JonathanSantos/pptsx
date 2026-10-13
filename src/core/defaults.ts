@@ -51,13 +51,15 @@ export const DEFAULTS = {
   textSafety: 0.97,
   maxFitIterations: 12,
   /** Tolerância (pt) na detecção de overflow, para ruído de ponto flutuante. */
-  fit: { epsilon: 0.5 },
+  fit: { epsilon: 0.5, shrinkStep: 1 },
   /** 16:9 de referência para ctx.scale */
   referenceSize: { width: 720, height: 405 },
   preview: { width: 1280, thumbWidth: 320, overviewColumns: 4 },
 } as const;
 
 export const PT_PER_INCH = 72;
+/** Imagens: 1 px CSS = 1/96 pol; é o tamanho "natural" e o limite de upscale. */
+export const PT_PER_PX = PT_PER_INCH / 96;
 
 export const textStyleOf = (props: TextProps): TextStyle => ({
   family: props.font ?? DEFAULTS.text.font,

@@ -4,6 +4,7 @@ import { resolveAssetPath } from './core/assets.ts';
 import { DEFAULTS } from './core/defaults.ts';
 import type {
   DeckDefinition,
+  Diagnostic,
   Dimensions,
   FontFace,
   LayoutEnv,
@@ -11,11 +12,12 @@ import type {
   PreviewOptions,
   RenderOptions,
   RenderResult,
+  ResolvedDeck,
   SlideSize,
 } from './core/types.ts';
 import { emitPptx } from './emit/index.ts';
 import { DEFAULT_FONTS, fontFamilyMapOf } from './fonts.ts';
-import { layoutDeck } from './layout/index.ts';
+import { fitSlide } from './fit/index.ts';
 import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
 import { resolveDeck } from './resolve/index.ts';
 import { createContext, resolveSize } from './sizes.ts';
@@ -50,7 +52,20 @@ const settingsOf = (options: RenderOptions): RenderSettings => {
   };
 };
 
-const renderPreview = (deck: PositionedDeck, settings: RenderSettings, preview: PreviewOptions) => {
+/** Selo do overview: o diagnóstico mais grave do slide (info não aparece). */
+const badgeOf = (diagnostics: readonly Diagnostic[], slideNumber: number): 'error' | 'warning' | undefined => {
+  const severities = diagnostics.filter((d) => d.slide === slideNumber).map((d) => d.severity);
+  if (severities.includes('error')) return 'error';
+  if (severities.includes('warning')) return 'warning';
+  return undefined;
+};
+
+const renderPreview = (
+  deck: PositionedDeck,
+  diagnostics: readonly Diagnostic[],
+  settings: RenderSettings,
+  preview: PreviewOptions,
+) => {
   const widthPx = preview.width ?? DEFAULTS.preview.width;
   const fontFiles = settings.fonts.map((face) => face.file);
   const svgOptions = {
@@ -61,19 +76,26 @@ const renderPreview = (deck: PositionedDeck, settings: RenderSettings, preview: 
   };
   const slides = deck.slides.map((slide) => svgToPng(slideToSvg(slide, deck.size, svgOptions), { widthPx, fontFiles }));
   const overview = buildOverview(
-    slides.map((png, index) => ({ png, number: index + 1 })),
+    slides.map((png, index) => ({ png, number: index + 1, badge: badgeOf(diagnostics, index + 1) })),
     { fontFiles },
   );
   return { slides, overview };
 };
 
+/** Layout + ajuste (loop de fit) de cada slide, já com os diagnósticos. */
+const fitDeck = (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) => {
+  const fitted = deck.slides.map((slide, slideIndex) => fitSlide({ slide, slideIndex, size, env }));
+  const positioned: PositionedDeck = { size, slides: fitted.map((result) => result.slide) };
+  return { positioned, diagnostics: fitted.flatMap((result) => result.diagnostics) };
+};
+
 const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: RenderSettings): Promise<RenderResult> => {
   const resolved = resolveDeck(deck(createContext(size)));
-  const positioned = layoutDeck(resolved, size, settings.env);
+  const { positioned, diagnostics } = fitDeck(resolved, size, settings.env);
   const buffer = await emitPptx(positioned, { debug: settings.debug, baseDir: settings.baseDir });
-  const result = { size: size.name, buffer, diagnostics: [] };
+  const result = { size: size.name, buffer, diagnostics };
   if (settings.preview === false) return result;
-  return { ...result, preview: renderPreview(positioned, settings, settings.preview) };
+  return { ...result, preview: renderPreview(positioned, diagnostics, settings, settings.preview) };
 };
 
 /** API programática: nunca grava arquivo nem imprime. */

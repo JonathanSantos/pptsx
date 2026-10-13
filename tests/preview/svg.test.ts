@@ -299,7 +299,7 @@ describe('slideToSvg — draw order', () => {
 
 describe('slideToSvg — debug', () => {
   const tree = () => [
-    pBox(rect(0, 0, 100, 100), {}, [pText(rect(5, 5, 50, 20), 'x', {}, textLayout(['x']))]),
+    pBox(rect(0, 0, 100, 100), {}, [pText(rect(5, 5, 50, 24), 'x', {}, textLayout(['x']))]),
     pImage(rect(200, 0, 50, 50), { src: 'a.png' }),
     pShape(rect(300, 0, 50, 50), { kind: 'ellipse', fill: '#abcdef' }),
   ];
@@ -315,7 +315,7 @@ describe('slideToSvg — debug', () => {
     const outlines = dashedRed(svgOf(tree(), {}, { debug: true }));
     expect(outlines.length).toBeGreaterThanOrEqual(3);
     const frames = outlines.filter((o) => o.tag === 'rect').map((o) => [num(o.attrs.x), num(o.attrs.y), num(o.attrs.width), num(o.attrs.height)]);
-    expect(frames).toEqual(expect.arrayContaining([[0, 0, 100, 100], [5, 5, 50, 20], [200, 0, 50, 50]]));
+    expect(frames).toEqual(expect.arrayContaining([[0, 0, 100, 100], [5, 5, 50, 24], [200, 0, 50, 50]]));
   });
 
   it('debug outlines are not filled', () => {

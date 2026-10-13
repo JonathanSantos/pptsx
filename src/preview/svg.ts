@@ -22,6 +22,8 @@ import { element, escapeXml, type Attrs } from './xml.ts';
 /** Contorno de debug igual ao do emit: vermelho, 0.5 pt, tracejado. */
 const DEBUG_OUTLINE = { color: '#FF0000', width: 0.5, dash: '2 1.5' } as const;
 const DEBUG_OVERFLOW = { color: '#FF0000', opacity: 0.3 } as const;
+/** Texto que estoura a caixa: contorno sólido e mais grosso para chamar atenção. */
+const DEBUG_TEXT_OVERFLOW = { color: '#FF0000', width: 1 } as const;
 
 /** roundRect sem radius no pptx usa a geometria padrão do preset (adj 16667 = 16,667% do menor lado). */
 const PPTX_DEFAULT_ROUND_RATIO = 0.16667;
@@ -130,6 +132,28 @@ export const imageSvg = (node: PositionedImage, href: string, clipId: string): s
 
 export const backgroundColorSvg = (frame: Rect, color: Color): string =>
   element('rect', { ...rectAttrs(frame), fill: color });
+
+/** Faixa do texto abaixo do frame quando a altura medida passa da caixa (mesma tolerância do fit). */
+export const textOverflowRectOf = (node: PositionedText): Rect | undefined => {
+  const { frame, text } = node;
+  if (text.height <= frame.height + DEFAULTS.fit.epsilon) return undefined;
+  return { x: frame.x, y: frame.y + frame.height, width: frame.width, height: text.height - frame.height };
+};
+
+const solidOutlineAttrs: Attrs = {
+  fill: 'none',
+  stroke: DEBUG_TEXT_OVERFLOW.color,
+  'stroke-width': DEBUG_TEXT_OVERFLOW.width,
+};
+
+/** Faixa estourada (translúcida, contorno sólido) + caixa do texto em contorno sólido. */
+export const textOverflowSvg = (frame: Rect, band: Rect): string =>
+  element('rect', {
+    ...rectAttrs(band),
+    ...solidOutlineAttrs,
+    fill: DEBUG_OVERFLOW.color,
+    'fill-opacity': DEBUG_OVERFLOW.opacity,
+  }) + element('rect', { ...rectAttrs(frame), ...solidOutlineAttrs });
 
 export const debugOutlineSvg = (frame: Rect): string =>
   element('rect', {

@@ -9,6 +9,8 @@ import {
   overflowRectsOf,
   overflowSvg,
   shapeSvg,
+  textOverflowRectOf,
+  textOverflowSvg,
   textSvg,
 } from './svg.ts';
 import { attrs } from './xml.ts';
@@ -28,13 +30,23 @@ interface DrawItem {
   readonly node: PositionedNode;
   readonly parent: Rect;
   readonly index: number;
+  /** position="absolute" (ou dentro de um): decoração intencional, pode sair do pai. */
+  readonly absolute: boolean;
 }
 
-const flatten = (nodes: readonly PositionedNode[], parent: Rect): readonly Omit<DrawItem, 'index'>[] =>
-  nodes.flatMap((node) => [{ node, parent }, ...(node.kind === 'box' ? flatten(node.children, node.frame) : [])]);
+const flatten = (
+  nodes: readonly PositionedNode[],
+  parent: Rect,
+  insideAbsolute: boolean,
+): readonly Omit<DrawItem, 'index'>[] =>
+  nodes.flatMap((node) => {
+    const absolute = insideAbsolute || node.props.position === 'absolute';
+    const children = node.kind === 'box' ? flatten(node.children, node.frame, absolute) : [];
+    return [{ node, parent, absolute }, ...children];
+  });
 
 const drawItemsOf = (slide: PositionedSlide): readonly DrawItem[] =>
-  flatten(slide.children, slide.frame).map((item, index) => ({ ...item, index }));
+  flatten(slide.children, slide.frame, false).map((item, index) => ({ ...item, index }));
 
 interface DrawContext {
   readonly fontFamilyMap?: Readonly<Record<string, string>>;
@@ -69,12 +81,19 @@ const backgroundSvg = (slide: PositionedSlide, area: Rect, ctx: DrawContext): st
   return base + imageElementSvg(area, ctx.loadImage(background.image), 'cover', BACKGROUND_CLIP_ID);
 };
 
-/** Debug fica por cima de tudo para não ser escondido por fills. */
-const debugSvg = (items: readonly DrawItem[]): string => {
-  const outlined = items.filter((item) => item.node.kind !== 'shape');
-  const overflow = items.flatMap((item) => overflowRectsOf(item.node.frame, item.parent)).map(overflowSvg);
-  return [...overflow, ...outlined.map((item) => debugOutlineSvg(item.node.frame))].join('');
+const outsideParentSvg = (item: DrawItem): string =>
+  item.absolute ? '' : overflowRectsOf(item.node.frame, item.parent).map(overflowSvg).join('');
+
+/** Texto que estoura a caixa ganha destaque sólido; os demais, o contorno tracejado padrão. */
+const outlineSvg = (node: PositionedNode): string => {
+  if (node.kind === 'shape') return '';
+  const band = node.kind === 'text' ? textOverflowRectOf(node) : undefined;
+  return band === undefined ? debugOutlineSvg(node.frame) : textOverflowSvg(node.frame, band);
 };
+
+/** Debug fica por cima de tudo para não ser escondido por fills. */
+const debugSvg = (items: readonly DrawItem[]): string =>
+  [...items.map(outsideParentSvg), ...items.map((item) => outlineSvg(item.node))].join('');
 
 export const slideToSvg = (slide: PositionedSlide, size: SlideSize, options: SvgOptions): string => {
   const ctx: DrawContext = {

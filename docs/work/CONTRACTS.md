@@ -130,12 +130,12 @@ export const detectOverflow: (slide: PositionedSlide) => readonly Overflow[];   
 ```
 
 **Detecção** (tolerância `DEFAULTS.fit.epsilon` = 0.5 pt):
-- `text`: `text.height > frame.height` (com `shrink` 1 padrão, o Yoga espreme a caixa do texto quando o pai não cabe — o estouro aparece no próprio Text). `overflowPt` = diferença; `overflowPct` = diferença / frame.height × 100 (frame.height 0 → 100).
+- `text`: `text.height > altura disponível`, onde altura disponível = frame do Text recortado pela área de conteúdo do pai (Text em fluxo). Ex.: numa row espremida pela coluna de fora, o Text fica com a própria altura medida, mas a row não — o recorte revela o estouro (com `shrink` 1 padrão, o Yoga espreme a caixa do texto quando o pai não cabe — o estouro aparece no próprio Text). `overflowPt` = diferença; `overflowPct` = diferença / frame.height × 100 (frame.height 0 → 100).
 - `box`: Box/Slide cujos filhos **em fluxo** passam da área de conteúdo (frame − padding), no eixo vertical ou horizontal. Só reportado quando a causa não é um Text já reportado (ex.: tamanhos fixos que somam mais que o pai).
 - `slide`: nó **em fluxo** com frame fora de `0..size`.
 - Nós `position="absolute"` e seus descendentes são decoração: nunca geram `box`/`slide`.
 
-**Escopo do shrink** (mantém a hierarquia tipográfica): para cada Text estourado, o escopo é o ancestral mais próximo que é **raiz de componente** (segmento do path que não é nome de primitiva, ex.: `Bullets`), excluindo o slide; sem nenhum, o filho de primeiro nível do slide que contém o texto. Todos os Text com `fit="shrink"` dentro do escopo e acima de `minSizeOf(props)` descem 1 pt juntos.
+**Escopo do shrink** (mantém a hierarquia tipográfica): para cada Text estourado, o escopo é o ancestral mais próximo que é **raiz de componente** (segmento do path que não é nome de primitiva, ex.: `Bullets`), excluindo o slide; sem nenhum, o filho de primeiro nível do slide que contém o texto. Todos os Text com `fit="shrink"` dentro do escopo e acima de `minSizeOf(props)` descem `DEFAULTS.fit.shrinkStep` (1 pt) juntos. Só um Text `shrink` estourado dispara o passo; `truncate`/`error` não fazem vizinhos encolherem. `fromSize`/`minSize` vêm sempre das props originais do autor.
 
 **Loop:** layout → detectar → um passo de shrink por escopo estourado → repetir até não haver estouro, nenhum texto poder encolher, ou `DEFAULTS.maxFitIterations` (12). Depois: textos `fit="truncate"` estourados recebem `maxLines = max(1, floor(frame.height / text.lineHeight))` e há um relayout final.
 

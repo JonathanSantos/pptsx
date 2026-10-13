@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import type { DeckDefinition, RenderResult } from './core/types.ts';
+import type { DeckDefinition, Diagnostic, RenderResult, Severity } from './core/types.ts';
 import { render } from './render.ts';
 import { parseSizeList } from './sizes.ts';
 
@@ -73,6 +73,18 @@ const writeDiagnostics = (outDir: string, deckName: string, results: readonly Re
   return file;
 };
 
+const SEVERITY_ICON: Readonly<Record<Severity, string>> = { error: '✖', warning: '▲', info: '•' };
+
+const formatDiagnostic = (d: Diagnostic): string =>
+  `  ${SEVERITY_ICON[d.severity]} [${d.size} · slide ${d.slide}] ${d.code} em ${d.path}\n    ${d.message}`;
+
+const summaryOf = (diagnostics: readonly Diagnostic[]): string => {
+  if (diagnostics.length === 0) return 'Nenhum diagnóstico.';
+  const count = (severity: Severity) => diagnostics.filter((d) => d.severity === severity).length;
+  const header = `Diagnósticos: ${count('error')} error, ${count('warning')} warning, ${count('info')} info`;
+  return [header, ...diagnostics.map(formatDiagnostic)].join('\n');
+};
+
 const main = async (): Promise<void> => {
   const args = parseCli(process.argv.slice(2));
   const deck = await loadDeck(args.deckPath);
@@ -86,6 +98,10 @@ const main = async (): Promise<void> => {
   const deckName = basename(args.deckPath, extname(args.deckPath));
   const written = [...results.flatMap((result) => writeResult(args.outDir, deckName, result)), writeDiagnostics(args.outDir, deckName, results)];
   written.forEach((file) => console.log(file));
+  const diagnostics = results.flatMap((result) => result.diagnostics);
+  console.log(`\n${summaryOf(diagnostics)}`);
+  // Código de saída 1 com qualquer error: agentes e CI dependem disso.
+  if (diagnostics.some((d) => d.severity === 'error')) process.exitCode = 1;
 };
 
 main().catch((error: unknown) => {
