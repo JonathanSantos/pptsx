@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { layoutDeck, layoutSlide } from '../../src/layout/index.ts';
-import type { PositionedNode, PositionedSlide } from '../../src/core/types.ts';
 import { textStyleOf } from '../../src/core/defaults.ts';
 import {
   FAKE_IMAGE,
@@ -16,20 +15,9 @@ import {
   rText,
   rect,
 } from '../helpers/nodes.ts';
+import { child, expectFrame } from '../helpers/positioned.ts';
 
 const abs = { position: 'absolute' } as const;
-
-const child = (slide: PositionedSlide, ...indices: number[]): PositionedNode => {
-  let node: { children?: readonly PositionedNode[] } = slide;
-  let found: PositionedNode | undefined;
-  for (const i of indices) {
-    found = node.children?.[i];
-    if (!found) throw new Error(`no child at ${indices.join('.')}`);
-    node = found as { children?: readonly PositionedNode[] };
-  }
-  if (!found) throw new Error('no indices');
-  return found;
-};
 
 const layout = (children: Parameters<typeof rSlide>[0], size = SIZE_16X9) => {
   const fake = createFakeEnv();
@@ -39,11 +27,11 @@ const layout = (children: Parameters<typeof rSlide>[0], size = SIZE_16X9) => {
 
 describe('layoutSlide — slide', () => {
   it('gives the slide a frame equal to the slide size', () => {
-    expect(layout([]).slide.frame).toEqual(rect(0, 0, 720, 405));
+    expectFrame(layout([]).slide.frame, rect(0, 0, 720, 405));
   });
 
   it('uses the given size (4x3)', () => {
-    expect(layout([], SIZE_4X3).slide.frame).toEqual(rect(0, 0, 720, 540));
+    expectFrame(layout([], SIZE_4X3).slide.frame, rect(0, 0, 720, 540));
   });
 
   it('keeps kind, path and props of the slide', () => {
@@ -67,37 +55,37 @@ describe('layoutSlide — slide', () => {
 describe('layoutSlide — absolute positioning', () => {
   it('places a node with left/top/width/height in pt', () => {
     const { slide } = layout([rBox({ ...abs, left: 10, top: 20, width: 100, height: 50 })]);
-    expect(child(slide, 0).frame).toEqual(rect(10, 20, 100, 50));
+    expectFrame(child(slide, 0).frame, rect(10, 20, 100, 50));
   });
 
   it('places a node with right/bottom relative to the slide edges', () => {
     const { slide } = layout([rBox({ ...abs, right: 10, bottom: 20, width: 100, height: 50 })]);
-    expect(child(slide, 0).frame).toEqual(rect(610, 335, 100, 50));
+    expectFrame(child(slide, 0).frame, rect(610, 335, 100, 50));
   });
 
   it('derives width/height from left+right and top+bottom', () => {
     const { slide } = layout([rBox({ ...abs, left: 10, right: 20, top: 5, bottom: 15 })]);
-    expect(child(slide, 0).frame).toEqual(rect(10, 5, 690, 385));
+    expectFrame(child(slide, 0).frame, rect(10, 5, 690, 385));
   });
 
   it('resolves percentages against the slide', () => {
     const { slide } = layout([rBox({ ...abs, left: '10%', top: '20%', width: '50%', height: '20%' })]);
-    expect(child(slide, 0).frame).toEqual(rect(72, 81, 360, 81));
+    expectFrame(child(slide, 0).frame, rect(72, 81, 360, 81));
   });
 
   it('accepts negative offsets', () => {
     const { slide } = layout([rBox({ ...abs, left: -10, top: -20, width: 100, height: 50 })]);
-    expect(child(slide, 0).frame).toEqual(rect(-10, -20, 100, 50));
+    expectFrame(child(slide, 0).frame, rect(-10, -20, 100, 50));
   });
 
   it('accepts negative right/bottom (overflowing the slide)', () => {
     const { slide } = layout([rBox({ ...abs, right: -10, bottom: -5, width: 100, height: 50 })]);
-    expect(child(slide, 0).frame).toEqual(rect(630, 360, 100, 50));
+    expectFrame(child(slide, 0).frame, rect(630, 360, 100, 50));
   });
 
   it('positions shapes', () => {
     const { slide } = layout([rShape({ ...abs, kind: 'ellipse', left: 1, top: 2, width: 3, height: 4 })]);
-    expect(child(slide, 0).frame).toEqual(rect(1, 2, 3, 4));
+    expectFrame(child(slide, 0).frame, rect(1, 2, 3, 4));
   });
 });
 
@@ -108,8 +96,8 @@ describe('layoutSlide — nesting', () => {
         rBox({ ...abs, left: 10, top: 20, width: 30, height: 40 }),
       ]),
     ]);
-    expect(child(slide, 0).frame).toEqual(rect(100, 50, 200, 100));
-    expect(child(slide, 0, 0).frame).toEqual(rect(110, 70, 30, 40));
+    expectFrame(child(slide, 0).frame, rect(100, 50, 200, 100));
+    expectFrame(child(slide, 0, 0).frame, rect(110, 70, 30, 40));
   });
 
   it('adds offsets across three levels', () => {
@@ -120,7 +108,7 @@ describe('layoutSlide — nesting', () => {
         ]),
       ]),
     ]);
-    expect(child(slide, 0, 0, 0).frame).toEqual(rect(111, 112, 5, 5));
+    expectFrame(child(slide, 0, 0, 0).frame, rect(111, 112, 5, 5));
   });
 
   it('resolves percentages against the parent box', () => {
@@ -129,7 +117,7 @@ describe('layoutSlide — nesting', () => {
         rBox({ ...abs, left: '10%', top: 10, width: '50%', height: '50%' }),
       ]),
     ]);
-    expect(child(slide, 0, 0).frame).toEqual(rect(120, 60, 100, 50));
+    expectFrame(child(slide, 0, 0).frame, rect(120, 60, 100, 50));
   });
 
   it('resolves right/bottom against the parent box', () => {
@@ -138,7 +126,7 @@ describe('layoutSlide — nesting', () => {
         rBox({ ...abs, right: 10, bottom: 10, width: 50, height: 20 }),
       ]),
     ]);
-    expect(child(slide, 0, 0).frame).toEqual(rect(240, 120, 50, 20));
+    expectFrame(child(slide, 0, 0).frame, rect(240, 120, 50, 20));
   });
 
   it('places nested children with negative offsets outside the parent', () => {
@@ -147,14 +135,14 @@ describe('layoutSlide — nesting', () => {
         rBox({ ...abs, left: -20, top: -10, width: 10, height: 10 }),
       ]),
     ]);
-    expect(child(slide, 0, 0).frame).toEqual(rect(80, 40, 10, 10));
+    expectFrame(child(slide, 0, 0).frame, rect(80, 40, 10, 10));
   });
 });
 
 describe('layoutSlide — text', () => {
   it('uses measureText height when the text has no height', () => {
     const { slide } = layout([rText('one\ntwo', { ...abs, left: 10, top: 10, width: 200 })]);
-    expect(child(slide, 0).frame).toEqual(rect(10, 10, 200, 2 * FAKE_LINE_HEIGHT));
+    expectFrame(child(slide, 0).frame, rect(10, 10, 200, 2 * FAKE_LINE_HEIGHT));
   });
 
   it('measures with the style derived from props and the frame width', () => {
@@ -172,7 +160,7 @@ describe('layoutSlide — text', () => {
 
   it('keeps an explicit height', () => {
     const { slide } = layout([rText('one\ntwo', { ...abs, left: 0, top: 0, width: 200, height: 100 })]);
-    expect(child(slide, 0).frame).toEqual(rect(0, 0, 200, 100));
+    expectFrame(child(slide, 0).frame, rect(0, 0, 200, 100));
   });
 
   it('stores the TextLayout from the measurer on the positioned text', () => {
@@ -190,7 +178,7 @@ describe('layoutSlide — text', () => {
     const { slide } = layout([
       rBox({ ...abs, left: 50, top: 60, width: 300, height: 200 }, [rText('x', { ...abs, left: 5, top: 5, width: 100 })]),
     ]);
-    expect(child(slide, 0, 0).frame).toEqual(rect(55, 65, 100, FAKE_LINE_HEIGHT));
+    expectFrame(child(slide, 0, 0).frame, rect(55, 65, 100, FAKE_LINE_HEIGHT));
   });
 });
 
@@ -204,22 +192,58 @@ describe('layoutSlide — images', () => {
 
   it('keeps both dimensions when given', () => {
     const { slide } = layout([rImage({ ...abs, src: 'pic.png', left: 1, top: 2, width: 100, height: 100 })]);
-    expect(child(slide, 0).frame).toEqual(rect(1, 2, 100, 100));
+    expectFrame(child(slide, 0).frame, rect(1, 2, 100, 100));
   });
 
   it('derives height from width using the aspect ratio', () => {
     const { slide } = layout([rImage({ ...abs, src: 'pic.png', left: 0, top: 0, width: 200 })]);
-    expect(child(slide, 0).frame).toEqual(rect(0, 0, 200, 100));
+    expectFrame(child(slide, 0).frame, rect(0, 0, 200, 100));
   });
 
   it('derives width from height using the aspect ratio', () => {
     const { slide } = layout([rImage({ ...abs, src: 'pic.png', left: 0, top: 0, height: 50 })]);
-    expect(child(slide, 0).frame).toEqual(rect(0, 0, 100, 50));
+    expectFrame(child(slide, 0).frame, rect(0, 0, 100, 50));
   });
 
   it('uses the natural size in pt (px × 0.75) without dimensions', () => {
     const { slide } = layout([rImage({ ...abs, src: 'pic.png', left: 10, top: 20 })]);
-    expect(child(slide, 0).frame).toEqual(rect(10, 20, 300, 150));
+    expectFrame(child(slide, 0).frame, rect(10, 20, 300, 150));
+  });
+});
+
+describe('layoutSlide — absolute nodes vs. the flex flow (M2, Yoga semantics)', () => {
+  it('shrinks an absolute box without size to its content (empty → 0×0)', () => {
+    const { slide } = layout([rBox({ ...abs, left: 10, top: 20 })]);
+    expectFrame(child(slide, 0).frame, rect(10, 20, 0, 0));
+  });
+
+  it('shrinks an absolute box without size around its sized children', () => {
+    const { slide } = layout([rBox({ ...abs, left: 10, top: 20 }, [rBox({ width: 50, height: 30 })])]);
+    expectFrame(child(slide, 0).frame, rect(10, 20, 50, 30));
+  });
+
+  it('takes absolute nodes out of the flow: in-flow siblings ignore them', () => {
+    const { slide } = layout([
+      rBox({ ...abs, left: 0, top: 0, width: 720, height: 405 }),
+      rBox({ height: 50 }),
+      rBox({ height: 60 }),
+    ]);
+    expectFrame(child(slide, 1).frame, rect(0, 0, 720, 50));
+    expectFrame(child(slide, 2).frame, rect(0, 50, 720, 60));
+  });
+
+  it('does not move an absolute node because of preceding in-flow siblings', () => {
+    const { slide } = layout([rBox({ height: 100 }), rBox({ ...abs, left: 5, top: 5, width: 10, height: 10 })]);
+    expectFrame(child(slide, 1).frame, rect(5, 5, 10, 10));
+  });
+
+  it('places an absolute node inside an in-flow box relative to that box', () => {
+    const { slide } = layout([
+      rBox({ height: 100 }),
+      rBox({ height: 200 }, [rBox({ ...abs, left: 10, top: 10, width: 20, height: 20 })]),
+    ]);
+    expectFrame(child(slide, 1).frame, rect(0, 100, 720, 200));
+    expectFrame(child(slide, 1, 0).frame, rect(10, 110, 20, 20));
   });
 });
 
@@ -234,7 +258,7 @@ describe('layoutDeck', () => {
     expect(deck.size).toEqual(SIZE_4X3);
     expect(deck.slides).toHaveLength(2);
     expect(deck.slides.map((s) => s.frame)).toEqual([rect(0, 0, 720, 540), rect(0, 0, 720, 540)]);
-    expect(deck.slides[0]?.children[0]?.frame).toEqual(rect(1, 1, 1, 1));
+    expectFrame(deck.slides[0]!.children[0]!.frame, rect(1, 1, 1, 1));
   });
 
   it('does not mutate the resolved input', () => {

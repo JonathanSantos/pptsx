@@ -1,0 +1,191 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`layout — composed JSX slide > matches the positioned-tree snapshot 1`] = `
+{
+  "children": [
+    {
+      "frame": [
+        0,
+        0,
+        720,
+        8,
+      ],
+      "kind": "shape",
+      "path": "Slide > Shape",
+    },
+    {
+      "frame": [
+        36,
+        36,
+        648,
+        20,
+      ],
+      "kind": "text",
+      "lines": [
+        "Quarterly review",
+      ],
+      "path": "Slide > Title",
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "frame": [
+                46,
+                82,
+                182.667,
+                20,
+              ],
+              "kind": "text",
+              "lines": [
+                "Revenue",
+              ],
+              "path": "Slide > Box[0] > Card[0] > Text",
+            },
+            {
+              "frame": [
+                46,
+                107,
+                40,
+                4,
+              ],
+              "kind": "shape",
+              "path": "Slide > Box[0] > Card[0] > Shape",
+            },
+          ],
+          "frame": [
+            36,
+            72,
+            202.667,
+            251,
+          ],
+          "kind": "box",
+          "path": "Slide > Box[0] > Card[0]",
+        },
+        {
+          "children": [
+            {
+              "frame": [
+                268.667,
+                82,
+                182.667,
+                20,
+              ],
+              "kind": "text",
+              "lines": [
+                "Costs",
+              ],
+              "path": "Slide > Box[0] > Card[1] > Text",
+            },
+            {
+              "frame": [
+                268.667,
+                107,
+                40,
+                4,
+              ],
+              "kind": "shape",
+              "path": "Slide > Box[0] > Card[1] > Shape",
+            },
+          ],
+          "frame": [
+            258.667,
+            72,
+            202.667,
+            251,
+          ],
+          "kind": "box",
+          "path": "Slide > Box[0] > Card[1]",
+        },
+        {
+          "children": [
+            {
+              "frame": [
+                491.333,
+                82,
+                182.667,
+                20,
+              ],
+              "kind": "text",
+              "lines": [
+                "Margin",
+              ],
+              "path": "Slide > Box[0] > Card[2] > Text",
+            },
+            {
+              "frame": [
+                491.333,
+                107,
+                40,
+                4,
+              ],
+              "kind": "shape",
+              "path": "Slide > Box[0] > Card[2] > Shape",
+            },
+          ],
+          "frame": [
+            481.333,
+            72,
+            202.667,
+            251,
+          ],
+          "kind": "box",
+          "path": "Slide > Box[0] > Card[2]",
+        },
+      ],
+      "frame": [
+        36,
+        72,
+        648,
+        251,
+      ],
+      "kind": "box",
+      "path": "Slide > Box[0]",
+    },
+    {
+      "children": [
+        {
+          "frame": [
+            36,
+            339,
+            60,
+            30,
+          ],
+          "kind": "image",
+          "path": "Slide > Box[1] > Image",
+        },
+        {
+          "frame": [
+            584,
+            344,
+            100,
+            20,
+          ],
+          "kind": "text",
+          "lines": [
+            "Page 1",
+          ],
+          "path": "Slide > Box[1] > Text",
+        },
+      ],
+      "frame": [
+        36,
+        339,
+        648,
+        30,
+      ],
+      "kind": "box",
+      "path": "Slide > Box[1]",
+    },
+  ],
+  "frame": [
+    0,
+    0,
+    720,
+    405,
+  ],
+  "kind": "slide",
+  "path": "Slide",
+}
+`;

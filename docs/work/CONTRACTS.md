@@ -102,7 +102,7 @@ export const layoutDeck: (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) =
 - `frame` de todo nó é **absoluto no slide** (não relativo ao pai).
 - Mapeamento Yoga (M2): `direction`→flexDirection, `gap`→gap, `padding`→padding, `align`→alignItems, `justify`→justifyContent (`between`→SpaceBetween…), `grow/shrink`, `width/height/min/max` (número = pt, `"%"` = percent), `alignSelf`, `position`+`top/right/bottom/left`.
 - Texto: nó Yoga com measure function chamando `env.measureText({ content, style: textStyleOf(props), maxWidth, maxLines })`. Largura `Undefined`/`AtMost` → `Infinity`/valor. O `TextLayout` final é recalculado com a **largura final do frame** e guardado em `PositionedText.text`.
-- Imagem: `intrinsic = env.imageSize(src)`. Se só uma dimensão foi dada, usa `aspectRatio`. Se nenhuma dimensão nem grow, tamanho natural em pt (`px × 0.75`).
+- Imagem: `intrinsic = env.imageSize(src)`. Se só uma dimensão foi dada, usa `aspectRatio`. Com `grow` (e sem dimensões), o flex define a caixa inteira e o `fit` (contain/cover) cuida da proporção. Sem dimensão nem grow, tamanho natural em pt (`px × 0.75`).
 - Shape `line`: desenhada da quina superior esquerda à inferior direita do frame.
 - Yoga é liberado (`freeRecursive`) antes de retornar; nada de estado vazando.
 - **M1** (provisório, substituído no M2): só `position="absolute"`.
@@ -110,7 +110,10 @@ export const layoutDeck: (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) =
   - Um `Config` próprio por chamada com `setPointScaleFactor(0)` (sem arredondar para pixel: a unidade é pt e queremos frações exatas) e `setUseWebDefaults(false)`.
   - Text e Image são folhas; Text com measure function. Text em fluxo usa a altura medida (não estica no eixo cruzado além do que o `align` mandar).
   - Absoluto segue a semântica do Yoga/CSS (sem tamanho → encolhe ao conteúdo; `left`+`right` → largura derivada).
-  - `Shape` sem tamanho e sem grow tem 0×0 (o autor sempre dimensiona shapes).
+  - `shrink` padrão = `DEFAULTS.item.shrink` (1, como no CSS).
+  - `grow > 0` sem `width`/`height` no eixo principal ⇒ `flexBasis = DEFAULTS.item.growBasis` (0): `grow={n}` equivale a `flex: n` do CSS, e irmãos com o mesmo grow ficam iguais. Com tamanho explícito no eixo principal, o tamanho vira a base.
+  - `Shape` sem tamanho segue o Yoga: 0 no eixo principal, estica no cruzado se `align=stretch`.
+  - `padding` só em pt (sem %).
   - Box com `fill`/`stroke` não muda nada no layout.
   - O frame do Text é o resultado do Yoga; `PositionedText.text` é medido de novo com `frame.width` para as linhas finais.
 
@@ -157,7 +160,7 @@ export interface SvgOptions {
 }
 export const slideToSvg: (slide: PositionedSlide, size: SlideSize, options: SvgOptions) => string;  // pura exceto leitura de imagem (injetável)
 export const svgToPng: (svg: string, options: { widthPx: number; fontFiles: readonly string[] }) => Buffer;
-export const buildOverview: (slides: readonly OverviewItem[], options?: { columns?: number; thumbWidth?: number }) => Buffer;
+export const buildOverview: (slides: readonly OverviewItem[], options?: { columns?: number; thumbWidth?: number; fontFiles?: readonly string[] }) => Buffer;
 export interface OverviewItem { png: Buffer; number: number; badge?: 'error' | 'warning' }
 ```
 - SVG em coordenadas pt com `viewBox="0 0 W H"` e `width=widthPx`.

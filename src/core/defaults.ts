@@ -38,6 +38,11 @@ export const DEFAULTS = {
     align: 'stretch' as Align,
     justify: 'start' as Justify,
   },
+  /**
+   * Item flex: shrink 1 como no CSS (texto numa row quebra em vez de vazar) e
+   * grow > 0 implica basis 0 (grow={1} = flex: 1, colunas iguais).
+   */
+  item: { shrink: 1, growBasis: 0 },
   strokeWidth: 1,
   /** Shape 'line' sem stroke seria invisível; recebe esta cor. */
   lineStroke: '#000000',
