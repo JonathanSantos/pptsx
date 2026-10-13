@@ -72,3 +72,15 @@ export const truncateLines = (
 /** Largura da linha mais longa, sem espaço final. */
 export const widestLine = (lines: readonly string[], measureWidth: MeasureWidth): Pt =>
   lines.reduce((widest, line) => Math.max(widest, measureWidth(line.trimEnd())), 0);
+
+/** Quebra o conteúdo em `maxWidth` e, se houver `maxLines`, corta com reticências. */
+export const layoutLines = (
+  content: string,
+  maxWidth: Pt,
+  maxLines: number | undefined,
+  measureWidth: MeasureWidth,
+): TruncatedLines => {
+  const lines = wrapText(content, maxWidth, measureWidth);
+  if (maxLines === undefined) return { lines, truncated: false };
+  return truncateLines(lines, maxLines, maxWidth, measureWidth);
+};

@@ -19,7 +19,7 @@ import { layoutDeck } from './layout/index.ts';
 import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
 import { resolveDeck } from './resolve/index.ts';
 import { createContext, resolveSize } from './sizes.ts';
-import { createEstimateMeasurer } from './text/index.ts';
+import { createFontkitMeasurer, createFontRegistry } from './text/index.ts';
 
 /** Tudo que é derivado das opções uma única vez e vale para todos os tamanhos. */
 interface RenderSettings {
@@ -39,12 +39,14 @@ const readImageSize =
 
 const settingsOf = (options: RenderOptions): RenderSettings => {
   const baseDir = options.baseDir ?? process.cwd();
+  const fonts = options.fonts ?? DEFAULT_FONTS;
+  const measureText = createFontkitMeasurer(createFontRegistry(fonts), { safety: options.textSafety ?? DEFAULTS.textSafety });
   return {
     baseDir,
     debug: options.debug ?? false,
-    fonts: options.fonts ?? DEFAULT_FONTS,
+    fonts,
     preview: options.preview ?? { mode: 'native', width: DEFAULTS.preview.width },
-    env: { measureText: createEstimateMeasurer(), imageSize: readImageSize(baseDir) },
+    env: { measureText, imageSize: readImageSize(baseDir) },
   };
 };
 

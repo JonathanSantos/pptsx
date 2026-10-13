@@ -1,17 +1,20 @@
 import { PptxGenJS, type Presentation } from './pptx.ts';
 import type { PositionedDeck, PositionedSlide } from '../core/types.ts';
 import { ptToInches } from '../sizes.ts';
+import type { LineSpacingStrategy } from './calibration.ts';
 import { emitDebugOutlines, emitNode, type EmitContext } from './emitters.ts';
 import { backgroundOf } from './options.ts';
 
 export interface EmitOptions {
   readonly debug?: boolean;
   readonly baseDir: string;
+  /** Sobrescreve ACTIVE_LINE_SPACING (ex.: o script de calibração gera as duas variantes). */
+  readonly lineSpacing?: LineSpacingStrategy;
 }
 
 const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOptions): void => {
   const target = pptx.addSlide();
-  const ctx: EmitContext = { baseDir: options.baseDir };
+  const ctx: EmitContext = { baseDir: options.baseDir, lineSpacing: options.lineSpacing };
   const background = backgroundOf(slide, options.baseDir);
   if (background) target.background = background;
   slide.children.forEach((node) => emitNode(target, node, ctx));
@@ -19,6 +22,8 @@ const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOpti
   if (options.debug) emitDebugOutlines(target, slide.children);
   if (slide.props.notes) target.addNotes(slide.props.notes);
 };
+
+export { ACTIVE_LINE_SPACING, LINE_SPACING_CALIBRATION, type LineSpacingStrategy } from './calibration.ts';
 
 export const emitPptx = async (deck: PositionedDeck, options: EmitOptions): Promise<Buffer> => {
   const pptx = new PptxGenJS();

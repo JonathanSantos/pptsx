@@ -1,9 +1,11 @@
 import type * as Pptx from './pptx.ts';
 import type { PositionedNode, Rect } from '../core/types.ts';
+import type { LineSpacingStrategy } from './calibration.ts';
 import { boxShapeOf, debugOutlineOf, imageOf, shapeOf, textOf, type ShapeSpec } from './options.ts';
 
 export interface EmitContext {
   readonly baseDir: string;
+  readonly lineSpacing?: LineSpacingStrategy;
 }
 
 type NodeKind = PositionedNode['kind'];
@@ -21,8 +23,8 @@ const emitters: { readonly [K in NodeKind]: NodeEmitter<K> } = {
     if (spec) addShape(slide, spec);
     node.children.forEach((child) => emitNode(slide, child, ctx));
   },
-  text: (slide, node) => {
-    const { runs, options } = textOf(node);
+  text: (slide, node, ctx) => {
+    const { runs, options } = textOf(node, ctx.lineSpacing);
     slide.addText(runs, options);
   },
   image: (slide, node, ctx) => {

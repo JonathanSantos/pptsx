@@ -14,7 +14,7 @@ import type {
   StrokeProps,
 } from '../core/types.ts';
 import { ptToInches } from '../sizes.ts';
-import { lineSpacingMultipleOf } from './calibration.ts';
+import { ACTIVE_LINE_SPACING, lineSpacingOf, type LineSpacingStrategy } from './calibration.ts';
 
 /**
  * Funções puras: nó posicionado → opções do pptxgenjs. Nenhuma toca a
@@ -117,7 +117,7 @@ export const paragraphRunsOf = (paragraphs: readonly string[]): Pptx.TextProps[]
 export const paragraphsOf = (node: PositionedText): readonly string[] =>
   node.text.truncated ? node.text.lines : node.content.split('\n');
 
-export const textOf = (node: PositionedText): TextSpec => {
+export const textOf = (node: PositionedText, lineSpacing: LineSpacingStrategy = ACTIVE_LINE_SPACING): TextSpec => {
   const style = textStyleOf(node.props);
   return {
     runs: paragraphRunsOf(paragraphsOf(node)),
@@ -125,11 +125,15 @@ export const textOf = (node: PositionedText): TextSpec => {
       ...positionOf(node.frame),
       margin: 0,
       valign: 'top',
+      // fit 'none' e paraSpace 0 não geram XML (o pptxgenjs descarta falsy e
+      // trata 'none' como ausência). Fica correto mesmo assim: shape sem
+      // placeholder herda otherStyle/defaultTextStyle, que não têm spcBef/
+      // spcAft nem autofit, e o padrão OOXML é espaço 0 e sem autofit.
       fit: 'none',
       wrap: true,
       paraSpaceBefore: 0,
       paraSpaceAfter: 0,
-      lineSpacingMultiple: lineSpacingMultipleOf(style.lineHeight),
+      ...lineSpacingOf(node, lineSpacing),
       fontFace: style.family,
       fontSize: node.text.fontSize,
       bold: style.weight === 'bold',
