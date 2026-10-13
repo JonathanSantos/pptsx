@@ -11,11 +11,13 @@ export interface EmitOptions {
   readonly baseDir: string;
   /** Sobrescreve ACTIVE_LINE_SPACING (ex.: o script de calibração gera as duas variantes). */
   readonly lineSpacing?: LineSpacingStrategy;
+  /** Idioma dos textos; padrão DEFAULTS.lang. */
+  readonly lang?: string;
 }
 
 const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOptions): void => {
   const target = pptx.addSlide();
-  const ctx: EmitContext = { baseDir: options.baseDir, lineSpacing: options.lineSpacing };
+  const ctx: EmitContext = { baseDir: options.baseDir, lineSpacing: options.lineSpacing, lang: options.lang };
   const background = backgroundOf(slide, options.baseDir);
   if (background) target.background = background;
   slide.children.forEach((node) => emitNode(target, node, ctx));

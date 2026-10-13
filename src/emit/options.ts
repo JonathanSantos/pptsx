@@ -126,7 +126,11 @@ export const paragraphRunsOf = (paragraphs: readonly (readonly string[])[]): Ppt
     return texts.map((text, lineIndex) => lineRunOf(text, lineIndex > 0, closesParagraph && lineIndex === texts.length - 1));
   });
 
-export const textOf = (node: PositionedText, lineSpacing: LineSpacingStrategy = ACTIVE_LINE_SPACING): TextSpec => {
+export const textOf = (
+  node: PositionedText,
+  lineSpacing: LineSpacingStrategy = ACTIVE_LINE_SPACING,
+  lang: string = DEFAULTS.lang,
+): TextSpec => {
   const style = textStyleOf(node.props);
   return {
     runs: paragraphRunsOf(node.text.paragraphs),
@@ -149,6 +153,7 @@ export const textOf = (node: PositionedText, lineSpacing: LineSpacingStrategy = 
       italic: style.italic,
       color: hexOf(node.props.color ?? DEFAULTS.text.color),
       align: node.props.align ?? DEFAULTS.text.align,
+      lang,
     },
   };
 };

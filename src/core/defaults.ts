@@ -47,6 +47,7 @@ export const DEFAULTS = {
   /** Shape 'line' sem stroke seria invisível; recebe esta cor. */
   lineStroke: '#000000',
   imageFit: 'contain' as ImageFit,
+  lang: 'pt-BR',
   /** Largura de quebra = disponível * textSafety; a caixa sai com a largura cheia. */
   textSafety: 0.97,
   maxFitIterations: 12,

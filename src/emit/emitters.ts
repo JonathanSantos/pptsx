@@ -6,6 +6,7 @@ import { boxShapeOf, debugOutlineOf, imageOf, shapeOf, textOf, type ShapeSpec } 
 export interface EmitContext {
   readonly baseDir: string;
   readonly lineSpacing?: LineSpacingStrategy;
+  readonly lang?: string;
 }
 
 type NodeKind = PositionedNode['kind'];
@@ -24,7 +25,7 @@ const emitters: { readonly [K in NodeKind]: NodeEmitter<K> } = {
     node.children.forEach((child) => emitNode(slide, child, ctx));
   },
   text: (slide, node, ctx) => {
-    const { runs, options } = textOf(node, ctx.lineSpacing);
+    const { runs, options } = textOf(node, ctx.lineSpacing, ctx.lang);
     slide.addText(runs, options);
   },
   image: (slide, node, ctx) => {

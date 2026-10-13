@@ -30,13 +30,19 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M4 | M4-C | testes M4 (531 testes) | ✅ |
 | M4 | M4-D | integração + overflow.tsx + resumo/exit code na CLI | ✅ |
 | M4 | M4-E | validação visual (Keynote: nenhum corte silencioso) | ✅ |
-| M5 | M5-A..F | CLI, demo, guia de agente, teste de agente | ⬜ |
+| M5 | M5-0 | lang (pt-BR) + contrato de CLI e componentes | ✅ |
+| M5 | M5-A | CLI completa + config | 🔄 |
+| M5 | M5-B | tokens, layouts, componentes, demo.tsx | 🔄 |
+| M5 | M5-C | AGENT_GUIDE.md | 🔄 |
+| M5 | M5-D | testes M5 | 🔄 |
+| M5 | M5-E | validação visual 16x9 + 4x3 | ⬜ |
+| M5 | M5-F | teste do agente virgem | ⬜ |
 
 ## Backlog / observações
 
 | Origem | Item | Destino |
 |---|---|---|
-| M1-F | Texto sai com `lang="en-US"`; expor idioma (padrão pt-BR) | M5 (opção de render) |
+| M1-F | Texto sai com `lang="en-US"`; expor idioma (padrão pt-BR) | ✅ `RenderOptions.lang` |
 | M1-F | `chart.png` tem fundo igual ao da caixa; criar asset de teste com fundo contrastante | M2-D |
 | M1-B | Layout provisório ignora altura medida de Text em fluxo | M2-A (Yoga substitui) |
 | M1-C | `Shape kind="line"` sem `stroke` fica invisível; definir cor padrão? | decidir no M2 |

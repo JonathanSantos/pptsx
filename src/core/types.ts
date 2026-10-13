@@ -392,6 +392,8 @@ export interface RenderOptions {
   readonly debug?: boolean;
   /** Base para resolver src relativos de imagens; padrão process.cwd(). */
   readonly baseDir?: string;
+  /** Idioma do texto (corretor ortográfico do PowerPoint); padrão 'pt-BR'. */
+  readonly lang?: string;
   /** Fator de segurança da quebra de linha; padrão 0.97. */
   readonly textSafety?: number;
 }

@@ -27,6 +27,7 @@ import { createFontkitMeasurer, createFontRegistry } from './text/index.ts';
 interface RenderSettings {
   readonly baseDir: string;
   readonly debug: boolean;
+  readonly lang: string;
   readonly fonts: readonly FontFace[];
   readonly preview: PreviewOptions | false;
   readonly env: LayoutEnv;
@@ -46,6 +47,7 @@ const settingsOf = (options: RenderOptions): RenderSettings => {
   return {
     baseDir,
     debug: options.debug ?? false,
+    lang: options.lang ?? DEFAULTS.lang,
     fonts,
     preview: options.preview ?? { mode: 'native', width: DEFAULTS.preview.width },
     env: { measureText, imageSize: readImageSize(baseDir) },
@@ -92,7 +94,7 @@ const fitDeck = (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) => {
 const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: RenderSettings): Promise<RenderResult> => {
   const resolved = resolveDeck(deck(createContext(size)));
   const { positioned, diagnostics } = fitDeck(resolved, size, settings.env);
-  const buffer = await emitPptx(positioned, { debug: settings.debug, baseDir: settings.baseDir });
+  const buffer = await emitPptx(positioned, { debug: settings.debug, baseDir: settings.baseDir, lang: settings.lang });
   const result = { size: size.name, buffer, diagnostics };
   if (settings.preview === false) return result;
   return { ...result, preview: renderPreview(positioned, diagnostics, settings, settings.preview) };
