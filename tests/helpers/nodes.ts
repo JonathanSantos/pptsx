@@ -64,16 +64,26 @@ export const rDeck = (...slides: ResolvedSlide[]): ResolvedDeck => ({ slides });
 export const FAKE_LINE_HEIGHT = 20;
 export const FAKE_IMAGE: Dimensions = { width: 400, height: 200 };
 
-export const fakeTextLayout = (content: string, fontSize = 18): TextLayout => {
-  const lines = content.split('\n');
+/** Layout falso: cada '\n' separa um parágrafo de uma linha só. */
+export const fakeTextLayout = (content: string, fontSize = 18): TextLayout =>
+  fakeParagraphLayout(content.split('\n').map((line) => [line]), fontSize);
+
+/** Layout falso a partir de parágrafos explícitos (várias linhas por parágrafo). lines = paragraphs.flat(). */
+export const fakeParagraphLayout = (
+  paragraphs: readonly (readonly string[])[],
+  fontSize = 18,
+  truncated = false,
+): TextLayout => {
+  const lines = paragraphs.flat();
   return {
     lines,
+    paragraphs,
     fontSize,
     lineHeight: FAKE_LINE_HEIGHT,
     ascent: 16,
     width: 100,
     height: lines.length * FAKE_LINE_HEIGHT,
-    truncated: false,
+    truncated,
     fontMissing: false,
   };
 };

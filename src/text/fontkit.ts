@@ -75,10 +75,11 @@ const measureWithFont = (
   const measureWidth = measureWidthOf(unitWidth, metrics.unitsPerEm, size);
   // Infinity × safety continua Infinity: texto sem limite nunca quebra.
   const breakWidth = input.maxWidth * safety;
-  const { lines, truncated } = layoutLines(input.content, breakWidth, input.maxLines, measureWidth);
+  const { paragraphs, lines, truncated } = layoutLines(input.content, breakWidth, input.maxLines, measureWidth);
   const lineHeight = naturalLineHeight(metrics, size) * multiplier;
   return {
     lines,
+    paragraphs,
     fontSize: size,
     lineHeight,
     ascent: baselineOffset(metrics, size, multiplier),

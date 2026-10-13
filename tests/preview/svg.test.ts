@@ -23,6 +23,7 @@ const svgOf = (children: readonly PositionedNode[], props: Omit<SlideProps, 'chi
 
 const textLayout = (lines: readonly string[], over: Partial<TextLayout> = {}): TextLayout => ({
   lines,
+  paragraphs: [lines],
   fontSize: 18,
   lineHeight: 24,
   ascent: 17,

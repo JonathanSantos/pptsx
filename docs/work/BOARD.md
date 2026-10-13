@@ -21,7 +21,10 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M3 | M3-C | calibration.tsx (34 amostras) | ✅ |
 | M3 | M3-D | testes M3 (421 testes) | ✅ |
 | M3 | M3-E | integração do medidor real | ✅ |
-| M3 | M3-F | calibração nativo × Keynote (GO/NO-GO) | 🔄 |
+| M3 | M3-F | calibração nativo × Keynote: 'exact' + safety 0.97 | ✅ |
+| M3 | M3-G | quebra forçada (<a:br/>) + quebra após - e / | ✅ |
+| M3 | M3-H | testes quebra forçada (455 testes) | ✅ |
+| M3 | gate | GO no Keynote (quebras idênticas); PowerPoint pendente com o dono | ✅ |
 | M4 | M4-A..E | fit, diagnósticos, selos | ⬜ |
 | M5 | M5-A..F | CLI, demo, guia de agente, teste de agente | ⬜ |
 
@@ -39,3 +42,6 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M1-C | Line sem stroke usa preto (`DEFAULTS.lineStroke`) | ✅ |
 | M2-E | Keynote exporta em Display P3; converter para sRGB no script de export | M3 (antes da calibração) |
 | M2-E | Debug: marcar linha de texto que passa do frame | M4-B |
+| M3 | Decisão do dono: quebra forçada (linhas calculadas emitidas com <a:br/>) | ✅ |
+| M3-G | pptxgenjs repete <a:pPr> após <a:br/> (inválido no schema) → `src/emit/sanitize.ts` pós-processa | ✅; falta teste unitário → M4-C |
+| M3-F | Validar no PowerPoint e Google Slides (dono): dist/calib/final2/calibration.16x9.pptx | dono |

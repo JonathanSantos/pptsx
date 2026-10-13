@@ -14,10 +14,11 @@ const estimateWidth =
 const measureEstimate = (input: TextMeasureInput): TextLayout => {
   const { size, lineHeight: multiplier } = input.style;
   const measureWidth = estimateWidth(size);
-  const { lines, truncated } = layoutLines(input.content, input.maxWidth, input.maxLines, measureWidth);
+  const { paragraphs, lines, truncated } = layoutLines(input.content, input.maxWidth, input.maxLines, measureWidth);
   const lineHeight = LINE_HEIGHT_RATIO * size * multiplier;
   return {
     lines,
+    paragraphs,
     fontSize: size,
     lineHeight,
     ascent: ASCENT_RATIO * size * multiplier,

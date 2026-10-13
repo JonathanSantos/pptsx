@@ -325,3 +325,89 @@ describe('createFontkitMeasurer — determinism', () => {
     expect(createFontkitMeasurer(registry)(input)).toEqual(m(input));
   });
 });
+
+describe('createFontkitMeasurer — paragraphs grouping (M3-H)', () => {
+  const coherent = (r: { lines: readonly string[]; paragraphs: readonly (readonly string[])[] }) =>
+    expect(r.paragraphs.flat()).toEqual(r.lines);
+
+  it('groups lines by \\n paragraph', () => {
+    const r = measure('one\ntwo', Infinity);
+    expect(r.paragraphs).toEqual([['one'], ['two']]);
+    coherent(r);
+  });
+
+  it('an empty line is its own paragraph with one empty line', () => {
+    const r = measure('one\n\ntwo', Infinity);
+    expect(r.paragraphs).toEqual([['one'], [''], ['two']]);
+    coherent(r);
+  });
+
+  it('wrapped lines stay inside their paragraph', () => {
+    const r = measure(`${LOREM}\nshort`, 200);
+    expect(r.paragraphs).toHaveLength(2);
+    expect(r.paragraphs[0]!.length).toBeGreaterThan(1);
+    expect(r.paragraphs[1]).toEqual(['short']);
+    coherent(r);
+  });
+
+  it('maxLines inside the first paragraph drops the following paragraphs', () => {
+    const r = measure(`${LOREM}\nshort`, 200, { maxLines: 2 });
+    expect(r.truncated).toBe(true);
+    expect(r.paragraphs).toHaveLength(1);
+    expect(r.paragraphs[0]).toHaveLength(2);
+    expect(r.paragraphs[0]![1]!.endsWith('…')).toBe(true);
+    coherent(r);
+  });
+
+  it('maxLines inside a later paragraph keeps the earlier ones whole', () => {
+    const r = measure(`one\n${LOREM}\nlast`, 200, { maxLines: 3 });
+    expect(r.truncated).toBe(true);
+    expect(r.paragraphs).toHaveLength(2);
+    expect(r.paragraphs[0]).toEqual(['one']);
+    expect(r.paragraphs[1]).toHaveLength(2);
+    expect(r.paragraphs[1]![1]!.endsWith('…')).toBe(true);
+    coherent(r);
+  });
+
+  it('maxLines across one-line paragraphs', () => {
+    const r = measure('a\nb\nc', Infinity, { maxLines: 2 });
+    expect(r.paragraphs).toHaveLength(2);
+    expect(r.paragraphs[0]).toEqual(['a']);
+    expect(r.paragraphs[1]![0]!.endsWith('…')).toBe(true);
+    coherent(r);
+  });
+
+  it('character-broken word stays in one paragraph', () => {
+    const r = measure('Supercalifragilisticexpialidocious', 60);
+    expect(r.paragraphs).toHaveLength(1);
+    coherent(r);
+  });
+});
+
+describe('createFontkitMeasurer — break points after "-" and "/" (M3-H)', () => {
+  it('breaks after "-" keeping it at the end of the line', () => {
+    const max = runWidth(REGULAR, 'bem-estar', 20) - 1;
+    const r = measure('bem-estar', max);
+    expect(r.lines).toEqual(['bem-', 'estar']);
+    expect(r.paragraphs).toEqual([['bem-', 'estar']]);
+  });
+
+  it('breaks a URL after "/" keeping it at the end of the line', () => {
+    const url = 'https://example.com/docs/page';
+    const max = runWidth(REGULAR, 'https://example.com/docs/', 20) + 1;
+    expect(max).toBeLessThan(runWidth(REGULAR, url, 20));
+    const r = measure(url, max);
+    expect(r.lines).toEqual(['https://example.com/docs/', 'page']);
+  });
+
+  it('does not break at "-" or "/" when the text fits', () => {
+    expect(measure('bem-estar a/b', Infinity).lines).toEqual(['bem-estar a/b']);
+  });
+
+  it('a word without break points still breaks by character', () => {
+    const word = 'Supercalifragilisticexpialidocious';
+    const r = measure(word, 60);
+    expect(r.lines.length).toBeGreaterThan(1);
+    expect(r.lines.join('')).toBe(word);
+  });
+});

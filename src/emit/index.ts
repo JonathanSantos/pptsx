@@ -4,6 +4,7 @@ import { ptToInches } from '../sizes.ts';
 import type { LineSpacingStrategy } from './calibration.ts';
 import { emitDebugOutlines, emitNode, type EmitContext } from './emitters.ts';
 import { backgroundOf } from './options.ts';
+import { sanitizePptx } from './sanitize.ts';
 
 export interface EmitOptions {
   readonly debug?: boolean;
@@ -31,5 +32,5 @@ export const emitPptx = async (deck: PositionedDeck, options: EmitOptions): Prom
   pptx.layout = deck.size.name;
   deck.slides.forEach((slide) => emitSlide(pptx, slide, options));
   const output = await pptx.write({ outputType: 'nodebuffer' });
-  return output as Buffer;
+  return sanitizePptx(output as Buffer);
 };

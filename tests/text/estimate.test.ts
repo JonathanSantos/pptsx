@@ -150,3 +150,95 @@ describe('createEstimateMeasurer — maxLines', () => {
     expect(r.truncated).toBe(false);
   });
 });
+
+describe('createEstimateMeasurer — paragraphs grouping (M3-H)', () => {
+  const coherent = (r: { lines: readonly string[]; paragraphs: readonly (readonly string[])[] }) =>
+    expect(r.paragraphs.flat()).toEqual(r.lines);
+
+  it('one paragraph without \\n', () => {
+    const r = measure('aaa bbb', 40);
+    expect(r.paragraphs).toEqual([['aaa bbb']]);
+    coherent(r);
+  });
+
+  it('groups lines by \\n paragraph', () => {
+    const r = measure('one\ntwo', Infinity);
+    expect(r.paragraphs).toEqual([['one'], ['two']]);
+    coherent(r);
+  });
+
+  it('an empty line is its own paragraph with one empty line', () => {
+    const r = measure('a\n\nb', Infinity);
+    expect(r.paragraphs).toEqual([['a'], [''], ['b']]);
+    coherent(r);
+  });
+
+  it('wrapped lines stay inside their paragraph', () => {
+    const r = measure('aaa bbb ccc\nddd', 40);
+    expect(r.paragraphs).toEqual([['aaa bbb', 'ccc'], ['ddd']]);
+    coherent(r);
+  });
+
+  it('maxLines: paragraphs beyond the cut disappear and the last keeps the remaining lines', () => {
+    const r = measure('aaa bbb ccc ddd eee\nfff', 40, { maxLines: 2 });
+    expect(r.truncated).toBe(true);
+    expect(r.paragraphs).toEqual([['aaa bbb', 'ccc ddd…']]);
+    coherent(r);
+  });
+
+  it('maxLines cutting inside the second paragraph', () => {
+    const r = measure('aaa\nbbb ccc ddd', 40, { maxLines: 2 });
+    expect(r.truncated).toBe(true);
+    expect(r.paragraphs).toEqual([['aaa'], ['bbb ccc…']]);
+    coherent(r);
+  });
+
+  it('maxLines across one-line paragraphs', () => {
+    const r = measure('a\nb\nc', Infinity, { maxLines: 2 });
+    expect(r.paragraphs).toHaveLength(2);
+    expect(r.paragraphs[0]).toEqual(['a']);
+    expect(r.paragraphs[1]).toHaveLength(1);
+    expect(r.paragraphs[1]![0]!.endsWith('…')).toBe(true);
+    coherent(r);
+  });
+
+  it('character-broken word stays in one paragraph', () => {
+    const r = measure('abcdefghij', 22);
+    expect(r.paragraphs).toEqual([['abcd', 'efgh', 'ij']]);
+    coherent(r);
+  });
+});
+
+describe('createEstimateMeasurer — break points after "-" and "/" (M3-H)', () => {
+  it('breaks after "-" keeping it at the end of the line', () => {
+    // 'bem-estar' = 45 pt > 40; 'bem-' = 20 cabe; char-break daria 'bem-esta' + 'r'.
+    const r = measure('bem-estar', 40);
+    expect(r.lines).toEqual(['bem-', 'estar']);
+    expect(r.paragraphs).toEqual([['bem-', 'estar']]);
+  });
+
+  it('packs words before the hyphen break greedily', () => {
+    expect(measure('a bem-estar', 40).lines).toEqual(['a bem-', 'estar']);
+  });
+
+  it('breaks a URL after "/" keeping it at the end of the line', () => {
+    // segmentos: 'site.com/' (45) 'docs/' (25) 'page' (20); limite 50.
+    const r = measure('site.com/docs/page', 50);
+    expect(r.lines).toEqual(['site.com/', 'docs/page']);
+    expect(r.lines.join('')).toBe('site.com/docs/page');
+  });
+
+  it('does not break at "-" or "/" when the text fits', () => {
+    expect(measure('bem-estar a/b', Infinity).lines).toEqual(['bem-estar a/b']);
+  });
+
+  it('a word without break points still breaks by character', () => {
+    expect(measure('abcdefghij', 22).lines).toEqual(['abcd', 'efgh', 'ij']);
+  });
+
+  it('a segment longer than the line after a hyphen still breaks by character', () => {
+    const r = measure('ab-cdefghijkl', 22);
+    expect(r.lines.join('')).toBe('ab-cdefghijkl');
+    r.lines.forEach((line) => expect(line.length * 5).toBeLessThanOrEqual(22));
+  });
+});

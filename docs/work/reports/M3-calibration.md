@@ -147,3 +147,11 @@ Scripts em `/private/tmp/claude-503/-Users-jovivo-Developer-projects-pptsx/62d3f
 - `pdflines.swift` extrai as linhas por PDFKit.
 - `an2.py` faz a comparação.
 - `kern.ts` mede o efeito do kerning.
+
+
+## Adendo (orquestrador) — decisão e verificação final
+
+- Dono escolheu **quebra forçada**: cada parágrafo vira `<a:p>` e as linhas calculadas são unidas por `<a:br/>`; quebra também após `-` e `/`.
+- `src/emit/sanitize.ts` remove os `<a:pPr>` repetidos que o pptxgenjs grava após `<a:br/>` (inválidos no schema OOXML).
+- Reverificado no Keynote (`dist/calib/final2/`): quebras idênticas ao preview nativo, inclusive C21 (URL), C23 (antes 3 × 4 linhas) e C24 (parágrafos).
+- Parâmetros finais: `ACTIVE_LINE_SPACING = 'exact'`, `TEXT_SAFETY = 0.97`, `baselineOffset` = ascent × lineHeight.

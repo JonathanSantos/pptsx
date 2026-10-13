@@ -91,6 +91,8 @@ Medidor fontkit (M3), algoritmo da spec:
 6. `maxLines`: corta e termina a última linha com `…` (remove caracteres até `linha + '…'` caber); `truncated = true`.
 7. Família/peso/itálico não registrado: usa a estimativa e marca `fontMissing = true` (o fit emite diagnóstico). Itálico sem face registrada cai para a face não itálica (sem `fontMissing`).
 8. `width` = linha mais longa (sem espaço final).
+9. `paragraphs` = linhas agrupadas por parágrafo; `paragraphs.flat()` é igual a `lines` (também após truncar: parágrafos inteiros cortados somem, o último fica com as linhas restantes).
+10. Pontos de quebra: espaço (consumido) e também **depois** de `-` e `/` (mantidos na linha), como os renderizadores fazem com URLs e palavras compostas.
 
 ## `src/layout/`
 
@@ -139,8 +141,8 @@ export const emitPptx: (deck: PositionedDeck, options: EmitOptions) => Promise<B
 - Única etapa que importa `pptxgenjs`. Conversão pt → pol via `ptToInches`.
 - Layout do pptx: `defineLayout({ name: size.name, width, height })` em polegadas, sempre.
 - Despacho por `kind` em tabela (`Record<kind, NodeEmitter>`); nó Box só vira shape se tiver `fill` ou `stroke`.
-- Texto (emissão neutra): emitir o `content` original (texto continua editável e o renderizador quebra sozinho dentro da caixa = frame). As linhas calculadas servem ao preview e aos diagnósticos; se o renderizador quebrar diferente, é exatamente isso que a calibração mede. Opções: `margin: 0`, `valign: 'top'`, `fit: 'none'`, `wrap: true`, `paraSpaceBefore: 0`, `paraSpaceAfter: 0`, espaçamento de linha via Strategy (M3): `'multiple'` → `lineSpacingMultiple = style.lineHeight × LINE_SPACING_CALIBRATION`; `'exact'` → `lineSpacing` em pt = `text.lineHeight` (o renderizador usa exatamente a altura calculada). A estratégia ativa e as constantes ficam em `src/emit/calibration.ts`; a calibração do M3 escolhe, `fontFace`, `fontSize`, `bold`, `italic`, `color` sem `#`, `align`.
-- Texto usa `PositionedText.text.fontSize` (pode ter sido reduzido pelo fit) e, se `truncated`, emite as linhas truncadas unidas por `\n`.
+- Texto (emissão neutra, **quebra forçada** — decisão do dono no gate do M3): cada parágrafo de `text.paragraphs` vira um `<a:p>` e as linhas dentro dele são unidas por quebra suave `<a:br/>`. Assim todo renderizador desenha exatamente as linhas calculadas (calibração: 34/34 no Keynote). O texto continua nativo e editável; só as quebras ficam fixas. Opções: `margin: 0`, `valign: 'top'`, `fit: 'none'`, `wrap: true`, `paraSpaceBefore: 0`, `paraSpaceAfter: 0`, espaçamento de linha via Strategy (M3): `'multiple'` → `lineSpacingMultiple = style.lineHeight × LINE_SPACING_CALIBRATION`; `'exact'` → `lineSpacing` em pt = `text.lineHeight` (o renderizador usa exatamente a altura calculada). A estratégia ativa e as constantes ficam em `src/emit/calibration.ts`; a calibração do M3 escolhe, `fontFace`, `fontSize`, `bold`, `italic`, `color` sem `#`, `align`.
+- Texto usa `PositionedText.text.fontSize` (pode ter sido reduzido pelo fit); truncado já vem refletido em `paragraphs`.
 - Imagem: `sizing: { type: fit, w, h }`; caminho via `resolveAssetPath(baseDir, src)`.
 - Slide: `background` cor → `{ color }`; imagem → `{ path }`. `notes` → `addNotes`.
 - Debug: contorno vermelho fino (0.5 pt, sem preenchimento, tracejado) em cada frame de Box/Text/Image.

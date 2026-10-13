@@ -9,6 +9,7 @@ import type { PositionedDeck, PositionedNode, SlideSize } from '../../src/core/t
 import {
   SIZE_16X9,
   SIZE_4X3,
+  fakeParagraphLayout,
   fakeTextLayout,
   pBox,
   pDeck,
@@ -145,8 +146,8 @@ describe('emitPptx — text', () => {
     expect(xml).toContain('algn="ctr"');
   });
 
-  it('emits truncated lines joined by line breaks instead of the original content', async () => {
-    const text = { ...fakeTextLayout('aaa\nbb…'), truncated: true };
+  it('emits truncated lines (from text.paragraphs) instead of the original content', async () => {
+    const text = fakeParagraphLayout([['aaa', 'bb…']], 18, true);
     const xml = await slideXml([pText(rect(0, 0, 100, 40), 'aaa bbbbbb cccccc', {}, text)]);
     expect(xml).toContain('aaa');
     expect(xml).toContain('bb…');

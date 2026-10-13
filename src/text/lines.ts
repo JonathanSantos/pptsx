@@ -3,13 +3,40 @@ import type { Pt } from '../core/types.ts';
 /** Largura de um trecho de texto em pt; o medidor decide como (estimativa, fontkit...). */
 export type MeasureWidth = (text: string) => Pt;
 
+/** Linhas de cada parágrafo do autor; `flat()` dá todas as linhas. */
+export type Paragraphs = readonly (readonly string[])[];
+
 export const ELLIPSIS = '…';
 
-const lastOf = (lines: readonly string[]): string | undefined => lines[lines.length - 1];
+/**
+ * Trecho indivisível na quebra gulosa. `glue` é o que o separa do trecho
+ * anterior quando os dois ficam na mesma linha: ' ' entre palavras, '' depois
+ * de '-' ou '/' (o caractere já está no fim do trecho anterior).
+ */
+interface Segment {
+  readonly text: string;
+  readonly glue: string;
+}
 
-const replaceLast = (lines: readonly string[], line: string): readonly string[] => [...lines.slice(0, -1), line];
+// Corta DEPOIS de '-'/'/', mantendo-os no trecho. Hífen/barra no início ficam
+// grudados no que vem depois ("-5" não quebra), e sequências ("//") não se separam.
+const BREAK_AFTER = /[-/]*[^-/]+[-/]*|[-/]+/g;
 
-/** Quebra uma palavra que não cabe na linha, caractere a caractere (mínimo de 1 por linha). */
+const lastOf = <T>(items: readonly T[]): T | undefined => items[items.length - 1];
+
+const replaceLast = <T>(items: readonly T[], item: T): readonly T[] => [...items.slice(0, -1), item];
+
+const segmentsOfWord = (word: string): readonly Segment[] =>
+  (word.match(BREAK_AFTER) ?? [word]).map((text, index) => ({ text, glue: index === 0 ? ' ' : '' }));
+
+/** Palavras separadas por espaço, cada uma dividida depois de '-' e '/'. */
+export const segmentsOf = (paragraph: string): readonly Segment[] =>
+  paragraph
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .flatMap(segmentsOfWord);
+
+/** Quebra um trecho que não cabe na linha, caractere a caractere (mínimo de 1 por linha). */
 export const breakWord = (word: string, maxWidth: Pt, measureWidth: MeasureWidth): readonly string[] =>
   [...word].reduce<readonly string[]>((pieces, char) => {
     const current = lastOf(pieces);
@@ -18,34 +45,41 @@ export const breakWord = (word: string, maxWidth: Pt, measureWidth: MeasureWidth
     return measureWidth(candidate) <= maxWidth ? replaceLast(pieces, candidate) : [...pieces, char];
   }, []);
 
-const appendWord =
+const appendSegment =
   (maxWidth: Pt, measureWidth: MeasureWidth) =>
-  (lines: readonly string[], word: string): readonly string[] => {
+  (lines: readonly string[], { text, glue }: Segment): readonly string[] => {
     const current = lastOf(lines);
     if (current !== undefined) {
-      const candidate = `${current} ${word}`;
+      const candidate = current + glue + text;
       if (measureWidth(candidate) <= maxWidth) return replaceLast(lines, candidate);
     }
-    if (measureWidth(word) <= maxWidth) return [...lines, word];
-    // O último pedaço vira a linha corrente para que a próxima palavra possa continuar nela.
-    return [...lines, ...breakWord(word, maxWidth, measureWidth)];
+    if (measureWidth(text) <= maxWidth) return [...lines, text];
+    // O último pedaço vira a linha corrente para que o próximo trecho possa continuar nela.
+    return [...lines, ...breakWord(text, maxWidth, measureWidth)];
   };
 
-/** Quebra gulosa por palavra de um único parágrafo (sem '\n'). Parágrafo vazio = uma linha vazia. */
+/** Quebra gulosa de um único parágrafo (sem '\n'). Parágrafo vazio = uma linha vazia. */
 export const breakLines = (paragraph: string, maxWidth: Pt, measureWidth: MeasureWidth): readonly string[] => {
-  const words = paragraph.split(/\s+/).filter((word) => word.length > 0);
-  if (words.length === 0) return [''];
-  return words.reduce(appendWord(maxWidth, measureWidth), []);
+  const segments = segmentsOf(paragraph);
+  if (segments.length === 0) return [''];
+  return segments.reduce(appendSegment(maxWidth, measureWidth), []);
 };
 
 /** Parágrafos separados por '\n', cada um quebrado de forma gulosa. */
-export const wrapText = (content: string, maxWidth: Pt, measureWidth: MeasureWidth): readonly string[] =>
-  content.split('\n').flatMap((paragraph) => breakLines(paragraph, maxWidth, measureWidth));
+export const wrapParagraphs = (content: string, maxWidth: Pt, measureWidth: MeasureWidth): Paragraphs =>
+  content.split('\n').map((paragraph) => breakLines(paragraph, maxWidth, measureWidth));
 
-export interface TruncatedLines {
+export interface WrappedText {
+  readonly paragraphs: Paragraphs;
   readonly lines: readonly string[];
   readonly truncated: boolean;
 }
+
+const wrappedOf = (paragraphs: Paragraphs, truncated: boolean): WrappedText => ({
+  paragraphs,
+  lines: paragraphs.flat(),
+  truncated,
+});
 
 // Remove caracteres do fim até `linha + '…'` caber; linha vazia aceita o '…' sozinho.
 const withEllipsis = (line: string, maxWidth: Pt, measureWidth: MeasureWidth): string => {
@@ -55,18 +89,29 @@ const withEllipsis = (line: string, maxWidth: Pt, measureWidth: MeasureWidth): s
   return withEllipsis(trimmed.slice(0, -1), maxWidth, measureWidth);
 };
 
+const countLines = (paragraphs: Paragraphs): number => paragraphs.reduce((sum, lines) => sum + lines.length, 0);
+
+/** Mantém as primeiras `limit` linhas: parágrafos inteiros depois do corte somem. */
+export const takeLines = (paragraphs: Paragraphs, limit: number): Paragraphs =>
+  paragraphs.reduce<Paragraphs>((kept, lines) => {
+    const remaining = limit - countLines(kept);
+    if (remaining <= 0) return kept;
+    return [...kept, lines.slice(0, remaining)];
+  }, []);
+
 /** Corta em `maxLines` e termina a última linha com '…'. */
-export const truncateLines = (
-  lines: readonly string[],
+export const truncateParagraphs = (
+  paragraphs: Paragraphs,
   maxLines: number,
   maxWidth: Pt,
   measureWidth: MeasureWidth,
-): TruncatedLines => {
+): WrappedText => {
   const limit = Math.max(1, Math.floor(maxLines));
-  if (lines.length <= limit) return { lines, truncated: false };
-  const kept = lines.slice(0, limit);
-  const last = lastOf(kept) ?? '';
-  return { lines: replaceLast(kept, withEllipsis(last, maxWidth, measureWidth)), truncated: true };
+  if (countLines(paragraphs) <= limit) return wrappedOf(paragraphs, false);
+  const kept = takeLines(paragraphs, limit);
+  const lastParagraph = lastOf(kept) ?? [''];
+  const ellipsized = replaceLast(lastParagraph, withEllipsis(lastOf(lastParagraph) ?? '', maxWidth, measureWidth));
+  return wrappedOf(replaceLast(kept, ellipsized), true);
 };
 
 /** Largura da linha mais longa, sem espaço final. */
@@ -79,8 +124,8 @@ export const layoutLines = (
   maxWidth: Pt,
   maxLines: number | undefined,
   measureWidth: MeasureWidth,
-): TruncatedLines => {
-  const lines = wrapText(content, maxWidth, measureWidth);
-  if (maxLines === undefined) return { lines, truncated: false };
-  return truncateLines(lines, maxLines, maxWidth, measureWidth);
+): WrappedText => {
+  const paragraphs = wrapParagraphs(content, maxWidth, measureWidth);
+  if (maxLines === undefined) return wrappedOf(paragraphs, false);
+  return truncateParagraphs(paragraphs, maxLines, maxWidth, measureWidth);
 };

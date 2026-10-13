@@ -284,7 +284,13 @@ export interface TextMeasureInput {
 
 /** Resultado da medição: as linhas JÁ quebradas são usadas por todos os emissores. */
 export interface TextLayout {
+  /** Todas as linhas, achatadas (preview, diagnósticos). */
   readonly lines: readonly string[];
+  /**
+   * As mesmas linhas agrupadas por parágrafo do autor ('\n'). O emissor usa para
+   * separar parágrafo (<a:p>) de quebra suave (<a:br/>). paragraphs.flat() === lines.
+   */
+  readonly paragraphs: readonly (readonly string[])[];
   readonly fontSize: Pt;
   /** Altura de uma linha em pt. */
   readonly lineHeight: Pt;

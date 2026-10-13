@@ -105,22 +105,31 @@ export const shapeOf = (node: PositionedShape): ShapeSpec =>
   shapeSpecOf(node.props.kind, { ...node.props, stroke: strokeColorOf(node.props) }, node.frame);
 
 /**
- * Um run por parágrafo com breakLine explícito: passar a string com '\n'
- * deixaria o pptxgenjs decidir, e ele ignora todas as quebras quando o texto
- * termina em '\n'.
+ * Quebra forçada (decisão do gate do M3): um run por linha calculada. Linhas do
+ * mesmo parágrafo são unidas por quebra suave (softBreakBefore → <a:br/>) e o
+ * último run de cada parágrafo, exceto o final, fecha o <a:p> (breakLine). Assim
+ * o renderizador não requebra o texto com a própria métrica; com quebra
+ * automática o Keynote punha mais palavras por linha que a engine (11/34 na
+ * calibração). Runs separados também evitam passar '\n' ao pptxgenjs, que
+ * ignora todas as quebras quando o texto termina em '\n'.
  */
-export const paragraphRunsOf = (paragraphs: readonly string[]): Pptx.TextProps[] =>
-  paragraphs.map((text, index) =>
-    index < paragraphs.length - 1 ? { text, options: { breakLine: true } } : { text, options: {} },
-  );
+const lineRunOf = (text: string, softBreakBefore: boolean, breakLine: boolean): Pptx.TextProps => ({
+  text,
+  options: { ...(softBreakBefore ? { softBreakBefore } : {}), ...(breakLine ? { breakLine } : {}) },
+});
 
-export const paragraphsOf = (node: PositionedText): readonly string[] =>
-  node.text.truncated ? node.text.lines : node.content.split('\n');
+export const paragraphRunsOf = (paragraphs: readonly (readonly string[])[]): Pptx.TextProps[] =>
+  paragraphs.flatMap((lines, paragraphIndex) => {
+    const closesParagraph = paragraphIndex < paragraphs.length - 1;
+    // Parágrafo vazio vira um run vazio: o <a:p> continua ocupando uma linha.
+    const texts = lines.length === 0 ? [''] : lines;
+    return texts.map((text, lineIndex) => lineRunOf(text, lineIndex > 0, closesParagraph && lineIndex === texts.length - 1));
+  });
 
 export const textOf = (node: PositionedText, lineSpacing: LineSpacingStrategy = ACTIVE_LINE_SPACING): TextSpec => {
   const style = textStyleOf(node.props);
   return {
-    runs: paragraphRunsOf(paragraphsOf(node)),
+    runs: paragraphRunsOf(node.text.paragraphs),
     options: {
       ...positionOf(node.frame),
       margin: 0,
