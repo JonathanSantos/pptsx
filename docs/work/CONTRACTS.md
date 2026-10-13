@@ -91,6 +91,7 @@ Medidor fontkit (M3), algoritmo da spec:
 6. `maxLines`: corta e termina a última linha com `…` (remove caracteres até `linha + '…'` caber); `truncated = true`.
 7. Família/peso/itálico não registrado: usa a estimativa e marca `fontMissing = true` (o fit emite diagnóstico). Itálico sem face registrada cai para a face não itálica (sem `fontMissing`).
 8. `width` = linha mais longa (sem espaço final).
+9a. `wordBroken` = true quando alguma palavra (segmento sem ponto de quebra) foi quebrada por caractere.
 9. `paragraphs` = linhas agrupadas por parágrafo; `paragraphs.flat()` é igual a `lines` (também após truncar: parágrafos inteiros cortados somem, o último fica com as linhas restantes).
 10. Pontos de quebra: espaço (consumido) e também **depois** de `-` e `/` (mantidos na linha), como os renderizadores fazem com URLs e palavras compostas.
 
@@ -113,6 +114,7 @@ export const layoutDeck: (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) =
   - Text e Image são folhas; Text com measure function. Text em fluxo usa a altura medida (não estica no eixo cruzado além do que o `align` mandar).
   - Absoluto segue a semântica do Yoga/CSS (sem tamanho → encolhe ao conteúdo; `left`+`right` → largura derivada).
   - `shrink` padrão = `DEFAULTS.item.shrink` (1, como no CSS).
+  - **Exceção (M5-F):** Text numa `column` NÃO recebe basis 0 (a altura do texto é o próprio conteúdo; basis 0 + shrink zerava a altura). Em `row`, Text com grow recebe basis 0 normalmente.
   - `grow > 0` sem `width`/`height` no eixo principal ⇒ `flexBasis = DEFAULTS.item.growBasis` (0): `grow={n}` equivale a `flex: n` do CSS, e irmãos com o mesmo grow ficam iguais. Com tamanho explícito no eixo principal, o tamanho vira a base.
   - `Shape` sem tamanho segue o Yoga: 0 no eixo principal, estica no cruzado se `align=stretch`.
   - `padding` só em pt (sem %).
@@ -139,6 +141,8 @@ export const detectOverflow: (slide: PositionedSlide) => readonly Overflow[];   
 
 **Escopo do shrink** (mantém a hierarquia tipográfica): para cada Text estourado, o escopo é o ancestral mais próximo que é **raiz de componente** (segmento do path que não é nome de primitiva, ex.: `Bullets`), excluindo o slide; sem nenhum, o filho de primeiro nível do slide que contém o texto. Todos os Text com `fit="shrink"` dentro do escopo e acima de `minSizeOf(props)` descem `DEFAULTS.fit.shrinkStep` (1 pt) juntos. Só um Text `shrink` estourado dispara o passo; `truncate`/`error` não fazem vizinhos encolherem. `fromSize`/`minSize` vêm sempre das props originais do autor.
 
+**Palavra partida conta como estouro (M5-F):** um Text `fit="shrink"` com `text.wordBroken` dispara o passo de shrink no seu escopo, como um estouro de altura. Se ainda houver palavra partida no fim, `text-word-broken` warning (a mensagem cita a palavra partida e sugere encurtar, alargar a área ou reduzir size).
+
 **Loop:** layout → detectar → um passo de shrink por escopo estourado → repetir até não haver estouro, nenhum texto poder encolher, ou `DEFAULTS.maxFitIterations` (12). Depois: textos `fit="truncate"` estourados recebem `maxLines = max(1, floor(frame.height / text.lineHeight))` e há um relayout final.
 
 O ajuste reescreve a árvore **resolvida** (`props.size`, `props.maxLines`), imutável, por path; nunca a posicionada.
@@ -154,6 +158,7 @@ O ajuste reescreve a árvore **resolvida** (`props.size`, `props.maxLines`), imu
 | nó em fluxo fora do slide | `out-of-slide` | error | overflowPt |
 | imagem desenhada maior que px × 0.75 (abaixo de 96 dpi) | `image-upscaled` | info | — |
 | `text.fontMissing` | `font-missing` | error | — |
+| palavra quebrada por caractere (`text.wordBroken`) que persiste após o shrink | `text-word-broken` | warning | fromSize, toSize |
 
 Exemplo de message: `"Texto estourou 18% da altura disponível mesmo em 14 pt (mínimo); reduza o conteúdo, aumente a área ou baixe minSize."`
 
