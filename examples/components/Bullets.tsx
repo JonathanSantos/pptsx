@@ -17,7 +17,7 @@ export function Bullets({ items, size = font.body }: BulletsProps) {
     <Box gap={size * 0.7}>
       {items.map((item) => (
         <Box direction="row" gap={space.tight + 4} align="start">
-          <Box padding={{ top: markerOffset }}>
+          <Box padding={{ top: markerOffset }} shrink={0}>
             <Shape kind="ellipse" width={8} height={8} fill={color.accent} />
           </Box>
           <Text size={size} minSize={14} grow={1} color={color.ink}>{item}</Text>

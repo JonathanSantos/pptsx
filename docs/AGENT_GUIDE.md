@@ -149,7 +149,7 @@ Componentes (`'../components/index.ts'`):
 | componente | props | o que faz |
 |---|---|---|
 | `Bullets` | `items: readonly string[]; size?: number` (padrão `font.body`) | coluna de itens: marcador elipse 8×8 + Text grow (shrink, minSize 14) |
-| `TwoColumn` | `left; right` (qualquer elemento); `stacked?: boolean`; `ratio?: number` (fração da largura da esquerda, padrão 0.5) | row com gap, colunas por `grow`; `stacked` vira coluna: `left` com a altura do conteúdo em cima, `right` ocupa o resto (bom para imagem com `grow`) |
+| `TwoColumn` | `left; right` (qualquer elemento); `stacked?: boolean`; `ratio?: number` (fração da largura da esquerda, padrão 0.5; só vale lado a lado) | row com gap, colunas por `grow`; `stacked` vira coluna: `left` com a altura do conteúdo em cima, `right` ocupa o resto (bom para imagem com `grow`) |
 | `KpiCard` | `label: string; value: string; delta?: string; trend?: 'up' \| 'down'` | cartão `surface` arredondado, `grow={1}`: label `small` muted, valor `display` bold (minSize 28), delta com ▲ verde (`up`) / ▼ vermelho (`down`) |
 | `KpiRow` | `items: readonly KpiCardProps[]` | row com gap; cada card `grow={1}` (larguras iguais) |
 
