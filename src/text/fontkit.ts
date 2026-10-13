@@ -64,6 +64,13 @@ const metricsOf = (font: Font): VerticalMetrics => ({
   lineGap: font.lineGap,
 });
 
+/**
+ * Largura da caixa que acomoda as linhas: inclui a folga do safety. Sem isso,
+ * um texto dimensionado pelo conteúdo (align center/start) recebe a largura
+ * exata, é remedido com largura × safety e quebra no meio da palavra.
+ */
+const boxWidthOf = (widest: Pt, maxWidth: Pt, safety: number): Pt => Math.min(widest / safety, maxWidth);
+
 const measureWithFont = (
   font: Font,
   unitWidth: UnitWidth,
@@ -83,7 +90,7 @@ const measureWithFont = (
     fontSize: size,
     lineHeight,
     ascent: baselineOffset(metrics, size, multiplier),
-    width: widestLine(lines, measureWidth),
+    width: boxWidthOf(widestLine(lines, measureWidth), input.maxWidth, safety),
     height: lines.length * lineHeight,
     truncated,
     fontMissing: false,

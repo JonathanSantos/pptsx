@@ -4,6 +4,8 @@ export { Deck, Slide, Box, Text, Image, Shape } from './primitives/index.ts';
 export { Fragment } from './jsx/jsx-runtime.ts';
 export { resolveDeck, ResolveError } from './resolve/index.ts';
 export { render } from './render.ts';
+export { defineConfig } from './config.ts';
+export type { TsxSlidesConfig } from './config.ts';
 
 /** Identidade tipada: só existe para o arquivo do deck ganhar inferência de ctx. */
 export const defineDeck = (fn: DeckDefinition): DeckDefinition => fn;
