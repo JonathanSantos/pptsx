@@ -39,11 +39,12 @@ export const responsiveProblemOf = (value: unknown): string | undefined => {
 };
 
 /** Breakpoints ativos para um contexto, em ordem de precedência (o primeiro presente no objeto vence). */
-export const activeBreakpointsOf = (ctx: ResponsiveContext): readonly Breakpoint[] => [
-  ctx.name as Breakpoint,
-  ...(ctx.scale > DEFAULTS.breakpoints.wideScale ? (['wide'] as const) : []),
-  ...(ctx.aspect < DEFAULTS.breakpoints.tallAspect ? (['tall'] as const) : []),
-];
+export const activeBreakpointsOf = (ctx: ResponsiveContext): readonly Breakpoint[] => {
+  // O preset 'wide' ativa 'wide' pelo nome e pela escala: sem repetir a chave.
+  const wide = ctx.scale > DEFAULTS.breakpoints.wideScale && ctx.name !== 'wide' ? (['wide'] as const) : [];
+  const tall = ctx.aspect < DEFAULTS.breakpoints.tallAspect ? (['tall'] as const) : [];
+  return [ctx.name as Breakpoint, ...wide, ...tall];
+};
 
 /** Resolve um Responsive<T> para o contexto: nome exato do tamanho > wide > tall > base. */
 export const pickResponsive = <T>(value: Responsive<T>, ctx: ResponsiveContext): T => {

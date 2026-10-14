@@ -16,7 +16,6 @@ import type {
   PreviewOptions,
   RenderOptions,
   RenderResult,
-  ResolvedDeck,
   SlideSize,
 } from './core/types.ts';
 import { emitPptx, type EmitOptions } from './emit/index.ts';
@@ -32,7 +31,7 @@ import {
   resolveFontFaces,
   type FileFontFace,
 } from './fonts/index.ts';
-import { fitSlide } from './fit/index.ts';
+import { fitDeck } from './fit/index.ts';
 import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
 import { resolveDeck } from './resolve/index.ts';
 import { createContext, resolveSize } from './sizes.ts';
@@ -200,16 +199,9 @@ const embedPlanOf = (deck: PositionedDeck, settings: RenderSettings): EmbedPlan 
   };
 };
 
-/** Layout + ajuste (loop de fit) de cada slide, já com os diagnósticos. */
-const fitDeck = (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) => {
-  const fitted = deck.slides.map((slide, slideIndex) => fitSlide({ slide, slideIndex, size, env }));
-  const positioned: PositionedDeck = { size, slides: fitted.map((result) => result.slide) };
-  return { positioned, diagnostics: fitted.flatMap((result) => result.diagnostics) };
-};
-
 const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: RenderSettings): Promise<RenderResult> => {
-  const resolved = resolveDeck(deck(createContext(size)));
-  const fitted = fitDeck(resolved, size, settings.env);
+  const ctx = createContext(size);
+  const fitted = fitDeck({ deck: resolveDeck(deck(ctx), ctx), size, env: settings.env });
   const { positioned } = fitted;
   const embed = embedPlanOf(positioned, settings);
   const buffer = await emitPptx(positioned, {

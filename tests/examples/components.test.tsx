@@ -3,8 +3,12 @@ import { Bullets, KpiCard, KpiRow, TwoColumn } from '../../examples/components/i
 import { tokens } from '../../examples/tokens.ts';
 import { Deck, Slide, Text } from '../../src/primitives/index.ts';
 import { resolveDeck } from '../../src/resolve/index.ts';
+import { createContext, resolveSize } from '../../src/sizes.ts';
 import type { ResolvedBox, ResolvedNode, ResolvedText } from '../../src/core/types.ts';
 import type { Child } from '../../src/core/types.ts';
+
+/** M9: resolveDeck exige ctx; estes testes não usam props responsivas, então 16x9 basta. */
+const RESOLVE_CTX = createContext(resolveSize('16x9'));
 
 /** Componentes de exemplo isolados (contrato M5-B), via árvore resolvida. */
 
@@ -13,6 +17,7 @@ const resolveOne = (child: Child): readonly ResolvedNode[] =>
     <Deck>
       <Slide>{child}</Slide>
     </Deck>,
+    RESOLVE_CTX,
   ).slides[0]!.children;
 
 const descendants = (nodes: readonly ResolvedNode[]): ResolvedNode[] =>

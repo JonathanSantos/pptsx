@@ -4,6 +4,10 @@ import { jsx } from '../../src/jsx/jsx-runtime.ts';
 import { B, Box, Deck, I, Shape, Slide, Span, Text } from '../../src/primitives/index.ts';
 import * as api from '../../src/index.ts';
 import { ResolveError, resolveDeck } from '../../src/resolve/index.ts';
+import { createContext, resolveSize } from '../../src/sizes.ts';
+
+/** M9: resolveDeck exige ctx; estes testes não usam props responsivas, então 16x9 basta. */
+const RESOLVE_CTX = createContext(resolveSize('16x9'));
 
 /**
  * M8-A: Span/B/I dentro de Text viram `runs` (estilo efetivo = Text sobrescrito
@@ -18,7 +22,7 @@ const slideOf = (deck: ResolvedDeck) => {
 };
 
 const textNode = (el: SlideElement): ResolvedText => {
-  const node = slideOf(resolveDeck(<Deck><Slide>{el}</Slide></Deck>)).children[0];
+  const node = slideOf(resolveDeck(<Deck><Slide>{el}</Slide></Deck>, RESOLVE_CTX)).children[0];
   if (!node || node.kind !== 'text') throw new Error('expected text');
   return node;
 };
@@ -34,7 +38,7 @@ const run = (text: string, over: Partial<Omit<TextRun, 'text'>> = {}): TextRun =
 const expectResolveError = (root: SlideElement): ResolveError => {
   let caught: unknown;
   try {
-    resolveDeck(root);
+    resolveDeck(root, RESOLVE_CTX);
   } catch (e) {
     caught = e;
   }
@@ -189,6 +193,7 @@ describe('resolve — Span is not a node', () => {
             <Text>d</Text>
           </Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.children.map((c) => c.path)).toEqual(['Slide > Text[0]', 'Slide > Text[1]']);
@@ -201,7 +206,7 @@ describe('resolve — Span is not a node', () => {
         a <B>b</B>
       </Text>
     );
-    const slide = slideOf(resolveDeck(<Deck><Slide><Box><Title /></Box></Slide></Deck>));
+    const slide = slideOf(resolveDeck(<Deck><Slide><Box><Title /></Box></Slide></Deck>, RESOLVE_CTX));
     const box = slide.children[0];
     expect(box?.kind === 'box' ? box.children.map((c) => c.path) : []).toEqual(['Slide > Box > Title']);
   });

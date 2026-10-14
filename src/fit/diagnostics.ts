@@ -240,3 +240,47 @@ export const imageUpscaled = (
     path,
     message: `Imagem desenhada com ${round(drawn.width)} pt de largura, acima do natural (${drawn.pixels} px = ${round(drawn.natural)} pt a 96 dpi); pode sair borrada. Use um arquivo com mais resolução ou reduza a área da imagem.`,
   });
+
+const ordinal = (index: number): string => `${index + 1}º`;
+
+/** "3 de 12 itens no 1º, 5 no 2º, 4 no 3º" */
+const describeParts = (items: readonly number[]): string => {
+  const total = items.reduce((sum, count) => sum + count, 0);
+  return items.map((count, index) => (index === 0 ? `${count} de ${total} itens no 1º` : `${count} no ${ordinal(index)}`)).join(', ');
+};
+
+export const slideContinued = (
+  ctx: DiagnosticContext,
+  path: string,
+  pagination: { readonly sourceSlide: number; readonly items: readonly number[] },
+): Diagnostic =>
+  make(ctx, {
+    severity: 'info',
+    code: 'slide-continued',
+    path,
+    message: `Slide ${pagination.sourceSlide} do autor virou ${pagination.items.length} slides (${describeParts(pagination.items)}). Para caber em menos slides, reduza o size dos itens ou o conteúdo.`,
+    data: { parts: pagination.items.length, sourceSlide: pagination.sourceSlide },
+  });
+
+const paginationStop = (maxParts: number): string =>
+  ` A paginação parou em ${maxParts} partes; divida o conteúdo em mais de um slide no deck.`;
+
+/** O box-overflow que o fit já deu em P ganha a frase de parada. */
+export const withPaginationStop = (diagnostic: Diagnostic, maxParts: number): Diagnostic => ({
+  ...diagnostic,
+  message: `${diagnostic.message}${paginationStop(maxParts)}`,
+});
+
+/** Sem box-overflow do fit em P (o shrink pode ter feito caber): o limite ainda precisa ser dito ao autor. */
+export const paginationLimit = (ctx: DiagnosticContext, path: string, remaining: number, maxParts: number): Diagnostic =>
+  make(ctx, {
+    severity: 'error',
+    code: 'box-overflow',
+    path,
+    message: `Os ${remaining} itens restantes não couberam numa parte com o size do autor e ficaram todos na última parte (o texto deles pode ter sido reduzido).${paginationStop(maxParts)}`,
+  });
+
+export const withSourceSlide = (diagnostic: Diagnostic, sourceSlide: number): Diagnostic => ({
+  ...diagnostic,
+  data: { ...diagnostic.data, sourceSlide },
+});

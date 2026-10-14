@@ -19,6 +19,7 @@ import { textStyleOf } from '../../src/core/defaults.ts';
 import { Deck } from '../../src/primitives/index.ts';
 import { layoutSlide } from '../../src/layout/index.ts';
 import { resolveDeck } from '../../src/resolve/index.ts';
+import { createContext } from '../../src/sizes.ts';
 import { createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
 import { DEFAULT_FONTS } from '../../src/fonts/index.ts';
 import { SIZE_16X9 } from './nodes.ts';
@@ -43,20 +44,21 @@ export const createSpyEnv = () => {
   return { env, calls };
 };
 
-export const resolveSlide = (slide: SlideElement): ResolvedSlide => {
-  const first = resolveDeck(<Deck>{slide}</Deck>).slides[0];
+/** M9: resolve com o ctx do tamanho em que o slide vai ser ajustado (props responsivas). */
+export const resolveSlide = (slide: SlideElement, size: SlideSize = SIZE_16X9): ResolvedSlide => {
+  const first = resolveDeck(<Deck>{slide}</Deck>, createContext(size)).slides[0];
   if (!first) throw new Error('no slide');
   return first;
 };
 
 export const fitWith = (env: LayoutEnv, slide: SlideElement, size: SlideSize = SIZE_16X9): FitResult =>
-  fitSlide({ slide: resolveSlide(slide), slideIndex: 0, size, env });
+  fitSlide({ slide: resolveSlide(slide, size), slideIndex: 0, size, env });
 
 export const fit = (slide: SlideElement, size: SlideSize = SIZE_16X9): FitResult => fitWith(realEnv, slide, size);
 
 /** Layout sem ajuste (tamanhos do autor), para verificar pré-condições sem depender do fit. */
 export const layoutOnly = (slide: SlideElement, size: SlideSize = SIZE_16X9): PositionedSlide =>
-  layoutSlide(resolveSlide(slide), size, realEnv);
+  layoutSlide(resolveSlide(slide, size), size, realEnv);
 
 export const allNodes = (slide: PositionedSlide): PositionedNode[] => {
   const walk = (nodes: readonly PositionedNode[]): PositionedNode[] =>

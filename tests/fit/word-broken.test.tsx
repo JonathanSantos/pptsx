@@ -13,11 +13,15 @@ import type {
 import { DEFAULTS, textStyleOf } from '../../src/core/defaults.ts';
 import { Box, Deck, Slide, Text } from '../../src/primitives/index.ts';
 import { resolveDeck } from '../../src/resolve/index.ts';
+import { createContext, resolveSize } from '../../src/sizes.ts';
 import { createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
 import { DEFAULT_FONTS } from '../../src/fonts/index.ts';
 import { KpiRow } from '../../examples/components/index.ts';
 import { SIZE_16X9, SIZE_4X3 } from '../helpers/nodes.ts';
 import { allMemberPaths, memberPaths } from '../helpers/diagnostics.ts';
+
+/** M9: resolveDeck exige ctx; estes testes não usam props responsivas, então 16x9 basta. */
+const RESOLVE_CTX = createContext(resolveSize('16x9'));
 
 /**
  * CONTRACTS §fit "Palavra partida conta como estouro (M5-F)" e a linha
@@ -30,7 +34,7 @@ const env: LayoutEnv = {
 };
 
 const resolveSlide = (slide: SlideElement): ResolvedSlide => {
-  const first = resolveDeck(<Deck>{slide}</Deck>).slides[0];
+  const first = resolveDeck(<Deck>{slide}</Deck>, RESOLVE_CTX).slides[0];
   if (!first) throw new Error('no slide');
   return first;
 };

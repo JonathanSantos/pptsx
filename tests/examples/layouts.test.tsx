@@ -6,9 +6,12 @@ import { resolveDeck } from '../../src/resolve/index.ts';
 import { createContext, resolveSize } from '../../src/sizes.ts';
 import type { ResolvedBox, ResolvedNode, ResolvedShape, ResolvedSlide, ResolvedText, SlideElement } from '../../src/core/types.ts';
 
+/** M9: resolveDeck exige ctx; estes testes não usam props responsivas, então 16x9 basta. */
+const RESOLVE_CTX = createContext(resolveSize('16x9'));
+
 /** Layouts de exemplo (contrato M5, versão polida): ctx no círculo, caption, justify. */
 
-const resolveSlide = (slide: SlideElement): ResolvedSlide => resolveDeck(<Deck>{slide}</Deck>).slides[0]!;
+const resolveSlide = (slide: SlideElement): ResolvedSlide => resolveDeck(<Deck>{slide}</Deck>, RESOLVE_CTX).slides[0]!;
 
 const descendants = (nodes: readonly ResolvedNode[]): ResolvedNode[] =>
   nodes.flatMap((node) => [node, ...('children' in node ? descendants(node.children) : [])]);

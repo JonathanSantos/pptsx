@@ -91,6 +91,32 @@ describe('createContext', () => {
   });
 });
 
+describe('createContext — pick (M9)', () => {
+  it('4x3 is tall: pick({ base: 3, tall: 4 }) === 4', () => {
+    expect(createContext(PRESETS['4x3']).pick({ base: 3, tall: 4 })).toBe(4);
+  });
+
+  it('16x9 is not tall: pick({ base: 3, tall: 4 }) === 3', () => {
+    expect(createContext(PRESETS['16x9']).pick({ base: 3, tall: 4 })).toBe(3);
+  });
+
+  it('wide picks wide; exact name wins', () => {
+    const ctx = createContext(PRESETS.wide);
+    expect(ctx.pick({ base: 1, wide: 2 })).toBe(2);
+    expect(createContext(PRESETS['4x3']).pick({ base: 1, tall: 2, '4x3': 3 })).toBe(3);
+  });
+
+  it('non-responsive values pass through', () => {
+    const padding = { top: 10 };
+    expect(createContext(PRESETS['4x3']).pick(padding)).toBe(padding);
+    expect(createContext(PRESETS['4x3']).pick(7)).toBe(7);
+  });
+
+  it('a custom 10x7.5in answers to its name', () => {
+    expect(createContext(resolveSize({ width: 10, height: 7.5 })).pick({ base: 1, tall: 2, 'custom-10x7.5': 3 })).toBe(3);
+  });
+});
+
 describe('parseSizeList', () => {
   it("parses '16x9,4x3' into presets", () => {
     expect(parseSizeList('16x9,4x3')).toEqual(['16x9', '4x3']);

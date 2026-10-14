@@ -31,6 +31,7 @@ import {
 import type { Pass, Plans, TextPlan } from './pass.ts';
 import { patchTexts } from './rewrite.ts';
 import type { TextPatch } from './rewrite.ts';
+import { isWithin } from './scope.ts';
 import { shrinkRounds } from './search.ts';
 
 export interface FitInput {
@@ -148,17 +149,26 @@ const diagnosticsOf = (pass: Pass, plans: Plans, input: FitInput): readonly Diag
   return [...texts, ...boxes, ...outside, ...images];
 };
 
+/** Planos que podem encolher: os Text dentro do escopo congelado ficam com o size do autor. */
+const shrinkablePlans = (plans: Plans, frozenScope: string | undefined): Plans =>
+  frozenScope === undefined ? plans : new Map([...plans].filter(([path]) => !isWithin(path, frozenScope)));
+
 /**
  * Loop de ajuste: layout → detectar → por escopo disparado, busca binária do menor
  * delta de shrink (um layout por tentativa) → repetir em rodadas até nada disparar.
  * A bisseção troca os N layouts do passo de 1 pt por ~log2(N), e o piso pela palavra
  * partida pula direto ao size em que ela cabe. Depois: truncate + relayout final,
  * diagnósticos, causa (quem tomou o espaço) e agrupamento de irmãos iguais.
+ *
+ * `frozenScope` (interno, paginação): os Text dentro dele não disparam nem entram em
+ * busca de shrink; truncate e diagnósticos continuam valendo para eles.
  */
-export const fitSlide = (input: FitInput): FitResult => {
+export const fitSlideFrozen = (input: FitInput, frozenScope: string | undefined): FitResult => {
   const plans = plansOf(input.slide);
-  const shrunk = shrinkRounds(passOf(input.slide, input), plans, input, DEFAULTS.maxFitIterations);
+  const shrunk = shrinkRounds(passOf(input.slide, input), shrinkablePlans(plans, frozenScope), input, DEFAULTS.maxFitIterations);
   const final = settle(shrunk, plans, input);
   const diagnostics = attributeCauses(diagnosticsOf(final, plans, input), final.positioned, final.overflows);
   return { slide: final.positioned, diagnostics: groupDiagnostics(diagnostics) };
 };
+
+export const fitSlide = (input: FitInput): FitResult => fitSlideFrozen(input, undefined);

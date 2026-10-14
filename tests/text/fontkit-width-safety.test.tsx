@@ -6,6 +6,7 @@ import { fitSlide } from '../../src/fit/index.ts';
 import { Deck, Slide, Text } from '../../src/primitives/index.ts';
 import { render } from '../../src/render.ts';
 import { resolveDeck } from '../../src/resolve/index.ts';
+import { createContext } from '../../src/sizes.ts';
 import { createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
 import { defineDeck } from '../../src/index.ts';
 import { SIZE_16X9, SIZE_4X3 } from '../helpers/nodes.ts';
@@ -89,7 +90,7 @@ const texts = (nodes: readonly PositionedNode[]): PositionedText[] =>
 
 describe('fitSlide — centered short texts (align/justify center)', () => {
   it.each([SIZE_16X9, SIZE_4X3])('$name: 0 diagnostics and each text on one line', (size) => {
-    const slide = resolveDeck(<Deck>{centered}</Deck>).slides[0]!;
+    const slide = resolveDeck(<Deck>{centered}</Deck>, createContext(size)).slides[0]!;
     const result = fitSlide({ slide, slideIndex: 0, size, env });
     expect(result.diagnostics).toEqual([]);
     const positioned = texts(result.slide.children);

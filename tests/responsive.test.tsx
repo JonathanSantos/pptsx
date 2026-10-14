@@ -58,8 +58,10 @@ describe('ctx — scale', () => {
         </Slide>
       </Deck>
     ));
-    const small = resolveDeck(deck(createContext(resolveSize({ width: 5, height: 2.8125 }))));
-    const wide = resolveDeck(deck(createContext(resolveSize('wide'))));
+    const smallCtx = createContext(resolveSize({ width: 5, height: 2.8125 }));
+    const wideCtx = createContext(resolveSize('wide'));
+    const small = resolveDeck(deck(smallCtx), smallCtx);
+    const wide = resolveDeck(deck(wideCtx), wideCtx);
     const sizeOf = (d: typeof small) => (d.slides[0]!.children[0] as { props: { size?: number } }).props.size;
     expect(sizeOf(small)).toBe(10);
     expect(sizeOf(wide)).toBe(27);
@@ -67,7 +69,10 @@ describe('ctx — scale', () => {
 });
 
 describe('responsiveness — ctx.aspect changes the structure', () => {
-  const resolvedAt = (name: '16x9' | '4x3') => resolveDeck(responsive(createContext(resolveSize(name))));
+  const resolvedAt = (name: '16x9' | '4x3') => {
+    const ctx = createContext(resolveSize(name));
+    return resolveDeck(responsive(ctx), ctx);
+  };
 
   it('16x9 and 4x3 resolve to different trees', () => {
     const wide = resolvedAt('16x9');

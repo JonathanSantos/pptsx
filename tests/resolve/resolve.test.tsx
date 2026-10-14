@@ -3,6 +3,10 @@ import type { Child, Component, ResolvedDeck, ResolvedSlide, SlideElement } from
 import { jsx } from '../../src/jsx/jsx-runtime.ts';
 import { Box, Deck, Image, Shape, Slide, Text } from '../../src/primitives/index.ts';
 import { ResolveError, resolveDeck } from '../../src/resolve/index.ts';
+import { createContext, resolveSize } from '../../src/sizes.ts';
+
+/** M9: resolveDeck exige ctx; estes testes não usam props responsivas, então 16x9 basta. */
+const RESOLVE_CTX = createContext(resolveSize('16x9'));
 
 const firstSlide = (deck: ResolvedDeck): ResolvedSlide => {
   const slide = deck.slides[0];
@@ -24,7 +28,7 @@ const collectPaths = (slide: ResolvedSlide): string[] => {
 const expectResolveError = (root: SlideElement): ResolveError => {
   let caught: unknown;
   try {
-    resolveDeck(root);
+    resolveDeck(root, RESOLVE_CTX);
   } catch (e) {
     caught = e;
   }
@@ -61,7 +65,7 @@ describe('resolveDeck — full tree', () => {
   );
 
   it('matches the expected resolved tree', () => {
-    const resolved = resolveDeck(deck);
+    const resolved = resolveDeck(deck, RESOLVE_CTX);
     expect(resolved).toEqual({
       slides: [
         {
@@ -112,7 +116,7 @@ describe('resolveDeck — full tree', () => {
   });
 
   it('matches the stored snapshot', () => {
-    expect(resolveDeck(deck)).toMatchSnapshot();
+    expect(resolveDeck(deck, RESOLVE_CTX)).toMatchSnapshot();
   });
 });
 
@@ -125,7 +129,7 @@ describe('resolveDeck — expansion', () => {
         <Slide />
       </Deck>
     );
-    const resolved = resolveDeck(<MyDeck />);
+    const resolved = resolveDeck(<MyDeck />, RESOLVE_CTX);
     expect(resolved.slides).toHaveLength(1);
     expect(firstSlide(resolved).kind).toBe('slide');
   });
@@ -144,6 +148,7 @@ describe('resolveDeck — expansion', () => {
           </Wrapper>
         </Slide>
       </Deck>,
+      RESOLVE_CTX,
     );
     expect(received).toMatchObject({ color: '#00ff00' });
     expect((received as { children: SlideElement }).children.type).toBe(Text);
@@ -167,6 +172,7 @@ describe('resolveDeck — expansion', () => {
             <Outer />
           </Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.children).toEqual([
@@ -200,6 +206,7 @@ describe('resolveDeck — expansion', () => {
             </>
           </Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.children.map((c) => c.kind)).toEqual(['box', 'shape']);
@@ -212,6 +219,7 @@ describe('resolveDeck — expansion', () => {
         <Deck>
           <Slide>{items.map((i) => <Text key={i}>{i}</Text>)}</Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.children.map((c) => (c.kind === 'text' ? c.content : c.kind))).toEqual(['a', 'b', 'c']);
@@ -228,6 +236,7 @@ describe('resolveDeck — expansion', () => {
           <Slide key={n} />
         ))}
       </Deck>,
+      RESOLVE_CTX,
     );
     expect(resolved.slides).toHaveLength(4);
   });
@@ -246,6 +255,7 @@ describe('resolveDeck — expansion', () => {
           </Slide>
           {false}
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.children.map((c) => c.kind)).toEqual(['box']);
@@ -253,12 +263,12 @@ describe('resolveDeck — expansion', () => {
 
   it('discards a component that returns null', () => {
     const Nothing = (() => null) as unknown as Component;
-    const slide = firstSlide(resolveDeck(jsx(Deck, { children: jsx(Slide, { children: [jsx(Nothing, {}), jsx(Box, {})] }) })));
+    const slide = firstSlide(resolveDeck(jsx(Deck, { children: jsx(Slide, { children: [jsx(Nothing, {}), jsx(Box, {})] }) }), RESOLVE_CTX));
     expect(slide.children.map((c) => c.kind)).toEqual(['box']);
   });
 
   it('produces a slide with no children as an empty array', () => {
-    expect(firstSlide(resolveDeck(<Deck><Slide /></Deck>)).children).toEqual([]);
+    expect(firstSlide(resolveDeck(<Deck><Slide /></Deck>, RESOLVE_CTX)).children).toEqual([]);
   });
 });
 
@@ -266,7 +276,7 @@ describe('resolveDeck — expansion', () => {
 
 describe('resolveDeck — Text content', () => {
   const textOf = (el: SlideElement): string => {
-    const node = firstSlide(resolveDeck(<Deck><Slide>{el}</Slide></Deck>)).children[0];
+    const node = firstSlide(resolveDeck(<Deck><Slide>{el}</Slide></Deck>, RESOLVE_CTX)).children[0];
     if (!node || node.kind !== 'text') throw new Error('expected text');
     return node.content;
   };
@@ -310,6 +320,7 @@ describe('resolveDeck — props', () => {
             </Box>
           </Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.props).toEqual({ direction: 'row', gap: 4 });
@@ -323,7 +334,7 @@ describe('resolveDeck — props', () => {
   });
 
   it('does not fill in defaults', () => {
-    const node = firstSlide(resolveDeck(<Deck><Slide><Text>x</Text></Slide></Deck>)).children[0];
+    const node = firstSlide(resolveDeck(<Deck><Slide><Text>x</Text></Slide></Deck>, RESOLVE_CTX)).children[0];
     expect(node?.props).toEqual({});
   });
 });
@@ -340,7 +351,7 @@ describe('resolveDeck — path rules', () => {
         </Box>
       </Slide>
     );
-    const slide = firstSlide(resolveDeck(<Deck><CoverLayout /></Deck>));
+    const slide = firstSlide(resolveDeck(<Deck><CoverLayout /></Deck>, RESOLVE_CTX));
     expect(collectPaths(slide)).toEqual([
       'CoverLayout',
       'CoverLayout > Box',
@@ -350,7 +361,7 @@ describe('resolveDeck — path rules', () => {
   });
 
   it('uses the plain primitive name for slides without component', () => {
-    expect(firstSlide(resolveDeck(<Deck><Slide /></Deck>)).path).toBe('Slide');
+    expect(firstSlide(resolveDeck(<Deck><Slide /></Deck>, RESOLVE_CTX)).path).toBe('Slide');
   });
 
   it('never indexes slides even when the deck has several', () => {
@@ -359,12 +370,13 @@ describe('resolveDeck — path rules', () => {
         <Slide />
         <Slide />
       </Deck>,
+      RESOLVE_CTX,
     );
     expect(resolved.slides.map((s) => s.path)).toEqual(['Slide', 'Slide']);
   });
 
   it('does not include the Deck in the path', () => {
-    const slide = firstSlide(resolveDeck(<Deck><Slide><Box /></Slide></Deck>));
+    const slide = firstSlide(resolveDeck(<Deck><Slide><Box /></Slide></Deck>, RESOLVE_CTX));
     expect(slide.children[0]?.path).toBe('Slide > Box');
   });
 
@@ -379,6 +391,7 @@ describe('resolveDeck — path rules', () => {
             <Image src="x.png" />
           </Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.children.map((c) => c.path)).toEqual([
@@ -400,6 +413,7 @@ describe('resolveDeck — path rules', () => {
             <Card />
           </Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.children.map((c) => c.path)).toEqual(['Slide > Card[0]', 'Slide > Box', 'Slide > Card[1]']);
@@ -416,6 +430,7 @@ describe('resolveDeck — path rules', () => {
             {[<Text key="b">b</Text>]}
           </Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.children.map((c) => c.path)).toEqual(['Slide > Text[0]', 'Slide > Text[1]']);
@@ -431,6 +446,7 @@ describe('resolveDeck — path rules', () => {
             {false}
           </Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(slide.children.map((c) => c.path)).toEqual(['Slide > Text']);
@@ -439,14 +455,14 @@ describe('resolveDeck — path rules', () => {
   it('uses the outermost component name when components are nested', () => {
     const Inner = () => <Box />;
     const Outer = () => <Inner />;
-    const slide = firstSlide(resolveDeck(<Deck><Slide><Outer /></Slide></Deck>));
+    const slide = firstSlide(resolveDeck(<Deck><Slide><Outer /></Slide></Deck>, RESOLVE_CTX));
     expect(slide.children[0]?.path).toBe('Slide > Outer');
   });
 
   it('uses the outermost component name for the slide too', () => {
     const Inner = () => <Slide />;
     const Page = () => <Inner />;
-    expect(firstSlide(resolveDeck(<Deck><Page /></Deck>)).path).toBe('Page');
+    expect(firstSlide(resolveDeck(<Deck><Page /></Deck>, RESOLVE_CTX)).path).toBe('Page');
   });
 
   it('names primitives inside a component by their own name below the component segment', () => {
@@ -460,7 +476,7 @@ describe('resolveDeck — path rules', () => {
         </Box>
       </Box>
     );
-    const slide = firstSlide(resolveDeck(<Deck><Slide><Bullets /></Slide></Deck>));
+    const slide = firstSlide(resolveDeck(<Deck><Slide><Bullets /></Slide></Deck>, RESOLVE_CTX));
     expect(collectPaths(slide)).toEqual([
       'Slide',
       'Slide > Bullets',
@@ -473,7 +489,7 @@ describe('resolveDeck — path rules', () => {
 
   it("uses 'Anonymous' for components without a name", () => {
     const slide = firstSlide(
-      resolveDeck(jsx(Deck, { children: jsx(Slide, { children: jsx((() => jsx(Box, {})) as Component, {}) }) })),
+      resolveDeck(jsx(Deck, { children: jsx(Slide, { children: jsx((() => jsx(Box, {})) as Component, {}) }) }), RESOLVE_CTX),
     );
     expect(slide.children[0]?.path).toBe('Slide > Anonymous');
   });
@@ -485,7 +501,7 @@ describe('resolveDeck — path rules', () => {
         <Box />
       </>
     );
-    const slide = firstSlide(resolveDeck(<Deck><Slide><Pair /></Slide></Deck>));
+    const slide = firstSlide(resolveDeck(<Deck><Slide><Pair /></Slide></Deck>, RESOLVE_CTX));
     expect(slide.children.map((c) => c.path)).toEqual(['Slide > Pair[0]', 'Slide > Pair[1]']);
   });
 
@@ -500,6 +516,7 @@ describe('resolveDeck — path rules', () => {
             </Box>
           </Slide>
         </Deck>,
+        RESOLVE_CTX,
       ),
     );
     expect(collectPaths(slide)).toEqual(['Slide', 'Slide > Box', 'Slide > Box > Shape', 'Slide > Box > Image']);
