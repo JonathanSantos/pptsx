@@ -2,7 +2,34 @@
 
 Relatório completo: [`../M8-spike-fonts.md`](../M8-spike-fonts.md).
 
-Os cinco arquivos têm o mesmo slide: duas caixas de texto com `1 I l | Q G R a g @ & % 7 Æ ß` a 60 pt na fonte **Liberation Sans**, a de cima regular e a de baixo bold. O slide pede `typeface="Liberation Sans"`. A diferença entre os arquivos é só a fonte embutida (ou a falta dela).
+## Rodada 2 (testar agora): F e G, família renomeada
+
+A rodada 1 no PowerPoint para a web teve este resultado:
+- B, C1 e C2 foram recusados ("We can't open this presentation because one or more embedded fonts can't be installed").
+- A e E abriram, **idênticos** e com glifos parecidos com os da Liberation.
+
+O PowerPoint web provavelmente trocou "Liberation Sans" por uma fonte equivalente da nuvem (Arimo, que tem o mesmo desenho). Assim não dá para saber se o E usou a fonte embutida. A rodada 2 tira essa ambiguidade com um nome de família que **não existe em lugar nenhum**: `PptsxProbe Sans`.
+
+| arquivo | `typeface` no slide | `ppt/fonts/` | o que esperar se o embed funcionar |
+|---|---|---|---|
+| `F-eot-renomeada.pptx` | `PptsxProbe Sans` | EOT (formato do E) de um TTF da Liberation renomeado para `PptsxProbe Sans` (tabela `name`, cabeçalho EOT e `<p:embeddedFont>`), checksums recalculados | glifos **da Liberation**, iguais a `reference.png` |
+| `G-controle-renomeada.pptx` | `PptsxProbe Sans` | nada | substituta genérica (Arial, Calibri ou outra), **diferente** de `reference.png` |
+
+Como testar (PowerPoint web e, se puder, PowerPoint desktop):
+1. Abra **G** primeiro e anote a fonte substituta: o nome na caixa de fonte e o desenho de `ß`, `@`, `R`, `G` e `Q`.
+2. Abra **F** e compare com G e com `reference.png`, com zoom de 200 % ou mais.
+   - **F = G** → o embed foi ignorado (ou a fonte foi recusada em silêncio).
+   - **F = reference.png e F ≠ G** → o PowerPoint usou a fonte embutida, e o formato EOT está provado.
+   - **F recusado** com "embedded fonts can't be installed" → anote o texto. É o mesmo sintoma de B/C, então algo no EOT renomeado incomodou o validador.
+3. Anote se abriu sem reparo e se apareceu algum aviso de fonte.
+
+Atenção ao critério visual: na Liberation Sans (`reference.png`) o **`1` não tem pé** (base horizontal). Se algum render mostrar `1` com pé, a fonte **não** é a Liberation nem a Arimo. Compare sempre com a imagem, não com descrições de memória.
+
+---
+
+## Rodada 1 (A–E)
+
+Os cinco arquivos A–E têm o mesmo slide: duas caixas de texto com `1 I l | Q G R a g @ & % 7 Æ ß` a 60 pt na fonte **Liberation Sans**, a de cima regular e a de baixo bold. O slide pede `typeface="Liberation Sans"`. A diferença entre os arquivos é só a fonte embutida (ou a falta dela).
 
 **Antes de testar, confira que a Liberation Sans NÃO está instalada na máquina.** Se estiver, o teste não vale. No Windows, procure em Configurações > Personalização > Fontes. No Mac, use o Catálogo de Fontes.
 
@@ -61,14 +88,27 @@ Para cada arquivo, nesta ordem: A, B, C1, C2, E.
 
 | aplicativo (versão, SO) | variante | abriu sem reparo? | aviso de fonte? | usou a fonte embutida? | observações |
 |---|---|---|---|---|---|
-| PowerPoint ___ | A-sem-embed |  |  | (esperado: não) |  |
-| PowerPoint ___ | B-ttf-cru |  |  |  |  |
-| PowerPoint ___ | C1-ofuscado-invertido |  |  |  |  |
-| PowerPoint ___ | C2-ofuscado-direto |  |  |  |  |
-| PowerPoint ___ | E-eot |  |  |  |  |
+| **PowerPoint web** | G-controle-renomeada |  |  | (esperado: não) | substituta: ___ |
+| **PowerPoint web** | F-eot-renomeada |  |  | F = G? F = reference? | rodada 2: decide |
+| PowerPoint desktop ___ | G-controle-renomeada |  |  | (esperado: não) |  |
+| PowerPoint desktop ___ | F-eot-renomeada |  |  |  |  |
+| PowerPoint web | A-sem-embed | sim | — | inconclusivo | glifos parecidos com Liberation (rodada 1) |
+| PowerPoint web | B-ttf-cru | **não abriu** | "one or more embedded fonts can't be installed" | — | rodada 1 |
+| PowerPoint web | C1-ofuscado-invertido | **não abriu** | idem | — | rodada 1 |
+| PowerPoint web | C2-ofuscado-direto | **não abriu** | idem | — | rodada 1 |
+| PowerPoint web | E-eot | sim | — | inconclusivo | idêntico ao A (rodada 1) |
+| PowerPoint desktop ___ | A-sem-embed |  |  | (esperado: não) |  |
+| PowerPoint desktop ___ | B-ttf-cru |  |  |  |  |
+| PowerPoint desktop ___ | C1-ofuscado-invertido |  |  |  |  |
+| PowerPoint desktop ___ | C2-ofuscado-direto |  |  |  |  |
+| PowerPoint desktop ___ | E-eot |  |  |  |  |
 | Google Slides | A-sem-embed |  |  | (esperado: não) |  |
 | Google Slides | B-ttf-cru |  |  |  |  |
 | Google Slides | C1-ofuscado-invertido |  |  |  |  |
 | Google Slides | C2-ofuscado-direto |  |  |  |  |
 | Google Slides | E-eot |  |  |  |  |
-| Keynote 14.4 (macOS 26) | todas | sim | não observável (sem acesso à UI) | **não**: Helvetica em todas | resultado do spike |
+| Google Slides | G-controle-renomeada |  |  | (esperado: não) |  |
+| Google Slides | F-eot-renomeada |  |  |  |  |
+| Keynote 14.4 (macOS 26) | A–G, todas | sim | não observável (sem acesso à UI) | **não**: Helvetica em todas (F = G = A byte a byte) | resultado do spike |
+
+`build.mts` (rodada 1) e `build2.mts` (rodada 2) são os scripts que geraram os arquivos. Rode da raiz do repo com `npx tsx <script> <pasta-saída>`. Os GUIDs de C1/C2 são aleatórios a cada execução.

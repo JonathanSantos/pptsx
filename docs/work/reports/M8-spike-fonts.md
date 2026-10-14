@@ -2,9 +2,11 @@
 
 **Veredito no Keynote: IGNORA o embed.** Testei quatro formatos de `.fntdata`: TTF cru, TTF ofuscado (ECMA-376) com chave invertida, o mesmo com chave direta, e EOT. Em todos o Keynote 14.4 abriu o arquivo e renderizou com **Helvetica** no lugar da Liberation Sans. As PNGs exportadas são **idênticas byte a byte** às do controle sem embed. O Keynote também **descarta** as fontes quando reexporta para .pptx.
 
-**PowerPoint e Google Slides ficam pendentes** porque não estão nesta máquina. O kit para o dono testar está em [`m8-spike-fonts/`](m8-spike-fonts/README.md).
+**PowerPoint para a web (rodada 1, testado pelo dono):** recusa B, C1 e C2 com "We can't open this presentation because one or more embedded fonts can't be installed". Abre A e E. **Conclusão parcial: o formato que o PowerPoint aceita é EOT.** Falta provar que ele *usa* a fonte. A e E saíram idênticos, com desenho parecido com o da Liberation, provavelmente porque o PowerPoint web troca "Liberation Sans" pela Arimo da nuvem. A **rodada 2** (F e G, família renomeada para `PptsxProbe Sans`) existe para tirar essa dúvida. No Keynote, F e G também saem em Helvetica e idênticos byte a byte ao A.
 
-**Recomendação para o M8-D:** implementar o embed só se o teste do dono mostrar que o PowerPoint aceita algum formato. O embed não traz nada para o Keynote e provavelmente nada para o Google Slides. Se houver vencedor, ele entra como pós-processamento do zip (`src/emit/embed.ts`, no mesmo molde do `sanitize.ts`) e desligado por padrão. Detalhes no fim.
+**Google Slides e o resultado da rodada 2 ficam pendentes.** O kit para o dono testar está em [`m8-spike-fonts/`](m8-spike-fonts/README.md).
+
+**Recomendação para o M8-D:** implementar o embed **em EOT** só se F ≠ G no PowerPoint, ou seja, se ele usar a fonte embutida. O embed não traz nada para o Keynote e provavelmente nada para o Google Slides. Se houver vencedor, ele entra como pós-processamento do zip (`src/emit/embed.ts`, no mesmo molde do `sanitize.ts`) e desligado por padrão. Detalhes no fim.
 
 ## Objetivo
 
@@ -90,30 +92,82 @@ Montagem do cabeçalho EOT, em little-endian:
 - **Aviso de "fonte ausente":** não deu para observar. O AppleScript não tem permissão de acessibilidade (System Events), então não li a UI do Keynote. O comportamento é o mesmo do controle A: o Keynote troca a fonte na importação e já reporta "Helvetica" no modelo do documento.
 - **Round-trip:** o Keynote exporta o `.pptx` com `typeface="Liberation Sans"` preservado nos runs, mas **sem** `ppt/fonts/`, sem `<p:embeddedFontLst>` e sem `embedTrueTypeFonts`. O Keynote não lê nem grava fonte embutida em pptx. Por isso a variante "D" (fntdata gerado pelo Keynote) não existe.
 
+## Rodada 1 no PowerPoint para a web (resultado do dono)
+
+| variante | abriu? | mensagem | glifos |
+|---|---|---|---|
+| A — sem embed | sim | — | parecidos com os da Liberation |
+| B — TTF cru | **não** | "We can't open this presentation because one or more embedded fonts can't be installed" | — |
+| C1 — ofuscado invertido | **não** | idem | — |
+| C2 — ofuscado direto | **não** | idem | — |
+| E — EOT | sim | — | idênticos aos do A |
+
+- **Formato = EOT** (conclusão parcial). O PowerPoint web lê o `.fntdata` e valida a fonte. TTF cru e TTF ofuscado com GUID não passam. O EOT v2.1 sem compressão nem XOR passa.
+- **Uso não provado.** Com "Liberation Sans" sem embed (A), o PowerPoint web já mostra glifos parecidos com os da Liberation. A explicação provável é a substituição pela Arimo, o desenho original da Liberation, pelas fontes de nuvem do Office. Então E = A não separa "usou a embutida" de "substituiu bem".
+- Observação sobre o critério visual: na referência do resvg (`reference.png`) o `1` da Liberation Sans 2.1.5 **não tem pé**. Se o dono viu `1` com pé em A/E, a fonte exibida não era nem a Liberation nem a Arimo. Vale comparar de novo com a imagem na rodada 2.
+
+## Rodada 2: família renomeada (`PptsxProbe Sans`)
+
+**Ideia:** dar à fonte um nome que nenhum catálogo conhece. Sem embed (G), o PowerPoint é obrigado a usar uma substituta genérica. Com embed (F), só aparecem glifos da Liberation se a fonte embutida for usada.
+
+**Patch do TTF** (`build2.mts`):
+- Substituição de bytes de mesmo comprimento, em ASCII e em UTF-16BE: `Liberation Sans` → `PptsxProbe Sans` (15) e `LiberationSans` → `PptsxProbeSans` (14). Por arquivo foram 3 + 3 ocorrências do nome com espaço e 1 + 1 sem espaço.
+- O fontkit confirma o resultado. Regular: `familyName` "PptsxProbe Sans", `postscriptName` "PptsxProbeSans", `fullName` "PptsxProbe Sans". Bold: `PptsxProbeSans-Bold`, "PptsxProbe Sans Bold". O `uniqueSubfamily` vira "Ascender - PptsxProbe Sans".
+- Ficam intactos os textos de copyright e trademark ("Liberation is a trademark…"). O OFL proíbe o nome reservado em versão modificada, então renomear é o que a licença pede. Esse arquivo serve só para teste.
+- **Checksums recalculados**, um desvio do pedido ("registre e siga"). A troca deixou divergente só o checksum da tabela `name` (`0xdb3272ff` → `0xc084b9f1`) e, com ele, o `head.checkSumAdjustment`. Recalculei os dois, cerca de 15 linhas, porque o PowerPoint web já mostrou que valida a fonte ("can't be installed"). Assim uma recusa por checksum não custa outra rodada ao dono. Um verificador independente em Python confirma: nenhuma tabela divergente e `checkSumAdjustment` correto nos dois TTFs renomeados (e também no original).
+
+**Arquivos:**
+- **F-eot-renomeada.pptx:**
+  - `typeface="PptsxProbe Sans"` nos 12 `<a:latin>`/`<a:ea>`/`<a:cs>` do slide e no `<p:font>` do `<p:embeddedFont>`;
+  - `ppt/fonts/font1.fntdata` e `font2.fntdata` em EOT, gerados do TTF renomeado. FamilyName do cabeçalho EOT = "PptsxProbe Sans"; FullName = "PptsxProbe Sans" e "PptsxProbe Sans Bold";
+  - o resto é igual ao E: rels, content type, `embedTrueTypeFonts="1"`.
+- **G-controle-renomeada.pptx:** mesmo slide, sem embed.
+- O render de referência do resvg com a fonte renomeada é **idêntico pixel a pixel** ao `reference.png` da rodada 1 (`getbbox()` da diferença = `None`). A referência continua valendo.
+
+**Keynote 14.4:**
+
+| variante | abriu? | `/BaseFont` no PDF | fonte reportada (AppleScript) | PNG |
+|---|---|---|---|---|
+| F — EOT renomeada | sim, sem erro | `Helvetica`, `Helvetica-Bold` | Helvetica / Helvetica-Bold | idêntico byte a byte ao G e ao A |
+| G — controle renomeada | sim, sem erro | `Helvetica`, `Helvetica-Bold` | Helvetica / Helvetica-Bold | idêntico byte a byte ao A |
+
+Como esperado, o Keynote ignora o embed também com o nome inédito. Validação: todas as partes XML de F e G estão bem formadas; os alvos dos relacionamentos de fonte existem; o content type `fntdata` está presente. A ordem `sldIdLst`/`notesMasterIdLst` vem do pptxgenjs, como antes.
+
 ## Pendente para o dono
 
 Kit em `docs/work/reports/m8-spike-fonts/`:
-- `A-sem-embed.pptx`, `B-ttf-cru.pptx`, `C1-ofuscado-invertido.pptx`, `C2-ofuscado-direto.pptx`, `E-eot.pptx`;
+- rodada 2: `F-eot-renomeada.pptx` e `G-controle-renomeada.pptx`;
+- rodada 1: `A-sem-embed.pptx`, `B-ttf-cru.pptx`, `C1-ofuscado-invertido.pptx`, `C2-ofuscado-direto.pptx`, `E-eot.pptx`;
 - `reference.png` (Liberation real, 37 KB) e `reference-vs-substituta.png` (Liberation × Helvetica, 81 KB);
-- `README.md` com os passos e a tabela para preencher.
+- scripts `build.mts` e `build2.mts`;
+- `README.md` com os passos e a tabela, já preenchida com a rodada 1 do PowerPoint web.
 
-1. **PowerPoint** (Windows e, se possível, Mac): abriu sem reparo? Usou a fonte embutida? Quais indícios aparecem ("Inserir fontes no arquivo" marcado, Substituir Fontes)? A variante que mostrar a Liberation é o formato do M8-D. Se C1 e C2 funcionarem e só um deles abrir sem reparo, esse define a ordem da chave.
-2. **PowerPoint, passo extra (o mais informativo):** com a Liberation instalada temporariamente, salvar o A com "Inserir fontes no arquivo" e devolver o arquivo. O cabeçalho do `.fntdata` nativo responde a pergunta do formato sem tentativa e erro (TTF, EOT com ou sem MTX, XOR).
-3. **Google Slides:** importar os cinco e anotar a fonte exibida. A expectativa é substituição em todos, porque o Slides só usa fontes do próprio catálogo.
+1. **Rodada 2 no PowerPoint web (decisiva):** abrir G, anotar a substituta, abrir F e comparar com G e com `reference.png`.
+   - F = Liberation e F ≠ G → o EOT funciona e o M8-D implementa.
+   - F = G → o PowerPoint web aceita o EOT mas não usa a fonte.
+   - F recusado → algo no EOT renomeado (anotar a mensagem).
+2. **PowerPoint desktop (Windows/Mac), se houver:** repetir F/G. O desktop instala fontes embutidas de forma diferente do web, e o resultado pode divergir.
+3. **Passo extra opcional:** com a fonte instalada, salvar um pptx com "Inserir fontes no arquivo" no PowerPoint desktop e devolver. O cabeçalho do `.fntdata` nativo mostra se o PowerPoint grava EOT com MTX/XOR ou sem compressão. Isso afina o formato, mas a rodada 1 já mostrou que o EOT sem compressão é aceito.
+4. **Google Slides:** importar F e G (e, se quiser, A–E) e anotar a fonte exibida. A expectativa é substituição em todos.
 
 ## Recomendação para o M8-D
 
-1. **Formato.** O Keynote não respeitou nenhuma variante, então ele não dá base para escolher. **O embed só se justifica pelo PowerPoint e depende do teste do dono.** Se o dono não puder testar logo, a aposta mais provável é **E (EOT sem compressão)**, pelo indício do importador do LibreOffice. B (TTF cru) é a segunda candidata. A ofuscação com GUID (C1/C2) é a menos provável no pptx, porque o PresentationML não tem onde guardar a chave (`fontKey`). Se o teste reprovar todas, o M8 fecha o critério "ou o spike conclui que não vale, com evidência" e o `embedFonts` não entra.
+1. **Formato: EOT v2.1 sem compressão (MTX) e sem XOR**, como em E/F: cabeçalho de 80 bytes + nomes em UTF-16LE + TTF inteiro. TTF cru e TTF ofuscado com GUID estão **descartados**, porque o PowerPoint web recusa os dois. A implementação fica condicionada à rodada 2:
+   - **F ≠ G** (o PowerPoint usa a fonte embutida) → implementar `embedFonts` em EOT.
+   - **F = G** → o embed só "passa no validador" e não muda o render. O M8 fecha o critério com "o spike conclui que não vale, com evidência" e o `embedFonts` não entra. Ou entra só se o PowerPoint desktop mostrar diferença.
+
+   O Keynote ignora o embed em todos os formatos e não serve de base para a escolha.
 2. **Onde no pipeline.** `src/emit/embed.ts`, como pós-processamento do buffer (`JSZip.loadAsync` → partes → `generateAsync`), encadeado depois do `sanitizePptx`. Ele recebe as faces usadas, já resolvidas, por injeção a partir do `render.ts`. A leitura dos `.ttf` (IO) fica na borda e as funções de montagem de XML e de bytes ficam puras:
+   - `toEot(ttf, names)`, com os nomes lidos da tabela `name` via fontkit
    - `embeddedFontListXml(faces)`
    - `fontRelationshipsXml(faces)`
-   - `toEot(ttf, names)` ou `obfuscate(ttf, guid)`, conforme o vencedor
    - `insertAfterNotesSz(presXml, fragment)`
 
-   O código do spike (`build.mts`) cobre tudo isso em cerca de 100 linhas.
+   O código do spike (`build.mts`/`build2.mts`) cobre tudo isso em cerca de 100 linhas.
 3. **Cuidados:**
    - **Uma família por `<p:embeddedFont>`** com até quatro faces (`regular`, `bold`, `italic`, `boldItalic`). `typeface` igual ao do `<a:latin>` dos runs, que é a família lógica do deck. Atenção: com os `DEFAULT_FONTS` o pptx sai como "Arial" e embutir Liberation com o nome "Arial" seria errado. Só embutir faces cuja família emitida é o nome interno real da fonte.
    - **Ordem do schema:** `<p:embeddedFontLst>` depois de `<p:notesSz>` (ou `<p:smartTags>`) e antes de `<p:custShowLst>`/`<p:defaultTextStyle>`. Marcar `embedTrueTypeFonts="1"`. Avaliar se mantém `saveSubsetFonts="1"` do pptxgenjs, que faz o PowerPoint regravar só um subconjunto da fonte quando o usuário salva.
    - **Licença:** respeitar `OS/2.fsType`. Bit 1 (restricted) → não embutir e emitir diagnóstico. Bits 2/3 (preview & print / editable) → embutir é permitido, mas o PowerPoint pode abrir somente leitura. OFL (Liberation, Inter etc.) permite.
-   - **Tamanho:** cerca de 410 KB por face da Liberation. Quatro faces somam cerca de 1,6 MB num deck de 15 KB. Subset (só os glifos usados) reduz muito, mas exige reescrever o TTF (fontkit `createSubset`) e muda o checksum. Fica para depois, e só se o formato vencedor aceitar subset.
+   - **Tamanho:** cerca de 410 KB por face da Liberation. Quatro faces somam cerca de 1,6 MB num deck de 15 KB. Subset (só os glifos usados) reduz muito, mas exige reescrever o TTF (fontkit `createSubset`) e muda o checksum. Fica para depois. O EOT tem flag de subset (`TTEMBED_SUBSET`).
    - **Padrão desligado** (`embedFonts: false`), com documentação explicando que Keynote ignora, e o Google Slides provavelmente também.
+   - **Validação do PowerPoint:** ele recusa o arquivo inteiro (não só a fonte) quando não consegue instalar uma fonte embutida. Gerar o EOT com os campos do cabeçalho tirados do próprio TTF (PANOSE, pesos, ranges, `checkSumAdjustment`) e nunca embutir um TTF com checksums inválidos. Se o M8-D algum dia fizer subset, recalcular os checksums como no `build2.mts`.
