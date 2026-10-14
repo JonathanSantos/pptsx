@@ -371,3 +371,63 @@ export const fitDeck: (input: FitDeckInput) => FitDeckResult;   // exportado de 
 ### `src/index.ts` (M9-0 já ligou)
 
 Exporta os tipos `Breakpoint`, `Responsive`, `ResponsiveValue`, `ResponsiveProps`, `AuthorPropsMap`. `resolveDeck` passa a exigir `ctx`.
+
+## M10 — `Chart` e `Table` nativos (regras por módulo)
+
+Tipos em `src/core/types.ts`: `ChartKind`, `ChartSeries`, `ChartData`, `ChartProps`, `TableCellValue`, `TableColumn`, `TableHeaderStyle`, `TableFitPolicy`, `TableProps`, kinds `'chart' | 'table'` em `PrimitiveKind`/`PrimitivePropsMap`/`AuthorPropsMap`, `ResolvedChart`, `ResolvedTable` (rows já em string), `PositionedChart`, `PositionedTable` (`fontSize`, `columnWidths`, `rowHeights`, `cells`, `height`), código `'table-overflow'` e `data.shownRows/totalRows`. Padrões e helpers em `src/core/defaults.ts`: `DEFAULTS.chart` (palette, labelSize 12, labelColor, barGapWidthPct 80, lineSize 2, borderWidth 0), `DEFAULTS.table` (size 14, cellPadding 4, header bold, fit shrink, borderWidth 0.5), `tableStyleOf`, `tableFitOf`, `tableMinSizeOf`, `tableHeaderOf`, `chartLabelStyleOf`, `chartColorOf`, `chartLegendOf`. Primitivas `Chart` e `Table` já existem em `src/primitives/index.ts` e são exportadas de `src/index.ts` (M10-0).
+
+Todo módulo que despacha por `kind` (`DispatchTable`) passa a cobrir `chart` e `table`; todo helper que lista kinds de primitiva (`fit/scope.ts PRIMITIVE_KINDS`) inclui os dois.
+
+### `src/resolve/` + `src/primitives/` (M10-A)
+
+- `chart`/`table` são folhas: filhos → `ResolveError` `"<Chart> não aceita filhos"` (idem Table). Props responsivas valem como nas outras primitivas (`data`, `columns`, `rows` podem ser responsivos; são objetos/arrays sem `base`, passam intactos quando concretos).
+- **Chart** valida após resolver as props: `kind` ∈ bar/line/pie; `categories.length ≥ 1`; `series.length ≥ 1`; cada `series[i].values.length === categories.length` (erro: `"<Chart>: a série \"Receita\" tem 3 valores para 4 categorias"`); `pie` com `series.length !== 1` → `"<Chart kind=\"pie\"> aceita uma única série; recebeu 2"`; valor não finito → erro citando série e índice. Tamanho: sem `width`, `height`, `grow` (> 0) e sem `position="absolute"` → `"<Chart> precisa de width, height ou grow: um gráfico não tem tamanho próprio"`.
+- **Table** valida: `columns.length ≥ 1`; cada `rows[i].length === columns.length` (erro: `"<Table>: a linha 3 tem 3 células para 4 colunas"`); `rows` pode ser vazio (só cabeçalho). Células `number` viram `String(n)`; strings ficam como estão (NBSP e `\n` valem como no Text). `ResolvedTable.rows` sai normalizado; `props.rows` continua como o autor escreveu.
+- Path: segmentos `Chart`/`Table` (ou o nome do componente), como as outras primitivas.
+
+### `src/layout/` (M10-B)
+
+```ts
+// src/layout/table.ts (puro; exportado de src/layout/index.ts para o tester)
+export interface TableLayout { columnWidths: Pt[]; rowHeights: Pt[]; cells: TextLayout[][]; height: Pt; width: Pt }
+export const columnWidthsOf: (columns: readonly TableColumn[], tableWidth: Pt) => readonly Pt[];
+export const measureTable: (table: ResolvedTable, width: Pt /* Infinity = sem limite */, env: LayoutEnv) => TableLayout;
+```
+
+- **Chart:** folha sem measure function, `toItemStyle(props, parent.direction)` (como Shape). Fica com o que o flex der; `grow` segue a regra geral (basis 0).
+- **Larguras de coluna** (`columnWidthsOf`): coluna com `width` em pt fica fixa; em `%` é a fração da largura da tabela; as sem `width` dividem **igualmente** o que sobra (`max(0, restante) / n`). Sem coluna livre e soma ≠ largura → escala todas proporcionalmente para fechar a largura. Resultado sempre soma `tableWidth` (quando finita).
+- **Células** (`measureTable`): para cada linha (cabeçalho primeiro, quando `tableHeaderOf(props)` ≠ undefined) e coluna, `env.measureText({ content, style, maxWidth: max(0, colW − 2 × cellPadding) })`, com `style = tableStyleOf(props)`; no cabeçalho `weight = header.weight ?? 'bold'`. `rowHeights[r] = max(cells[r][c].height) + 2 × cellPadding`; `height = Σ rowHeights`. Linhas de dados vazias (`rows = []`) → só o cabeçalho.
+- **Largura indefinida** (Yoga `Undefined`/`AtMost` sem limite útil, ex.: Table numa row sem `grow`/`width`): células medidas com `maxWidth = Infinity`; coluna livre = célula mais larga + 2 × padding; coluna fixa em pt = o valor; `%` sem base → tratada como livre; `width = Σ`. Em `AtMost` o resultado é `min(width, limite)` e as células são remedidas com essa largura.
+- **Nó Yoga da Table:** folha com measure function (como Text): `Exactly` → `{ width, height: measureTable(...).height }`; `AtMost`/`Undefined` → largura natural acima. Numa `column` segue a exceção do Text (sem basis 0; a altura é o conteúdo); numa `row` com `grow`, basis 0. `read` remede com `frame.width` e devolve `PositionedTable` com `fontSize = tableStyleOf(props).size`, `columnWidths`, `rowHeights`, `cells`, `height`.
+- O `frame` da tabela é o do Yoga (pode ser menor que `height` quando o pai espremeu: é o estouro que o fit detecta).
+
+### `src/fit/` (M10-C)
+
+- `Overflow.kind` ganha `'table'`. Detecção: como o Text (`availableHeightOf` = frame recortado pela área de conteúdo do pai; em fluxo), `excess = table.height − available` > epsilon → `{ kind: 'table', path, overflowPt, overflowPct }`. Uma Table estourada **não conta** para o `box` do pai (mesma regra do Text). Sem estouro de largura (a tabela ocupa a largura dada).
+- **Plano:** a Table entra em `plansOf` com `{ from: tableStyleOf(props).size, min: min(from, tableMinSizeOf(props)), policy }`, onde a policy de `'shrink'` é a mesma do Text (`resize` por delta × shrinkStep) e a de `'error'` não encolhe. `rewrite.ts` aplica `size` também em nós `table` (ignora `maxLines`).
+- **Gatilho:** Table `shrink` com estouro de altura, ou com alguma célula `wordBroken` enquanto `fontSize > min` (como a palavra partida do Text; `widestSegment` da célula mais larga em relação à sua coluna dá o `d_word`, com `breakWidth = colW − 2 × padding` e **sem** `textSafety`... use a mesma conta do Text com o `textSafety` da engine se o medidor aplicar: siga o que `search.ts` faz para Text e trate cada célula como uma linha de largura `colW − 2 × padding`). Escopo: `scopeOf(path)` como no Text. A tabela desce **junto** com os Text do escopo.
+- **Fonte ausente:** alguma célula com `fontMissing` → só `font-missing` (uma vez, no path da tabela); nada de `table-overflow`, e não dispara shrink.
+- **Diagnósticos finais** (no path da Table): coube após encolher → `text-shrunk` (info, `fromSize/toSize`; mensagem diz "Tabela reduzida de 14 pt para 11 pt"); não coube no mínimo, ou `fit="error"` → `table-overflow` (error): `"Tabela estourou 38 pt (24%) da altura disponível mesmo em 10 pt (mínimo): 4 de 6 linhas cabem inteiras. Reduza linhas/colunas, encurte o texto das células, aumente a área ou baixe minSize."`, `data { overflowPt, overflowPct, fromSize, toSize, shownRows, totalRows }` (`shownRows` = linhas de **dados** cujo fundo fica dentro da altura disponível; o cabeçalho não conta; `totalRows = rows.length`). Reduzida abaixo de `minLegibleSize` → `text-illegible` (warning) como no Text. Célula com palavra partida que persiste → `text-word-broken` (warning, path da tabela, cita a palavra e a coluna: `"na coluna \"Área\""`).
+- **Causa (M6):** demanda da Table = `max(0, height − frame.height)` (como Text); com `height` explícito do autor, 0. Chart: 0.
+- **Agrupamento:** sem mudança (tabelas irmãs homônimas agrupam como qualquer nó).
+- `pass.ts`: `resolvedTexts`/`positionedTexts` continuam só Text; crie `resolvedTables`/`positionedTables` (ou um par genérico "shrinkable") sem mudar as assinaturas usadas pelos testes existentes.
+
+### `src/emit/` (M10-D)
+
+- **Chart:** `slide.addChart(type, data, options)` com `type = pptx.ChartType[kind]`; `data = series.map(s => ({ name, labels: categories, values }))`; opções: `x, y, w, h` (pol.), `chartColors` = `chartColorOf(props, i)` sem `#` para cada série (bar/line) ou categoria (pie), `showLegend = chartLegendOf(props)`, `legendPos: 'b'`, `legendFontFace/Size/Color` = `chartLabelStyleOf`, `showValue = showValues === true`, `dataLabelFontFace/Size/Color`, `dataLabelPosition: 'outEnd'` (bar) / `'t'` (line) / `'bestFit'` (pie), `catAxisLabelFontFace/Size/Color`, `valAxisLabelFontFace/Size/Color`, `showTitle = title !== undefined`, `title`, `titleFontFace/Size (= labelSize + 2)/Color`; bar: `barDir: 'col'`, `barGapWidthPct = DEFAULTS.chart.barGapWidthPct`; line: `lineSize = DEFAULTS.chart.lineSize`, `lineDataSymbol: 'none'`; pie: `showPercent: false`, `showLabel: false`, `dataNoEffects: true`; todos: `valGridLine: { style: 'none' }`?? **não** — grade clara padrão `{ color: 'DDDDDD', size: 0.5 }` em bar/line; sem borda quando `borderWidth` = 0. O que o Keynote ignora está em `docs/work/reports/M10-spike.md`; siga as recomendações dele onde este texto for omisso.
+- **Table:** `slide.addTable(rows, options)`. `rows`: uma `TableRow` por linha de `cells` (cabeçalho incluído), cada célula `{ text: runs, options: { align, valign: 'top', fill?, bold?, color? } }` onde `runs` são as **linhas já quebradas** da célula unidas por `breakLine: true` (quebra forçada, como o Text em `lineBreaks: 'forced'`; `lineBreaks: 'auto'` → um run com o texto original da célula). Opções: `x, y, w` (pol.), `colW` = `columnWidths` em pol., `rowH` = `rowHeights` em pol., `fontFace = tableStyleOf(props).family`, `fontSize = node.fontSize`, `color`, `margin` = `cellPadding` **na unidade que o spike confirmar** (pt ou pol.: ver `M10-spike.md`), `border` = `{ type: 'solid', pt: DEFAULTS.table.borderWidth, color }` quando `props.border`, senão `{ type: 'none' }`, `autoPage: false`, `lang`. Cabeçalho: `bold = header.weight === 'bold'`, `fill = header.fill`, `color = header.color`; zebra: `fill = stripe` nas linhas de dados de índice ímpar (2ª, 4ª…). Espaçamento de linha dentro da célula: mesma Strategy do Text (`lineSpacingOf`), para a altura da célula bater com `rowHeights`.
+- Debug: contorno em Chart e Table como nos outros frames.
+- `sanitize.ts`: se o pptxgenjs gerar algo fora de ordem para gráficos (ver spike), tratar aqui.
+
+### `src/preview/` (M10-E)
+
+```ts
+export const chartSvg: (node: PositionedChart, options: TextSvgOptions) => string;
+export const tableSvg: (node: PositionedTable, options: TextSvgOptions) => string;
+```
+- **Table:** por célula um `<rect>` (fill: header.fill no cabeçalho, `stripe` nas linhas pares de dados, senão nada) e, com `border`, as linhas da grade (`<line>` ou `stroke` nos rects, `borderWidth`); por linha de `cells[r][c].lines` um `<text>` com a mesma regra do `textSvg` (`y = topo + i × lineHeight + ascent`, `x` por `align` com `text-anchor`, padding `cellPadding`); cabeçalho com `font-weight` do header e `fill` = `header.color`. Nada além de `frame.y + frame.height` é desenhado (clip pelo frame); em `--debug`, a parte da tabela que passa do frame recebe a faixa sólida de estouro (como `textOverflowSvg`), além do contorno.
+- **Chart:** SVG próprio, sem biblioteca, dentro do frame com margem interna de `labelSize` pt: `bar` → eixo Y de 0 ao máximo "bonito" (1/2/5 × 10^n) com 4–5 ticks e rótulos, barras agrupadas por categoria (largura do grupo = 1/(1+gap)), cores por série, rótulos de categoria embaixo; `line` → mesma grade, uma `<polyline>` por série com `stroke-width = lineSize`; `pie` → fatias por `<path>` com arcos a partir de 12 h, cores por categoria; `showValues` → valor acima da barra/ponto ou no meio da fatia; `legend` → uma linha abaixo (quadrado colorido + nome); `title` → centrado no topo. Fonte `chartLabelStyleOf` com `fontFamilyMap`. Objetivo: reconhecer dados e proporções no overview; nada de diagnóstico de divergência. Valores negativos em bar/line: eixo de mínimo "bonito" negativo e barras para baixo; pie com negativo → ignora o sinal.
+
+### `src/index.ts` / docs (M10-0 já ligou)
+
+`Chart`, `Table` e os tipos acima exportados. `CLAUDE.md`/guia são do M10-G.

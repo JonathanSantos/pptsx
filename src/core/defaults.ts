@@ -1,8 +1,10 @@
 import type {
   Align,
+  ChartProps,
   ContainerProps,
   FitPolicy,
   FlexDirection,
+  FontWeight,
   ImageFit,
   ImageProps,
   Justify,
@@ -10,6 +12,9 @@ import type {
   Pt,
   ShapeProps,
   Spacing,
+  TableFitPolicy,
+  TableHeaderStyle,
+  TableProps,
   TextAlign,
   TextProps,
   TextStyle,
@@ -70,6 +75,27 @@ export const DEFAULTS = {
   breakpoints: { tallAspect: 1.5, wideScale: 1.2 },
   /** M9: máximo de partes em que um slide com Box paginate pode se dividir; passou → box-overflow. */
   paginate: { maxParts: 10 },
+  /** M10: gráfico nativo. Paleta cíclica por série/categoria; tipografia de rótulos, eixos, legenda e título. */
+  chart: {
+    palette: ['#2F6FED', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#64748B'] as readonly string[],
+    labelSize: 12,
+    labelColor: '#333333',
+    /** Espaço entre grupos de barras em % da largura da barra (OOXML gapWidth). */
+    barGapWidthPct: 80,
+    /** Espessura da linha (pt) no gráfico de linhas. */
+    lineSize: 2,
+    /** Largura da borda (pt) ao redor do gráfico; 0 = sem borda. */
+    borderWidth: 0,
+  },
+  /** M10: tabela nativa. Células com o mesmo size; margem interna por lado; cabeçalho em negrito sem fundo. */
+  table: {
+    size: 14,
+    cellPadding: 4,
+    header: { weight: 'bold' as FontWeight } as TableHeaderStyle,
+    fit: 'shrink' as TableFitPolicy,
+    /** Espessura das bordas (pt) quando `border` é informado. */
+    borderWidth: 0.5,
+  },
   /** 16:9 de referência para ctx.scale */
   referenceSize: { width: 720, height: 405 },
   preview: { width: 1280, thumbWidth: 320, overviewColumns: 4 },
@@ -120,3 +146,42 @@ export const containerOf = (props: ContainerProps) => ({
 /** Cor de contorno efetiva: a linha sempre tem cor, os demais só se o autor pediu. */
 export const strokeColorOf = (props: ShapeProps): string | undefined =>
   props.stroke ?? (props.kind === 'line' ? DEFAULTS.lineStroke : undefined);
+
+/** M10: estilo de texto efetivo das células da tabela (todas iguais). */
+export const tableStyleOf = (props: TableProps): TextStyle => ({
+  family: props.font ?? DEFAULTS.text.font,
+  size: props.size ?? DEFAULTS.table.size,
+  weight: DEFAULTS.text.weight,
+  italic: DEFAULTS.text.italic,
+  lineHeight: props.lineHeight ?? DEFAULTS.text.lineHeight,
+});
+
+export const tableFitOf = (props: TableProps): TableFitPolicy => props.fit ?? DEFAULTS.table.fit;
+
+/** Mesma regra do Text: 75% do size com piso legível, salvo minSize do autor. */
+export const tableMinSizeOf = (props: TableProps): Pt =>
+  props.minSize ??
+  Math.max(Math.floor((props.size ?? DEFAULTS.table.size) * DEFAULTS.text.minSizeRatio), DEFAULTS.text.minLegibleSize);
+
+/** Cabeçalho efetivo; `false` = sem linha de cabeçalho (undefined aqui). */
+export const tableHeaderOf = (props: TableProps): TableHeaderStyle | undefined =>
+  props.header === false ? undefined : { ...DEFAULTS.table.header, ...props.header };
+
+/** M10: tipografia dos rótulos do gráfico. */
+export const chartLabelStyleOf = (props: ChartProps): { family: string; size: Pt; color: string } => ({
+  family: props.font ?? DEFAULTS.text.font,
+  size: props.size ?? DEFAULTS.chart.labelSize,
+  color: props.color ?? DEFAULTS.chart.labelColor,
+});
+
+/** Cor da i-ésima série/categoria: as do autor e, faltando, a paleta cíclica. */
+export const chartColorOf = (props: ChartProps, index: number): string => {
+  const own = props.colors?.[index];
+  if (own !== undefined) return own;
+  const palette = DEFAULTS.chart.palette;
+  return palette[index % palette.length] ?? DEFAULTS.chart.labelColor;
+};
+
+/** Legenda: explícita, senão só com mais de uma série (pie sempre). */
+export const chartLegendOf = (props: ChartProps): boolean =>
+  props.legend ?? (props.kind === 'pie' || props.data.series.length > 1);

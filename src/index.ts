@@ -1,6 +1,6 @@
 import type { DeckDefinition } from './core/types.ts';
 
-export { Deck, Slide, Box, Text, Image, Shape, Span, B, I } from './primitives/index.ts';
+export { Deck, Slide, Box, Text, Image, Shape, Span, B, I, Chart, Table } from './primitives/index.ts';
 export { Fragment } from './jsx/jsx-runtime.ts';
 export { resolveDeck, ResolveError } from './resolve/index.ts';
 export { render } from './render.ts';
@@ -15,6 +15,10 @@ export type {
   AuthorPropsMap,
   BoxProps,
   Breakpoint,
+  ChartData,
+  ChartKind,
+  ChartProps,
+  ChartSeries,
   Child,
   Children,
   Color,
@@ -53,6 +57,11 @@ export type {
   Spacing,
   SpanProps,
   StrokeProps,
+  TableCellValue,
+  TableColumn,
+  TableFitPolicy,
+  TableHeaderStyle,
+  TableProps,
   TextAlign,
   TextChildren,
   TextProps,

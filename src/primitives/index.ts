@@ -24,6 +24,8 @@ export const Text = definePrimitive('text');
 export const Image = definePrimitive('image');
 export const Shape = definePrimitive('shape');
 export const Span = definePrimitive('span');
+export const Chart = definePrimitive('chart');
+export const Table = definePrimitive('table');
 
 // Componentes (não primitivas): props do autor vêm depois, então vencem o padrão.
 export function B(props: SpanProps): SlideElement {

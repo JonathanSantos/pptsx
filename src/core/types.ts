@@ -219,9 +219,87 @@ export interface ShapeProps extends FlexItemProps, StrokeProps {
   readonly radius?: Pt;
 }
 
+// ───────────────────────── Chart e Table (M10) ─────────────────────────
+
+export type ChartKind = 'bar' | 'line' | 'pie';
+
+export interface ChartSeries {
+  readonly name: string;
+  /** Um valor por categoria (mesmo tamanho de `categories`); números finitos. */
+  readonly values: readonly number[];
+}
+
+export interface ChartData {
+  readonly categories: readonly string[];
+  /** `pie` aceita exatamente uma série. */
+  readonly series: readonly ChartSeries[];
+}
+
+/**
+ * Gráfico nativo (editável no PowerPoint). Folha sem tamanho intrínseco: precisa de
+ * `width`/`height`/`grow` (ou `position="absolute"`), senão ResolveError.
+ */
+export interface ChartProps extends FlexItemProps {
+  readonly kind: ChartKind;
+  readonly data: ChartData;
+  /** Por série (bar/line) ou por categoria (pie); padrão DEFAULTS.chart.palette (cíclica). */
+  readonly colors?: readonly Color[];
+  /** Padrão: `series.length > 1` (pie: true). */
+  readonly legend?: boolean;
+  /** Rótulos de valor sobre as barras/pontos/fatias; padrão false. */
+  readonly showValues?: boolean;
+  readonly title?: string;
+  /** Tipografia de rótulos, eixos, legenda e título; padrão DEFAULTS.chart (família = DEFAULTS.text.font). */
+  readonly font?: string;
+  readonly size?: Pt;
+  readonly color?: Color;
+}
+
+export type TableCellValue = string | number;
+
+export interface TableColumn {
+  readonly header: string;
+  /** pt ou % da largura da tabela; ausente = divide o que sobra igualmente. */
+  readonly width?: Length;
+  /** Alinhamento das células da coluna (e do cabeçalho); padrão 'left'. */
+  readonly align?: TextAlign;
+}
+
+export interface TableHeaderStyle {
+  readonly fill?: Color;
+  readonly color?: Color;
+  readonly weight?: FontWeight;
+}
+
+/** `truncate` não se aplica a tabela: ou encolhe ou é erro. */
+export type TableFitPolicy = 'shrink' | 'error';
+
+/**
+ * Tabela nativa medida pela engine: largura vem do flex (como Box), altura = soma das
+ * linhas, cada linha = célula mais alta + 2 × cellPadding. Participa do shrink como
+ * UMA unidade (todas as células com o mesmo size).
+ */
+export interface TableProps extends FlexItemProps, Pick<TextStyleProps, 'font' | 'size' | 'color' | 'lineHeight'> {
+  readonly columns: readonly TableColumn[];
+  /** rows[i].length === columns.length; números viram texto na resolução. */
+  readonly rows: readonly (readonly TableCellValue[])[];
+  /** Estilo da linha de cabeçalho (padrão DEFAULTS.table.header); `false` = sem cabeçalho. */
+  readonly header?: TableHeaderStyle | false;
+  /** Fundo das linhas de dados pares (2ª, 4ª…); ausente = sem zebra. */
+  readonly stripe?: Color;
+  /** Cor das bordas (todas); ausente = sem borda. */
+  readonly border?: Color;
+  /** Margem interna da célula em pt; padrão DEFAULTS.table.cellPadding. */
+  readonly cellPadding?: Pt;
+  /** padrão 'shrink' */
+  readonly fit?: TableFitPolicy;
+  /** padrão: como no Text (75% de size, piso minLegibleSize) */
+  readonly minSize?: Pt;
+}
+
 // ───────────────────────── JSX / árvore não resolvida ─────────────────────────
 
-export type PrimitiveKind = 'deck' | 'slide' | 'box' | 'text' | 'image' | 'shape' | 'span';
+export type PrimitiveKind = 'deck' | 'slide' | 'box' | 'text' | 'image' | 'shape' | 'span' | 'chart' | 'table';
 
 /** Props concretas por primitiva (o que a árvore resolvida carrega). */
 export interface PrimitivePropsMap {
@@ -232,6 +310,8 @@ export interface PrimitivePropsMap {
   readonly image: ImageProps;
   readonly shape: ShapeProps;
   readonly span: SpanProps;
+  readonly chart: ChartProps;
+  readonly table: TableProps;
 }
 
 /** M9: o que o AUTOR escreve no JSX — as mesmas props, aceitando Responsive<X> (Deck e Span não têm props responsivas). */
@@ -243,6 +323,8 @@ export interface AuthorPropsMap {
   readonly image: ResponsiveProps<ImageProps>;
   readonly shape: ResponsiveProps<ShapeProps>;
   readonly span: SpanProps;
+  readonly chart: ResponsiveProps<ChartProps>;
+  readonly table: ResponsiveProps<TableProps>;
 }
 
 /** Marca que identifica uma primitiva (vs componente do usuário). */
@@ -318,8 +400,14 @@ export interface ResolvedText extends ResolvedBase<'text', Omit<TextProps, 'chil
 
 export type ResolvedImage = ResolvedBase<'image', ImageProps>;
 export type ResolvedShape = ResolvedBase<'shape', ShapeProps>;
+/** M10: dados já validados (séries do tamanho das categorias; pie com 1 série). */
+export type ResolvedChart = ResolvedBase<'chart', ChartProps>;
+/** M10: `rows` já com todas as células como string e com `columns.length` células. */
+export interface ResolvedTable extends ResolvedBase<'table', TableProps> {
+  readonly rows: readonly (readonly string[])[];
+}
 
-export type ResolvedNode = ResolvedBox | ResolvedText | ResolvedImage | ResolvedShape;
+export type ResolvedNode = ResolvedBox | ResolvedText | ResolvedImage | ResolvedShape | ResolvedChart | ResolvedTable;
 
 export interface ResolvedSlide extends ResolvedBase<'slide', Omit<SlideProps, 'children'>> {
   /** M9: índice do slide no <Deck> do autor, começando em 1 (clones de paginação repetem o do original). */
@@ -434,8 +522,23 @@ export interface PositionedImage extends ResolvedImage, Positioned {
   readonly intrinsic: Dimensions;
 }
 export interface PositionedShape extends ResolvedShape, Positioned {}
+export interface PositionedChart extends ResolvedChart, Positioned {}
 
-export type PositionedNode = PositionedBox | PositionedText | PositionedImage | PositionedShape;
+/** M10: layout das células calculado pelo layout com a largura final do frame (ver CONTRACTS §M10 layout). */
+export interface PositionedTable extends ResolvedTable, Positioned {
+  /** Size efetivo das células (props.size após o fit, ou o padrão). */
+  readonly fontSize: Pt;
+  /** Uma largura por coluna (pt); soma = frame.width. */
+  readonly columnWidths: readonly Pt[];
+  /** Uma altura por linha (pt), cabeçalho incluído quando há; soma = altura medida da tabela. */
+  readonly rowHeights: readonly Pt[];
+  /** Linhas já quebradas por célula: cells[linha][coluna] (cabeçalho na linha 0 quando há). */
+  readonly cells: readonly (readonly TextLayout[])[];
+  /** Σ rowHeights: a altura que a tabela pediu (pode passar de frame.height = estouro). */
+  readonly height: Pt;
+}
+
+export type PositionedNode = PositionedBox | PositionedText | PositionedImage | PositionedShape | PositionedChart | PositionedTable;
 
 export interface PositionedSlide extends Omit<ResolvedSlide, 'children'>, Positioned {
   readonly children: readonly PositionedNode[];
@@ -464,7 +567,9 @@ export type DiagnosticCode =
   /** M8: fonte pedida em embedFonts com fsType restrito; não foi embutida (warning, slide 0, path ''). */
   | 'font-not-embeddable'
   /** M9: slide do autor dividido em partes por um Box paginate (info, só na 1ª parte). */
-  | 'slide-continued';
+  | 'slide-continued'
+  /** M10: tabela não coube nem no minSize (ou fit="error"); data: overflowPt/Pct, fromSize, toSize, shown/total linhas. */
+  | 'table-overflow';
 
 export interface Diagnostic {
   readonly severity: Severity;
@@ -496,6 +601,9 @@ export interface Diagnostic {
     readonly sourceSlide?: number;
     /** M9: em 'slide-continued', total de partes em que o slide do autor foi dividido. */
     readonly parts?: number;
+    /** M10: em 'table-overflow', linhas de dados inteiramente visíveis e total. */
+    readonly shownRows?: number;
+    readonly totalRows?: number;
   };
 }
 
