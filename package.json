@@ -33,7 +33,8 @@
     "bin",
     "fonts",
     "tsconfig.deck.json",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "vitest run",

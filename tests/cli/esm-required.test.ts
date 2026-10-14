@@ -28,7 +28,7 @@ import { jsx } from ${JSON.stringify(join(ROOT, 'src', 'jsx', 'jsx-runtime.ts'))
 export default defineDeck(() => jsx(Deck, { children: jsx(Slide, { children: jsx(Text, { children: 'oi' }) }) }));
 `;
 
-const TSCONFIG = { compilerOptions: { module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, jsx: 'react-jsx' } };
+const TSCONFIG = { compilerOptions: { module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, jsx: 'react-jsx', jsxImportSource: 'pptsx' } };
 
 const projectWith = (type: 'commonjs' | 'module'): string => {
   const dir = mkdtempSync(join(tmpdir(), `pptsx-${type}-`));

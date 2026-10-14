@@ -1,9 +1,10 @@
-import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { INIT_USAGE, parseInitCli, runInit } from './cli/init.ts';
 import { defaultImportModule, type ImportModule, type ImportOptions } from './cli/loader.ts';
+import { assertDeckTsconfig } from './cli/tsconfig.ts';
 import { createFsWatch, runWatchLoop, stampLine, watchPathsOf, type WatchFn } from './cli/watch.ts';
 import { configPathOf, importUserModule, isLineBreaks, lineBreaksErrorOf, loadConfig, type PptsxConfig } from './config.ts';
 import { DEFAULTS } from './core/defaults.ts';
@@ -249,6 +250,7 @@ export const jsonErrorOf = (error: unknown): string => JSON.stringify({ error: e
 
 const loadDeck = async (deckPath: string, options: ImportOptions, importModule: ImportModule): Promise<DeckDefinition> => {
   if (!existsSync(deckPath)) throw new Error(`deck não encontrado: ${deckPath}`);
+  assertDeckTsconfig(deckPath);
   const module = await importUserModule(deckPath, options, importModule);
   if (typeof module.default !== 'function') throw new Error(`${deckPath} precisa exportar default defineDeck(...)`);
   return module.default as DeckDefinition;
@@ -338,7 +340,6 @@ const watchBuild = async (args: CliArgs, cwd: string, deps: CliDeps): Promise<nu
       reportWatchError(args, error, new Date());
     }
   };
-  await rebuild();
   const paths = watchPathsOf(args.deckPath, configPathOf(cwd));
   if (!args.json) console.log(stampLine(new Date(), `observando ${paths.join(', ')} (Ctrl-C para sair)`));
   const watch = deps.watch ?? createFsWatch([args.outDir]);
@@ -349,7 +350,27 @@ const watchBuild = async (args: CliArgs, cwd: string, deps: CliDeps): Promise<nu
 /** Primeiro argumento que não é flag; os comandos vêm antes das flags (`pptsx build ...`). */
 export const commandOf = (argv: readonly string[]): string | undefined => argv.find((arg) => !arg.startsWith('-'));
 
+export const wantsHelp = (argv: readonly string[]): boolean => argv.includes('--help') || argv.includes('-h');
+
+export const wantsVersion = (argv: readonly string[]): boolean => argv.includes('--version');
+
+// Um nível acima tanto de src/cli.ts quanto de dist/cli.js fica o package.json do pacote.
+const packageVersion = (): string => {
+  const pkg: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const version = typeof pkg === 'object' && pkg !== null && 'version' in pkg ? pkg.version : undefined;
+  if (typeof version !== 'string') throw new Error('package.json do pptsx sem "version"');
+  return version;
+};
+
 const dispatch = async (argv: readonly string[], cwd: string, deps: CliDeps): Promise<number> => {
+  if (wantsHelp(argv)) {
+    console.log(USAGE);
+    return 0;
+  }
+  if (wantsVersion(argv)) {
+    console.log(packageVersion());
+    return 0;
+  }
   if (commandOf(argv) === 'init') return runInit(parseInitCli(argv, cwd), cwd);
   const args = parseCli(argv, cwd);
   return args.watch ? watchBuild(args, cwd, deps) : build(args, cwd, deps);

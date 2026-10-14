@@ -12,7 +12,7 @@ Este é o único documento de que você precisa para (1) escrever slides novos e
 
 ## 2. Esqueleto de um deck
 
-Arquivo em `examples/agent-test/<nome>.tsx`. Imports de `pptsx` (primitivas) e, se quiser, dos exemplos prontos:
+Arquivo em `examples/agent-test/<nome>.tsx` (dentro deste repo; projeto próprio com `npm install pptsx`: ver §7). Imports de `pptsx` (primitivas) e, se quiser, dos exemplos prontos:
 
 ```tsx
 import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
@@ -284,13 +284,23 @@ Decoração vem **antes** do conteúdo (fica por trás) e usa `position="absolut
 
 ## 7. CLI e fluxo de trabalho
 
-Rode na raiz do projeto:
+Dois cenários; o fluxo (build → ler diagnósticos → corrigir) é o mesmo.
+
+**(a) Dentro deste repo** (como na §2): rode na raiz do projeto; o deck fica em `examples/agent-test/`, importa `pptsx` sem build e pode usar tokens, layouts e componentes de `examples/`.
 
 ```
 node bin/pptsx.mjs build examples/agent-test/meu-deck.tsx --size 16x9,4x3 --out dist/agent-test --json
 ```
 
-Flags: `--size` (lista: `16x9`, `16x10`, `4x3`, `wide`, ou `10x7.5in`; padrão `16x9`), `--out` (padrão `dist/`), `--debug` (contornos vermelhos tracejados em toda Box/Text/Image e estouro de texto em vermelho no PNG), `--json`, `--preview native|none`, `--preview-width 1280`.
+**(b) Projeto próprio:** `npm install pptsx` e `npx pptsx init` numa pasta (cria `deck.tsx`, `tsconfig.json`, `pptsx.config.ts`, `assets/`, `.gitignore` e põe `"type": "module"` no `package.json`; sem isso o deck não carrega). Imports `from 'pptsx'`; imagens com caminho relativo ao arquivo do deck (`'./assets/foto.png'`). Tokens, layouts e componentes da §5 são exemplos do repo e **não** vêm no pacote: use primitivas ou copie-os de `examples/`.
+
+```
+npx pptsx build deck.tsx --size 16x9,4x3 --json
+```
+
+Flags: `--size` (lista: `16x9`, `16x10`, `4x3`, `wide`, ou `10x7.5in`; padrão `16x9`), `--out` (padrão `dist/`), `--debug` (contornos vermelhos tracejados em toda Box/Text/Image e estouro de texto em vermelho no PNG), `--json`, `--preview native|none`, `--preview-width 1280`, `--lang pt-BR`, `--line-breaks forced|auto` (padrão `forced`: cada linha medida vira quebra manual, igual ao PNG; `auto` deixa o PowerPoint requebrar, mais editável, pode divergir 1 linha), `--watch` (build inicial e rebuild a cada mudança salva na pasta do deck ou na config; componentes e tokens importados recarregam; com `--json`, **um JSON por linha** por build; Ctrl-C sai com 0).
+
+`pptsx init [dir] [--force] [--json]`: recusa se `deck.tsx` já existe (salvo `--force`); com `--json`, stdout é `{ "files": [...] }`.
 
 Arquivos gerados (`<deck>` = nome do arquivo sem extensão):
 
@@ -303,11 +313,11 @@ dist/agent-test/
 └── meu-deck.diagnostics.json      ← todos os diagnósticos, todos os tamanhos
 ```
 
-- Com `--json`, stdout tem **só** `{ "files": [...], "diagnostics": [...] }`. Se o deck nem rodar (erro de sintaxe, texto fora de `<Text>`…), stdout tem `{ "error": "mensagem" }`.
+- Com `--json`, stdout tem **só** `{ "files": [...], "diagnostics": [...] }`. Se o deck nem rodar (erro de sintaxe, texto fora de `<Text>`…), stdout tem `{ "error": "mensagem" }`. No `--watch`, cada linha é um desses dois objetos, e um erro não derruba o watch.
 - **Exit code**: `1` se houver qualquer diagnóstico `error` ou falha; `0` caso contrário. `warning`/`info` não falham.
 - Sempre gere **os dois tamanhos** (`16x9,4x3`): o que cabe em um pode não caber no outro.
 - `files` lista o `.pptx`, cada PNG de slide, o overview e o `diagnostics.json` — leia os caminhos dali.
-- Config opcional `pptsx.config.ts` no diretório atual (`export default defineConfig({ fonts?, sizes?, lang?, textSafety? })`, `import { defineConfig } from 'pptsx'`); flags vencem a config. Você normalmente **não** precisa dela; se definir `fonts`, elas substituem a Arial padrão.
+- Config opcional `pptsx.config.ts` no diretório atual (`export default defineConfig({ fonts?, sizes?, lang?, textSafety?, lineBreaks? })`, `import { defineConfig } from 'pptsx'`); flags vencem a config. Você normalmente **não** precisa dela; se definir `fonts`, elas substituem a Arial padrão.
 
 ## 8. Diagnósticos
 

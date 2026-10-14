@@ -7,6 +7,7 @@ export interface ScaffoldFile {
 
 export const DECK_FILE = 'deck.tsx';
 export const GITIGNORE_FILE = '.gitignore';
+export const TSCONFIG_FILE = 'tsconfig.json';
 export const GITIGNORE_ENTRY = 'dist/';
 
 export const NEXT_COMMAND = `npx pptsx build ${DECK_FILE} --size 16x9,4x3`;
@@ -149,7 +150,7 @@ export const mergePackageJson = (existing: string | undefined, dirName: string):
 /** Todos os arquivos do projeto novo, na ordem em que são listados ao usuário. */
 export const scaffoldFiles = (dirName: string = 'pptsx-deck'): readonly ScaffoldFile[] => [
   { path: DECK_FILE, content: DECK_TEMPLATE },
-  { path: 'tsconfig.json', content: `${JSON.stringify(TSCONFIG, null, 2)}\n` },
+  { path: TSCONFIG_FILE, content: `${JSON.stringify(TSCONFIG, null, 2)}\n` },
   { path: 'pptsx.config.ts', content: CONFIG_TEMPLATE },
   { path: 'assets/.gitkeep', content: '' },
   { path: GITIGNORE_FILE, content: gitignoreContent() },

@@ -6,11 +6,13 @@ import {
   GITIGNORE_FILE,
   NEXT_COMMAND,
   PACKAGE_FILE,
+  TSCONFIG_FILE,
   gitignoreContent,
   mergePackageJson,
   scaffoldFiles,
   type ScaffoldFile,
 } from './scaffold.ts';
+import { mergeTsconfig } from './tsconfig.ts';
 
 export const INIT_USAGE = 'uso: pptsx init [dir] [--force] [--json]';
 
@@ -56,6 +58,7 @@ interface FilePlan {
 }
 
 // .gitignore e package.json são sempre mesclados: --force não deve apagar o que o usuário já tinha.
+// tsconfig.json existente só ganha as chaves de JSX que faltam (--force o substitui).
 const planFile = (
   file: ScaffoldFile,
   existing: ReadonlyMap<string, string>,
@@ -72,8 +75,13 @@ const planFile = (
     if (merged.kind === 'write') return { write: { ...file, content: merged.content }, warning: merged.warning };
     return merged.kind === 'warn' ? { warning: merged.warning } : {};
   }
-  if (current !== undefined && !force) return {};
-  return { write: file };
+  if (current === undefined || force) return { write: file };
+  if (file.path === TSCONFIG_FILE) {
+    const merged = mergeTsconfig(current);
+    if (merged.kind === 'write') return { write: { ...file, content: merged.content }, warning: merged.warning };
+    return merged.kind === 'warn' ? { warning: merged.warning } : {};
+  }
+  return {};
 };
 
 /**

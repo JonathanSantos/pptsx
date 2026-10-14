@@ -24,7 +24,7 @@ M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10
 
 ## Critérios de sucesso do roadmap
 
-- [ ] Um deck fora do repo, num projeto com `npm install <pacote>`, gera .pptx com `npx <pacote> build`.
+- [x] Um deck fora do repo, num projeto com `npm install pptsx`, gera .pptx com `npx pptsx build`. → M7-G: tarball instalado do zero, `init` + `build` exit 0, PNGs idênticos aos do repo.
 - [x] O `broken.tsx` original do LOG (restaurado em M6-E) é corrigido por um agente virgem em **≤ 3 builds** (hoje: 7). → M6-H: exit 0 sem warning no 2º build.
 - [ ] `demo.tsx` reescrito com props responsivas não tem nenhum ternário sobre `ctx` fora de `defineDeck`.
 - [ ] Um slide com 12 bullets longos vira dois slides automaticamente, sem diagnóstico `error`.

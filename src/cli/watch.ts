@@ -71,8 +71,9 @@ export interface WatchLoopOptions {
 }
 
 /**
- * Casca do --watch: debounce das mudanças e builds em série (uma mudança durante um build agenda
- * exatamente mais um). Resolve quando `signal` aborta, depois que o build em curso termina.
+ * Casca do --watch: observa primeiro e só então faz o build inicial, para que uma edição salva durante
+ * esse build não se perca. Debounce das mudanças e builds em série (uma mudança durante um build agenda
+ * exatamente mais um, ao final). Resolve quando `signal` aborta, depois que o build em curso termina.
  */
 export const runWatchLoop = ({ paths, watch, signal, rebuild, debounceMs = WATCH_DEBOUNCE_MS }: WatchLoopOptions): Promise<void> =>
   new Promise((resolveLoop) => {
@@ -112,4 +113,5 @@ export const runWatchLoop = ({ paths, watch, signal, rebuild, debounceMs = WATCH
 
     if (signal.aborted) return finish();
     signal.addEventListener('abort', finish, { once: true });
+    start();
   });

@@ -126,6 +126,53 @@ describe('init — package.json', () => {
   });
 });
 
+describe('init — existing tsconfig.json', () => {
+  it('without jsx/jsxImportSource → gains both, keeps the other keys (2-space JSON), warns', async () => {
+    const dir = freshDir();
+    const original = {
+      compilerOptions: { target: 'ES2020', strict: true, outDir: 'out', paths: { '@/*': ['./src/*'] } },
+      include: ['src', 'deck.tsx'],
+    };
+    writeFileSync(join(dir, 'tsconfig.json'), `${JSON.stringify(original, null, 2)}\n`);
+    expect(await runCli(['init', dir], tmpdir())).toBe(0);
+    const merged = readJson(dir, 'tsconfig.json');
+    expect(merged).toEqual({
+      ...original,
+      compilerOptions: { ...original.compilerOptions, jsx: 'react-jsx', jsxImportSource: 'pptsx' },
+    });
+    expect(read(dir, 'tsconfig.json')).toMatch(/^ {2}"compilerOptions"/m);
+    expect(read(dir, 'tsconfig.json')).not.toMatch(/^ {4}"compilerOptions"/m);
+    expect(allOutput()).toMatch(/tsconfig/);
+  });
+
+  it('only jsxImportSource missing → only it is added', async () => {
+    const dir = freshDir();
+    writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { jsx: 'react-jsx', strict: true } }, null, 2));
+    expect(await runCli(['init', dir], tmpdir())).toBe(0);
+    expect(readJson(dir, 'tsconfig.json').compilerOptions).toEqual({ jsx: 'react-jsx', strict: true, jsxImportSource: 'pptsx' });
+  });
+
+  it('jsxImportSource "react" → untouched, with a warning', async () => {
+    const dir = freshDir();
+    const raw = `${JSON.stringify({ compilerOptions: { jsx: 'react-jsx', jsxImportSource: 'react', strict: true } }, null, 2)}\n`;
+    writeFileSync(join(dir, 'tsconfig.json'), raw);
+    expect(await runCli(['init', dir], tmpdir())).toBe(0);
+    expect(read(dir, 'tsconfig.json')).toBe(raw);
+    expect(allOutput()).toMatch(/jsxImportSource/);
+    expect(allOutput()).toMatch(/pptsx/);
+  });
+
+  it('already pptsx-ready → untouched, no tsconfig warning', async () => {
+    const dir = freshDir();
+    const raw = `${JSON.stringify({ compilerOptions: { jsx: 'react-jsx', jsxImportSource: 'pptsx', strict: false } }, null, 2)}\n`;
+    writeFileSync(join(dir, 'tsconfig.json'), raw);
+    expect(await runCli(['init', dir], tmpdir())).toBe(0);
+    expect(read(dir, 'tsconfig.json')).toBe(raw);
+    expect(output.errors.join('\n')).not.toMatch(/tsconfig/);
+    expect(output.logs.join('\n')).not.toMatch(/▲[^\n]*tsconfig/);
+  });
+});
+
 describe('init — existing deck', () => {
   it('second init without --force → exit 1 and nothing is overwritten', async () => {
     const dir = freshDir();

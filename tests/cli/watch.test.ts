@@ -41,6 +41,10 @@ export default defineDeck(() => (
       <Text>sem fechar
 `;
 
+const DECK_TSCONFIG = {
+  compilerOptions: { jsx: 'react-jsx', jsxImportSource: 'pptsx', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true },
+} as const;
+
 const tmpDirs: string[] = [];
 afterAll(() => tmpDirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
 
@@ -50,6 +54,8 @@ const projectWithDeck = (): { readonly dir: string; readonly deck: string } => {
   const deck = join(dir, 'deck.tsx');
   // Como o `pptsx init` cria: o deck precisa carregar como ESM.
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'watch-deck', private: true, type: 'module' }));
+  // A CLI exige um tsconfig com jsx/jsxImportSource=pptsx perto do deck (CONTRACTS §cli "M7 tsconfig do deck").
+  writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify(DECK_TSCONFIG, null, 2));
   writeFileSync(deck, deckSource('Versão 1'));
   return { dir, deck };
 };
@@ -103,10 +109,14 @@ const spyImport = () => {
 interface WatchStart {
   readonly extra?: readonly string[];
   readonly importModule?: ImportModule;
+  readonly fake?: ReturnType<typeof fakeWatch>;
 }
 
-const startWatch = (dir: string, deck: string, { extra = ['--json'], importModule = vitestImport }: WatchStart = {}) => {
-  const fake = fakeWatch();
+const startWatch = (
+  dir: string,
+  deck: string,
+  { extra = ['--json'], importModule = vitestImport, fake = fakeWatch() }: WatchStart = {},
+) => {
   const controller = new AbortController();
   const done = runCli(['build', deck, '--preview', 'none', '--out', join(dir, 'dist'), '--watch', ...extra], dir, {
     watch: fake.watch,
@@ -114,6 +124,12 @@ const startWatch = (dir: string, deck: string, { extra = ['--json'], importModul
     importModule,
   });
   return { ...fake, controller, done };
+};
+
+/** Watch registrado e build inicial impresso (--json): a partir daqui cada linha nova é um rebuild. */
+const ready = async (session: { readonly calls: readonly unknown[] }): Promise<void> => {
+  await waitFor(() => session.calls.length > 0, BUILD_WAIT, 'watch registered');
+  await waitFor(() => jsonLines().length >= 1, BUILD_WAIT, 'initial build');
 };
 
 const slide1Of = async (pptx: string): Promise<string> =>
@@ -125,7 +141,7 @@ describe('build --watch', () => {
     async () => {
       const { dir, deck } = projectWithDeck();
       const session = startWatch(dir, deck);
-      await waitFor(() => session.calls.length > 0, BUILD_WAIT, 'watch registered');
+      await ready(session);
       expect(session.calls).toHaveLength(1);
       expect(session.calls[0]!.paths).toContain(dir);
       session.controller.abort();
@@ -139,7 +155,7 @@ describe('build --watch', () => {
     async () => {
       const { dir, deck } = projectWithDeck();
       const session = startWatch(dir, deck);
-      await waitFor(() => session.calls.length > 0, BUILD_WAIT, 'watch registered');
+      await ready(session);
       const baseline = jsonLines().length;
 
       session.fire();
@@ -161,7 +177,7 @@ describe('build --watch', () => {
     async () => {
       const { dir, deck } = projectWithDeck();
       const session = startWatch(dir, deck);
-      await waitFor(() => session.calls.length > 0, BUILD_WAIT, 'watch registered');
+      await ready(session);
       const baseline = jsonLines().length;
 
       writeFileSync(deck, BROKEN_DECK);
@@ -192,7 +208,7 @@ describe('build --watch', () => {
     async () => {
       const { dir, deck } = projectWithDeck();
       const session = startWatch(dir, deck);
-      await waitFor(() => session.calls.length > 0, BUILD_WAIT, 'watch registered');
+      await ready(session);
       const baseline = jsonLines().length;
 
       writeFileSync(deck, deckSource('Título editado no watch'));
@@ -211,7 +227,7 @@ describe('build --watch', () => {
     async () => {
       const { dir, deck } = projectWithDeck();
       const session = startWatch(dir, deck);
-      await waitFor(() => session.calls.length > 0, BUILD_WAIT, 'watch registered');
+      await ready(session);
       expect(session.dispose).not.toHaveBeenCalled();
       session.controller.abort();
       expect(await session.done).toBe(0);
@@ -226,7 +242,7 @@ describe('build --watch', () => {
       const { dir, deck } = projectWithDeck();
       const spy = spyImport();
       const session = startWatch(dir, deck, { importModule: spy.importModule });
-      await waitFor(() => session.calls.length > 0, BUILD_WAIT, 'watch registered');
+      await ready(session);
       const baseline = jsonLines().length;
       session.fire();
       await waitFor(() => jsonLines().length > baseline, BUILD_WAIT, 'rebuild');
@@ -257,11 +273,42 @@ describe('build --watch', () => {
   );
 
   it(
+    'starts observing before the initial build; a change during it triggers one rebuild afterwards',
+    async () => {
+      const { dir, deck } = projectWithDeck();
+      const fake = fakeWatch();
+      const watchedAtFirstLoad: number[] = [];
+      let deckLoads = 0;
+      const importModule: ImportModule = (file, options) => {
+        if (file === deck) {
+          deckLoads += 1;
+          // Primeira carga = build inicial: o watch já precisa estar registrado; a mudança entra na fila.
+          if (deckLoads === 1) {
+            watchedAtFirstLoad.push(fake.calls.length);
+            fake.fire();
+          }
+        }
+        return vitestImport(file, options);
+      };
+      const session = startWatch(dir, deck, { importModule, fake });
+      await waitFor(() => jsonLines().length >= 2, BUILD_WAIT, 'initial build + queued rebuild');
+      await sleep(SETTLE_MS);
+      expect(watchedAtFirstLoad).toEqual([1]);
+      expect(jsonLines()).toHaveLength(2);
+      expect(deckLoads).toBe(2);
+      for (const line of jsonLines()) expect(Object.keys(line).sort(), JSON.stringify(line)).toEqual(['diagnostics', 'files']);
+      session.controller.abort();
+      expect(await session.done).toBe(0);
+    },
+    TIMEOUT,
+  );
+
+  it(
     'changes after abort do not rebuild',
     async () => {
       const { dir, deck } = projectWithDeck();
       const session = startWatch(dir, deck);
-      await waitFor(() => session.calls.length > 0, BUILD_WAIT, 'watch registered');
+      await ready(session);
       session.controller.abort();
       await session.done;
       const count = jsonLines().length;
@@ -278,6 +325,8 @@ describe('build --watch', () => {
       const { dir, deck } = projectWithDeck();
       const session = startWatch(dir, deck, { extra: [] });
       await waitFor(() => session.calls.length > 0, BUILD_WAIT, 'watch registered');
+      await waitFor(() => output.logs.some((l) => l.includes('deck.16x9.pptx')), BUILD_WAIT, 'initial build');
+      await sleep(100);
       const baseline = output.logs.length;
       session.fire();
       await waitFor(() => output.logs.slice(baseline).some((l) => /\d{2}:\d{2}:\d{2}/.test(l)), BUILD_WAIT, 'stamped summary');
@@ -334,10 +383,13 @@ describe('build --watch — real process (bin, fs.watch and tsx namespace)', () 
         const pptx = join(out, 'deck.16x9.pptx');
         expect(await slide1Of(pptx)).toContain('Componente v1');
 
-        // fs.watch pode demorar a armar; regrava até sair o segundo build.
-        await sleep(300);
-        writeFileSync(join(dir, 'title.tsx'), component('Componente v2'));
-        await waitFor(() => lines().length >= 2, BUILD_WAIT, `rebuild after editing the component\n${stderr}`);
+        // Sob carga o primeiro evento pode se perder: regrava a cada 2 s até sair o rebuild.
+        const deadline = Date.now() + BUILD_WAIT;
+        while (lines().length < 2 && Date.now() < deadline) {
+          writeFileSync(join(dir, 'title.tsx'), component('Componente v2'));
+          await waitFor(() => lines().length >= 2, 2_000, 'rebuild').catch(() => undefined);
+        }
+        expect(lines().length, `rebuild after editing the component\n${stderr}`).toBeGreaterThanOrEqual(2);
         const rebuilt = lines().at(-1)!;
         expect(Object.keys(rebuilt).sort(), JSON.stringify(rebuilt)).toEqual(['diagnostics', 'files']);
         expect(await slide1Of(pptx)).toContain('Componente v2');
