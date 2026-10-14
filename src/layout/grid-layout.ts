@@ -10,6 +10,7 @@ import Yoga, {
 import type { BoxMetrics, CssAlign, CssPlace, CssStyle, LayoutEnv, PositionedNode, Rect, ResolvedBox, ResolvedNode } from '../core/types.ts';
 import { applyStyle } from './apply.ts';
 import { settleBaselineRows } from './baseline.ts';
+import { settleReplaced } from './replaced.ts';
 import { createConfig } from './config.ts';
 import {
   areaRect,
@@ -76,6 +77,7 @@ const withIsolated = <T>(
     const [built] = buildChildren([item], yoga, { config, env, parent }, container);
     adjust(built!);
     yoga.calculateLayout(size.width, size.height, Direction.LTR);
+    settleReplaced(yoga, [built!], size);
     settleBaselineRows(yoga, [built!], parent.direction, size);
     return use(built!);
   } finally {
@@ -100,9 +102,21 @@ const isWidthAuto = (item: ResolvedNode): boolean => item.css.width === undefine
 
 const hasAutoInlineMargin = (item: ResolvedNode): boolean => item.css.margin.left === 'auto' || item.css.margin.right === 'auto';
 
-const justifyOf = (item: ResolvedNode, container: CssStyle): CssPlace => item.css.justifySelf ?? container.justifyItems ?? 'stretch';
+/**
+ * `normal` (nada do autor) estica item comum e alinha no início elemento substituído com
+ * proporção, a Image (CSS Box Alignment §6.1/§6.2). `alignItems` do contêiner chega já
+ * resolvido (o `stretch` padrão e o explícito são iguais aqui), então numa Image só o próprio
+ * `alignSelf: stretch` estica no eixo das linhas.
+ */
+const isReplaced = (item: ResolvedNode): boolean => item.kind === 'image';
 
-const alignOf = (item: ResolvedNode, container: CssStyle): CssAlign => item.css.alignSelf ?? container.alignItems;
+const justifyOf = (item: ResolvedNode, container: CssStyle): CssPlace =>
+  item.css.justifySelf ?? container.justifyItems ?? (isReplaced(item) ? 'start' : 'stretch');
+
+const alignOf = (item: ResolvedNode, container: CssStyle): CssAlign => {
+  if (item.css.alignSelf !== undefined) return item.css.alignSelf;
+  return isReplaced(item) && container.alignItems === 'stretch' ? 'flex-start' : container.alignItems;
+};
 
 /** justify-self stretch só estica sem width do autor e sem margem auto (CSS Box Alignment §6.1). */
 const stretchesInline = (item: ResolvedNode, container: CssStyle): boolean =>

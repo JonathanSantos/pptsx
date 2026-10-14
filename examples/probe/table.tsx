@@ -45,19 +45,19 @@ export default defineDeck(() => (
     <ContentLayout title="Tabela encolhida para caber">
       {/* 13 linhas × (16,1 + 2 × 2) pt passam de 240 pt em 14 pt; em 12 pt cabem. */}
       <Box height={240}>
-        <Table columns={columns} rows={rows} size={font.small} cellPadding={2} {...style} />
+        <Table columns={columns} rows={rows} fontSize={font.small} cellPadding={2} {...style} />
       </Box>
     </ContentLayout>
 
     <ContentLayout title="Nem no mínimo cabe">
       <Box height={160}>
-        <Table columns={columns} rows={rows} size={font.small} cellPadding={2} {...style} />
+        <Table columns={columns} rows={rows} fontSize={font.small} cellPadding={2} {...style} />
       </Box>
     </ContentLayout>
 
     <ContentLayout title="fit=error não ajusta">
       <Box height={240}>
-        <Table columns={columns} rows={rows} size={font.small} fit="error" {...style} />
+        <Table columns={columns} rows={rows} fontSize={font.small} fit="error" {...style} />
       </Box>
     </ContentLayout>
   </Deck>

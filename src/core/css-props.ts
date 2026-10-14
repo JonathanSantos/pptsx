@@ -77,6 +77,10 @@ export interface CssBoxProps {
   readonly borderColor?: Color;
   readonly borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
   readonly borderRadius?: Num | string;
+  /** Contorno que não ocupa espaço ('1px solid #ccc'; número = largura). Só sólido no PPTX. */
+  readonly outline?: Num | string;
+  readonly outlineColor?: Color;
+  readonly outlineWidth?: CssLengthInput;
   readonly backgroundColor?: Color;
   readonly backgroundImage?: string;
   readonly boxShadow?: string;

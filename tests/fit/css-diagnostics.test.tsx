@@ -4,7 +4,7 @@ import cause from '../../examples/probe/cause.tsx';
 import table from '../../examples/probe/table.tsx';
 import type { DeckDefinition, Diagnostic, SizePresetName } from '../../src/core/types.ts';
 import { cssFit } from '../helpers/css-fit.tsx';
-import probe from './__fixtures__/probe-css.tsx';
+import probe from '../../examples/probe/css.tsx';
 import engineBaseline from '../examples/__fixtures__/engine-positioned.json' with { type: 'json' };
 
 /**
@@ -36,6 +36,31 @@ const DECKS: readonly (readonly [string, DeckDefinition])[] = [
 ];
 const SIZES: readonly SizePresetName[] = ['16x9', '4x3', 'wide'];
 
+/**
+ * O que mudou de propósito depois da fixture (05c1e5e), aplicado à referência antes de comparar:
+ * - M11-F: o ContentLayout ficou com um Box de corpo só (`Box[1]` → `Box`);
+ * - M11-C: as mensagens do fit falam CSS (grow → flexGrow, shrink → flexShrink, size → fontSize).
+ */
+const pathNow = (path: string): string => path.replace('ContentLayout > Box[1] > ', 'ContentLayout > Box > ');
+
+const MESSAGE_RENAMES: readonly (readonly [RegExp, string])[] = [
+  [/\bgrow\b/g, 'flexGrow'],
+  // fit="shrink" é o nome da política, não a prop de flex.
+  [/(?<!")\bshrink\b/g, 'flexShrink'],
+  [/reduza o size\b/g, 'reduza o fontSize'],
+  [/\bsize dos itens\b/g, 'fontSize dos itens'],
+  [/\bsize do autor\b/g, 'fontSize do autor'],
+];
+
+const messageNow = (message: string): string => MESSAGE_RENAMES.reduce((text, [from, to]) => text.replace(from, to), message);
+
+const referenceOf = (d: BaselineDiagnostic): BaselineDiagnostic => ({
+  ...d,
+  path: pathNow(d.path),
+  causedBy: d.causedBy === null ? null : pathNow(d.causedBy),
+  message: messageNow(d.message),
+});
+
 type Comparable = Pick<BaselineDiagnostic, 'severity' | 'code' | 'slide' | 'path'>;
 const keyOf = (d: Comparable): string => `${d.severity} ${d.code} s${d.slide} ${d.path}`;
 const causeOf = (d: Diagnostic): string => `${keyOf(d)} ← ${d.data?.causedBy ?? '-'}`;
@@ -43,7 +68,7 @@ const baselineCauseOf = (d: BaselineDiagnostic): string => `${keyOf(d)} ← ${d.
 
 describe('fit diagnostics × pre-M11 engine', () => {
   it.each(DECKS.flatMap(([name, deck]) => SIZES.map((size) => [name, size, deck] as const)))('%s %s', (name, size, deck) => {
-    const expected = ENGINE[name]![size]!.diagnostics;
+    const expected = ENGINE[name]![size]!.diagnostics.map(referenceOf);
     const { diagnostics } = cssFit(deck, size);
     expect(diagnostics.length).toBeGreaterThan(0);
     expect(diagnostics.map(keyOf)).toEqual(expected.map(keyOf));
@@ -52,10 +77,7 @@ describe('fit diagnostics × pre-M11 engine', () => {
   });
 });
 
-/**
- * Estouros que só o modelo CSS tem (__fixtures__/probe-css.tsx, cópia de poc/css/examples/probe-css.tsx;
- * TODO M11-F: importar de examples/probe/css.tsx), com o desfecho esperado à mão.
- */
+/** Estouros que só o modelo CSS tem (examples/probe/css.tsx, de poc/css/examples/probe-css.tsx), com o desfecho esperado à mão. */
 describe('CSS-only overflows: grid cell, wrap line, margins and border', () => {
   it('reports each overflow on the right node with the right area', () => {
     const { diagnostics } = cssFit(probe, '16x9');

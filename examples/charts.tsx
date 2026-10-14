@@ -4,7 +4,7 @@ import { ContentLayout } from './layouts/index.ts';
 
 const { color } = tokens;
 
-// Os três tipos de gráfico nativo, cada um ocupando o corpo do slide com grow: o mesmo
+// Os três tipos de gráfico nativo, cada um ocupando o corpo do slide com flex={1}: o mesmo
 // código serve a 16x9 e 4x3 (o gráfico não tem tamanho próprio, fica com o que o flex der).
 // Valores numéricos com ponto; o PowerPoint/Keynote formata com a vírgula do idioma.
 const quarters = ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026'];
@@ -26,7 +26,7 @@ export default defineDeck(() => (
         colors={[color.accent, color.muted]}
         legend
         showValues
-        grow={1}
+        flex={1}
       />
     </ContentLayout>
 
@@ -41,7 +41,7 @@ export default defineDeck(() => (
           ],
         }}
         colors={[color.accent, color.negative]}
-        grow={1}
+        flex={1}
       />
     </ContentLayout>
 
@@ -54,7 +54,7 @@ export default defineDeck(() => (
           series: [{ name: 'Receita nova', values: [4.0, 0.6, 0.7, 1.2] }],
         }}
         showValues
-        grow={1}
+        flex={1}
       />
     </ContentLayout>
   </Deck>

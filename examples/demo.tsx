@@ -1,4 +1,4 @@
-import { B, Box, Chart, Deck, Shape, Table, Text, defineDeck } from 'pptsx';
+import { B, Chart, Deck, Table, Text, defineDeck } from 'pptsx';
 import { tokens } from './tokens.ts';
 import { ClosingLayout, ContentLayout, CoverLayout } from './layouts/index.ts';
 import { Bullets, KpiRow, TwoColumn } from './components/index.ts';
@@ -21,7 +21,7 @@ const revenueByArea = [
   ['Corporativo', '2,8', '3,4', '+21,4%'],
 ];
 
-// Mesmo código para 16x9, 4x3 e wide: o flexbox redistribui o espaço e os valores
+// Mesmo código para 16x9, 4x3 e wide: flex e grid redistribuem o espaço e os valores
 // responsivos só mudam onde a estrutura muda (colunas empilhadas em telas mais
 // "quadradas", `tall`) ou onde sobra área para tipografia maior (`wide`).
 // `tall` (4:3) tem a largura do 16:9 mas é mais alto: a altura extra vai para
@@ -51,7 +51,7 @@ export default defineDeck((ctx) => (
 
     <ContentLayout title="Receita recorrente em alta">
       <TwoColumn
-        direction={{ base: 'row', tall: 'column' }}
+        stacked={{ base: false, tall: true }}
         ratio={0.45}
         left={
           <Bullets
@@ -63,39 +63,40 @@ export default defineDeck((ctx) => (
             ]}
           />
         }
-        // Gráfico nativo (editável no PowerPoint): sem tamanho próprio, ocupa a coluna
-        // inteira com grow; lado a lado fica com a altura do corpo, empilhado com a sobra.
+        // Gráfico nativo (editável no PowerPoint): sem tamanho próprio, estica na célula do
+        // grid; lado a lado fica com a altura do corpo, empilhado com a sobra.
         right={
           <Chart
             kind="bar"
             data={revenue}
             colors={[color.accent]}
             showValues
-            grow={1}
           />
         }
       />
     </ContentLayout>
 
     <ContentLayout title="Indicadores-chave">
-      <Box gap={space.gap * 1.5}>
-        <KpiRow
-          size={{ base: 'md', tall: 'lg', wide: 'lg' }}
-          items={[
-            // NBSP entre "R$" e "mi": a unidade nunca fica sozinha no começo de uma linha.
-            { label: 'Receita (R$ mi)', value: '52,4', delta: '+14,2% vs Q2', trend: 'up' },
-            { label: 'Custo por consulta', value: '−22%', delta: 'menor do ano', trend: 'down', sentiment: 'positive' },
-            { label: 'NPS interno', value: '62', delta: '−4 pts vs Q2', trend: 'down' },
-          ]}
-        />
-        <Box direction="row" gap={space.tight + 4} maxWidth="80%">
-          <Shape kind="rect" width={4} fill={color.accent} shrink={0} />
-          <Text size={{ base: font.small + 2, tall: font.body - 2, wide: font.body - 2 }} color={color.ink} grow={1}>
-            O NPS caiu na migração dos pipelines; um time de suporte dedicado às áreas usuárias começa
-            em <B>novembro</B>.
-          </Text>
-        </Box>
-      </Box>
+      <KpiRow
+        size={{ base: 'md', tall: 'lg', wide: 'lg' }}
+        items={[
+          // NBSP entre "R$" e "mi": a unidade nunca fica sozinha no começo de uma linha.
+          { label: 'Receita (R$\u00A0mi)', value: '52,4', delta: '+14,2% vs Q2', trend: 'up' },
+          { label: 'Custo por consulta', value: '−22%', delta: 'menor do ano', trend: 'down', sentiment: 'positive' },
+          { label: 'NPS interno', value: '62', delta: '−4 pts vs Q2', trend: 'down' },
+        ]}
+      />
+      {/* Nota com barra: borderLeft + paddingLeft no próprio Text (antes: Box row + Shape). */}
+      <Text
+        fontSize={{ base: font.small + 2, tall: font.body - 2, wide: font.body - 2 }}
+        maxWidth="80%"
+        marginTop={space.gap * 1.5}
+        borderLeft={`4px solid ${color.accent}`}
+        paddingLeft={space.tight + 4}
+      >
+        O NPS caiu na migração dos pipelines; um time de suporte dedicado às áreas usuárias começa
+        em <B>novembro</B>.
+      </Text>
     </ContentLayout>
 
     <ContentLayout title="Receita por área">
@@ -107,8 +108,7 @@ export default defineDeck((ctx) => (
           { header: 'Δ', align: 'right' },
         ]}
         rows={revenueByArea}
-        size={{ base: font.small, tall: font.small + 2, wide: font.small + 2 }}
-        color={color.ink}
+        fontSize={{ base: font.small, tall: font.small + 2, wide: font.small + 2 }}
         header={{ fill: color.brand, color: color.white }}
         stripe={color.surface}
         border={color.muted}

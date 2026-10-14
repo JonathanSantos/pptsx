@@ -1,6 +1,6 @@
 # pptsx
 
-Slides escritos em TSX, sem coordenadas, viram um `.pptx` editável que se adapta sozinho a vários tamanhos de slide (16:9, 4:3, wide…). Feito para devs e para agentes de IA: o layout é calculado pela engine e todo problema volta como diagnóstico com caminho até o nó.
+Slides escritos em TSX com **CSS como props** (box model, flexbox, grid, `zIndex`), sem coordenadas, viram um `.pptx` editável que se adapta sozinho a vários tamanhos de slide (16:9, 4:3, wide…). Feito para devs e para agentes de IA: o layout é calculado pela engine e todo problema volta como diagnóstico com caminho até o nó.
 
 ## Instalação
 
@@ -48,42 +48,68 @@ Durante a edição, `npx pptsx build deck.tsx --size 16x9,4x3 --watch` refaz tud
 ## Primeiro deck
 
 ```tsx
-import { Box, Deck, Shape, Slide, Text, defineDeck } from 'pptsx';
+import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
 
 export default defineDeck((ctx) => (
   <Deck>
-    <Slide padding={40} gap={20} background="#FFFFFF">
-      <Shape kind="rect" height={6} fill="#2F6FED" />
-      <Text size={36} weight="bold">Resultados do trimestre</Text>
-      <Box direction={{ base: 'row', tall: 'column' }} gap={20} grow={1}>
-        <Box grow={1} fill="#F4F6FA" radius={8} padding={20}><Text>Receita cresceu 18%.</Text></Box>
-        <Box grow={1} fill="#F4F6FA" radius={8} padding={20}><Text>Churn caiu para 2,1%.</Text></Box>
+    <Slide padding={40} gap={20} backgroundColor="#FFFFFF" color="#1B2A4A">
+      <Text fontSize={36} fontWeight="bold" borderLeft="6px solid #2F6FED" paddingLeft={14}>
+        Resultados do trimestre
+      </Text>
+      <Box display="grid" gridTemplateColumns={{ base: '1fr 1fr', tall: '1fr' }} gap={20}>
+        <Box backgroundColor="#F4F6FA" borderRadius={8} padding={20}><Text>Receita cresceu 18%.</Text></Box>
+        <Box backgroundColor="#F4F6FA" borderRadius={8} padding={20}><Text>Churn caiu para 2,1%.</Text></Box>
       </Box>
+      <Text fontSize={11} color="#5B6680" marginTop="auto">Fonte: dados internos · {ctx.name}</Text>
     </Slide>
   </Deck>
 ));
 ```
 
-- `Slide` e `Box` são contêineres flexbox; a direção padrão é **coluna** (filhos empilhados), e `grow`, `gap`, `padding`, `align` e `justify` funcionam como no CSS.
+- As props são **CSS em camelCase**: números são pt (`'12px'` também), `'50%'` é do pai, e os shorthands funcionam como no browser (`padding="8 16"`, `border="2px solid #ccc"`, `margin="0 auto"`, `flex={1}`).
+- `Slide` e `Box` são contêineres. A única diferença intencional em relação ao browser: **`Box` sem `display` é uma coluna flex** que estica os filhos; `display="flex"` é row, `display="grid"` é grid, `display="none"` some.
 - Não existem coordenadas: posição e tamanho de tudo saem do layout, em pt (1 pol = 72 pt).
 - O texto é medido com a fonte real e quebrado em linhas; se não couber, a fonte encolhe até um mínimo, corta com reticências ou vira erro, conforme `fit`.
-- Qualquer prop aceita um valor por breakpoint: `{ base, tall?, wide?, '4x3'?, … }`. `tall` vale quando a proporção é menor que 1,5 (4:3, 16:10); `wide` quando o slide é maior que o 16:9 de referência; o nome exato do tamanho vence os dois. O `Box` acima empilha em 4:3 sem nenhum `if` no deck.
+- Qualquer prop aceita um valor por breakpoint: `{ base, tall?, wide?, '4x3'?, … }`. `tall` vale quando a proporção é menor que 1,5 (4:3, 16:10); `wide` quando o slide é maior que o 16:9 de referência; o nome exato do tamanho vence os dois. O grid acima vira uma coluna em 4:3 sem nenhum `if` no deck.
 - A função ainda recebe um `ctx` por tamanho (`name`, `width`, `height`, `aspect`, `scale`) e `ctx.pick(valor)` resolve um valor responsivo em código, para contagens ou textos alternativos.
 - Um `<Box paginate>` com itens demais continua num slide clonado (mesmo título, mesmas decorações) em vez de encolher a fonte: a lista de 12 bullets vira dois slides e o diagnóstico `slide-continued` conta as partes.
+
+## CSS que funciona
+
+**Grid.** `gridTemplateColumns`/`Rows` com pt, `%`, `fr`, `auto`, `min-content`, `max-content`, `minmax()` e `repeat(n, …)`; no item, `gridColumn="span 2"`, `"2 / -1"`, `gridRow`, `justifySelf`/`alignSelf`. Um `Chart` numa célula estica nela.
+
+```tsx
+<Box display="grid" gridTemplateColumns="repeat(3, minmax(0, 1fr))" gap={16}>
+  {cards.map((c) => <Box padding={14} backgroundColor="#FFFFFF" boxShadow="0 3px 10px rgba(0,0,0,.15)">…</Box>)}
+</Box>
+```
+
+**Margin auto.** `marginTop="auto"` empurra um rodapé para o fim do slide; `margin="0 auto"` centraliza um bloco com largura. Nada de Box vazio para empurrar.
+
+**Herança.** `fontFamily`, `fontSize`, `fontWeight`, `fontStyle`, `color`, `lineHeight`, `textAlign`, `letterSpacing` e `textTransform` declarados num `Slide` ou `Box` descem para os `Text` de dentro. Um cartão define a fonte e a cor uma vez; os textos dizem só o que muda.
+
+**Camadas.** Como no browser, nós posicionados, com `zIndex`, `opacity` ou `rotate` sobem de camada: `zIndex={-1}` põe uma decoração absoluta atrás do conteúdo (sem ele, ela pinta por cima).
+
+```tsx
+<Shape kind="ellipse" position="absolute" right={-90} top={-110} width={360} height={360} backgroundColor="#101B33" zIndex={-1} />
+```
+
+Também: `flexWrap="wrap"` (tags que quebram em linhas), bordas por lado (`borderTop`, `borderLeft="4px solid …"`, tracejada/pontilhada), `borderRadius`, `boxShadow` (uma, externa), `opacity`, `rotate`/`transform: rotate() translate()`, `backgroundImage="url(…)"`, `letterSpacing`, `textTransform`, `textDecoration`. O guia completo, com receitas e a tabela de migração das props antigas (`direction`, `grow`, `fill`, `size`…, ainda aceitas como alias), está em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
 
 ## Rich text
 
 ```tsx
 import { B, I, Span, Text } from 'pptsx';
 
-<Text size={20}>
-  Receita <B>subiu 14%</B> em <Span color="#2F6FED" italic>todas</Span> as regiões, <I>exceto</I> no Norte.
+<Text fontSize={20}>
+  Receita <B>subiu 14%</B> em <Span color="#2F6FED" fontStyle="italic">todas</Span> as regiões, <I>exceto</I> no Norte.
 </Text>
 ```
 
-- `Span` muda `weight`, `italic` e `color` de um trecho; `B` e `I` são atalhos. Só valem dentro de `Text`. Tamanho, fonte e entrelinha são do `Text` inteiro.
+- `Span` muda `fontWeight`, `fontStyle`, `color` e `textDecoration` de um trecho; `B` e `I` são atalhos. Só valem dentro de `Text`. Tamanho, fonte e entrelinha são do `Text` inteiro.
 - A medição soma a largura de cada trecho com a face certa (regular, negrito, itálico), e o `.pptx` sai com um run por trecho.
-- `align="baseline"` numa row alinha textos de tamanhos diferentes pela linha de base (valor grande + variação pequena).
+- `alignItems="baseline"` numa row (`display="flex"`) alinha textos de tamanhos diferentes pela linha de base (valor grande + variação pequena).
+- `lineHeight` segue o CSS: `'normal'` (padrão) é a altura natural da fonte; um número é múltiplo do `fontSize` (`1.2` em 20 pt = 24 pt por linha).
 - Para a linha não quebrar entre número e unidade, use NBSP (`R$&nbsp;52,4&nbsp;mi` no texto JSX, `'\u00A0'` em strings); para um texto inteiro numa linha só, `<Text nowrap>` (se não couber, encolhe até `minSize` e depois vira `text-overflow`).
 
 ## CLI
@@ -98,7 +124,7 @@ pptsx init [dir] [--force] [--json]
 | `build <deck.tsx>` | — | renderiza o deck (export default `defineDeck(...)`) e grava os arquivos |
 | `--size <lista>` | `16x9` | tamanhos separados por vírgula: `16x9`, `16x10`, `4x3`, `wide` ou custom em polegadas (`10x7.5in`) |
 | `--out <dir>` | `dist` | diretório de saída |
-| `--debug` | desligado | contorno vermelho tracejado em toda Box/Text/Image, no `.pptx` e no PNG; no PNG, o texto que estoura fica em vermelho |
+| `--debug` | desligado | contorno vermelho tracejado em toda Box/Text/Image/Chart/Table, no `.pptx` e no PNG; no PNG, o texto que estoura fica em vermelho |
 | `--json` | desligado | stdout só com JSON (ver abaixo) |
 | `--preview native\|none` | `native` | `none` não gera PNGs (só `.pptx` e diagnósticos) |
 | `--preview-width <px>` | `1280` | largura de cada PNG de slide |
@@ -201,7 +227,9 @@ Para checar tipos desse script com `tsc`, instale `@types/node`.
 
 - Cada diagnóstico tem `size`, `slide` (a partir de 1), `severity`, `code`, `path`, `message` (o que fazer) e `data` opcional.
 - `severity`: `error` precisa de correção; `warning` é aceitável se intencional; `info` é só aviso (ex.: fonte reduzida).
-- `path` vai do slide até o nó, com nomes de primitivas e de componentes: `ContentLayout > Box[1] > Bullets > Box[2] > Text`.
+- `path` vai do slide até o nó, com nomes de primitivas e de componentes: `ContentLayout > Box > Bullets > Box[2] > Text`.
+- Dentro de grid, o estouro diz o tamanho da célula ("a célula do grid tem 212 × 60 pt"); num wrap, quanto as linhas ocupam.
+- `css-not-emitted` (warning) lista toda propriedade CSS que não tem de/para no PPTX, com o valor, o motivo e o path; o preview também não a desenha.
 - `data.causedBy` marca um estouro que é consequência de outro nó: corrija a causa primeiro e os derivados somem.
 - Irmãos com o mesmo problema viram um item só (`Box[0..7]`, com `data.count` e `data.paths`).
 - Exit code `1` se houver algum `error`. O formato completo, os códigos e as correções estão em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
@@ -209,19 +237,22 @@ Para checar tipos desse script com `tsc`, instale `@types/node`.
 ## Como funciona
 
 1. O deck é TSX com um runtime JSX próprio (sem React): `defineDeck(ctx)` roda uma vez por tamanho e devolve uma árvore de elementos.
-2. A árvore é resolvida: componentes viram primitivas, a estrutura é validada (texto só dentro de `Text`, só `Slide` no `Deck`) e cada nó recebe seu `path`.
-3. O Yoga (flexbox em WASM) calcula posição e tamanho de cada nó; o texto entra como folha medida.
-4. O fontkit mede o texto com as métricas reais da fonte (largura dos glifos, kerning, ascender/descender) e quebra as linhas por palavra.
-5. O fit aplica a política de cada `Text` (`shrink`, `truncate`, `error`), refaz o layout quando a fonte muda e gera os diagnósticos.
-6. O pptxgenjs emite o `.pptx` com caixas e texto nativos; o preview desenha a mesma árvore em SVG e o resvg rasteriza os PNGs.
+2. A árvore é resolvida: componentes viram primitivas, a estrutura é validada (texto só dentro de `Text`, só `Slide` no `Deck`), cada nó recebe seu `path` e as props viram um estilo CSS normalizado (shorthands expandidos, valores responsivos escolhidos, propriedades de texto herdadas, nomes antigos convertidos).
+3. O layout segue o browser: o Yoga (flexbox em WASM, com os padrões da web) calcula o box model e o flex, e um motor de grid próprio dimensiona os tracks e posiciona os itens nas células; o texto entra como folha medida.
+4. O fontkit mede o texto com as métricas reais da fonte (largura dos glifos, kerning, ascender/descender, `letterSpacing`) e quebra as linhas por palavra.
+5. O fit aplica a política de cada `Text` (`shrink`, `truncate`, `error`) sobre a área de conteúdo (frame − borda − padding, ou a célula do grid), refaz o layout quando a fonte muda e gera os diagnósticos.
+6. A pintura segue a ordem do CSS (`zIndex`, opacidade e rotação herdadas); o pptxgenjs emite o `.pptx` com formas, texto, gráficos e tabelas nativos, e o preview desenha os mesmos itens em SVG, rasterizados pelo resvg.
 
 ## Limitações atuais
 
+- **CSS sem equivalente no PPTX não sai** (warning `css-not-emitted`, e o preview também não desenha): `overflow: hidden` (o PPTX não recorta), gradientes em `backgroundImage`, `filter`, `transform: scale/skew`, sombra `inset`/`spread`/múltipla, raio diferente por canto (sai o menor), `fontWeight` fora de regular/bold.
+- **Opacidade é por forma, não de grupo.** `opacity` num Box multiplica a transparência de cada forma e texto de dentro; onde elas se sobrepõem, a de cima não "apaga" a de baixo como num grupo do browser.
+- **Bordas por lado são linhas.** Com `borderRadius` e bordas diferentes por lado, o fundo arredonda mas as linhas saem retas (avisa). `Chart` e `Table` não giram.
+- **Fora do escopo do CSS:** `float`, `position: fixed/sticky`, unidades `em`/`rem`/`vw`, áreas nomeadas e `auto-fill` no grid.
 - **Só Arial por padrão.** A engine mede com Liberation Sans (métricas compatíveis, incluída no pacote) e o arquivo sai com `Arial`. Outras famílias entram em `fonts`, por arquivo ou instaladas no sistema (sem `file`); uma família não registrada ou não achada gera `font-missing`.
 - **Fonte embutida só no PowerPoint.** `--embed-fonts` grava as faces em EOT dentro do `.pptx`. O PowerPoint usa a fonte embutida; o Keynote ignora e troca pela dele (o Google Slides não foi testado). Só entram `.ttf` de uma face com licença que permite embed (`.ttc` e `.otf` CFF geram `font-not-embeddable`).
 - **Quebra de linha forçada por padrão.** Com `lineBreaks: 'forced'`, cada linha calculada vira uma quebra manual no `.pptx`: o resultado bate com o preview, mas quem editar o texto no PowerPoint herda essas quebras. `lineBreaks: 'auto'` emite só os parágrafos e deixa o aplicativo requebrar: fica mais editável, mas pode divergir da medição (no Keynote, 10 de 34 amostras quebram em outra palavra e 2 perdem uma linha; nenhuma vaza do frame, porque a engine mede com 3 % de folga). O preview PNG mostra sempre as quebras da engine, não as do aplicativo.
-- **Rich text limitado ao estilo do trecho.** `Span`/`B`/`I` mudam peso, itálico e cor; tamanho, fonte e entrelinha valem para o `Text` inteiro.
-- **Sem gráficos e tabelas nativos** (gráfico entra como imagem; tabela, como `Box`/`Text`). Previsto no M10.
+- **Rich text limitado ao estilo do trecho.** `Span`/`B`/`I` mudam peso, itálico, cor e decoração; tamanho, fonte e entrelinha valem para o `Text` inteiro.
 - **Validado no Keynote.** A calibração da medição de texto foi feita exportando pelo Keynote; PowerPoint e Google Slides ainda não foram validados.
 
 ## Desenvolvimento
@@ -235,7 +266,18 @@ node bin/pptsx.mjs build examples/demo.tsx --size 16x9,4x3,wide --out dist/
 scripts/keynote-export.sh dist/demo.16x9.pptx dist/keynote/   # exporta os slides pelo Keynote (macOS)
 ```
 
-Dentro do repo, `bin/pptsx.mjs` roda direto de `src/` (sem build) e os decks importam `pptsx` pelo `paths` do `tsconfig.json`. Exemplos em `examples/`: `demo.tsx` (deck completo com layouts e componentes, sem nenhum `if` sobre o tamanho), `long-list.tsx` (lista paginada em slides de continuação), `hello.tsx`, `overflow.tsx`, `layout-test.tsx`, os decks de calibração `calibration.tsx` (medição de texto) e `calibration-rich.tsx` (rich text, NBSP, nowrap e baseline), além de `layouts/`, `components/` e `tokens.ts`. Spec em [`docs/spec.md`](docs/spec.md); guia para agentes em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
+Dentro do repo, `bin/pptsx.mjs` roda direto de `src/` (sem build) e os decks importam `pptsx` pelo `paths` do `tsconfig.json`. Exemplos em `examples/`, todos em CSS:
+
+| arquivo | o que mostra |
+|---|---|
+| `demo.tsx` | deck completo com layouts e componentes (grid de KPIs, duas colunas que empilham em 4:3, gráfico e tabela nativos), sem nenhum `if` sobre o tamanho |
+| `showcase.tsx` | vitrine do CSS: grid com `span` e `2 / -1`, wrap, `marginTop="auto"`, `zIndex`, herança, bordas por lado, sombra, `rotate`, `opacity`, `display` responsivo |
+| `long-list.tsx` | lista paginada em slides de continuação |
+| `charts.tsx` | os três gráficos nativos (barra, linha, pizza) |
+| `hello.tsx`, `layout-test.tsx` | posicionamento absoluto; flex, imagens (`objectFit`) e alinhamentos |
+| `overflow.tsx`, `probe/cause.tsx`, `probe/table.tsx`, `probe/css.tsx` | slides lotados de propósito: cada um termina com o diagnóstico esperado (exit 1) |
+| `calibration.tsx`, `calibration-rich.tsx` | grades de calibração da medição de texto e do rich text |
+| `layouts/`, `components/`, `tokens.ts` | `CoverLayout`, `ContentLayout`, `ClosingLayout`; `Bullets`, `KpiCard`, `KpiRow`, `TwoColumn` | Spec em [`docs/spec.md`](docs/spec.md); guia para agentes em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
 
 ## Licença
 

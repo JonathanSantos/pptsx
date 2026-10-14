@@ -1,4 +1,4 @@
-import { Box, Shape, Slide, Text, type Children } from 'pptsx';
+import { Box, Slide, Text, type Children } from 'pptsx';
 import { tokens } from '../tokens.ts';
 
 export interface ContentLayoutProps {
@@ -12,19 +12,21 @@ export interface ContentLayoutProps {
 
 const { color, font, space } = tokens;
 
+/** Barra do título: 6 pt de borda + 14 pt até o texto, a mesma geometria da antiga barra-Shape. */
+const TITLE_BAR = { width: 6, gap: 14 } as const;
+
 /**
- * Slide de conteúdo: header com barra de destaque e corpo flexível que ocupa o resto.
+ * Slide de conteúdo: título com barra de destaque (borderLeft) e corpo flexível que ocupa o resto.
  * justify="center" centraliza conteúdo curto (ex.: uma lista) na altura que sobra,
  * em vez de deixar a metade de baixo vazia em slides mais altos (4:3).
+ * A cor do texto (ink) desce do Slide para todo o conteúdo.
  */
 export function ContentLayout({ title, justify = 'start', notes, children }: ContentLayoutProps) {
   return (
-    <Slide background={color.white} padding={space.page} gap={space.gap * 1.5} {...(notes ? { notes } : {})}>
-      <Box direction="row" align="center" gap={14}>
-        <Shape kind="rect" width={6} height={36} fill={color.accent} shrink={0} />
-        <Text size={font.h1} weight="bold" color={color.ink} grow={1} minSize={24}>{title}</Text>
-      </Box>
-      <Box grow={1} justify={justify}>{children}</Box>
+    <Slide backgroundColor={color.white} padding={space.page} gap={space.gap * 1.5} color={color.ink} {...(notes ? { notes } : {})}>
+      <Text fontSize={font.h1} fontWeight="bold" minSize={24}
+        borderLeft={`${TITLE_BAR.width}px solid ${color.accent}`} paddingLeft={TITLE_BAR.gap}>{title}</Text>
+      <Box flex={1} justifyContent={justify === 'center' ? 'center' : 'flex-start'}>{children}</Box>
     </Slide>
   );
 }

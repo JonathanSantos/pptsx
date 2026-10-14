@@ -31,7 +31,7 @@ describe('fit — zero-height area', () => {
     expect(errs).toHaveLength(1);
     expect(errs[0]!.severity).toBe('error');
     expect(errs[0]!.message).toContain(ZERO);
-    expect(errs[0]!.message).toMatch(/grow/);
+    expect(errs[0]!.message).toMatch(/flexGrow/);
     expect(errs[0]!.message).not.toMatch(/minSize/);
   });
 

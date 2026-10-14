@@ -4,8 +4,9 @@ import demo from '../../examples/demo.tsx';
 import { render } from '../../src/render.ts';
 import { resolveDeck } from '../../src/resolve/index.ts';
 import { createContext, resolveSize } from '../../src/sizes.ts';
-import type { PositionedNode, PositionedSlide, ResolvedDeck, ResolvedNode, SizePresetName } from '../../src/core/types.ts';
-import baseline from './__fixtures__/demo-positioned.json' with { type: 'json' };
+import type { ResolvedDeck, ResolvedNode, SizePresetName } from '../../src/core/types.ts';
+import cssBaseline from './__fixtures__/css-positioned.json' with { type: 'json' };
+import { slideDiffs, type BaselineNode } from '../helpers/css-fit.tsx';
 
 /** M5: demo.tsx gera 16:9 e 4:3 sem mudar código e sem diagnóstico error. */
 
@@ -42,14 +43,18 @@ describe('examples/demo.tsx — resolved tree', () => {
     }
   });
 
-  it('two-column slide: row in 16x9, column (stacked) in 4x3', () => {
+  // M11-F: TwoColumn é grid; `stacked={{ base: false, tall: true }}` vira uma coluna em 4x3.
+  it('two-column slide: two grid columns in 16x9, one (stacked) in 4x3', () => {
     const twoColumnOf = (name: SizePresetName) => {
       const find = (nodes: readonly ResolvedNode[]): ResolvedNode | undefined =>
         nodes.map((node) => (node.path.endsWith('TwoColumn') ? node : 'children' in node ? find(node.children) : undefined)).find(Boolean);
       return find(resolvedAt(name).slides[2]!.children);
     };
-    expect(twoColumnOf('16x9')?.props).toMatchObject({ direction: 'row' });
-    expect(twoColumnOf('4x3')?.props).toMatchObject({ direction: 'column' });
+    const tracksOf = (name: SizePresetName) => twoColumnOf(name)?.css.gridTemplateColumns?.match(/minmax\([^)]*\)/g) ?? [];
+    expect(twoColumnOf('16x9')?.css.display).toBe('grid');
+    expect(tracksOf('16x9')).toHaveLength(2);
+    expect(twoColumnOf('4x3')?.css.display).toBe('grid');
+    expect(tracksOf('4x3')).toEqual(['minmax(0, 1fr)']);
   });
 
   it('snapshot of the resolved path tree in 16x9', () => {
@@ -78,44 +83,12 @@ describe('examples/demo.tsx — render', () => {
 });
 
 /**
- * M9: a demo reescrita com props responsivas (M9-D) tem que posicionar igual à de antes.
- * `__fixtures__/demo-positioned.json` foi gerado da demo após o M10-G (Chart nativo no slide 3, Table no slide 5);
- * antes disso, da demo do commit 77c0143 (pré-M9-D), e o M9-D a manteve idêntica:
- * por tamanho, por slide, cada nó em pré-ordem com path, kind, frame (2 casas) e, em Text,
- * fontSize e número de linhas pós-ajuste. Frames comparados com tolerância de 1 pt.
- * M11: a altura da Table de 16x9 (slide 5) passou de 168.69 para 171.5 — as linhas da tabela
- * são arredondadas para cima a DEFAULTS.table.rowHeightStep no layout (antes, só no emissor).
+ * M11: a demo em CSS (M11-F) pelo `render()` × `__fixtures__/css-positioned.json` (a referência
+ * de posições dos decks em CSS; ver css-parity.test.tsx). A demo com as props antigas continua
+ * comparada com `demo-positioned.json` (M9/M10) em engine-parity.test.tsx, pela cópia em legacy/.
  */
-interface BaselineNode {
-  readonly path: string;
-  readonly kind: string;
-  readonly frame: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
-  readonly fontSize?: number;
-  readonly lines?: number;
-}
-
-const BASELINE = baseline as Readonly<Record<string, readonly (readonly BaselineNode[])[]>>;
-const FRAME_TOLERANCE_PT = 1;
-
-const flatten = (nodes: readonly PositionedNode[]): PositionedNode[] =>
-  nodes.flatMap((n) => [n, ...(n.kind === 'box' ? flatten(n.children) : [])]);
-
-const frameDiffs = (expected: BaselineNode, actual: PositionedNode | PositionedSlide): string[] =>
-  (['x', 'y', 'width', 'height'] as const)
-    .filter((key) => Math.abs(expected.frame[key] - actual.frame[key]) > FRAME_TOLERANCE_PT)
-    .map((key) => `${actual.path}.${key}: ${expected.frame[key]} → ${actual.frame[key]}`);
-
-const textDiffs = (expected: BaselineNode, actual: PositionedNode | PositionedSlide): string[] => {
-  if (actual.kind !== 'text') return [];
-  const out: string[] = [];
-  if (expected.fontSize !== undefined && Math.abs(expected.fontSize - actual.text.fontSize) > FRAME_TOLERANCE_PT) {
-    out.push(`${actual.path}.fontSize: ${expected.fontSize} → ${actual.text.fontSize}`);
-  }
-  if (expected.lines !== undefined && expected.lines !== actual.text.lines.length) {
-    out.push(`${actual.path}.lines: ${expected.lines} → ${actual.text.lines.length}`);
-  }
-  return out;
-};
+type CssSize = { readonly slides: readonly (readonly BaselineNode[])[] };
+const BASELINE = (cssBaseline as unknown as { readonly decks: Readonly<Record<string, Readonly<Record<string, CssSize>>>> }).decks.demo!;
 
 describe('examples/demo.tsx — positioned tree matches the stored baseline (≤ 1 pt)', () => {
   const sizes = Object.keys(BASELINE) as SizePresetName[];
@@ -127,14 +100,8 @@ describe('examples/demo.tsx — positioned tree matches the stored baseline (≤
   it.each(sizes)('%s: same nodes, frames within 1 pt, same text size and lines', async (size) => {
     const [result] = await render(demo, { sizes: [size], preview: false, includePositioned: true, baseDir: EXAMPLES_DIR });
     const slides = result!.positioned!.slides;
-    const expected = BASELINE[size]!;
+    const expected = BASELINE[size]!.slides;
     expect(slides).toHaveLength(expected.length);
-    slides.forEach((slide, i) => {
-      const actual = [slide, ...flatten(slide.children)];
-      const want = expected[i]!;
-      expect(actual.map((n) => `${n.kind} ${n.path}`), `slide ${i + 1}`).toEqual(want.map((n) => `${n.kind} ${n.path}`));
-      const diffs = want.flatMap((node, j) => [...frameDiffs(node, actual[j]!), ...textDiffs(node, actual[j]!)]);
-      expect(diffs, `slide ${i + 1}`).toEqual([]);
-    });
+    slides.forEach((slide, i) => expect(slideDiffs(slide, expected[i]!), `slide ${i + 1}`).toEqual([]));
   }, 120_000);
 });

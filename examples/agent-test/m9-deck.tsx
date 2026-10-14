@@ -51,23 +51,27 @@ export default defineDeck((ctx) => (
     />
 
     <ContentLayout title="Indicadores do trimestre" justify="center">
-      <Box gap={{ base: space.gap, tall: space.gap * 2, wide: space.gap * 1.5 }}>
-        <KpiRow
-          size={{ base: 'md', tall: 'lg', wide: 'lg' }}
-          items={kpis.slice(0, ctx.pick({ base: 3, wide: 4 }))}
-        />
-        <Text size={{ base: font.body, wide: font.h2 }} color={color.muted}>
-          Melhor trimestre do ano: receita e base cresceram juntas, com churn em queda.
-        </Text>
-      </Box>
+      <KpiRow
+        size={{ base: 'md', tall: 'lg', wide: 'lg' }}
+        items={kpis.slice(0, ctx.pick({ base: 3, wide: 4 }))}
+      />
+      <Text
+        fontSize={{ base: font.body, wide: font.h2 }}
+        color={color.muted}
+        marginTop={{ base: space.gap, tall: space.gap * 2, wide: space.gap * 1.5 }}
+      >
+        Melhor trimestre do ano: receita e base cresceram juntas, com churn em queda.
+      </Text>
     </ContentLayout>
 
     <ContentLayout title="Receita por região">
       <TwoColumn
-        direction={{ base: 'row', tall: 'column' }}
+        stacked={{ base: false, tall: true }}
         ratio={0.5}
         left={<Highlights />}
-        right={<Image src="../assets/chart.png" width="100%" maxHeight="100%" alignSelf="start" />}
+        // O Box (flex, esticado na célula) deixa a imagem encolher pela altura mantendo a
+        // proporção; direto na célula do grid, width 100% + maxHeight distorceria o frame.
+        right={<Box><Image src="../assets/chart.png" width="100%" maxHeight="100%" alignSelf="flex-start" /></Box>}
       />
     </ContentLayout>
 

@@ -52,25 +52,29 @@ const trendMark = (trend: KpiTrend | undefined): string =>
  * Cartão de indicador: label, valor grande e variação.
  * A seta vem de trend e a cor de sentiment: "Custo ▼ −22%" pode ser verde e
  * "Chamados ▲ +22%" vermelho.
- * grow={1}: numa KpiRow os cartões dividem a largura igualmente e esticam na altura.
+ * O cartão define fontSize (o do label) e cor (muted) uma vez; os textos herdam e só dizem
+ * o que muda. `flex={1}`: numa row flex os cartões dividem a largura; numa célula de grid
+ * (KpiRow) não faz nada e o cartão ocupa a célula.
  */
 export function KpiCard({ label, value, delta, trend, sentiment, size = 'md', inlineDelta = false }: KpiCardProps) {
   // Cada medida deriva de size chave a chave: um size responsivo continua responsivo até a primitiva.
   const metric = (key: keyof KpiMetrics): Responsive<number> => mapResponsive(size, (k) => SIZES[k][key]);
-  const s = { padding: metric('padding'), gap: metric('gap'), label: metric('label'), value: metric('value'), minValue: metric('minValue') };
-  const deltaColor = SENTIMENT_COLOR[sentiment ?? defaultSentiment(trend)];
-  const valueText = <Text size={s.value} weight="bold" color={color.ink} minSize={s.minValue}>{value}</Text>;
+  const gap = metric('gap');
+  const valueText = (
+    <Text fontSize={metric('value')} fontWeight="bold" color={color.ink} minSize={metric('minValue')}>{value}</Text>
+  );
   const deltaText = delta ? (
-    <Text size={s.label} weight="bold" color={deltaColor}>{trendMark(trend) + delta}</Text>
+    <Text fontWeight="bold" color={SENTIMENT_COLOR[sentiment ?? defaultSentiment(trend)]}>{trendMark(trend) + delta}</Text>
   ) : null;
   // baseline: a 1ª linha da variação pequena senta na mesma linha de base do valor grande,
   // sem calcular deslocamento a partir dos tamanhos (que mudam quando o fit encolhe o valor).
   const body = inlineDelta && deltaText ? (
-    <Box direction="row" align="baseline" gap={s.gap}>{valueText}{deltaText}</Box>
+    <Box display="flex" alignItems="baseline" gap={gap}>{valueText}{deltaText}</Box>
   ) : [valueText, deltaText];
   return (
-    <Box grow={1} fill={color.surface} radius={8} padding={s.padding} gap={s.gap}>
-      <Text size={s.label} color={color.muted}>{label}</Text>
+    <Box flex={1} backgroundColor={color.surface} borderRadius={8} padding={metric('padding')} gap={gap}
+      fontSize={metric('label')} color={color.muted}>
+      <Text>{label}</Text>
       {body}
     </Box>
   );

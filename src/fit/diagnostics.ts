@@ -57,7 +57,7 @@ export const textOverflowShrunk = (
 };
 
 const ZERO_AREA_MESSAGE =
-  'A área disponível para o texto é 0 pt: o contêiner não deu altura a ele (grow={1} em coluna com altura pelo conteúdo, shrink dos irmãos ou height fixo). Remova grow do Text ou dê altura ao contêiner.';
+  'A área disponível para o texto é 0 pt: o contêiner não deu altura a ele (flexGrow={1} em coluna com altura pelo conteúdo, flexShrink dos irmãos ou height fixo). Remova flexGrow do Text ou dê altura ao contêiner.';
 
 /** Com área 0 pt o conteúdo não é o problema: falar em minSize ou em encurtar desviaria o autor. */
 export const withZeroArea = (diagnostic: Diagnostic, available: Pt): Diagnostic =>
@@ -148,7 +148,7 @@ export const textOverflowTruncated = (ctx: DiagnosticContext, overflow: Overflow
     severity: 'error',
     code: 'text-overflow',
     path: overflow.path,
-    message: `Texto estourou ${amount(overflow)} da altura disponível mesmo truncado; a área não comporta nem uma linha. Aumente a área, reduza o size ou remova o texto.`,
+    message: `Texto estourou ${amount(overflow)} da altura disponível mesmo truncado; a área não comporta nem uma linha. Aumente a área, reduza o fontSize ou remova o texto.`,
     data: overflowData(overflow),
   });
 
@@ -177,7 +177,7 @@ export const textWordBroken = (
     severity: 'warning',
     code: 'text-word-broken',
     path,
-    message: `${plural ? 'Palavras partidas' : 'Palavra partida'} no meio por falta de largura: ${quoted(broken.words)} não ${plural ? 'cabem' : 'cabe'} inteira${plural ? 's' : ''} numa linha de ${round(broken.width)} pt ${sizes}. Encurte a palavra/valor (abrevie, ex.: "R$ 52,4 mi"), alargue a área (menos colunas, grow, width maior) ou reduza o size.`,
+    message: `${plural ? 'Palavras partidas' : 'Palavra partida'} no meio por falta de largura: ${quoted(broken.words)} não ${plural ? 'cabem' : 'cabe'} inteira${plural ? 's' : ''} numa linha de ${round(broken.width)} pt ${sizes}. Encurte a palavra/valor (abrevie, ex.: "R$ 52,4 mi"), alargue a área (menos colunas, flexGrow, width maior) ou reduza o fontSize.`,
     data: { fromSize: round(broken.from), toSize: round(broken.to) },
   });
 };
@@ -290,7 +290,7 @@ export const tableWordBroken = (
     severity: 'warning',
     code: 'text-word-broken',
     path,
-    message: `${plural ? 'Palavras partidas' : 'Palavra partida'} no meio por falta de largura na tabela: ${broken.columns.map(describeBrokenColumn).join('; ')} ${sizes}. Encurte a palavra/valor (abrevie, ex.: "R$ 52,4 mi"), alargue a coluna (width da coluna, tabela mais larga ou menos colunas) ou reduza o size.`,
+    message: `${plural ? 'Palavras partidas' : 'Palavra partida'} no meio por falta de largura na tabela: ${broken.columns.map(describeBrokenColumn).join('; ')} ${sizes}. Encurte a palavra/valor (abrevie, ex.: "R$ 52,4 mi"), alargue a coluna (width da coluna, tabela mais larga ou menos colunas) ou reduza o fontSize.`,
     data: { fromSize: round(broken.from), toSize: round(broken.to) },
   });
 };
@@ -317,7 +317,7 @@ export const boxOverflow = (ctx: DiagnosticContext, overflow: Overflow, excess: 
     severity: 'error',
     code: 'box-overflow',
     path: overflow.path,
-    message: `${describeUse(excess)}, mas a área de conteúdo tem ${round(excess.available)} pt: estouro de ${round(overflow.overflowPt)} pt (${round(overflow.overflowPct)}%). Reduza width/height fixos ou gap/padding, permita shrink nos filhos (shrink={0} impede), ou aumente o contêiner.`,
+    message: `${describeUse(excess)}, mas a área de conteúdo tem ${round(excess.available)} pt: estouro de ${round(overflow.overflowPt)} pt (${round(overflow.overflowPct)}%). Reduza width/height fixos ou gap/padding, permita flexShrink nos filhos (flexShrink={0} impede), ou aumente o contêiner.`,
     data: overflowData(overflow),
   });
 
@@ -376,7 +376,7 @@ export const slideContinued = (
     severity: 'info',
     code: 'slide-continued',
     path,
-    message: `Slide ${pagination.sourceSlide} do autor virou ${pagination.items.length} slides (${describeParts(pagination.items)}). Para caber em menos slides, reduza o size dos itens ou o conteúdo.`,
+    message: `Slide ${pagination.sourceSlide} do autor virou ${pagination.items.length} slides (${describeParts(pagination.items)}). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo.`,
     data: { parts: pagination.items.length, sourceSlide: pagination.sourceSlide },
   });
 
@@ -395,7 +395,7 @@ export const paginationLimit = (ctx: DiagnosticContext, path: string, remaining:
     severity: 'error',
     code: 'box-overflow',
     path,
-    message: `Os ${remaining} itens restantes não couberam numa parte com o size do autor e ficaram todos na última parte (o texto deles pode ter sido reduzido).${paginationStop(maxParts)}`,
+    message: `Os ${remaining} itens restantes não couberam numa parte com o fontSize do autor e ficaram todos na última parte (o texto deles pode ter sido reduzido).${paginationStop(maxParts)}`,
   });
 
 export const withSourceSlide = (diagnostic: Diagnostic, sourceSlide: number): Diagnostic => ({

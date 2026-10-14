@@ -4,6 +4,7 @@ import { KIND_HANDLERS } from './alias-handlers.ts';
 import { BOX_HANDLERS } from './box-handlers.ts';
 import { EMPTY_DRAFT, reject } from './draft.ts';
 import type { BorderDraft, Draft, Handler, InheritedText } from './draft.ts';
+import { OUTLINE_HANDLERS } from './outline.ts';
 import { PAINT_HANDLERS } from './paint-handlers.ts';
 import { TEXT_HANDLERS } from './text-handlers.ts';
 
@@ -12,7 +13,7 @@ import { TEXT_HANDLERS } from './text-handlers.ts';
  * nomes antigos convertidos) + o estilo de texto que desce para os filhos (herança).
  */
 
-const CSS_HANDLERS: Readonly<Record<string, Handler>> = { ...BOX_HANDLERS, ...PAINT_HANDLERS, ...TEXT_HANDLERS };
+const CSS_HANDLERS: Readonly<Record<string, Handler>> = { ...BOX_HANDLERS, ...PAINT_HANDLERS, ...OUTLINE_HANDLERS, ...TEXT_HANDLERS };
 
 // Escape: chaves que não são CSS nem da primitiva. Não tem de/para → diagnóstico.
 const unknownHandler: Handler = (draft, value, key) => reject(draft, key, value, 'propriedade sem de/para para o PPTX');
@@ -31,6 +32,7 @@ const SHORTHANDS: ReadonlySet<string> = new Set([
   'placeItems',
   'placeSelf',
   'background',
+  'outline',
   'gridColumn',
   'gridRow',
 ]);
@@ -118,7 +120,7 @@ const finalize = (kind: PrimitiveKind, draft: Draft, currentColor: string): CssS
   ...optional('backgroundColor', draft.backgroundColor),
   backgroundAlpha: draft.backgroundAlpha ?? 1,
   ...optional('backgroundImage', draft.backgroundImage),
-  ...optional('outline', draft.outline),
+  ...optional('outline', draft.outline && { color: draft.outline.color ?? currentColor, width: draft.outline.width }),
   ...optional('boxShadow', draft.boxShadow),
   opacity: draft.opacity ?? DEFAULTS.css.opacity,
   rotate: draft.rotate,

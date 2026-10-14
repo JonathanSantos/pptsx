@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import charts from '../../examples/charts.tsx';
-import demo from '../../examples/demo.tsx';
-import hello from '../../examples/hello.tsx';
-import layoutTest from '../../examples/layout-test.tsx';
+import charts from '../examples/legacy/charts.tsx';
+import demo from '../examples/legacy/demo.tsx';
+import hello from '../examples/legacy/hello.tsx';
+import layoutTest from '../examples/legacy/layout-test.tsx';
 import type { DeckDefinition } from '../../src/core/types.ts';
 import { emittedXmls } from '../helpers/css-fit.tsx';
 import baseline from './__fixtures__/poc-slides.json' with { type: 'json' };
@@ -13,7 +13,8 @@ import baseline from './__fixtures__/poc-slides.json' with { type: 'json' };
  * slide como multiconjunto, sem ids/nomes/rIds que o pptxgenjs numera pela ordem de inserção:
  * a ordem de pintura muda quando os exemplos ganham `zIndex={-1}` (M11-F), as formas não.
  * Os decks de calibração ficaram de fora: usam `lineHeight` numérico, cuja semântica mudou
- * (CSS); o M11-G os recalibra no Keynote.
+ * (CSS); o M11-G os recalibra no Keynote. Os decks são as cópias congeladas de
+ * tests/examples/legacy/ (examples/ do commit 7bf9fc7, com as props antigas como alias).
  */
 
 const POC = (baseline as { readonly decks: Readonly<Record<string, readonly string[]>> }).decks;
@@ -30,7 +31,7 @@ const DECKS: readonly (readonly [string, DeckDefinition])[] = [
   ['charts', charts],
 ];
 
-describe('slide XML × PoC (shapes, any paint order)', () => {
+describe('legacy decks: slide XML × PoC (shapes, any paint order)', () => {
   it.each(DECKS)('%s', async (name, deck) => {
     const expected = POC[name]!;
     const actual = await emittedXmls(deck);

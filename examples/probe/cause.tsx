@@ -16,16 +16,16 @@ const paragraph = 'Um parágrafo bem longo que repete bastante texto para força
 export default defineDeck(() => (
   <Deck>
     <Slide padding={40} gap={10}>
-      <Text size={30} weight="bold">Teste</Text>
-      <Box direction="row" gap={10}>
+      <Text fontSize={30} fontWeight="bold">Teste</Text>
+      <Box display="flex" gap={10}>
         {Array.from({ length: 8 }, (_, i) => (
-          <Box grow={1} fill="#EEEEEE" padding={10}>
-            <Text size={24} fit="error">Indisponibilidade {i}</Text>
+          <Box flex={1} backgroundColor="#EEEEEE" padding={10}>
+            <Text fontSize={24} fit="error">Indisponibilidade {i}</Text>
           </Box>
         ))}
       </Box>
-      <Text size={20}>{paragraph}</Text>
-      <Text size={16} font="Inter">Fonte não registrada</Text>
+      <Text fontSize={20}>{paragraph}</Text>
+      <Text fontSize={16} fontFamily="Inter">Fonte não registrada</Text>
     </Slide>
   </Deck>
 ));

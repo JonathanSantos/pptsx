@@ -80,7 +80,8 @@ export interface Draft {
   readonly backgroundColor?: string;
   readonly backgroundAlpha?: number;
   readonly backgroundImage?: string;
-  readonly outline?: { readonly color: string; readonly width: number };
+  /** Sem cor = currentColor (resolvida no fim, com a cor de texto herdada). */
+  readonly outline?: { readonly color?: string; readonly width: number };
   readonly boxShadow?: Shadow;
   readonly opacity?: number;
   readonly rotate: number;

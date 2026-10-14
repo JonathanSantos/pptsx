@@ -99,3 +99,33 @@ export const frameDiffs = (path: string, expected: Rect, actual: Rect, tolerance
   KEYS.filter((key) => Math.abs(expected[key] - actual[key]) > tolerance).map(
     (key) => `${path}.${key}: ${expected[key].toFixed(2)} → ${actual[key].toFixed(2)}`,
   );
+
+/** Nó de referência gravado em fixture (frame [x, y, width, height] com 2 casas; Text com size e linhas). */
+export interface BaselineNode {
+  readonly path: string;
+  readonly kind: string;
+  readonly frame: Rect | readonly number[];
+  readonly fontSize?: number;
+  readonly lines?: number;
+}
+
+const rectOf = (frame: Rect | readonly number[]): Rect => {
+  if (!Array.isArray(frame)) return frame as Rect;
+  const [x = 0, y = 0, width = 0, height = 0] = frame as readonly number[];
+  return { x, y, width, height };
+};
+
+/** Diferenças de um slide contra a referência (mesmos nós, frames ±1 pt, mesmo size/linhas); [] quando bate. */
+export const slideDiffs = (slide: PositionedSlide, want: readonly BaselineNode[]): readonly string[] => {
+  const actual = nodesOf(slide);
+  const shape = (nodes: readonly { readonly kind: string; readonly path: string }[]) => nodes.map((n) => `${n.kind} ${n.path}`).join('\n');
+  if (shape(actual) !== shape(want)) return [`structure:\n${shape(want)}\n×\n${shape(actual)}`];
+  return want.flatMap((node, j) => {
+    const got = actual[j]!;
+    const text =
+      got.kind === 'text' && (got.text.fontSize !== node.fontSize || got.text.lines.length !== node.lines)
+        ? [`${got.path}: ${node.fontSize}/${node.lines} → ${got.text.fontSize}/${got.text.lines.length}`]
+        : [];
+    return [...frameDiffs(got.path, rectOf(node.frame), got.frame), ...text];
+  });
+};

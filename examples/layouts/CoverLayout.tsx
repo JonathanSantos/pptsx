@@ -1,4 +1,4 @@
-import { Box, Shape, Slide, Text, type DeckContext } from 'pptsx';
+import { Shape, Slide, Text, type DeckContext } from 'pptsx';
 import { tokens } from '../tokens.ts';
 import { circleDiameter } from './decor.ts';
 
@@ -17,25 +17,29 @@ const { color, font, space } = tokens;
  * Capa: fundo da marca, círculo decorativo no canto superior direito e o bloco de
  * título ancorado embaixo à esquerda. A diagonal círculo ↔ título equilibra o slide
  * em qualquer proporção (em 4:3 a altura extra fica entre os dois, não embaixo).
+ * `marginTop="auto"` na barra empurra o bloco para baixo sem um Box só para isso;
+ * a cor branca desce do Slide para os textos (herança).
  */
 export function CoverLayout({ title, subtitle, caption, ctx }: CoverLayoutProps) {
   const diameter = circleDiameter(ctx, 0.9);
   return (
-    <Slide background={color.brand}>
+    <Slide
+      backgroundColor={color.brand}
+      padding={`${space.page * 1.25} ${space.page * 1.5} ${space.page * 1.5}`}
+      color={color.white}
+    >
+      {/* zIndex -1: decoração absoluta pinta atrás do fluxo (sem z, pintaria por cima). */}
       <Shape kind="ellipse" position="absolute" right={-diameter * 0.25} top={-diameter * 0.35}
-        width={diameter} height={diameter} fill={color.brandDark} />
-      <Box grow={1} justify={caption ? 'between' : 'end'} padding={{ top: space.page * 1.25, bottom: space.page * 1.5, left: space.page * 1.5, right: space.page * 1.5 }}>
-        {caption ? (
-          <Text size={font.small} weight="bold" color={color.accentSoft} maxWidth="55%">{caption}</Text>
-        ) : null}
-        <Box gap={space.gap}>
-          <Shape kind="rect" width={56} height={6} fill={color.accent} shrink={0} />
-          <Text size={font.display} weight="bold" color={color.white} fit="shrink" minSize={32}>{title}</Text>
-          {subtitle ? (
-            <Text size={font.h2} color={color.accentSoft} fit="truncate" maxLines={2}>{subtitle}</Text>
-          ) : null}
-        </Box>
-      </Box>
+        width={diameter} height={diameter} backgroundColor={color.brandDark} zIndex={-1} />
+      {caption ? (
+        <Text fontSize={font.small} fontWeight="bold" color={color.accentSoft} maxWidth="55%">{caption}</Text>
+      ) : null}
+      <Shape kind="rect" width={56} height={6} backgroundColor={color.accent} flexShrink={0}
+        marginTop="auto" marginBottom={space.gap} />
+      <Text fontSize={font.display} fontWeight="bold" minSize={32}>{title}</Text>
+      {subtitle ? (
+        <Text fontSize={font.h2} color={color.accentSoft} marginTop={space.gap} fit="truncate" maxLines={2}>{subtitle}</Text>
+      ) : null}
     </Slide>
   );
 }

@@ -3,6 +3,10 @@ import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
 // M3: grade de calibração da medição de texto. Rodar com --debug e comparar, amostra a
 // amostra, número de linhas e ponto de quebra no preview nativo vs. Keynote/PowerPoint.
 // Cada amostra tem largura fixa (pt) para a largura de quebra ser exata e conhecida.
+// M11: lineHeight tem a semântica do CSS ('normal' = altura natural da face; número =
+// múltiplo do fontSize). As amostras com lineHeight numérico (C06, C07, C11, C12, C24, C25,
+// C29, C30, C31) mantêm o número de antes e por isso ficam ~13% mais baixas por linha
+// (antes o número multiplicava a altura natural, ≈ 1,15 × size); o M11-G recalibra.
 
 type Weight = 'regular' | 'bold';
 type Align = 'left' | 'center' | 'right';
@@ -13,7 +17,8 @@ export interface CalibrationSample {
   readonly width: number;
   readonly weight: Weight;
   readonly italic: boolean;
-  readonly lineHeight: number;
+  /** 'normal' (padrão) = altura natural; número = múltiplo do size (CSS). */
+  readonly lineHeight: number | 'normal';
   readonly align: Align;
   readonly text: string;
 }
@@ -30,7 +35,7 @@ type SampleInput = Pick<CalibrationSample, 'id' | 'size' | 'width' | 'text'> &
 const sample = (s: SampleInput): Placed => ({
   weight: 'regular',
   italic: false,
-  lineHeight: 1,
+  lineHeight: 'normal',
   align: 'left',
   ...s,
 });
@@ -129,7 +134,7 @@ const label = (s: CalibrationSample): string =>
     `${s.width}pt`,
     s.weight === 'bold' ? 'B' : '',
     s.italic ? 'I' : '',
-    s.lineHeight !== 1 ? `lh${s.lineHeight}` : '',
+    s.lineHeight !== 'normal' ? `lh${s.lineHeight}` : '',
     s.align !== 'left' ? s.align : '',
   ]
     .filter(Boolean)
@@ -137,9 +142,10 @@ const label = (s: CalibrationSample): string =>
 
 const Sample = ({ s }: { s: CalibrationSample }) => (
   <Box width={s.width} gap={3}>
-    <Text size={8} color={MUTED} fit="error">{label(s)}</Text>
+    <Text fontSize={8} color={MUTED} fit="error">{label(s)}</Text>
     <Box width={s.width}>
-      <Text size={s.size} weight={s.weight} italic={s.italic} lineHeight={s.lineHeight} align={s.align} color={INK} fit="error">
+      <Text fontSize={s.size} fontWeight={s.weight} fontStyle={s.italic ? 'italic' : 'normal'} lineHeight={s.lineHeight}
+        textAlign={s.align} color={INK} fit="error">
         {s.text}
       </Text>
     </Box>
@@ -162,10 +168,10 @@ const rowsOf = (slide: number): readonly (readonly Placed[])[] => {
 };
 
 const GridSlide = ({ slide }: { slide: number }) => (
-  <Slide padding={24} gap={14} background="#FFFFFF">
-    <Text size={12} weight="bold" color={INK} fit="error">{`${slide}/7 · ${SECTION_TITLES[slide]}`}</Text>
+  <Slide padding={24} gap={14} backgroundColor="#FFFFFF">
+    <Text fontSize={12} fontWeight="bold" color={INK} fit="error">{`${slide}/7 · ${SECTION_TITLES[slide]}`}</Text>
     {rowsOf(slide).map((row) => (
-      <Box direction="row" gap={16} align="start">
+      <Box display="flex" gap={16} alignItems="flex-start">
         {row.map((s) => <Sample s={s} />)}
       </Box>
     ))}
@@ -174,17 +180,18 @@ const GridSlide = ({ slide }: { slide: number }) => (
 
 const LEGEND = [
   'Deck de calibração da medição de texto (M3). Cada amostra C01–C34 tem um rótulo de 8 pt e, abaixo, o texto numa caixa de largura fixa.',
-  'Rótulo: id · tamanho · largura da caixa · B (negrito) · I (itálico) · lh (entrelinha, quando ≠ 1) · alinhamento (quando ≠ left).',
+  'Rótulo: id · tamanho · largura da caixa · B (negrito) · I (itálico) · lh (entrelinha em múltiplos do tamanho, quando não é normal) · alinhamento (quando ≠ left).',
   'Gere com --debug: o contorno vermelho tracejado é a caixa calculada pela engine. No Keynote/PowerPoint o texto deve caber nele com o mesmo número de linhas e as mesmas palavras no fim de cada linha.',
   'Divergência = quebra em palavra diferente, linha a mais/a menos ou texto vazando do contorno. Anote o id. Os dados de cada amostra estão em `samples` (exportado).',
 ].join('\n\n');
 
 export default defineDeck(() => (
   <Deck>
-    <Slide padding={48} gap={20} background="#FFFFFF">
-      <Text size={32} weight="bold" color={INK} fit="error">Calibração de texto</Text>
+    <Slide padding={48} gap={20} backgroundColor="#FFFFFF">
+      <Text fontSize={32} fontWeight="bold" color={INK} fit="error">Calibração de texto</Text>
       <Box width={600}>
-        <Text size={14} lineHeight={1.2} color={INK} fit="error">{LEGEND}</Text>
+        {/* 1.38 × size = o antigo 1.2 × altura natural (≈ 1,15 × size): a legenda mantém a altura. */}
+        <Text fontSize={14} lineHeight={1.38} color={INK} fit="error">{LEGEND}</Text>
       </Box>
     </Slide>
     {[2, 3, 4, 5, 6, 7].map((n) => <GridSlide slide={n} />)}

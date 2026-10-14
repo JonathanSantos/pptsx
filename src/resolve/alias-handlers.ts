@@ -1,12 +1,13 @@
 import { DEFAULTS } from '../core/defaults.ts';
 import type { PrimitiveKind } from '../core/types.ts';
-import { BOX_HANDLERS } from './box-handlers.ts';
 import { hexListOf, hexOf, withHexFields } from './colors.ts';
 import { finiteNumber, INVALID, pass, reject } from './draft.ts';
 import type { Handler } from './draft.ts';
 import { backgroundColor, borderRadius } from './paint-handlers.ts';
+import { SHAPE_CSS } from './shape-handlers.ts';
 import { fontWeight, TEXT_HANDLERS, whiteSpace } from './text-handlers.ts';
 import { parsePt } from './values.ts';
+import { BOX_HANDLERS } from './box-handlers.ts';
 
 /**
  * Por primitiva: nomes antigos (alias até remoção futura, CONTRACTS §M11) e as props que a
@@ -92,6 +93,7 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     ...ITEM_LEGACY,
     ...passAll(['kind', 'strokeWidth', 'radius']),
     ...passColors(['fill', 'stroke']),
+    ...SHAPE_CSS,
     // Shape: o fundo CSS é o preenchimento da forma (a forma não tem caixa separada).
     backgroundColor: passColor('fill'),
   },

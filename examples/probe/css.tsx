@@ -1,8 +1,7 @@
-import { Box, Deck, Slide, Text, defineDeck } from '../../../src/index.ts';
+import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
 
-// M11: cópia de poc/css/examples/probe-css.tsx até o M11-F criar examples/probe/css.tsx (aí o teste passa a importar de lá).
-
-// P2: sondagem dos estouros que só existem no modelo CSS. Sai com exit 1 de propósito.
+// M11 (PoC P2): sondagem dos estouros que só existem no modelo CSS. Sai com exit 1 de propósito
+// (7 diagnósticos em 16x9; tests/fit/css-diagnostics.test.tsx confere cada um).
 // 1. grid com linhas fixas: texto encolhe na célula; Box alinhado no topo passa da célula.
 // 2. wrap numa caixa de altura fixa: as linhas de tags não cabem.
 // 3. margens e borda contam: os filhos cabem pelo frame, mas não pela caixa de margem/área de conteúdo.

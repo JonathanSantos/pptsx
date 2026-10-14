@@ -78,12 +78,18 @@ describe('TwoColumn', () => {
   const left = <Text>Esquerda</Text>;
   const right = <Text>Direita</Text>;
 
-  it('row by default; direction="column" stacks', () => {
-    const [row] = resolveOne(<TwoColumn left={left} right={right} />) as [ResolvedBox];
-    const [column] = resolveOne(<TwoColumn left={left} right={right} direction="column" />) as [ResolvedBox];
-    expect(row.props.direction ?? 'column').toBe('row');
-    expect(column.props.direction ?? 'column').toBe('column');
-    expect(row.props.gap).toBeGreaterThan(0);
+  // M11-F: TwoColumn é um grid; `stacked` troca as duas colunas por uma coluna com duas linhas.
+  it('is a two-column grid by default; stacked is a one-column grid', () => {
+    const [side] = resolveOne(<TwoColumn left={left} right={right} />) as [ResolvedBox];
+    const [stacked] = resolveOne(<TwoColumn left={left} right={right} stacked />) as [ResolvedBox];
+    expect(side.css).toMatchObject({ display: 'grid', gridTemplateColumns: 'minmax(0, 0.5fr) minmax(0, 0.5fr)' });
+    expect(stacked.css).toMatchObject({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gridTemplateRows: 'auto minmax(0, 1fr)' });
+    expect(side.css.columnGap).toBeGreaterThan(0);
+  });
+
+  it('ratio sets the column fractions', () => {
+    const [root] = resolveOne(<TwoColumn left={left} right={right} ratio={0.4} />) as [ResolvedBox];
+    expect(root.css.gridTemplateColumns).toBe(`minmax(0, 0.4fr) minmax(0, ${1 - 0.4}fr)`);
   });
 
   it('keeps left then right in order', () => {
@@ -178,20 +184,17 @@ describe('KpiCard', () => {
 });
 
 describe('KpiRow', () => {
-  it('row with one growing card per item', () => {
+  // M11-F: KpiRow é um grid de uma linha com colunas iguais (minmax(0, 1fr)).
+  it('is a grid with one equal column per card', () => {
     const items = [
       { label: 'A', value: '1' },
       { label: 'B', value: '2' },
       { label: 'C', value: '3' },
     ];
     const [root] = resolveOne(<KpiRow items={items} />) as [ResolvedBox];
-    expect(root.props.direction).toBe('row');
-    expect(root.props.gap).toBeGreaterThan(0);
+    expect(root.css).toMatchObject({ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' });
+    expect(root.css.columnGap).toBeGreaterThan(0);
     expect(root.children).toHaveLength(3);
-    for (const child of root.children) {
-      const growing = descendants([child]).some((n) => n.kind === 'box' && n.props.grow === 1);
-      expect(growing).toBe(true);
-    }
     expect(descendants([root]).filter((n) => n.path.split(' > ').pop()?.replace(/\[\d+\]$/, '') === 'KpiCard')).toHaveLength(3);
   });
 

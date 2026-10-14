@@ -1,0 +1,1304 @@
+{
+ "source": "Decks em CSS de examples/ (M11-F) pelo motor CSS: a referência de posições daqui para frente. Mesmo formato de engine-positioned.json (nós em pré-ordem com frame [x, y, width, height] de 2 casas; Text com fontSize e linhas; diagnósticos pós-ajuste).",
+ "decks": {
+  "hello": {
+   "16x9": {
+    "slides": [
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,405]},
+      {"path":"Slide > Shape[0]","kind":"shape","frame":[0,0,12,405]},
+      {"path":"Slide > Title","kind":"text","frame":[48,40,624,46],"fontSize":40,"lines":1},
+      {"path":"Slide > Text","kind":"text","frame":[48,110,300,62.09],"fontSize":18,"lines":3},
+      {"path":"Slide > Shape[1]","kind":"shape","frame":[48,220,80,80]},
+      {"path":"Slide > Shape[2]","kind":"shape","frame":[150,220,160,80]},
+      {"path":"Slide > Shape[3]","kind":"shape","frame":[48,330,262,0]},
+      {"path":"Slide > Box","kind":"box","frame":[380,110,300,190]},
+      {"path":"Slide > Box > Image","kind":"image","frame":[390,120,280,170]}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "4x3": {
+    "slides": [
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,540]},
+      {"path":"Slide > Shape[0]","kind":"shape","frame":[0,0,12,540]},
+      {"path":"Slide > Title","kind":"text","frame":[48,40,624,46],"fontSize":40,"lines":1},
+      {"path":"Slide > Text","kind":"text","frame":[48,110,300,62.09],"fontSize":18,"lines":3},
+      {"path":"Slide > Shape[1]","kind":"shape","frame":[48,220,80,80]},
+      {"path":"Slide > Shape[2]","kind":"shape","frame":[150,220,160,80]},
+      {"path":"Slide > Shape[3]","kind":"shape","frame":[48,330,262,0]},
+      {"path":"Slide > Box","kind":"box","frame":[380,110,300,190]},
+      {"path":"Slide > Box > Image","kind":"image","frame":[390,120,280,170]}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "wide": {
+    "slides": [
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,960,540]},
+      {"path":"Slide > Shape[0]","kind":"shape","frame":[0,0,12,540]},
+      {"path":"Slide > Title","kind":"text","frame":[48,40,624,46],"fontSize":40,"lines":1},
+      {"path":"Slide > Text","kind":"text","frame":[48,110,300,62.09],"fontSize":18,"lines":3},
+      {"path":"Slide > Shape[1]","kind":"shape","frame":[48,220,80,80]},
+      {"path":"Slide > Shape[2]","kind":"shape","frame":[150,220,160,80]},
+      {"path":"Slide > Shape[3]","kind":"shape","frame":[48,330,262,0]},
+      {"path":"Slide > Box","kind":"box","frame":[380,110,300,190]},
+      {"path":"Slide > Box > Image","kind":"image","frame":[390,120,280,170]}
+     ]
+    ],
+    "diagnostics": []
+   }
+  },
+  "layout-test": {
+   "16x9": {
+    "slides": [
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,405]},
+      {"path":"Slide > Header","kind":"box","frame":[40,40,640,32.2]},
+      {"path":"Slide > Header > Shape","kind":"shape","frame":[40,40.1,6,32]},
+      {"path":"Slide > Header > Text","kind":"text","frame":[58,40,622,32.2],"fontSize":28,"lines":1},
+      {"path":"Slide > Box","kind":"box","frame":[40,96.2,640,268.8]},
+      {"path":"Slide > Box > Card[0]","kind":"box","frame":[40,96.2,202.67,268.8]},
+      {"path":"Slide > Box > Card[0] > Text[0]","kind":"text","frame":[56,112.2,170.67,20.7],"fontSize":18,"lines":1},
+      {"path":"Slide > Box > Card[0] > Text[1]","kind":"text","frame":[56,140.9,170.67,41.4],"fontSize":12,"lines":3},
+      {"path":"Slide > Box > Card[1]","kind":"box","frame":[258.67,96.2,202.67,268.8]},
+      {"path":"Slide > Box > Card[1] > Text[0]","kind":"text","frame":[274.67,112.2,170.67,20.7],"fontSize":18,"lines":1},
+      {"path":"Slide > Box > Card[1] > Text[1]","kind":"text","frame":[274.67,140.9,170.67,41.4],"fontSize":12,"lines":3},
+      {"path":"Slide > Box > Card[2]","kind":"box","frame":[477.33,96.2,202.67,268.8]},
+      {"path":"Slide > Box > Card[2] > Text[0]","kind":"text","frame":[493.33,112.2,170.67,20.7],"fontSize":18,"lines":1},
+      {"path":"Slide > Box > Card[2] > Text[1]","kind":"text","frame":[493.33,140.9,170.67,41.4],"fontSize":12,"lines":3}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,405]},
+      {"path":"Slide > Shape","kind":"shape","frame":[564,-60,216,202.5]},
+      {"path":"Slide > Box[0]","kind":"box","frame":[40,40,288,325]},
+      {"path":"Slide > Box[0] > Header","kind":"box","frame":[40,132.11,288,64.39]},
+      {"path":"Slide > Box[0] > Header > Shape","kind":"shape","frame":[40,148.3,6,32]},
+      {"path":"Slide > Box[0] > Header > Text","kind":"text","frame":[58,132.11,270,64.39],"fontSize":28,"lines":2},
+      {"path":"Slide > Box[0] > Text","kind":"text","frame":[40,208.5,288,64.39],"fontSize":14,"lines":4},
+      {"path":"Slide > Box[1]","kind":"box","frame":[352,40,328,325]},
+      {"path":"Slide > Box[1] > Box[0]","kind":"box","frame":[352,40,328,154.5]},
+      {"path":"Slide > Box[1] > Box[0] > Image","kind":"image","frame":[353,41,326,152.5]},
+      {"path":"Slide > Box[1] > Box[1]","kind":"box","frame":[352,210.5,328,154.5]},
+      {"path":"Slide > Box[1] > Box[1] > Image","kind":"image","frame":[353,211.5,326,152.5]}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,405]},
+      {"path":"Slide > Header","kind":"box","frame":[40,40,640,32.2]},
+      {"path":"Slide > Header > Shape","kind":"shape","frame":[40,40.1,6,32]},
+      {"path":"Slide > Header > Text","kind":"text","frame":[58,40,622,32.2],"fontSize":28,"lines":1},
+      {"path":"Slide > Box[0]","kind":"box","frame":[40,137.77,640,80]},
+      {"path":"Slide > Box[0] > Shape[0]","kind":"shape","frame":[40,187.77,60,30]},
+      {"path":"Slide > Box[0] > Shape[1]","kind":"shape","frame":[330,167.77,60,50]},
+      {"path":"Slide > Box[0] > Shape[2]","kind":"shape","frame":[620,147.77,60,70]},
+      {"path":"Slide > Box[1]","kind":"box","frame":[40,283.33,640,16.1]},
+      {"path":"Slide > Box[1] > Text[0]","kind":"text","frame":[40,283.33,202.67,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box[1] > Text[1]","kind":"text","frame":[258.67,283.33,202.67,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box[1] > Text[2]","kind":"text","frame":[477.33,283.33,202.67,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Shape","kind":"shape","frame":[40,365,640,0]}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "4x3": {
+    "slides": [
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,540]},
+      {"path":"Slide > Header","kind":"box","frame":[40,40,640,32.2]},
+      {"path":"Slide > Header > Shape","kind":"shape","frame":[40,40.1,6,32]},
+      {"path":"Slide > Header > Text","kind":"text","frame":[58,40,622,32.2],"fontSize":28,"lines":1},
+      {"path":"Slide > Box","kind":"box","frame":[40,96.2,640,403.8]},
+      {"path":"Slide > Box > Card[0]","kind":"box","frame":[40,96.2,202.67,403.8]},
+      {"path":"Slide > Box > Card[0] > Text[0]","kind":"text","frame":[56,112.2,170.67,20.7],"fontSize":18,"lines":1},
+      {"path":"Slide > Box > Card[0] > Text[1]","kind":"text","frame":[56,140.9,170.67,41.4],"fontSize":12,"lines":3},
+      {"path":"Slide > Box > Card[1]","kind":"box","frame":[258.67,96.2,202.67,403.8]},
+      {"path":"Slide > Box > Card[1] > Text[0]","kind":"text","frame":[274.67,112.2,170.67,20.7],"fontSize":18,"lines":1},
+      {"path":"Slide > Box > Card[1] > Text[1]","kind":"text","frame":[274.67,140.9,170.67,41.4],"fontSize":12,"lines":3},
+      {"path":"Slide > Box > Card[2]","kind":"box","frame":[477.33,96.2,202.67,403.8]},
+      {"path":"Slide > Box > Card[2] > Text[0]","kind":"text","frame":[493.33,112.2,170.67,20.7],"fontSize":18,"lines":1},
+      {"path":"Slide > Box > Card[2] > Text[1]","kind":"text","frame":[493.33,140.9,170.67,41.4],"fontSize":12,"lines":3}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,540]},
+      {"path":"Slide > Shape","kind":"shape","frame":[564,-60,216,270]},
+      {"path":"Slide > Box[0]","kind":"box","frame":[40,40,288,460]},
+      {"path":"Slide > Box[0] > Header","kind":"box","frame":[40,199.61,288,64.39]},
+      {"path":"Slide > Box[0] > Header > Shape","kind":"shape","frame":[40,215.8,6,32]},
+      {"path":"Slide > Box[0] > Header > Text","kind":"text","frame":[58,199.61,270,64.39],"fontSize":28,"lines":2},
+      {"path":"Slide > Box[0] > Text","kind":"text","frame":[40,276,288,64.39],"fontSize":14,"lines":4},
+      {"path":"Slide > Box[1]","kind":"box","frame":[352,40,328,460]},
+      {"path":"Slide > Box[1] > Box[0]","kind":"box","frame":[352,40,328,222]},
+      {"path":"Slide > Box[1] > Box[0] > Image","kind":"image","frame":[353,41,326,220]},
+      {"path":"Slide > Box[1] > Box[1]","kind":"box","frame":[352,278,328,222]},
+      {"path":"Slide > Box[1] > Box[1] > Image","kind":"image","frame":[353,279,326,220]}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,540]},
+      {"path":"Slide > Header","kind":"box","frame":[40,40,640,32.2]},
+      {"path":"Slide > Header > Shape","kind":"shape","frame":[40,40.1,6,32]},
+      {"path":"Slide > Header > Text","kind":"text","frame":[58,40,622,32.2],"fontSize":28,"lines":1},
+      {"path":"Slide > Box[0]","kind":"box","frame":[40,182.77,640,80]},
+      {"path":"Slide > Box[0] > Shape[0]","kind":"shape","frame":[40,232.77,60,30]},
+      {"path":"Slide > Box[0] > Shape[1]","kind":"shape","frame":[330,212.77,60,50]},
+      {"path":"Slide > Box[0] > Shape[2]","kind":"shape","frame":[620,192.77,60,70]},
+      {"path":"Slide > Box[1]","kind":"box","frame":[40,373.33,640,16.1]},
+      {"path":"Slide > Box[1] > Text[0]","kind":"text","frame":[40,373.33,202.67,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box[1] > Text[1]","kind":"text","frame":[258.67,373.33,202.67,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box[1] > Text[2]","kind":"text","frame":[477.33,373.33,202.67,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Shape","kind":"shape","frame":[40,500,640,0]}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "wide": {
+    "slides": [
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,960,540]},
+      {"path":"Slide > Header","kind":"box","frame":[40,40,880,32.2]},
+      {"path":"Slide > Header > Shape","kind":"shape","frame":[40,40.1,6,32]},
+      {"path":"Slide > Header > Text","kind":"text","frame":[58,40,862,32.2],"fontSize":28,"lines":1},
+      {"path":"Slide > Box","kind":"box","frame":[40,96.2,880,403.8]},
+      {"path":"Slide > Box > Card[0]","kind":"box","frame":[40,96.2,282.67,403.8]},
+      {"path":"Slide > Box > Card[0] > Text[0]","kind":"text","frame":[56,112.2,250.67,20.7],"fontSize":18,"lines":1},
+      {"path":"Slide > Box > Card[0] > Text[1]","kind":"text","frame":[56,140.9,250.67,27.6],"fontSize":12,"lines":2},
+      {"path":"Slide > Box > Card[1]","kind":"box","frame":[338.67,96.2,282.67,403.8]},
+      {"path":"Slide > Box > Card[1] > Text[0]","kind":"text","frame":[354.67,112.2,250.67,20.7],"fontSize":18,"lines":1},
+      {"path":"Slide > Box > Card[1] > Text[1]","kind":"text","frame":[354.67,140.9,250.67,27.6],"fontSize":12,"lines":2},
+      {"path":"Slide > Box > Card[2]","kind":"box","frame":[637.33,96.2,282.67,403.8]},
+      {"path":"Slide > Box > Card[2] > Text[0]","kind":"text","frame":[653.33,112.2,250.67,20.7],"fontSize":18,"lines":1},
+      {"path":"Slide > Box > Card[2] > Text[1]","kind":"text","frame":[653.33,140.9,250.67,27.6],"fontSize":12,"lines":2}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,960,540]},
+      {"path":"Slide > Shape","kind":"shape","frame":[732,-60,288,270]},
+      {"path":"Slide > Box[0]","kind":"box","frame":[40,40,396,460]},
+      {"path":"Slide > Box[0] > Header","kind":"box","frame":[40,207.65,396,64.39]},
+      {"path":"Slide > Box[0] > Header > Shape","kind":"shape","frame":[40,223.85,6,32]},
+      {"path":"Slide > Box[0] > Header > Text","kind":"text","frame":[58,207.65,378,64.39],"fontSize":28,"lines":2},
+      {"path":"Slide > Box[0] > Text","kind":"text","frame":[40,284.05,396,48.3],"fontSize":14,"lines":3},
+      {"path":"Slide > Box[1]","kind":"box","frame":[460,40,460,460]},
+      {"path":"Slide > Box[1] > Box[0]","kind":"box","frame":[460,40,460,222]},
+      {"path":"Slide > Box[1] > Box[0] > Image","kind":"image","frame":[461,41,458,220]},
+      {"path":"Slide > Box[1] > Box[1]","kind":"box","frame":[460,278,460,222]},
+      {"path":"Slide > Box[1] > Box[1] > Image","kind":"image","frame":[461,279,458,220]}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,960,540]},
+      {"path":"Slide > Header","kind":"box","frame":[40,40,880,32.2]},
+      {"path":"Slide > Header > Shape","kind":"shape","frame":[40,40.1,6,32]},
+      {"path":"Slide > Header > Text","kind":"text","frame":[58,40,862,32.2],"fontSize":28,"lines":1},
+      {"path":"Slide > Box[0]","kind":"box","frame":[40,182.77,880,80]},
+      {"path":"Slide > Box[0] > Shape[0]","kind":"shape","frame":[40,232.77,60,30]},
+      {"path":"Slide > Box[0] > Shape[1]","kind":"shape","frame":[450,212.77,60,50]},
+      {"path":"Slide > Box[0] > Shape[2]","kind":"shape","frame":[860,192.77,60,70]},
+      {"path":"Slide > Box[1]","kind":"box","frame":[40,373.33,880,16.1]},
+      {"path":"Slide > Box[1] > Text[0]","kind":"text","frame":[40,373.33,282.67,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box[1] > Text[1]","kind":"text","frame":[338.67,373.33,282.67,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box[1] > Text[2]","kind":"text","frame":[637.33,373.33,282.67,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Shape","kind":"shape","frame":[40,500,880,0]}
+     ]
+    ],
+    "diagnostics": [
+     {"severity":"info","code":"image-upscaled","slide":2,"path":"Slide > Box[1] > Box[1] > Image","causedBy":null,"message":"Imagem desenhada com 458 pt de largura, acima do natural (600 px = 450 pt a 96 dpi); pode sair borrada. Use um arquivo com mais resolução ou reduza a área da imagem."}
+    ]
+   }
+  },
+  "demo": {
+   "16x9": {
+    "slides": [
+     [
+      {"path":"CoverLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"CoverLayout > Shape[0]","kind":"shape","frame":[446.63,-127.57,364.5,364.5]},
+      {"path":"CoverLayout > Text[0]","kind":"text","frame":[60,50,330,16.1],"fontSize":14,"lines":1},
+      {"path":"CoverLayout > Shape[1]","kind":"shape","frame":[60,220.81,56,6]},
+      {"path":"CoverLayout > Text[1]","kind":"text","frame":[60,246.81,600,50.6],"fontSize":44,"lines":1},
+      {"path":"CoverLayout > Text[2]","kind":"text","frame":[60,317.4,600,27.6],"fontSize":24,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,134.9,640,201.99]},
+      {"path":"ContentLayout > Box > Bullets > Box[0]","kind":"box","frame":[40,134.9,640,27.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Shape","kind":"shape","frame":[40,144.7,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Text","kind":"text","frame":[62,134.9,618,27.6],"fontSize":24,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[1]","kind":"box","frame":[40,178.5,640,27.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Shape","kind":"shape","frame":[40,188.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Text","kind":"text","frame":[62,178.5,618,27.6],"fontSize":24,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[2]","kind":"box","frame":[40,222.1,640,27.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Shape","kind":"shape","frame":[40,231.9,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Text","kind":"text","frame":[62,222.1,618,27.6],"fontSize":24,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[3]","kind":"box","frame":[40,265.7,640,27.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Shape","kind":"shape","frame":[40,275.5,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Text","kind":"text","frame":[62,265.7,618,27.6],"fontSize":24,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[4]","kind":"box","frame":[40,309.29,640,27.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Shape","kind":"shape","frame":[40,319.09,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Text","kind":"text","frame":[62,309.29,618,27.6],"fontSize":24,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > TwoColumn","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets","kind":"box","frame":[40,106.8,274.5,258.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[0]","kind":"box","frame":[40,106.8,274.5,41.4]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[0] > Shape","kind":"shape","frame":[40,113.15,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[0] > Text","kind":"text","frame":[62,106.8,252.5,41.4],"fontSize":18,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[1]","kind":"box","frame":[40,160.79,274.5,41.4]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[1] > Shape","kind":"shape","frame":[40,167.14,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[1] > Text","kind":"text","frame":[62,160.79,252.5,41.4],"fontSize":18,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[2]","kind":"box","frame":[40,214.79,274.5,41.4]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[2] > Shape","kind":"shape","frame":[40,221.14,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[2] > Text","kind":"text","frame":[62,214.79,252.5,41.4],"fontSize":18,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Chart","kind":"chart","frame":[344.5,106.8,335.5,258.2]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > KpiRow","kind":"box","frame":[40,106.8,640,142.79]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0]","kind":"box","frame":[40,106.8,200,142.79]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[0]","kind":"text","frame":[60,126.8,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[1]","kind":"text","frame":[60,152.9,160,50.6],"fontSize":44,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[2]","kind":"text","frame":[60,213.49,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1]","kind":"box","frame":[260,106.8,200,142.79]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[0]","kind":"text","frame":[280,126.8,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[1]","kind":"text","frame":[280,152.9,160,50.6],"fontSize":44,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[2]","kind":"text","frame":[280,213.49,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2]","kind":"box","frame":[480,106.8,200,142.79]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[0]","kind":"text","frame":[500,126.8,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[1]","kind":"text","frame":[500,152.9,160,50.6],"fontSize":44,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[2]","kind":"text","frame":[500,213.49,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > Text","kind":"text","frame":[40,279.59,512,36.8],"fontSize":16,"lines":2}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Table","kind":"table","frame":[40,106.8,640,171.5]}
+     ],
+     [
+      {"path":"ClosingLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ClosingLayout > Shape[0]","kind":"shape","frame":[-121.5,222.75,303.75,303.75]},
+      {"path":"ClosingLayout > Text[0]","kind":"text","frame":[60,103.56,600,50.6],"fontSize":44,"lines":1},
+      {"path":"ClosingLayout > Shape[1]","kind":"shape","frame":[332,174.15,56,6]},
+      {"path":"ClosingLayout > Text[1]","kind":"text","frame":[120,200.15,480,55.2],"fontSize":24,"lines":2},
+      {"path":"ClosingLayout > Text[2]","kind":"text","frame":[60,285.35,600,16.1],"fontSize":14,"lines":1}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "4x3": {
+    "slides": [
+     [
+      {"path":"CoverLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"CoverLayout > Shape[0]","kind":"shape","frame":[355.5,-170.1,486,486]},
+      {"path":"CoverLayout > Text[0]","kind":"text","frame":[60,50,330,16.1],"fontSize":14,"lines":1},
+      {"path":"CoverLayout > Shape[1]","kind":"shape","frame":[60,355.81,56,6]},
+      {"path":"CoverLayout > Text[1]","kind":"text","frame":[60,381.81,600,50.6],"fontSize":44,"lines":1},
+      {"path":"CoverLayout > Text[2]","kind":"text","frame":[60,452.4,600,27.6],"fontSize":24,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,172.91,640,260.99]},
+      {"path":"ContentLayout > Box > Bullets > Box[0]","kind":"box","frame":[40,172.91,640,32.2]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Shape","kind":"shape","frame":[40,185.01,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Text","kind":"text","frame":[62,172.91,618,32.2],"fontSize":28,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[1]","kind":"box","frame":[40,230.1,640,32.2]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Shape","kind":"shape","frame":[40,242.2,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Text","kind":"text","frame":[62,230.1,618,32.2],"fontSize":28,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[2]","kind":"box","frame":[40,287.3,640,32.2]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Shape","kind":"shape","frame":[40,299.4,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Text","kind":"text","frame":[62,287.3,618,32.2],"fontSize":28,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[3]","kind":"box","frame":[40,344.5,640,32.2]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Shape","kind":"shape","frame":[40,356.6,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Text","kind":"text","frame":[62,344.5,618,32.2],"fontSize":28,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[4]","kind":"box","frame":[40,401.69,640,32.2]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Shape","kind":"shape","frame":[40,413.79,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Text","kind":"text","frame":[62,401.69,618,32.2],"fontSize":28,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets","kind":"box","frame":[40,106.8,640,87.29]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[0]","kind":"box","frame":[40,106.8,640,20.7]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[0] > Shape","kind":"shape","frame":[40,113.15,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[0] > Text","kind":"text","frame":[62,106.8,618,20.7],"fontSize":18,"lines":1},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[1]","kind":"box","frame":[40,140.1,640,20.7]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[1] > Shape","kind":"shape","frame":[40,146.45,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[1] > Text","kind":"text","frame":[62,140.1,618,20.7],"fontSize":18,"lines":1},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[2]","kind":"box","frame":[40,173.39,640,20.7]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[2] > Shape","kind":"shape","frame":[40,179.74,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[2] > Text","kind":"text","frame":[62,173.39,618,20.7],"fontSize":18,"lines":1},
+      {"path":"ContentLayout > Box > TwoColumn > Chart","kind":"chart","frame":[40,214.09,640,285.91]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > KpiRow","kind":"box","frame":[40,106.8,640,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0]","kind":"box","frame":[40,106.8,200,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[0]","kind":"text","frame":[60,126.8,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[1]","kind":"text","frame":[60,157.2,160,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[2]","kind":"text","frame":[60,233.59,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1]","kind":"box","frame":[260,106.8,200,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[0]","kind":"text","frame":[280,126.8,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[1]","kind":"text","frame":[280,157.2,160,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[2]","kind":"text","frame":[280,233.59,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2]","kind":"box","frame":[480,106.8,200,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[0]","kind":"text","frame":[500,126.8,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[1]","kind":"text","frame":[500,157.2,160,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[2]","kind":"text","frame":[500,233.59,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > Text","kind":"text","frame":[40,301.99,512,41.4],"fontSize":18,"lines":2}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > Table","kind":"table","frame":[40,106.8,640,185.5]}
+     ],
+     [
+      {"path":"ClosingLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ClosingLayout > Shape[0]","kind":"shape","frame":[-162,297,405,405]},
+      {"path":"ClosingLayout > Text[0]","kind":"text","frame":[60,171.06,600,50.6],"fontSize":44,"lines":1},
+      {"path":"ClosingLayout > Shape[1]","kind":"shape","frame":[332,241.65,56,6]},
+      {"path":"ClosingLayout > Text[1]","kind":"text","frame":[120,267.65,480,55.2],"fontSize":24,"lines":2},
+      {"path":"ClosingLayout > Text[2]","kind":"text","frame":[60,352.85,600,16.1],"fontSize":14,"lines":1}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "wide": {
+    "slides": [
+     [
+      {"path":"CoverLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"CoverLayout > Shape[0]","kind":"shape","frame":[595.5,-170.1,486,486]},
+      {"path":"CoverLayout > Text[0]","kind":"text","frame":[60,50,462,16.1],"fontSize":14,"lines":1},
+      {"path":"CoverLayout > Shape[1]","kind":"shape","frame":[60,355.81,56,6]},
+      {"path":"CoverLayout > Text[1]","kind":"text","frame":[60,381.81,840,50.6],"fontSize":44,"lines":1},
+      {"path":"CoverLayout > Text[2]","kind":"text","frame":[60,452.4,840,27.6],"fontSize":24,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,167.16,880,272.49]},
+      {"path":"ContentLayout > Box > Bullets > Box[0]","kind":"box","frame":[40,167.16,880,34.5]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Shape","kind":"shape","frame":[40,180.41,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Text","kind":"text","frame":[62,167.16,858,34.5],"fontSize":30,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[1]","kind":"box","frame":[40,226.65,880,34.5]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Shape","kind":"shape","frame":[40,239.9,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Text","kind":"text","frame":[62,226.65,858,34.5],"fontSize":30,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[2]","kind":"box","frame":[40,286.15,880,34.5]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Shape","kind":"shape","frame":[40,299.4,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Text","kind":"text","frame":[62,286.15,858,34.5],"fontSize":30,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[3]","kind":"box","frame":[40,345.65,880,34.5]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Shape","kind":"shape","frame":[40,358.9,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Text","kind":"text","frame":[62,345.65,858,34.5],"fontSize":30,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[4]","kind":"box","frame":[40,405.14,880,34.5]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Shape","kind":"shape","frame":[40,418.39,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Text","kind":"text","frame":[62,405.14,858,34.5],"fontSize":30,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets","kind":"box","frame":[40,106.8,382.5,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[0]","kind":"box","frame":[40,106.8,382.5,50.6]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[0] > Shape","kind":"shape","frame":[40,115.45,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[0] > Text","kind":"text","frame":[62,106.8,360.5,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[1]","kind":"box","frame":[40,172.79,382.5,50.6]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[1] > Shape","kind":"shape","frame":[40,181.44,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[1] > Text","kind":"text","frame":[62,172.79,360.5,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[2]","kind":"box","frame":[40,238.79,382.5,25.3]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[2] > Shape","kind":"shape","frame":[40,247.44,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Bullets > Box[2] > Text","kind":"text","frame":[62,238.79,360.5,25.3],"fontSize":22,"lines":1},
+      {"path":"ContentLayout > Box > TwoColumn > Chart","kind":"chart","frame":[452.5,106.8,467.5,393.2]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > KpiRow","kind":"box","frame":[40,106.8,880,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0]","kind":"box","frame":[40,106.8,280,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[0]","kind":"text","frame":[60,126.8,240,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[1]","kind":"text","frame":[60,157.2,240,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[2]","kind":"text","frame":[60,233.59,240,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1]","kind":"box","frame":[340,106.8,280,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[0]","kind":"text","frame":[360,126.8,240,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[1]","kind":"text","frame":[360,157.2,240,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[2]","kind":"text","frame":[360,233.59,240,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2]","kind":"box","frame":[640,106.8,280,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[0]","kind":"text","frame":[660,126.8,240,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[1]","kind":"text","frame":[660,157.2,240,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[2]","kind":"text","frame":[660,233.59,240,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > Text","kind":"text","frame":[40,301.99,704,41.4],"fontSize":18,"lines":2}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > Table","kind":"table","frame":[40,106.8,880,185.5]}
+     ],
+     [
+      {"path":"ClosingLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ClosingLayout > Shape[0]","kind":"shape","frame":[-162,297,405,405]},
+      {"path":"ClosingLayout > Text[0]","kind":"text","frame":[60,171.06,840,50.6],"fontSize":44,"lines":1},
+      {"path":"ClosingLayout > Shape[1]","kind":"shape","frame":[452,241.65,56,6]},
+      {"path":"ClosingLayout > Text[1]","kind":"text","frame":[144,267.65,672,55.2],"fontSize":24,"lines":2},
+      {"path":"ClosingLayout > Text[2]","kind":"text","frame":[60,352.85,840,16.1],"fontSize":14,"lines":1}
+     ]
+    ],
+    "diagnostics": []
+   }
+  },
+  "long-list": {
+   "16x9": {
+    "slides": [
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,640,225.98]},
+      {"path":"ContentLayout > Box > Bullets > Box[0]","kind":"box","frame":[40,106.8,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Text","kind":"text","frame":[62,106.8,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[1]","kind":"box","frame":[40,166.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Shape","kind":"shape","frame":[40,174.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Text","kind":"text","frame":[62,166.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[2]","kind":"box","frame":[40,226.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Shape","kind":"shape","frame":[40,234.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Text","kind":"text","frame":[62,226.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[3]","kind":"box","frame":[40,286.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Shape","kind":"shape","frame":[40,294.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Text","kind":"text","frame":[62,286.79,618,46],"fontSize":20,"lines":2}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,640,225.98]},
+      {"path":"ContentLayout > Box > Bullets > Box[4]","kind":"box","frame":[40,106.8,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Text","kind":"text","frame":[62,106.8,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[5]","kind":"box","frame":[40,166.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Shape","kind":"shape","frame":[40,174.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Text","kind":"text","frame":[62,166.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[6]","kind":"box","frame":[40,226.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Shape","kind":"shape","frame":[40,234.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Text","kind":"text","frame":[62,226.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[7]","kind":"box","frame":[40,286.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Shape","kind":"shape","frame":[40,294.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Text","kind":"text","frame":[62,286.79,618,46],"fontSize":20,"lines":2}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,640,225.98]},
+      {"path":"ContentLayout > Box > Bullets > Box[8]","kind":"box","frame":[40,106.8,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Text","kind":"text","frame":[62,106.8,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[9]","kind":"box","frame":[40,166.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Shape","kind":"shape","frame":[40,174.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Text","kind":"text","frame":[62,166.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[10]","kind":"box","frame":[40,226.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Shape","kind":"shape","frame":[40,234.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Text","kind":"text","frame":[62,226.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[11]","kind":"box","frame":[40,286.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Shape","kind":"shape","frame":[40,294.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Text","kind":"text","frame":[62,286.79,618,46],"fontSize":20,"lines":2}
+     ],
+     [
+      {"path":"ClosingLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ClosingLayout > Shape[0]","kind":"shape","frame":[-121.5,222.75,303.75,303.75]},
+      {"path":"ClosingLayout > Text[0]","kind":"text","frame":[60,103.56,600,50.6],"fontSize":44,"lines":1},
+      {"path":"ClosingLayout > Shape[1]","kind":"shape","frame":[332,174.15,56,6]},
+      {"path":"ClosingLayout > Text[1]","kind":"text","frame":[120,200.15,480,55.2],"fontSize":24,"lines":2},
+      {"path":"ClosingLayout > Text[2]","kind":"text","frame":[60,285.35,600,16.1],"fontSize":14,"lines":1}
+     ]
+    ],
+    "diagnostics": [
+     {"severity":"info","code":"slide-continued","slide":1,"path":"ContentLayout > Box > Bullets","causedBy":null,"message":"Slide 1 do autor virou 3 slides (4 de 12 itens no 1º, 4 no 2º, 4 no 3º). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo."}
+    ]
+   },
+   "4x3": {
+    "slides": [
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,640,345.98]},
+      {"path":"ContentLayout > Box > Bullets > Box[0]","kind":"box","frame":[40,106.8,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Text","kind":"text","frame":[62,106.8,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[1]","kind":"box","frame":[40,166.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Shape","kind":"shape","frame":[40,174.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Text","kind":"text","frame":[62,166.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[2]","kind":"box","frame":[40,226.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Shape","kind":"shape","frame":[40,234.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Text","kind":"text","frame":[62,226.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[3]","kind":"box","frame":[40,286.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Shape","kind":"shape","frame":[40,294.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Text","kind":"text","frame":[62,286.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[4]","kind":"box","frame":[40,346.78,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Shape","kind":"shape","frame":[40,354.28,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Text","kind":"text","frame":[62,346.78,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[5]","kind":"box","frame":[40,406.78,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Shape","kind":"shape","frame":[40,414.28,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Text","kind":"text","frame":[62,406.78,618,46],"fontSize":20,"lines":2}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,640,345.98]},
+      {"path":"ContentLayout > Box > Bullets > Box[6]","kind":"box","frame":[40,106.8,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Text","kind":"text","frame":[62,106.8,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[7]","kind":"box","frame":[40,166.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Shape","kind":"shape","frame":[40,174.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Text","kind":"text","frame":[62,166.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[8]","kind":"box","frame":[40,226.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Shape","kind":"shape","frame":[40,234.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Text","kind":"text","frame":[62,226.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[9]","kind":"box","frame":[40,286.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Shape","kind":"shape","frame":[40,294.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Text","kind":"text","frame":[62,286.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[10]","kind":"box","frame":[40,346.78,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Shape","kind":"shape","frame":[40,354.28,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Text","kind":"text","frame":[62,346.78,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[11]","kind":"box","frame":[40,406.78,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Shape","kind":"shape","frame":[40,414.28,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Text","kind":"text","frame":[62,406.78,618,46],"fontSize":20,"lines":2}
+     ],
+     [
+      {"path":"ClosingLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ClosingLayout > Shape[0]","kind":"shape","frame":[-162,297,405,405]},
+      {"path":"ClosingLayout > Text[0]","kind":"text","frame":[60,171.06,600,50.6],"fontSize":44,"lines":1},
+      {"path":"ClosingLayout > Shape[1]","kind":"shape","frame":[332,241.65,56,6]},
+      {"path":"ClosingLayout > Text[1]","kind":"text","frame":[120,267.65,480,55.2],"fontSize":24,"lines":2},
+      {"path":"ClosingLayout > Text[2]","kind":"text","frame":[60,352.85,600,16.1],"fontSize":14,"lines":1}
+     ]
+    ],
+    "diagnostics": [
+     {"severity":"info","code":"slide-continued","slide":1,"path":"ContentLayout > Box > Bullets","causedBy":null,"message":"Slide 1 do autor virou 2 slides (6 de 12 itens no 1º, 6 no 2º). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo."}
+    ]
+   },
+   "wide": {
+    "slides": [
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,880,364.98]},
+      {"path":"ContentLayout > Box > Bullets > Box[0]","kind":"box","frame":[40,106.8,880,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Text","kind":"text","frame":[62,106.8,858,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[1]","kind":"box","frame":[40,166.79,880,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Shape","kind":"shape","frame":[40,174.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Text","kind":"text","frame":[62,166.79,858,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[2]","kind":"box","frame":[40,226.79,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Shape","kind":"shape","frame":[40,234.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Text","kind":"text","frame":[62,226.79,858,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[3]","kind":"box","frame":[40,263.79,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Shape","kind":"shape","frame":[40,271.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Text","kind":"text","frame":[62,263.79,858,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[4]","kind":"box","frame":[40,300.79,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Shape","kind":"shape","frame":[40,308.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Text","kind":"text","frame":[62,300.79,858,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[5]","kind":"box","frame":[40,337.78,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Shape","kind":"shape","frame":[40,345.28,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Text","kind":"text","frame":[62,337.78,858,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[6]","kind":"box","frame":[40,374.78,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Shape","kind":"shape","frame":[40,382.28,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Text","kind":"text","frame":[62,374.78,858,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[7]","kind":"box","frame":[40,411.78,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Shape","kind":"shape","frame":[40,419.28,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Text","kind":"text","frame":[62,411.78,858,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[8]","kind":"box","frame":[40,448.78,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Shape","kind":"shape","frame":[40,456.28,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Text","kind":"text","frame":[62,448.78,858,23],"fontSize":20,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,880,96.99]},
+      {"path":"ContentLayout > Box > Bullets > Box[9]","kind":"box","frame":[40,106.8,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Text","kind":"text","frame":[62,106.8,858,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[10]","kind":"box","frame":[40,143.79,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Shape","kind":"shape","frame":[40,151.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Text","kind":"text","frame":[62,143.79,858,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[11]","kind":"box","frame":[40,180.79,880,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Shape","kind":"shape","frame":[40,188.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Text","kind":"text","frame":[62,180.79,858,23],"fontSize":20,"lines":1}
+     ],
+     [
+      {"path":"ClosingLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ClosingLayout > Shape[0]","kind":"shape","frame":[-162,297,405,405]},
+      {"path":"ClosingLayout > Text[0]","kind":"text","frame":[60,171.06,840,50.6],"fontSize":44,"lines":1},
+      {"path":"ClosingLayout > Shape[1]","kind":"shape","frame":[452,241.65,56,6]},
+      {"path":"ClosingLayout > Text[1]","kind":"text","frame":[144,267.65,672,55.2],"fontSize":24,"lines":2},
+      {"path":"ClosingLayout > Text[2]","kind":"text","frame":[60,352.85,840,16.1],"fontSize":14,"lines":1}
+     ]
+    ],
+    "diagnostics": [
+     {"severity":"info","code":"slide-continued","slide":1,"path":"ContentLayout > Box > Bullets","causedBy":null,"message":"Slide 1 do autor virou 2 slides (9 de 12 itens no 1º, 3 no 2º). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo."}
+    ]
+   }
+  },
+  "charts": {
+   "16x9": {
+    "slides": [
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Chart","kind":"chart","frame":[40,106.8,640,258.2]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Chart","kind":"chart","frame":[40,106.8,640,258.2]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Chart","kind":"chart","frame":[40,106.8,640,258.2]}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "4x3": {
+    "slides": [
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > Chart","kind":"chart","frame":[40,106.8,640,393.2]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > Chart","kind":"chart","frame":[40,106.8,640,393.2]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > Chart","kind":"chart","frame":[40,106.8,640,393.2]}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "wide": {
+    "slides": [
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > Chart","kind":"chart","frame":[40,106.8,880,393.2]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > Chart","kind":"chart","frame":[40,106.8,880,393.2]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > Chart","kind":"chart","frame":[40,106.8,880,393.2]}
+     ]
+    ],
+    "diagnostics": []
+   }
+  },
+  "agent-test/m9-deck": {
+   "16x9": {
+    "slides": [
+     [
+      {"path":"CoverLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"CoverLayout > Shape[0]","kind":"shape","frame":[446.63,-127.57,364.5,364.5]},
+      {"path":"CoverLayout > Text[0]","kind":"text","frame":[60,50,330,16.1],"fontSize":14,"lines":1},
+      {"path":"CoverLayout > Shape[1]","kind":"shape","frame":[60,220.81,56,6]},
+      {"path":"CoverLayout > Text[1]","kind":"text","frame":[60,246.81,600,50.6],"fontSize":44,"lines":1},
+      {"path":"CoverLayout > Text[2]","kind":"text","frame":[60,317.4,600,27.6],"fontSize":24,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > KpiRow","kind":"box","frame":[40,131.5,640,142.79]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0]","kind":"box","frame":[40,131.5,200,142.79]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[0]","kind":"text","frame":[60,151.5,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[1]","kind":"text","frame":[60,177.6,160,50.6],"fontSize":44,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[2]","kind":"text","frame":[60,238.2,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1]","kind":"box","frame":[260,131.5,200,142.79]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[0]","kind":"text","frame":[280,151.5,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[1]","kind":"text","frame":[280,177.6,160,50.6],"fontSize":44,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[2]","kind":"text","frame":[280,238.2,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2]","kind":"box","frame":[480,131.5,200,142.79]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[0]","kind":"text","frame":[500,151.5,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[1]","kind":"text","frame":[500,177.6,160,50.6],"fontSize":44,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[2]","kind":"text","frame":[500,238.2,160,16.1],"fontSize":14,"lines":1},
+      {"path":"ContentLayout > Box > Text","kind":"text","frame":[40,294.3,640,46],"fontSize":20,"lines":2}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > TwoColumn","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights","kind":"box","frame":[40,106.8,305,258.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[0]","kind":"box","frame":[40,106.8,305,39.1]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[0] > Shape","kind":"shape","frame":[40,112.57,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[0] > Text","kind":"text","frame":[62,106.8,283,39.1],"fontSize":17,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[1]","kind":"box","frame":[40,155.89,305,39.1]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[1] > Shape","kind":"shape","frame":[40,161.67,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[1] > Text","kind":"text","frame":[62,155.89,283,39.1],"fontSize":17,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[2]","kind":"box","frame":[40,204.99,305,39.1]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[2] > Shape","kind":"shape","frame":[40,210.77,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[2] > Text","kind":"text","frame":[62,204.99,283,39.1],"fontSize":17,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[3]","kind":"box","frame":[40,254.09,305,39.1]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[3] > Shape","kind":"shape","frame":[40,259.86,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[3] > Text","kind":"text","frame":[62,254.09,283,39.1],"fontSize":17,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Box","kind":"box","frame":[375,106.8,305,258.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Box > Image","kind":"image","frame":[375,106.8,305,190.63]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,640,253.98]},
+      {"path":"ContentLayout > Box > Bullets > Box[0]","kind":"box","frame":[40,106.8,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Text","kind":"text","frame":[62,106.8,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[1]","kind":"box","frame":[40,166.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Shape","kind":"shape","frame":[40,174.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Text","kind":"text","frame":[62,166.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[2]","kind":"box","frame":[40,226.79,640,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Shape","kind":"shape","frame":[40,234.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Text","kind":"text","frame":[62,226.79,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[3]","kind":"box","frame":[40,263.79,640,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Shape","kind":"shape","frame":[40,271.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Text","kind":"text","frame":[62,263.79,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[4]","kind":"box","frame":[40,300.79,640,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Shape","kind":"shape","frame":[40,308.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Text","kind":"text","frame":[62,300.79,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[5]","kind":"box","frame":[40,337.78,640,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Shape","kind":"shape","frame":[40,345.28,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Text","kind":"text","frame":[62,337.78,618,23],"fontSize":20,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,405]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,258.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,640,253.98]},
+      {"path":"ContentLayout > Box > Bullets > Box[6]","kind":"box","frame":[40,106.8,640,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Text","kind":"text","frame":[62,106.8,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[7]","kind":"box","frame":[40,143.79,640,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Shape","kind":"shape","frame":[40,151.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Text","kind":"text","frame":[62,143.79,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[8]","kind":"box","frame":[40,180.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Shape","kind":"shape","frame":[40,188.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Text","kind":"text","frame":[62,180.79,618,46],"fontSize":20,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[9]","kind":"box","frame":[40,240.79,640,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Shape","kind":"shape","frame":[40,248.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Text","kind":"text","frame":[62,240.79,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[10]","kind":"box","frame":[40,277.79,640,23]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Shape","kind":"shape","frame":[40,285.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Text","kind":"text","frame":[62,277.79,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[11]","kind":"box","frame":[40,314.79,640,46]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Shape","kind":"shape","frame":[40,322.29,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Text","kind":"text","frame":[62,314.79,618,46],"fontSize":20,"lines":2}
+     ]
+    ],
+    "diagnostics": [
+     {"severity":"info","code":"slide-continued","slide":4,"path":"ContentLayout > Box > Bullets","causedBy":null,"message":"Slide 4 do autor virou 2 slides (6 de 12 itens no 1º, 6 no 2º). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo."}
+    ]
+   },
+   "4x3": {
+    "slides": [
+     [
+      {"path":"CoverLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"CoverLayout > Shape[0]","kind":"shape","frame":[355.5,-170.1,486,486]},
+      {"path":"CoverLayout > Text[0]","kind":"text","frame":[60,50,330,16.1],"fontSize":14,"lines":1},
+      {"path":"CoverLayout > Shape[1]","kind":"shape","frame":[60,355.81,56,6]},
+      {"path":"CoverLayout > Text[1]","kind":"text","frame":[60,381.81,600,50.6],"fontSize":44,"lines":1},
+      {"path":"CoverLayout > Text[2]","kind":"text","frame":[60,452.4,600,27.6],"fontSize":24,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > KpiRow","kind":"box","frame":[40,177.8,640,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0]","kind":"box","frame":[40,177.8,200,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[0]","kind":"text","frame":[60,197.8,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[1]","kind":"text","frame":[60,228.2,160,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[2]","kind":"text","frame":[60,304.6,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1]","kind":"box","frame":[260,177.8,200,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[0]","kind":"text","frame":[280,197.8,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[1]","kind":"text","frame":[280,228.2,160,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[2]","kind":"text","frame":[280,304.6,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2]","kind":"box","frame":[480,177.8,200,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[0]","kind":"text","frame":[500,197.8,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[1]","kind":"text","frame":[500,228.2,160,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[2]","kind":"text","frame":[500,304.6,160,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > Text","kind":"text","frame":[40,383,640,46],"fontSize":20,"lines":2}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights","kind":"box","frame":[40,106.8,640,139.99]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[0]","kind":"box","frame":[40,106.8,640,23]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[0] > Shape","kind":"shape","frame":[40,114.3,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[0] > Text","kind":"text","frame":[62,106.8,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[1]","kind":"box","frame":[40,145.79,640,23]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[1] > Shape","kind":"shape","frame":[40,153.29,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[1] > Text","kind":"text","frame":[62,145.79,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[2]","kind":"box","frame":[40,184.79,640,23]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[2] > Shape","kind":"shape","frame":[40,192.29,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[2] > Text","kind":"text","frame":[62,184.79,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[3]","kind":"box","frame":[40,223.79,640,23]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[3] > Shape","kind":"shape","frame":[40,231.29,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[3] > Text","kind":"text","frame":[62,223.79,618,23],"fontSize":20,"lines":1},
+      {"path":"ContentLayout > Box > TwoColumn > Box","kind":"box","frame":[40,266.79,640,233.21]},
+      {"path":"ContentLayout > Box > TwoColumn > Box > Image","kind":"image","frame":[40,266.79,373.14,233.21]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,640,359.68]},
+      {"path":"ContentLayout > Box > Bullets > Box[0]","kind":"box","frame":[40,106.8,640,50.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Shape","kind":"shape","frame":[40,115.45,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Text","kind":"text","frame":[62,106.8,618,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[1]","kind":"box","frame":[40,179.39,640,50.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Shape","kind":"shape","frame":[40,188.04,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Text","kind":"text","frame":[62,179.39,618,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[2]","kind":"box","frame":[40,251.99,640,25.3]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Shape","kind":"shape","frame":[40,260.64,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Text","kind":"text","frame":[62,251.99,618,25.3],"fontSize":22,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[3]","kind":"box","frame":[40,299.29,640,25.3]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Shape","kind":"shape","frame":[40,307.94,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Text","kind":"text","frame":[62,299.29,618,25.3],"fontSize":22,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[4]","kind":"box","frame":[40,346.58,640,25.3]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Shape","kind":"shape","frame":[40,355.23,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Text","kind":"text","frame":[62,346.58,618,25.3],"fontSize":22,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[5]","kind":"box","frame":[40,393.88,640,25.3]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Shape","kind":"shape","frame":[40,402.53,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Text","kind":"text","frame":[62,393.88,618,25.3],"fontSize":22,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[6]","kind":"box","frame":[40,441.18,640,25.3]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Shape","kind":"shape","frame":[40,449.83,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Text","kind":"text","frame":[62,441.18,618,25.3],"fontSize":22,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,720,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,640,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,640,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,640,290.38]},
+      {"path":"ContentLayout > Box > Bullets > Box[7]","kind":"box","frame":[40,106.8,640,25.3]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Shape","kind":"shape","frame":[40,115.45,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Text","kind":"text","frame":[62,106.8,618,25.3],"fontSize":22,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[8]","kind":"box","frame":[40,154.09,640,50.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Shape","kind":"shape","frame":[40,162.74,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Text","kind":"text","frame":[62,154.09,618,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[9]","kind":"box","frame":[40,226.69,640,50.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Shape","kind":"shape","frame":[40,235.34,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Text","kind":"text","frame":[62,226.69,618,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[10]","kind":"box","frame":[40,299.29,640,25.3]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Shape","kind":"shape","frame":[40,307.94,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Text","kind":"text","frame":[62,299.29,618,25.3],"fontSize":22,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[11]","kind":"box","frame":[40,346.58,640,50.6]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Shape","kind":"shape","frame":[40,355.23,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Text","kind":"text","frame":[62,346.58,618,50.6],"fontSize":22,"lines":2}
+     ]
+    ],
+    "diagnostics": [
+     {"severity":"info","code":"slide-continued","slide":4,"path":"ContentLayout > Box > Bullets","causedBy":null,"message":"Slide 4 do autor virou 2 slides (7 de 12 itens no 1º, 5 no 2º). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo."}
+    ]
+   },
+   "wide": {
+    "slides": [
+     [
+      {"path":"CoverLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"CoverLayout > Shape[0]","kind":"shape","frame":[595.5,-170.1,486,486]},
+      {"path":"CoverLayout > Text[0]","kind":"text","frame":[60,50,462,16.1],"fontSize":14,"lines":1},
+      {"path":"CoverLayout > Shape[1]","kind":"shape","frame":[60,355.81,56,6]},
+      {"path":"CoverLayout > Text[1]","kind":"text","frame":[60,381.81,840,50.6],"fontSize":44,"lines":1},
+      {"path":"CoverLayout > Text[2]","kind":"text","frame":[60,452.4,840,27.6],"fontSize":24,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > KpiRow","kind":"box","frame":[40,192,880,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0]","kind":"box","frame":[40,192,205,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[0]","kind":"text","frame":[60,212,165,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[1]","kind":"text","frame":[60,242.4,165,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[0] > Text[2]","kind":"text","frame":[60,318.8,165,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1]","kind":"box","frame":[265,192,205,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[0]","kind":"text","frame":[285,212,165,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[1]","kind":"text","frame":[285,242.4,165,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[1] > Text[2]","kind":"text","frame":[285,318.8,165,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2]","kind":"box","frame":[490,192,205,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[0]","kind":"text","frame":[510,212,165,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[1]","kind":"text","frame":[510,242.4,165,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[2] > Text[2]","kind":"text","frame":[510,318.8,165,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[3]","kind":"box","frame":[715,192,205,165.19]},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[3] > Text[0]","kind":"text","frame":[735,212,165,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[3] > Text[1]","kind":"text","frame":[735,242.4,165,64.39],"fontSize":56,"lines":1},
+      {"path":"ContentLayout > Box > KpiRow > KpiCard[3] > Text[2]","kind":"text","frame":[735,318.8,165,18.4],"fontSize":16,"lines":1},
+      {"path":"ContentLayout > Box > Text","kind":"text","frame":[40,387.2,880,27.6],"fontSize":24,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights","kind":"box","frame":[40,106.8,425,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[0]","kind":"box","frame":[40,106.8,425,50.6]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[0] > Shape","kind":"shape","frame":[40,115.45,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[0] > Text","kind":"text","frame":[62,106.8,403,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[1]","kind":"box","frame":[40,173.39,425,50.6]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[1] > Shape","kind":"shape","frame":[40,182.04,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[1] > Text","kind":"text","frame":[62,173.39,403,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[2]","kind":"box","frame":[40,239.99,425,50.6]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[2] > Shape","kind":"shape","frame":[40,248.64,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[2] > Text","kind":"text","frame":[62,239.99,403,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[3]","kind":"box","frame":[40,306.58,425,50.6]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[3] > Shape","kind":"shape","frame":[40,315.23,8,8]},
+      {"path":"ContentLayout > Box > TwoColumn > Highlights > Box[3] > Text","kind":"text","frame":[62,306.58,403,50.6],"fontSize":22,"lines":2},
+      {"path":"ContentLayout > Box > TwoColumn > Box","kind":"box","frame":[495,106.8,425,393.2]},
+      {"path":"ContentLayout > Box > TwoColumn > Box > Image","kind":"image","frame":[495,106.8,425,265.63]}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,880,371.18]},
+      {"path":"ContentLayout > Box > Bullets > Box[0]","kind":"box","frame":[40,106.8,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Shape","kind":"shape","frame":[40,117.75,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[0] > Text","kind":"text","frame":[62,106.8,858,29.9],"fontSize":26,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[1]","kind":"box","frame":[40,158.69,880,59.79]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Shape","kind":"shape","frame":[40,169.64,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[1] > Text","kind":"text","frame":[62,158.69,858,59.79],"fontSize":26,"lines":2},
+      {"path":"ContentLayout > Box > Bullets > Box[2]","kind":"box","frame":[40,240.49,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Shape","kind":"shape","frame":[40,251.44,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[2] > Text","kind":"text","frame":[62,240.49,858,29.9],"fontSize":26,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[3]","kind":"box","frame":[40,292.39,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Shape","kind":"shape","frame":[40,303.34,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[3] > Text","kind":"text","frame":[62,292.39,858,29.9],"fontSize":26,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[4]","kind":"box","frame":[40,344.28,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Shape","kind":"shape","frame":[40,355.23,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[4] > Text","kind":"text","frame":[62,344.28,858,29.9],"fontSize":26,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[5]","kind":"box","frame":[40,396.18,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Shape","kind":"shape","frame":[40,407.13,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[5] > Text","kind":"text","frame":[62,396.18,858,29.9],"fontSize":26,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[6]","kind":"box","frame":[40,448.08,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Shape","kind":"shape","frame":[40,459.03,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[6] > Text","kind":"text","frame":[62,448.08,858,29.9],"fontSize":26,"lines":1}
+     ],
+     [
+      {"path":"ContentLayout","kind":"slide","frame":[0,0,960,540]},
+      {"path":"ContentLayout > Text","kind":"text","frame":[40,40,880,36.8],"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box","kind":"box","frame":[40,106.8,880,393.2]},
+      {"path":"ContentLayout > Box > Bullets","kind":"box","frame":[40,106.8,880,237.49]},
+      {"path":"ContentLayout > Box > Bullets > Box[7]","kind":"box","frame":[40,106.8,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Shape","kind":"shape","frame":[40,117.75,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[7] > Text","kind":"text","frame":[62,106.8,858,29.9],"fontSize":26,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[8]","kind":"box","frame":[40,158.69,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Shape","kind":"shape","frame":[40,169.64,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[8] > Text","kind":"text","frame":[62,158.69,858,29.9],"fontSize":26,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[9]","kind":"box","frame":[40,210.59,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Shape","kind":"shape","frame":[40,221.54,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[9] > Text","kind":"text","frame":[62,210.59,858,29.9],"fontSize":26,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[10]","kind":"box","frame":[40,262.49,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Shape","kind":"shape","frame":[40,273.44,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[10] > Text","kind":"text","frame":[62,262.49,858,29.9],"fontSize":26,"lines":1},
+      {"path":"ContentLayout > Box > Bullets > Box[11]","kind":"box","frame":[40,314.39,880,29.9]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Shape","kind":"shape","frame":[40,325.34,8,8]},
+      {"path":"ContentLayout > Box > Bullets > Box[11] > Text","kind":"text","frame":[62,314.39,858,29.9],"fontSize":26,"lines":1}
+     ]
+    ],
+    "diagnostics": [
+     {"severity":"info","code":"slide-continued","slide":4,"path":"ContentLayout > Box > Bullets","causedBy":null,"message":"Slide 4 do autor virou 2 slides (7 de 12 itens no 1º, 5 no 2º). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo."}
+    ]
+   }
+  },
+  "showcase": {
+   "16x9": {
+    "slides": [
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,405]},
+      {"path":"Slide > Shape","kind":"shape","frame":[450,-110,360,360]},
+      {"path":"Slide > Box","kind":"box","frame":[530,60,120,120]},
+      {"path":"Slide > Text[0]","kind":"text","frame":[48,163.21,624,14.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Text[1]","kind":"text","frame":[48,188.16,624,101.19],"fontSize":44,"lines":2},
+      {"path":"Slide > Text[2]","kind":"text","frame":[48,297.35,624,23],"fontSize":20,"lines":1},
+      {"path":"Slide > Text[3]","kind":"text","frame":[48,344.35,624,12.65],"fontSize":11,"lines":1}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,405]},
+      {"path":"Slide > Title","kind":"text","frame":[36,36,648,29.9],"fontSize":26,"lines":1},
+      {"path":"Slide > Box","kind":"box","frame":[36,83.9,648,200.19]},
+      {"path":"Slide > Box > Card[0]","kind":"box","frame":[36,83.9,205.33,92.09]},
+      {"path":"Slide > Box > Card[0] > Text[0]","kind":"text","frame":[50,97.9,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[0] > Text[1]","kind":"text","frame":[50,113.7,177.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[0] > Text[2]","kind":"text","frame":[50,148.19,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[1]","kind":"box","frame":[257.33,83.9,205.33,92.09]},
+      {"path":"Slide > Box > Card[1] > Text[0]","kind":"text","frame":[271.33,97.9,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[1] > Text[1]","kind":"text","frame":[271.33,113.7,177.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[1] > Text[2]","kind":"text","frame":[271.33,148.19,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[2]","kind":"box","frame":[478.67,83.9,205.33,92.09]},
+      {"path":"Slide > Box > Card[2] > Text[0]","kind":"text","frame":[492.67,97.9,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[2] > Text[1]","kind":"text","frame":[492.67,113.7,177.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[2] > Text[2]","kind":"text","frame":[492.67,148.19,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[3]","kind":"box","frame":[36,191.99,205.33,92.09]},
+      {"path":"Slide > Box > Card[3] > Text[0]","kind":"text","frame":[50,205.99,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[3] > Text[1]","kind":"text","frame":[50,221.79,177.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[3] > Text[2]","kind":"text","frame":[50,256.29,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[4]","kind":"box","frame":[257.33,191.99,205.33,92.09]},
+      {"path":"Slide > Box > Card[4] > Text[0]","kind":"text","frame":[271.33,205.99,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[4] > Text[1]","kind":"text","frame":[271.33,221.79,177.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[4] > Text[2]","kind":"text","frame":[271.33,256.29,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[5]","kind":"box","frame":[478.67,191.99,205.33,92.09]},
+      {"path":"Slide > Box > Card[5] > Text[0]","kind":"text","frame":[492.67,205.99,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[5] > Text[1]","kind":"text","frame":[492.67,221.79,177.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[5] > Text[2]","kind":"text","frame":[492.67,256.29,177.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Text[1]","kind":"text","frame":[36,356.35,648,12.65],"fontSize":11,"lines":1}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,405]},
+      {"path":"Slide > Title","kind":"text","frame":[36,36,648,29.9],"fontSize":26,"lines":1},
+      {"path":"Slide > Box","kind":"box","frame":[36,83.9,648,285.1]},
+      {"path":"Slide > Box > Box[0]","kind":"box","frame":[36,83.9,170,285.1]},
+      {"path":"Slide > Box > Box[0] > Text[0]","kind":"text","frame":[50,97.9,142,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box > Box[0] > Text[1]","kind":"text","frame":[50,120,142,41.4],"fontSize":12,"lines":3},
+      {"path":"Slide > Box > Box[1]","kind":"box","frame":[220,83.9,464,36.1]},
+      {"path":"Slide > Box > Box[1] > Text","kind":"text","frame":[238,93.9,432,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box > Chart[0]","kind":"chart","frame":[220,134,225,235]},
+      {"path":"Slide > Box > Chart[1]","kind":"chart","frame":[459,134,225,235]}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,405]},
+      {"path":"Slide > Title","kind":"text","frame":[36,36,648,29.9],"fontSize":26,"lines":1},
+      {"path":"Slide > Box[0]","kind":"box","frame":[36,83.9,648,57.9]},
+      {"path":"Slide > Box[0] > Text[0]","kind":"text","frame":[36,83.9,46.35,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[1]","kind":"text","frame":[90.35,83.9,32.19,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[2]","kind":"text","frame":[130.53,83.9,50.08,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[3]","kind":"text","frame":[188.62,83.9,53.06,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[4]","kind":"text","frame":[249.68,83.9,53.05,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[5]","kind":"text","frame":[310.73,83.9,94.77,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[6]","kind":"text","frame":[413.5,83.9,67.2,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[7]","kind":"text","frame":[488.71,83.9,72.43,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[8]","kind":"text","frame":[36,116.85,117.13,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[9]","kind":"text","frame":[161.13,116.85,68.69,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[10]","kind":"text","frame":[237.82,116.85,58.27,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[11]","kind":"text","frame":[304.09,116.85,66.46,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[12]","kind":"text","frame":[378.56,116.85,99.26,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[1]","kind":"box","frame":[36,161.79,648,110]},
+      {"path":"Slide > Box[1] > Box[0]","kind":"box","frame":[36,161.79,216,73.85]},
+      {"path":"Slide > Box[1] > Box[0] > Text","kind":"text","frame":[48,177.79,192,44.85],"fontSize":13,"lines":3},
+      {"path":"Slide > Box[1] > Box[1]","kind":"box","frame":[268,161.79,220,72.85]},
+      {"path":"Slide > Box[1] > Box[1] > Text","kind":"text","frame":[282,175.79,192,44.85],"fontSize":13,"lines":3},
+      {"path":"Slide > Box[1] > Box[2]","kind":"box","frame":[504,161.79,180,110]},
+      {"path":"Slide > Box[1] > Box[2] > Box[0]","kind":"box","frame":[504,161.79,110,70]},
+      {"path":"Slide > Box[1] > Box[2] > Box[1]","kind":"box","frame":[554,191.79,110,70]},
+      {"path":"Slide > Box[1] > Box[2] > Box[2]","kind":"box","frame":[524,216.79,130,40]},
+      {"path":"Slide > Box[1] > Box[2] > Box[2] > Text","kind":"text","frame":[565.73,229.9,46.55,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Text","kind":"text","frame":[36,356.35,648,12.65],"fontSize":11,"lines":1}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "4x3": {
+    "slides": [
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,540]},
+      {"path":"Slide > Shape","kind":"shape","frame":[450,-110,360,360]},
+      {"path":"Slide > Box","kind":"box","frame":[530,60,120,120]},
+      {"path":"Slide > Text[0]","kind":"text","frame":[48,298.21,624,14.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Text[1]","kind":"text","frame":[48,323.16,624,101.19],"fontSize":44,"lines":2},
+      {"path":"Slide > Text[2]","kind":"text","frame":[48,432.35,624,23],"fontSize":20,"lines":1},
+      {"path":"Slide > Text[3]","kind":"text","frame":[48,479.35,624,12.65],"fontSize":11,"lines":1}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,540]},
+      {"path":"Slide > Title","kind":"text","frame":[36,36,648,29.9],"fontSize":26,"lines":1},
+      {"path":"Slide > Box","kind":"box","frame":[36,83.9,648,308.28]},
+      {"path":"Slide > Box > Card[0]","kind":"box","frame":[36,83.9,316,92.09]},
+      {"path":"Slide > Box > Card[0] > Text[0]","kind":"text","frame":[50,97.9,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[0] > Text[1]","kind":"text","frame":[50,113.7,288,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[0] > Text[2]","kind":"text","frame":[50,148.19,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[1]","kind":"box","frame":[368,83.9,316,92.09]},
+      {"path":"Slide > Box > Card[1] > Text[0]","kind":"text","frame":[382,97.9,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[1] > Text[1]","kind":"text","frame":[382,113.7,288,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[1] > Text[2]","kind":"text","frame":[382,148.19,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[2]","kind":"box","frame":[36,191.99,316,92.09]},
+      {"path":"Slide > Box > Card[2] > Text[0]","kind":"text","frame":[50,205.99,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[2] > Text[1]","kind":"text","frame":[50,221.79,288,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[2] > Text[2]","kind":"text","frame":[50,256.29,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[3]","kind":"box","frame":[368,191.99,316,92.09]},
+      {"path":"Slide > Box > Card[3] > Text[0]","kind":"text","frame":[382,205.99,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[3] > Text[1]","kind":"text","frame":[382,221.79,288,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[3] > Text[2]","kind":"text","frame":[382,256.29,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[4]","kind":"box","frame":[36,300.09,316,92.09]},
+      {"path":"Slide > Box > Card[4] > Text[0]","kind":"text","frame":[50,314.09,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[4] > Text[1]","kind":"text","frame":[50,329.89,288,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[4] > Text[2]","kind":"text","frame":[50,364.38,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[5]","kind":"box","frame":[368,300.09,316,92.09]},
+      {"path":"Slide > Box > Card[5] > Text[0]","kind":"text","frame":[382,314.09,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[5] > Text[1]","kind":"text","frame":[382,329.89,288,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[5] > Text[2]","kind":"text","frame":[382,364.38,288,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Text[0]","kind":"text","frame":[36,406.18,648,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Text[1]","kind":"text","frame":[36,491.35,648,12.65],"fontSize":11,"lines":1}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,540]},
+      {"path":"Slide > Title","kind":"text","frame":[36,36,648,29.9],"fontSize":26,"lines":1},
+      {"path":"Slide > Box","kind":"box","frame":[36,83.9,648,420.1]},
+      {"path":"Slide > Box > Box[0]","kind":"box","frame":[36,83.9,170,420.1]},
+      {"path":"Slide > Box > Box[0] > Text[0]","kind":"text","frame":[50,97.9,142,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box > Box[0] > Text[1]","kind":"text","frame":[50,120,142,41.4],"fontSize":12,"lines":3},
+      {"path":"Slide > Box > Box[1]","kind":"box","frame":[220,83.9,464,36.1]},
+      {"path":"Slide > Box > Box[1] > Text","kind":"text","frame":[238,93.9,432,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box > Chart[0]","kind":"chart","frame":[220,134,225,370]},
+      {"path":"Slide > Box > Chart[1]","kind":"chart","frame":[459,134,225,370]}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,720,540]},
+      {"path":"Slide > Title","kind":"text","frame":[36,36,648,29.9],"fontSize":26,"lines":1},
+      {"path":"Slide > Box[0]","kind":"box","frame":[36,83.9,648,57.9]},
+      {"path":"Slide > Box[0] > Text[0]","kind":"text","frame":[36,83.9,46.35,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[1]","kind":"text","frame":[90.35,83.9,32.19,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[2]","kind":"text","frame":[130.53,83.9,50.08,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[3]","kind":"text","frame":[188.62,83.9,53.06,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[4]","kind":"text","frame":[249.68,83.9,53.05,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[5]","kind":"text","frame":[310.73,83.9,94.77,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[6]","kind":"text","frame":[413.5,83.9,67.2,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[7]","kind":"text","frame":[488.71,83.9,72.43,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[8]","kind":"text","frame":[36,116.85,117.13,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[9]","kind":"text","frame":[161.13,116.85,68.69,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[10]","kind":"text","frame":[237.82,116.85,58.27,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[11]","kind":"text","frame":[304.09,116.85,66.46,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[12]","kind":"text","frame":[378.56,116.85,99.26,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[1]","kind":"box","frame":[36,161.79,648,110]},
+      {"path":"Slide > Box[1] > Box[0]","kind":"box","frame":[36,161.79,216,73.85]},
+      {"path":"Slide > Box[1] > Box[0] > Text","kind":"text","frame":[48,177.79,192,44.85],"fontSize":13,"lines":3},
+      {"path":"Slide > Box[1] > Box[1]","kind":"box","frame":[268,161.79,220,72.85]},
+      {"path":"Slide > Box[1] > Box[1] > Text","kind":"text","frame":[282,175.79,192,44.85],"fontSize":13,"lines":3},
+      {"path":"Slide > Box[1] > Box[2]","kind":"box","frame":[504,161.79,180,110]},
+      {"path":"Slide > Box[1] > Box[2] > Box[0]","kind":"box","frame":[504,161.79,110,70]},
+      {"path":"Slide > Box[1] > Box[2] > Box[1]","kind":"box","frame":[554,191.79,110,70]},
+      {"path":"Slide > Box[1] > Box[2] > Box[2]","kind":"box","frame":[524,216.79,130,40]},
+      {"path":"Slide > Box[1] > Box[2] > Box[2] > Text","kind":"text","frame":[565.73,229.9,46.55,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Text","kind":"text","frame":[36,491.35,648,12.65],"fontSize":11,"lines":1}
+     ]
+    ],
+    "diagnostics": []
+   },
+   "wide": {
+    "slides": [
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,960,540]},
+      {"path":"Slide > Shape","kind":"shape","frame":[690,-110,360,360]},
+      {"path":"Slide > Box","kind":"box","frame":[770,60,120,120]},
+      {"path":"Slide > Text[0]","kind":"text","frame":[48,348.81,864,14.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Text[1]","kind":"text","frame":[48,373.76,864,50.6],"fontSize":44,"lines":1},
+      {"path":"Slide > Text[2]","kind":"text","frame":[48,432.35,864,23],"fontSize":20,"lines":1},
+      {"path":"Slide > Text[3]","kind":"text","frame":[48,479.35,864,12.65],"fontSize":11,"lines":1}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,960,540]},
+      {"path":"Slide > Title","kind":"text","frame":[36,36,888,29.9],"fontSize":26,"lines":1},
+      {"path":"Slide > Box","kind":"box","frame":[36,83.9,888,200.19]},
+      {"path":"Slide > Box > Card[0]","kind":"box","frame":[36,83.9,285.33,92.09]},
+      {"path":"Slide > Box > Card[0] > Text[0]","kind":"text","frame":[50,97.9,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[0] > Text[1]","kind":"text","frame":[50,113.7,257.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[0] > Text[2]","kind":"text","frame":[50,148.19,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[1]","kind":"box","frame":[337.33,83.9,285.33,92.09]},
+      {"path":"Slide > Box > Card[1] > Text[0]","kind":"text","frame":[351.33,97.9,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[1] > Text[1]","kind":"text","frame":[351.33,113.7,257.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[1] > Text[2]","kind":"text","frame":[351.33,148.19,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[2]","kind":"box","frame":[638.67,83.9,285.33,92.09]},
+      {"path":"Slide > Box > Card[2] > Text[0]","kind":"text","frame":[652.67,97.9,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[2] > Text[1]","kind":"text","frame":[652.67,113.7,257.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[2] > Text[2]","kind":"text","frame":[652.67,148.19,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[3]","kind":"box","frame":[36,191.99,285.33,92.09]},
+      {"path":"Slide > Box > Card[3] > Text[0]","kind":"text","frame":[50,205.99,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[3] > Text[1]","kind":"text","frame":[50,221.79,257.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[3] > Text[2]","kind":"text","frame":[50,256.29,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[4]","kind":"box","frame":[337.33,191.99,285.33,92.09]},
+      {"path":"Slide > Box > Card[4] > Text[0]","kind":"text","frame":[351.33,205.99,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[4] > Text[1]","kind":"text","frame":[351.33,221.79,257.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[4] > Text[2]","kind":"text","frame":[351.33,256.29,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[5]","kind":"box","frame":[638.67,191.99,285.33,92.09]},
+      {"path":"Slide > Box > Card[5] > Text[0]","kind":"text","frame":[652.67,205.99,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Box > Card[5] > Text[1]","kind":"text","frame":[652.67,221.79,257.33,34.5],"fontSize":30,"lines":1},
+      {"path":"Slide > Box > Card[5] > Text[2]","kind":"text","frame":[652.67,256.29,257.33,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Text[1]","kind":"text","frame":[36,491.35,888,12.65],"fontSize":11,"lines":1}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,960,540]},
+      {"path":"Slide > Title","kind":"text","frame":[36,36,888,29.9],"fontSize":26,"lines":1},
+      {"path":"Slide > Box","kind":"box","frame":[36,83.9,888,420.1]},
+      {"path":"Slide > Box > Box[0]","kind":"box","frame":[36,83.9,170,420.1]},
+      {"path":"Slide > Box > Box[0] > Text[0]","kind":"text","frame":[50,97.9,142,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box > Box[0] > Text[1]","kind":"text","frame":[50,120,142,41.4],"fontSize":12,"lines":3},
+      {"path":"Slide > Box > Box[1]","kind":"box","frame":[220,83.9,704,36.1]},
+      {"path":"Slide > Box > Box[1] > Text","kind":"text","frame":[238,93.9,672,16.1],"fontSize":14,"lines":1},
+      {"path":"Slide > Box > Chart[0]","kind":"chart","frame":[220,134,345,370]},
+      {"path":"Slide > Box > Chart[1]","kind":"chart","frame":[579,134,345,370]}
+     ],
+     [
+      {"path":"Slide","kind":"slide","frame":[0,0,960,540]},
+      {"path":"Slide > Title","kind":"text","frame":[36,36,888,29.9],"fontSize":26,"lines":1},
+      {"path":"Slide > Box[0]","kind":"box","frame":[36,83.9,888,57.9]},
+      {"path":"Slide > Box[0] > Text[0]","kind":"text","frame":[36,83.9,46.35,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[1]","kind":"text","frame":[90.35,83.9,32.19,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[2]","kind":"text","frame":[130.53,83.9,50.08,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[3]","kind":"text","frame":[188.62,83.9,53.06,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[4]","kind":"text","frame":[249.68,83.9,53.05,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[5]","kind":"text","frame":[310.73,83.9,94.77,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[6]","kind":"text","frame":[413.5,83.9,67.2,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[7]","kind":"text","frame":[488.71,83.9,72.43,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[8]","kind":"text","frame":[569.14,83.9,117.13,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[9]","kind":"text","frame":[694.27,83.9,68.69,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[10]","kind":"text","frame":[770.96,83.9,58.27,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[11]","kind":"text","frame":[837.23,83.9,66.46,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[0] > Text[12]","kind":"text","frame":[36,116.85,99.26,24.95],"fontSize":13,"lines":1},
+      {"path":"Slide > Box[1]","kind":"box","frame":[36,161.79,888,110]},
+      {"path":"Slide > Box[1] > Box[0]","kind":"box","frame":[36,161.79,336,58.9]},
+      {"path":"Slide > Box[1] > Box[0] > Text","kind":"text","frame":[48,177.79,312,29.9],"fontSize":13,"lines":2},
+      {"path":"Slide > Box[1] > Box[1]","kind":"box","frame":[388,161.79,340,57.9]},
+      {"path":"Slide > Box[1] > Box[1] > Text","kind":"text","frame":[402,175.79,312,29.9],"fontSize":13,"lines":2},
+      {"path":"Slide > Box[1] > Box[2]","kind":"box","frame":[744,161.79,180,110]},
+      {"path":"Slide > Box[1] > Box[2] > Box[0]","kind":"box","frame":[744,161.79,110,70]},
+      {"path":"Slide > Box[1] > Box[2] > Box[1]","kind":"box","frame":[794,191.79,110,70]},
+      {"path":"Slide > Box[1] > Box[2] > Box[2]","kind":"box","frame":[764,216.79,130,40]},
+      {"path":"Slide > Box[1] > Box[2] > Box[2] > Text","kind":"text","frame":[805.73,229.9,46.55,13.8],"fontSize":12,"lines":1},
+      {"path":"Slide > Text","kind":"text","frame":[36,491.35,888,12.65],"fontSize":11,"lines":1}
+     ]
+    ],
+    "diagnostics": []
+   }
+  }
+ }
+}

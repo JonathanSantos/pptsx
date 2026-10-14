@@ -1,12 +1,14 @@
 import { B, Box, Deck, I, Image, Shape, Slide, Span, Text, defineDeck } from 'pptsx';
-import type { SlideElement, TextChildren, TextProps } from 'pptsx';
+import type { CssTextPropsAuthor, SlideElement, TextChildren } from 'pptsx';
 
-// M8: grade de calibração do rich text (Span/B/I), NBSP, nowrap e align="baseline".
+// M8: grade de calibração do rich text (Span/B/I), NBSP, nowrap e alignItems="baseline".
 // O M8-H gera este deck em 16x9 com --debug e compara, amostra a amostra, o preview nativo
 // com o Keynote (PDF vetorial, mesmo método do M3-F): mesmas palavras no fim de cada linha,
 // mesma largura dos trechos em negrito/itálico (a medição soma as larguras por face, sem
 // kerning entre runs), NBSP colando as palavras, nowrap numa linha só e baselines alinhadas.
 // Cada amostra tem largura fixa (pt) para a largura de quebra ser exata e conhecida.
+// M11: R12 usa lineHeight={1.2} na semântica CSS (1,2 × size); antes era 1,2 × a altura natural,
+// então a amostra fica ~13% mais baixa por linha (o M11-G recalibra).
 
 export interface RichCalibrationSample {
   readonly id: string;
@@ -29,11 +31,11 @@ const GREEN = '#1E9E6A';
 const RED = '#D64545';
 const BLUE = '#2F6FED';
 
-type TextOptions = Omit<TextProps, 'size' | 'children'>;
+type TextOptions = Omit<CssTextPropsAuthor, 'fontSize' | 'children'>;
 
 /** Text da amostra: fit="error" por padrão, como no calibration.tsx (a quebra não pode mudar o size). */
 const text = (size: number, children: TextChildren, options: TextOptions = {}): SlideElement => (
-  <Text size={size} color={INK} fit="error" {...options}>{children}</Text>
+  <Text fontSize={size} color={INK} fit="error" {...options}>{children}</Text>
 );
 
 const placed: readonly Placed[] = [
@@ -51,17 +53,17 @@ const placed: readonly Placed[] = [
   { slide: 2, row: 3, id: 'R06', size: 18, width: 300, note: 'itálico cruza a quebra',
     body: text(18, <>Segundo o comitê, <I>a integração das plataformas reduziu o tempo de resposta</I> em 37%.</>) },
   { slide: 2, row: 3, id: 'R07', size: 12, width: 200, note: 'Text bold, Span regular',
-    body: text(12, <>Resultado: <Span weight="regular">acima da meta em todas as unidades avaliadas no ciclo</Span>.</>, { weight: 'bold' }) },
+    body: text(12, <>Resultado: <Span fontWeight="regular">acima da meta em todas as unidades avaliadas no ciclo</Span>.</>, { fontWeight: 'bold' }) },
   { slide: 2, row: 3, id: 'R08', size: 12, width: 140, note: 'Text itálico, Span reto',
-    body: text(12, <>Fonte: <Span italic={false}>relatório interno</Span> de setembro de 2026.</>, { italic: true }) },
+    body: text(12, <>Fonte: <Span fontStyle="normal">relatório interno</Span> de setembro de 2026.</>, { fontStyle: 'italic' }) },
 
   // ── Slide 3: tamanhos (12/18/32 pt), entrelinha e fronteira de run dentro da palavra
   { slide: 3, row: 1, id: 'R09', size: 12, width: 220, note: '3 estilos numa linha',
-    body: text(12, <>Receita <B>recorde</B>, custo <I>controlado</I> e <Span color={GREEN} weight="bold">margem</Span> em alta no ano.</>) },
+    body: text(12, <>Receita <B>recorde</B>, custo <I>controlado</I> e <Span color={GREEN} fontWeight="bold">margem</Span> em alta no ano.</>) },
   { slide: 3, row: 1, id: 'R10', size: 18, width: 330, note: 'mesmo texto em 18',
-    body: text(18, <>Receita <B>recorde</B>, custo <I>controlado</I> e <Span color={GREEN} weight="bold">margem</Span> em alta no ano.</>) },
+    body: text(18, <>Receita <B>recorde</B>, custo <I>controlado</I> e <Span color={GREEN} fontWeight="bold">margem</Span> em alta no ano.</>) },
   { slide: 3, row: 2, id: 'R11', size: 32, width: 420, note: 'mesmo texto em 32',
-    body: text(32, <>Receita <B>recorde</B>, custo <I>controlado</I> e <Span color={GREEN} weight="bold">margem</Span> em alta.</>) },
+    body: text(32, <>Receita <B>recorde</B>, custo <I>controlado</I> e <Span color={GREEN} fontWeight="bold">margem</Span> em alta.</>) },
   { slide: 3, row: 2, id: 'R12', size: 18, width: 220, note: 'lh1.2 com runs',
     body: text(18, <>Ampliação da <B>presença regional</B> com foco em <I>logística e distribuição</I>.</>, { lineHeight: 1.2 }) },
   { slide: 3, row: 3, id: 'R13', size: 32, width: 360, note: 'negrito abre a 2ª linha',
@@ -93,31 +95,31 @@ const placed: readonly Placed[] = [
   { slide: 5, row: 2, id: 'R24', size: 14, width: 220, note: 'maxLines 2, reticência num Span: text-truncated esperado',
     body: text(14, <>O programa de eficiência reduziu o consumo e <B>gerou economia relevante, reinvestida em capacitação técnica das equipes</B>.</>, { maxLines: 2, fit: 'truncate' }) },
   { slide: 5, row: 2, id: 'R25', size: 12, width: 200, note: 'maxLines 1, Span colorido cortado: text-truncated esperado',
-    body: text(12, <>Status: <Span color={RED} weight="bold">atrasado por dependência de fornecedor externo</Span></>, { maxLines: 1, fit: 'truncate' }) },
+    body: text(12, <>Status: <Span color={RED} fontWeight="bold">atrasado por dependência de fornecedor externo</Span></>, { maxLines: 1, fit: 'truncate' }) },
   { slide: 5, row: 3, id: 'R26', size: 12, width: 220, note: 'B com Span regular dentro',
-    body: text(12, <><B>Negrito, <Span weight="regular">regular no meio do negrito</Span> e negrito de novo</B> até o fim.</>) },
+    body: text(12, <><B>Negrito, <Span fontWeight="regular">regular no meio do negrito</Span> e negrito de novo</B> até o fim.</>) },
   { slide: 5, row: 3, id: 'R27', size: 10, width: 180, note: 'center com runs',
-    body: text(10, <>Compromisso com <B>diversidade</B>, <I>equidade</I> e <Span color={BLUE}>inclusão</Span> em todos os níveis da organização.</>, { align: 'center' }) },
+    body: text(10, <>Compromisso com <B>diversidade</B>, <I>equidade</I> e <Span color={BLUE}>inclusão</Span> em todos os níveis da organização.</>, { textAlign: 'center' }) },
 
-  // ── Slide 6: align="baseline" (só em row; Text sem grow/width, que encolhe pelo conteúdo)
+  // ── Slide 6: alignItems="baseline" (só em row; Text sem flex/width, que encolhe pelo conteúdo)
   { slide: 6, row: 1, id: 'R28', size: 18, width: 230, note: 'baseline: Shape 8×8 + Text',
     body: (
-      <Box direction="row" align="baseline" gap={10}>
-        <Shape kind="ellipse" width={8} height={8} shrink={0} fill={BLUE} />
+      <Box display="flex" alignItems="baseline" gap={10}>
+        <Shape kind="ellipse" width={8} height={8} flexShrink={0} backgroundColor={BLUE} />
         {text(18, <>Marcador assentado na <B>baseline</B> da 1ª linha do texto.</>)}
       </Box>
     ) },
   { slide: 6, row: 1, id: 'R29', size: 40, width: 200, note: 'baseline: Text 40 + Text 12',
     body: (
-      <Box direction="row" align="baseline" gap={8}>
-        {text(40, '52,4', { weight: 'bold' })}
-        {text(12, <><Span color={GREEN} weight="bold">▲ +14,2%</Span> vs Q2</>)}
+      <Box display="flex" alignItems="baseline" gap={8}>
+        {text(40, '52,4', { fontWeight: 'bold' })}
+        {text(12, <><Span color={GREEN} fontWeight="bold">▲ +14,2%</Span> vs Q2</>)}
       </Box>
     ) },
   { slide: 6, row: 1, id: 'R30', size: 14, width: 200, note: 'baseline: Image 24 pt + Text',
     body: (
-      <Box direction="row" align="baseline" gap={8}>
-        <Image src="./assets/chart.png" width={24} shrink={0} />
+      <Box display="flex" alignItems="baseline" gap={8}>
+        <Image src="./assets/chart.png" width={24} flexShrink={0} />
         {text(14, <>Gráfico com base na <I>baseline</I> do texto.</>)}
       </Box>
     ) },
@@ -130,7 +132,7 @@ const label = (s: RichCalibrationSample): string => [s.id, `${s.size}pt`, `${s.w
 
 const Sample = ({ s }: { s: Placed }) => (
   <Box width={s.width} gap={3}>
-    <Text size={8} color={MUTED} fit="error">{label(s)}</Text>
+    <Text fontSize={8} color={MUTED} fit="error">{label(s)}</Text>
     <Box width={s.width}>{s.body}</Box>
   </Box>
 );
@@ -140,7 +142,7 @@ const SECTION_TITLES: Readonly<Record<number, string>> = {
   3: 'Tamanhos 12/18/32 pt, entrelinha e run dentro da palavra',
   4: 'NBSP e nowrap',
   5: 'Parágrafos, reticência e herança de estilo',
-  6: 'align="baseline"',
+  6: 'alignItems="baseline"',
 };
 
 const SLIDES = Object.keys(SECTION_TITLES).map(Number);
@@ -152,10 +154,10 @@ const rowsOf = (slide: number): readonly (readonly Placed[])[] => {
 };
 
 const GridSlide = ({ slide }: { slide: number }) => (
-  <Slide padding={24} gap={14} background="#FFFFFF">
-    <Text size={12} weight="bold" color={INK} fit="error">{`${slide}/${SLIDES.length + 1} · ${SECTION_TITLES[slide]}`}</Text>
+  <Slide padding={24} gap={14} backgroundColor="#FFFFFF">
+    <Text fontSize={12} fontWeight="bold" color={INK} fit="error">{`${slide}/${SLIDES.length + 1} · ${SECTION_TITLES[slide]}`}</Text>
     {rowsOf(slide).map((row) => (
-      <Box direction="row" gap={16} align="start">
+      <Box display="flex" gap={16} alignItems="flex-start">
         {row.map((s) => <Sample s={s} />)}
       </Box>
     ))}
@@ -171,10 +173,11 @@ const LEGEND = [
 
 export default defineDeck(() => (
   <Deck>
-    <Slide padding={48} gap={20} background="#FFFFFF">
-      <Text size={32} weight="bold" color={INK} fit="error">Calibração de rich text</Text>
+    <Slide padding={48} gap={20} backgroundColor="#FFFFFF">
+      <Text fontSize={32} fontWeight="bold" color={INK} fit="error">Calibração de rich text</Text>
       <Box width={600}>
-        <Text size={14} lineHeight={1.2} color={INK} fit="error">{LEGEND}</Text>
+        {/* 1.38 × size = o antigo 1.2 × altura natural (≈ 1,15 × size): a legenda mantém a altura. */}
+        <Text fontSize={14} lineHeight={1.38} color={INK} fit="error">{LEGEND}</Text>
       </Box>
     </Slide>
     {SLIDES.map((n) => <GridSlide slide={n} />)}

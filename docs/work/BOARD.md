@@ -91,7 +91,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M11 | M11-C | fit sobre o box model (borda/padding/margens, célula, wrap, css-not-emitted) | ✅ |
 | M11 | M11-D | emit/preview: paint (zIndex, opacity, rotate), bordas por lado, sombra, decoração | ✅ |
 | M11 | M11-E | testes da PoC em tests/; semânticas novas | ✅ |
-| M11 | M11-F | exemplos em CSS, showcase, AGENT_GUIDE e README em CSS | ⬜ |
+| M11 | M11-F | exemplos em CSS, showcase, AGENT_GUIDE e README em CSS | ✅ |
 | M11 | M11-G | visual: demo antiga × CSS × PNGs; showcase; recalibração de lineHeight | ⬜ |
 | M11 | M11-H | agente virgem com o guia novo | ⬜ |
 
@@ -150,3 +150,6 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M11-A | Cores hex saem em maiúsculas (`#RRGGBB`) em props e css; alpha de rgba() se perde em props que guardam só o hex (fill do Shape, Table, Chart) | aceito |
 | M11-E | `calibration*.tsx` usam lineHeight numérico, cujo significado mudou: paridade XML byte a byte com a engine antiga deixou de valer; M11-G recalibra | M11-G |
 | M11-D | Chart/Table dentro de caixa girada perdem a rotação herdada em silêncio (só o próprio `rotate` avisa) | backlog: avisar também pela rotação herdada |
+| M11-F | `TwoColumn` ficou com `stacked?: Responsive<boolean>` (não `direction`, que é alias antigo); `KpiRow` em `repeat(n, minmax(0, 1fr))` porque `1fr` cresce até a palavra mais longa | documentado no guia §3/§9 |
+| M11-B | Image com `width="100%"` + `maxHeight` mantém a proporção (diferença intencional em relação ao browser); em grid, Image sem tamanho não estica | CONTRACTS §M11 layout; guia §6.3 |
+| M11-E | Paridade dos aliases roda sobre cópias congeladas dos decks antigos em `tests/examples/legacy/`; decks em CSS têm `css-positioned.json` | — |

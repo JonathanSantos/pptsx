@@ -3,6 +3,7 @@ import type { LayoutEnv, PositionedDeck, PositionedSlide, Rect, ResolvedDeck, Re
 import { applyStyle } from './apply.ts';
 import { createConfig } from './config.ts';
 import { settleBaselineRows } from './baseline.ts';
+import { settleReplaced } from './replaced.ts';
 import { layoutGridChildren } from './grid-layout.ts';
 import { boxOf, readChildren } from './read.ts';
 import { toContainerStyle } from './style.ts';
@@ -28,6 +29,7 @@ export const layoutSlide = (slide: ResolvedSlide, size: SlideSize, env: LayoutEn
     const parent = parentLayoutOf(slide.css, false);
     const children = buildChildren(slide.children, root, { config, env, parent }, slide.css);
     root.calculateLayout(size.width, size.height, Direction.LTR);
+    settleReplaced(root, children, size, slide.css);
     settleBaselineRows(root, children, parent.direction, size);
     return { ...slide, frame, box: boxOf(root), children: readChildren(children, frame, env) };
   } finally {
