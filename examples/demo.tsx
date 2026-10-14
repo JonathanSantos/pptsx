@@ -1,4 +1,4 @@
-import { Box, Deck, Image, Shape, Text, defineDeck } from 'tsx-slides';
+import { Box, Deck, Image, Shape, Text, defineDeck } from 'pptsx';
 import { tokens } from './tokens.ts';
 import { ClosingLayout, ContentLayout, CoverLayout } from './layouts/index.ts';
 import { Bullets, KpiRow, TwoColumn } from './components/index.ts';

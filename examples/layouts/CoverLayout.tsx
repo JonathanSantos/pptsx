@@ -1,4 +1,4 @@
-import { Box, Shape, Slide, Text, type DeckContext } from 'tsx-slides';
+import { Box, Shape, Slide, Text, type DeckContext } from 'pptsx';
 import { tokens } from '../tokens.ts';
 import { circleDiameter } from './decor.ts';
 

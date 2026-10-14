@@ -1,4 +1,4 @@
-import { Box, Deck, Shape, Slide, Text, defineDeck } from 'tsx-slides';
+import { Box, Deck, Shape, Slide, Text, defineDeck } from 'pptsx';
 
 // M4: slides lotados de propósito. Cada um deve terminar com fonte reduzida
 // ou com diagnóstico — nunca com texto cortado em silêncio.

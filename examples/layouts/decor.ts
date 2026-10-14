@@ -1,4 +1,4 @@
-import type { DeckContext } from 'tsx-slides';
+import type { DeckContext } from 'pptsx';
 
 /** Altura do 16:9 de referência (pt): usada quando o layout não recebe ctx. */
 const REFERENCE_HEIGHT = 405;

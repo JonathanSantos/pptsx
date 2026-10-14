@@ -6,6 +6,7 @@ import type {
   ImageFit,
   ImageProps,
   Justify,
+  LineBreaks,
   Pt,
   ShapeProps,
   Spacing,
@@ -53,6 +54,8 @@ export const DEFAULTS = {
   lineStroke: '#000000',
   imageFit: 'contain' as ImageFit,
   lang: 'pt-BR',
+  /** Quebra forçada por padrão: o renderizador desenha exatamente as linhas calculadas. */
+  lineBreaks: 'forced' as LineBreaks,
   /** Largura de quebra = disponível * textSafety; a caixa sai com a largura cheia. */
   textSafety: 0.97,
   /** Limite de RODADAS do loop de ajuste (uma rodada = uma busca binária por escopo disparado). */

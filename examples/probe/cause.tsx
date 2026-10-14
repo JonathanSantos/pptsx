@@ -1,4 +1,4 @@
-import { Box, Deck, Slide, Text, defineDeck } from 'tsx-slides';
+import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
 
 // Deck de sondagem do M6: provoca de propósito, num slide só, os três casos que
 // os diagnósticos precisam distinguir (ver docs/work/milestones/M6.md).

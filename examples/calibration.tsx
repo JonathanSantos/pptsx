@@ -1,4 +1,4 @@
-import { Box, Deck, Slide, Text, defineDeck } from 'tsx-slides';
+import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
 
 // M3: grade de calibração da medição de texto. Rodar com --debug e comparar, amostra a
 // amostra, número de linhas e ponto de quebra no preview nativo vs. Keynote/PowerPoint.

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { register } from 'tsx/esm/api';
 
 // O tsx lê o tsconfig do cwd para saber o jsxImportSource; fora de um projeto com tsconfig
-// (ex.: rodando de outra pasta), usa o do pacote para o JSX do deck apontar para tsx-slides.
+// (ex.: rodando de outra pasta), usa o do pacote para o JSX do deck apontar para pptsx.
 const packageTsconfig = fileURLToPath(new URL('../tsconfig.json', import.meta.url));
 const tsconfig = existsSync(join(process.cwd(), 'tsconfig.json')) ? undefined : packageTsconfig;
 

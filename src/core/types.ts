@@ -184,7 +184,7 @@ export interface PrimitivePropsMap {
 }
 
 /** Marca que identifica uma primitiva (vs componente do usuário). */
-export const PRIMITIVE_KIND: unique symbol = Symbol.for('tsx-slides.primitive');
+export const PRIMITIVE_KIND: unique symbol = Symbol.for('pptsx.primitive');
 
 /**
  * Primitiva: função "marcada" com seu kind. Nunca é chamada pela engine;
@@ -198,7 +198,7 @@ export interface Primitive<K extends PrimitiveKind> {
 /** Componente do usuário: função pura (props) => elemento. Sem hooks, sem estado. */
 export type Component<P = any> = (props: P) => Child;
 
-export const FRAGMENT: unique symbol = Symbol.for('tsx-slides.fragment');
+export const FRAGMENT: unique symbol = Symbol.for('pptsx.fragment');
 export type FragmentType = typeof FRAGMENT;
 
 export type ElementType = Primitive<PrimitiveKind> | Component | FragmentType;
@@ -413,11 +413,22 @@ export interface RenderOptions {
   readonly lang?: string;
   /** Fator de segurança da quebra de linha; padrão 0.97. */
   readonly textSafety?: number;
+  /**
+   * 'forced' (padrão): cada linha calculada vira <a:br/>; o renderizador não requebra (calibração 34/34).
+   * 'auto': só parágrafos; o renderizador quebra com a própria métrica (mais editável, pode divergir 1 linha).
+   */
+  readonly lineBreaks?: LineBreaks;
+  /** Inclui a árvore posicionada (pós-fit) no resultado, para ferramentas e previews externos. Padrão false. */
+  readonly includePositioned?: boolean;
 }
+
+export type LineBreaks = 'forced' | 'auto';
 
 export interface RenderResult {
   readonly size: string;
   readonly buffer: Buffer;
   readonly diagnostics: readonly Diagnostic[];
   readonly preview?: { readonly slides: readonly Buffer[]; readonly overview: Buffer };
+  /** Só com RenderOptions.includePositioned. */
+  readonly positioned?: PositionedDeck;
 }

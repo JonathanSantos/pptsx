@@ -1,4 +1,4 @@
-import { Box, type Child } from 'tsx-slides';
+import { Box, type Child } from 'pptsx';
 import { tokens } from '../tokens.ts';
 
 export interface TwoColumnProps {

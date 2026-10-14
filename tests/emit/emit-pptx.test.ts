@@ -25,7 +25,7 @@ const EMU_PER_PT = 12700;
 let baseDir = '';
 
 beforeAll(() => {
-  baseDir = mkdtempSync(join(tmpdir(), 'tsx-slides-emit-'));
+  baseDir = mkdtempSync(join(tmpdir(), 'pptsx-emit-'));
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="40" height="20" fill="#3366cc"/></svg>';
   writeFileSync(join(baseDir, 'pic.png'), new Resvg(svg).render().asPng());
 });

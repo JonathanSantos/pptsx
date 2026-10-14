@@ -1,4 +1,4 @@
-# tsx-slides — engine TSX → PPTX (MVP)
+# pptsx — engine TSX → PPTX
 
 Spec do produto: `docs/spec.md`. Organização do trabalho: `docs/work/README.md`. Próximos marcos: `docs/work/milestones/ROADMAP.md`.
 Contratos entre módulos: `src/core/types.ts` (tipos) + `docs/work/CONTRACTS.md` (funções e regras).

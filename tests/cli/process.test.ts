@@ -10,12 +10,12 @@ import { isPng } from '../helpers/png.ts';
 /** Contrato M5 da CLI testado como processo real (bin → tsx → src/cli.ts). */
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
-const BIN = join(ROOT, 'bin', 'tsx-slides.mjs');
+const BIN = join(ROOT, 'bin', 'pptsx.mjs');
 const TIMEOUT = 120_000;
 
 const tmpDirs: string[] = [];
 const freshDir = (): string => {
-  const dir = mkdtempSync(join(tmpdir(), 'tsx-slides-cli-'));
+  const dir = mkdtempSync(join(tmpdir(), 'pptsx-cli-'));
   tmpDirs.push(dir);
   return dir;
 };

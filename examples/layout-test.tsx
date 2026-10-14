@@ -1,4 +1,4 @@
-import { Box, Deck, Image, Shape, Slide, Text, defineDeck } from 'tsx-slides';
+import { Box, Deck, Image, Shape, Slide, Text, defineDeck } from 'pptsx';
 
 // M2: nenhuma coordenada manual; tudo vem do flexbox (exceto a decoração absoluta).
 const palette = { ink: '#1B2A4A', muted: '#5B6680', accent: '#2F6FED', soft: '#E8EEFC', warm: '#F2A541' };

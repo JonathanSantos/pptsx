@@ -9,7 +9,7 @@ import { render } from './render.ts';
 import { parseSizeList } from './sizes.ts';
 
 export const USAGE =
-  'uso: tsx-slides build <deck.tsx> [--size 16x9,4x3,10x7.5in] [--out dist/] [--debug] [--json] ' +
+  'uso: pptsx build <deck.tsx> [--size 16x9,4x3,10x7.5in] [--out dist/] [--debug] [--json] ' +
   '[--preview native|none] [--preview-width 1280] [--lang pt-BR]';
 
 export interface CliArgs {

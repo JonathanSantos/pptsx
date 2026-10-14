@@ -1,4 +1,4 @@
-import { Box, Text } from 'tsx-slides';
+import { Box, Text } from 'pptsx';
 import { tokens } from '../tokens.ts';
 
 export type KpiSize = 'sm' | 'md' | 'lg';

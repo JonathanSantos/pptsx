@@ -1,4 +1,4 @@
-# Guia do agente — tsx-slides
+# Guia do agente — pptsx
 
 Este é o único documento de que você precisa para (1) escrever slides novos e (2) corrigir erros lendo `diagnostics.json` e o overview PNG. Não é preciso ler `src/`.
 
@@ -12,10 +12,10 @@ Este é o único documento de que você precisa para (1) escrever slides novos e
 
 ## 2. Esqueleto de um deck
 
-Arquivo em `examples/agent-test/<nome>.tsx`. Imports de `tsx-slides` (primitivas) e, se quiser, dos exemplos prontos:
+Arquivo em `examples/agent-test/<nome>.tsx`. Imports de `pptsx` (primitivas) e, se quiser, dos exemplos prontos:
 
 ```tsx
-import { Box, Deck, Slide, Text, defineDeck } from 'tsx-slides';
+import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
 import { tokens } from '../tokens.ts';
 import { ContentLayout, CoverLayout } from '../layouts/index.ts';
 import { Bullets } from '../components/index.ts';
@@ -202,7 +202,7 @@ Largura útil do cartão = largura do cartão − 2 × padding. Ex.: 3 cards `md
 
 ## 6. Receitas
 
-Os trechos abaixo são filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape` de `'tsx-slides'` e `TwoColumn`, `KpiCard` de `'../components/index.ts'` quando usados).
+Os trechos abaixo são filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape` de `'pptsx'` e `TwoColumn`, `KpiCard` de `'../components/index.ts'` quando usados).
 
 ### 6.1 Conteúdo com bullets, só primitivas
 
@@ -287,7 +287,7 @@ Decoração vem **antes** do conteúdo (fica por trás) e usa `position="absolut
 Rode na raiz do projeto:
 
 ```
-node bin/tsx-slides.mjs build examples/agent-test/meu-deck.tsx --size 16x9,4x3 --out dist/agent-test --json
+node bin/pptsx.mjs build examples/agent-test/meu-deck.tsx --size 16x9,4x3 --out dist/agent-test --json
 ```
 
 Flags: `--size` (lista: `16x9`, `16x10`, `4x3`, `wide`, ou `10x7.5in`; padrão `16x9`), `--out` (padrão `dist/`), `--debug` (contornos vermelhos tracejados em toda Box/Text/Image e estouro de texto em vermelho no PNG), `--json`, `--preview native|none`, `--preview-width 1280`.
@@ -307,7 +307,7 @@ dist/agent-test/
 - **Exit code**: `1` se houver qualquer diagnóstico `error` ou falha; `0` caso contrário. `warning`/`info` não falham.
 - Sempre gere **os dois tamanhos** (`16x9,4x3`): o que cabe em um pode não caber no outro.
 - `files` lista o `.pptx`, cada PNG de slide, o overview e o `diagnostics.json` — leia os caminhos dali.
-- Config opcional `tsx-slides.config.ts` no diretório atual (`export default defineConfig({ fonts?, sizes?, lang?, textSafety? })`, `import { defineConfig } from 'tsx-slides'`); flags vencem a config. Você normalmente **não** precisa dela; se definir `fonts`, elas substituem a Arial padrão.
+- Config opcional `pptsx.config.ts` no diretório atual (`export default defineConfig({ fonts?, sizes?, lang?, textSafety? })`, `import { defineConfig } from 'pptsx'`); flags vencem a config. Você normalmente **não** precisa dela; se definir `fonts`, elas substituem a Arial padrão.
 
 ## 8. Diagnósticos
 

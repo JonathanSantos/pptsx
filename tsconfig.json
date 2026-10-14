@@ -12,11 +12,11 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "tsx-slides",
+    "jsxImportSource": "pptsx",
     "paths": {
-      "tsx-slides": ["./src/index.ts"],
-      "tsx-slides/jsx-runtime": ["./src/jsx/jsx-runtime.ts"],
-      "tsx-slides/jsx-dev-runtime": ["./src/jsx/jsx-dev-runtime.ts"]
+      "pptsx": ["./src/index.ts"],
+      "pptsx/jsx-runtime": ["./src/jsx/jsx-runtime.ts"],
+      "pptsx/jsx-dev-runtime": ["./src/jsx/jsx-dev-runtime.ts"]
     }
   },
   "include": ["src", "tests", "examples", "vitest.config.ts"]

@@ -1,4 +1,4 @@
-import { Box, Shape, Slide, Text, type Children } from 'tsx-slides';
+import { Box, Shape, Slide, Text, type Children } from 'pptsx';
 import { tokens } from '../tokens.ts';
 
 export interface ContentLayoutProps {

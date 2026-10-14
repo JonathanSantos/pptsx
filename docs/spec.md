@@ -1,6 +1,6 @@
 # Spec MVP — Engine TSX → PPTX
 
-13 de out. de 2026 · Jonathan Reis dos Santos · nome provisório: **tsx-slides**
+13 de out. de 2026 · Jonathan Reis dos Santos · nome: **pptsx** (até o M6, `tsx-slides`)
 
 > Ajustes acordados com o dono do projeto (13/10/2026): **modo office / `--compare` (LibreOffice) está fora do MVP**. A validação visual "real" é feita exportando o .pptx pelo **Keynote** (`scripts/keynote-export.sh`), e a validação final no PowerPoint fica com o dono quando possível.
 
@@ -148,10 +148,10 @@ const result = await render(deck, {
 `render` nunca grava arquivo nem imprime.
 
 ```
-tsx-slides build examples/demo.tsx --size 16x9,4x3 --out dist/ [--debug] [--json] [--preview native|none] [--preview-width 1280]
+pptsx build examples/demo.tsx --size 16x9,4x3 --out dist/ [--debug] [--json] [--preview native|none] [--preview-width 1280]
 ```
 
-Resumo legível dos diagnósticos (ou só JSON com `--json`); código de saída 1 se houver `error`. Fontes vêm de `tsx-slides.config.ts` opcional.
+Resumo legível dos diagnósticos (ou só JSON com `--json`); código de saída 1 se houver `error`. Fontes vêm de `pptsx.config.ts` opcional.
 
 ## Preview
 

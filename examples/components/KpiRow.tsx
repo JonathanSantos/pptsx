@@ -1,4 +1,4 @@
-import { Box } from 'tsx-slides';
+import { Box } from 'pptsx';
 import { tokens } from '../tokens.ts';
 import { KpiCard, type KpiCardProps, type KpiSize } from './KpiCard.tsx';
 

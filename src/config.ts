@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { FontFace, SizeSpec } from './core/types.ts';
 
-export const CONFIG_FILE_NAME = 'tsx-slides.config.ts';
+export const CONFIG_FILE_NAME = 'pptsx.config.ts';
 
 export interface TsxSlidesConfig {
   /** Substitui as fontes padrão (Liberation Sans como Arial), como em RenderOptions.fonts. */
@@ -26,7 +26,7 @@ export const resolveConfigPaths = (config: TsxSlidesConfig, configDir: string): 
 const isConfigObject = (value: unknown): value is TsxSlidesConfig =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** Carrega `tsx-slides.config.ts` de `cwd` (precisa rodar sob o loader do tsx); sem arquivo → {}. */
+/** Carrega `pptsx.config.ts` de `cwd` (precisa rodar sob o loader do tsx); sem arquivo → {}. */
 export const loadConfig = async (cwd: string): Promise<TsxSlidesConfig> => {
   const file = join(resolve(cwd), CONFIG_FILE_NAME);
   if (!existsSync(file)) return {};

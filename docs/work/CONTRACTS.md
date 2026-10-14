@@ -178,10 +178,18 @@ O ajuste reescreve a árvore **resolvida** (`props.size`, `props.maxLines`), imu
 
 Exemplo de message: `"Texto estourou 18% da altura disponível mesmo em 14 pt (mínimo); reduza o conteúdo, aumente a área ou baixe minSize."`
 
+## `src/core/dispatch.ts` (M7)
+
+```ts
+export type DispatchTable<N extends { kind: string }, R, Extra extends unknown[] = []>;
+export const dispatch: <N, R, Extra>(table: DispatchTable<N, R, Extra>, node: N, ...extra: Extra) => R;
+```
+Único cast de despacho por `kind` do projeto. `layout/tree.ts`, `layout/read.ts`, `emit/emitters.ts` e `preview/slide.ts` usam `dispatch(TABELA, node, ...)` em vez de `as never`/`as Builder<...>`. M7-D pode ajustar a assinatura deste arquivo se a inferência não fechar (é o único arquivo de `core/` com dono fora do orquestrador nessa onda).
+
 ## `src/emit/`
 
 ```ts
-export interface EmitOptions { debug?: boolean; baseDir: string }
+export interface EmitOptions { debug?: boolean; baseDir: string; lang?: string; lineBreaks?: LineBreaks /* padrão DEFAULTS.lineBreaks */ }
 export const emitPptx: (deck: PositionedDeck, options: EmitOptions) => Promise<Buffer>;
 ```
 - Única etapa que importa `pptxgenjs`. Conversão pt → pol via `ptToInches`.
@@ -189,6 +197,7 @@ export const emitPptx: (deck: PositionedDeck, options: EmitOptions) => Promise<B
 - Despacho por `kind` em tabela (`Record<kind, NodeEmitter>`); nó Box só vira shape se tiver `fill` ou `stroke`.
 - Texto (emissão neutra, **quebra forçada** — decisão do dono no gate do M3): cada parágrafo de `text.paragraphs` vira um `<a:p>` e as linhas dentro dele são unidas por quebra suave `<a:br/>`. Assim todo renderizador desenha exatamente as linhas calculadas (calibração: 34/34 no Keynote). O texto continua nativo e editável; só as quebras ficam fixas. Opções: `margin: 0`, `valign: 'top'`, `fit: 'none'`, `wrap: true`, `paraSpaceBefore: 0`, `paraSpaceAfter: 0`, espaçamento de linha via Strategy (M3): `'multiple'` → `lineSpacingMultiple = style.lineHeight × LINE_SPACING_CALIBRATION`; `'exact'` → `lineSpacing` em pt = `text.lineHeight` (o renderizador usa exatamente a altura calculada). A estratégia ativa e as constantes ficam em `src/emit/calibration.ts`; a calibração do M3 escolhe, `fontFace`, `fontSize`, `bold`, `italic`, `color` sem `#`, `align`.
 - Texto usa `PositionedText.text.fontSize` (pode ter sido reduzido pelo fit); truncado já vem refletido em `paragraphs`.
+- **`lineBreaks: 'auto'` (M7):** um `<a:p>` por parágrafo do autor com o texto inteiro do parágrafo num único run (`paragraphs[i].join(' ')`, pois as linhas foram separadas em espaço; um segmento que termina em `-`/`/` não recebe espaço), sem `softBreakBefore`; `wrap: true`; demais opções iguais. A caixa continua com o frame calculado. Texto truncado mantém a reticência.
 - Imagem: `sizing: { type: fit, w, h }`; caminho via `resolveAssetPath(baseDir, src)`.
 - Slide: `background` cor → `{ color }`; imagem → `{ path }`. `notes` → `addNotes`.
 - Debug: contorno vermelho fino (0.5 pt, sem preenchimento, tracejado) em cada frame de Box/Text/Image.
@@ -227,11 +236,19 @@ export interface OverviewItem { png: Buffer; number: number; badge?: 'error' | '
 export const render: (deck: DeckDefinition, options?: RenderOptions) => Promise<RenderResult[]>;
 ```
 - Por tamanho: `resolveSize` → `createContext` → `deck(ctx)` → `resolveDeck` → (M1–M3: `layoutDeck`; M4+: `fitSlide` por slide) → `emitPptx` → preview.
+- **M7:** `options.lineBreaks` vai ao emissor; `options.includePositioned` devolve `RenderResult.positioned` (a mesma árvore pós-fit enviada ao emissor).
 - Nunca grava arquivo nem imprime. IO permitido: ler fontes e imagens.
 
 ## `src/cli.ts`
 
-`tsx-slides build <deck.tsx> [--size 16x9,4x3] [--out dist/] [--debug] [--json] [--preview native|none] [--preview-width 1280]`
-- Carrega o deck com `import()` (rodando sob `tsx`), lê `tsx-slides.config.ts` opcional (`{ fonts }`), chama `render`, grava a árvore de arquivos da spec, imprime resumo ou JSON, `exit 1` se houver `error`.
+```
+pptsx build <deck.tsx> [--size 16x9,4x3] [--out dist/] [--debug] [--json] [--preview native|none] [--preview-width 1280]
+                       [--lang pt-BR] [--line-breaks forced|auto] [--watch]
+pptsx init [dir] [--force]
+```
+- **M7 `init`:** cria `deck.tsx` (2 slides só com primitivas), `tsconfig.json` (`jsx: react-jsx`, `jsxImportSource: pptsx`, `module: NodeNext`, `strict`), `pptsx.config.ts` (`defineConfig({})` comentado), `assets/.gitkeep` e `.gitignore` com `dist/`. Recusa se `deck.tsx` já existe, salvo `--force`. Imprime os próximos comandos. Com `--json`: `{ files: [...] }`.
+- **M7 `--watch`:** observa o diretório do deck (recursivo), a config e o diretório dos assets; debounce 150 ms; a cada mudança refaz o build e imprime o resumo com hora; erro de sintaxe/estrutura não derruba o watch (imprime e espera). O `import()` do deck e da config usa `?v=<Date.now()>` para furar o cache ESM. Com `--json`, um JSON por build, um por linha (NDJSON). Ctrl-C sai com 0. A função de observação é injetável (`runCli(argv, cwd, { watch })`, assinatura `(paths: readonly string[], onChange: () => void) => () => void`) para o tester.
+- **M7 `--line-breaks`:** vence `config.lineBreaks`; padrão `DEFAULTS.lineBreaks`. Config: `defineConfig({ ..., lineBreaks? })`.
+- Carrega o deck com `import()` (rodando sob `tsx`), lê `pptsx.config.ts` opcional (`{ fonts }`), chama `render`, grava a árvore de arquivos da spec, imprime resumo ou JSON, `exit 1` se houver `error`.
 - **Resumo (M6):** diagnósticos com `data.causedBy` são impressos logo abaixo da sua causa (a causa é o primeiro diagnóstico não derivado com `path === causedBy` ou, se não houver, o primeiro não derivado cujo path está **dentro** de `causedBy` — a causa costuma ser um Box sem diagnóstico próprio, e o estouro real está num Text dentro dele; só um não derivado ancora, então há um nível só de `↳`; derivado cuja única âncora possível também é derivada sai no lugar normal) com prefixo `↳` e indentação extra, e não contam no cabeçalho: `Diagnósticos: 2 error (+5 derivados), 1 warning, 0 info` (`+1 derivado` no singular). Sem derivados, o cabeçalho fica como hoje. Derivado cuja causa não está na lista (ex.: causa suprimida) é impresso no lugar normal, mas ainda conta como derivado. O exit code considera **todos** os `error`. `--json` imprime a lista completa, inalterada em forma.
 - Sem config: registra Liberation Sans de `fonts/` como `Arial` (regular, bold, italic, bold italic).

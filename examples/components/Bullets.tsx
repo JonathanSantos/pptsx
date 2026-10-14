@@ -1,4 +1,4 @@
-import { Box, Shape, Text } from 'tsx-slides';
+import { Box, Shape, Text } from 'pptsx';
 import { tokens } from '../tokens.ts';
 
 export interface BulletsProps {
