@@ -57,7 +57,9 @@ const contextOf = (paging: Paging, partIndex: number): DiagnosticContext => ({
   slide: paging.input.slideIndex + partIndex + 1,
 });
 
-const NESTED_OVERFLOWS: ReadonlySet<DiagnosticCode> = new Set(['text-overflow', 'text-word-broken', 'out-of-slide']);
+// Table estourada dentro de P não conta para o box-overflow de P (já foi explicada nela): sem o
+// próprio código aqui, a paginação acharia que a parte coube.
+const NESTED_OVERFLOWS: ReadonlySet<DiagnosticCode> = new Set(['text-overflow', 'table-overflow', 'text-word-broken', 'out-of-slide']);
 
 // Agrupados trazem os paths individuais: um grupo pode juntar um nó de P com um irmão de fora.
 const pathsOf = (diagnostic: Diagnostic): readonly string[] => diagnostic.data?.paths ?? [diagnostic.path];

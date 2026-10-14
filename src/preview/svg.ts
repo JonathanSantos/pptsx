@@ -35,7 +35,7 @@ const PPTX_DEFAULT_ROUND_RATIO = 0.16667;
 /** Diferenças menores que isso são ruído de ponto flutuante do layout. */
 const OVERFLOW_EPSILON = 0.01;
 
-const rectAttrs = (frame: Rect): Attrs => ({ x: frame.x, y: frame.y, width: frame.width, height: frame.height });
+export const rectAttrs = (frame: Rect): Attrs => ({ x: frame.x, y: frame.y, width: frame.width, height: frame.height });
 
 const paintAttrs = (props: StrokeProps): Attrs => ({
   fill: props.fill ?? 'none',
@@ -88,7 +88,7 @@ export const boxSvg = (node: PositionedBox): string => {
   return shapeBuilders[kind](node.frame, node.props);
 };
 
-const ANCHORS: Readonly<Record<TextAlign, { readonly anchor: string; readonly offset: number }>> = {
+export const ANCHORS: Readonly<Record<TextAlign, { readonly anchor: string; readonly offset: number }>> = {
   left: { anchor: 'start', offset: 0 },
   center: { anchor: 'middle', offset: 0.5 },
   right: { anchor: 'end', offset: 1 },

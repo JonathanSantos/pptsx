@@ -6,6 +6,7 @@ import { withCause, withWidthCause } from './diagnostics.ts';
 import { contentOf, isBox, isInFlow } from './geometry.ts';
 import type { Container } from './geometry.ts';
 import { ancestorsOf, isWithin } from './scope.ts';
+import { isTableFontMissing } from './shrinkable.ts';
 
 // Causa de um estouro: num contêiner apertado, quem pede mais espaço do que recebeu
 // é a causa; os outros estouros ali dentro são consequência. Sem isso o autor corrige
@@ -31,13 +32,15 @@ const boxDemandOf = (container: Container): Pt => {
 };
 
 /**
- * Imagem e Shape têm tamanho próprio: não pedem altura além da que receberam. Height
+ * Imagem, Shape e Chart têm tamanho próprio: não pedem altura além da que receberam. Height
  * fixo do autor também não: não é espremido nem toma altura dos irmãos, então o estouro
  * dentro dele é problema próprio. Fonte ausente tem medição estimada: não acusa ninguém.
+ * Table pede como o Text: o que as linhas somam além do frame.
  */
 const demandOf = (node: PositionedNode): Pt => {
   if (node.props.height !== undefined) return 0;
   if (node.kind === 'text') return node.text.fontMissing ? 0 : Math.max(0, node.text.height - node.frame.height);
+  if (node.kind === 'table') return isTableFontMissing(node) ? 0 : Math.max(0, node.height - node.frame.height);
   if (node.kind === 'box') return boxDemandOf(node);
   return 0;
 };
@@ -89,7 +92,7 @@ export const causesOf = (slide: PositionedSlide, overflows: readonly Overflow[])
   );
 };
 
-const ATTRIBUTABLE: ReadonlySet<DiagnosticCode> = new Set(['text-overflow', 'box-overflow']);
+const ATTRIBUTABLE: ReadonlySet<DiagnosticCode> = new Set(['text-overflow', 'table-overflow', 'box-overflow']);
 
 /**
  * O contêiner mais próximo cuja causa é outro nó decide. Onde o próprio nó é a causa
@@ -145,6 +148,7 @@ export const widthCausesOf = (slide: PositionedSlide, overflows: readonly Overfl
 // Só nesta passada: palavra partida e nó fora do slide também são sintomas de irmão espremido.
 const WIDTH_ATTRIBUTABLE: ReadonlySet<DiagnosticCode> = new Set([
   'text-overflow',
+  'table-overflow',
   'text-word-broken',
   'box-overflow',
   'out-of-slide',

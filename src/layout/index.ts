@@ -45,6 +45,7 @@ export const layoutSlide = (slide: ResolvedSlide, size: SlideSize, env: LayoutEn
 };
 
 export { measureInputOf } from './measure.ts';
+export { columnWidthsOf, measureTable, type TableLayout } from './table.ts';
 
 export const layoutDeck = (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv): PositionedDeck => ({
   size,

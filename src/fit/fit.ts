@@ -5,6 +5,7 @@ import type {
   PositionedImage,
   PositionedNode,
   PositionedSlide,
+  PositionedTable,
   PositionedText,
   Pt,
   ResolvedSlide,
@@ -20,19 +21,21 @@ import { containerExcessOf, sidesOutside } from './geometry.ts';
 import type { Container } from './geometry.ts';
 import { groupDiagnostics } from './group.ts';
 import {
-  overflowingTextPaths,
+  explainedPaths,
   passOf,
   plansOf,
   positionedNodes,
   positionedTexts,
+  tableOverflowsOf,
   textOverflowsOf,
   widthOverflowsOf,
 } from './pass.ts';
-import type { Pass, Plans, TextPlan } from './pass.ts';
+import type { Pass, Plans, ShrinkPlan } from './pass.ts';
 import { patchTexts } from './rewrite.ts';
 import type { TextPatch } from './rewrite.ts';
 import { isWithin } from './scope.ts';
 import { shrinkRounds } from './search.ts';
+import { tableDiagnostics } from './table.ts';
 
 export interface FitInput {
   readonly slide: ResolvedSlide;
@@ -49,6 +52,7 @@ export interface FitResult {
 // Imagens trazem px CSS (96 por polegada).
 
 const isPositionedText = (node: PositionedNode): node is PositionedText => node.kind === 'text';
+const isPositionedTable = (node: PositionedNode): node is PositionedTable => node.kind === 'table';
 const isContainer = (node: PositionedNode | PositionedSlide): node is Container => node.kind === 'box' || node.kind === 'slide';
 const isPositionedImage = (node: PositionedNode): node is PositionedImage => node.kind === 'image';
 
@@ -69,7 +73,7 @@ const truncationOf = (text: PositionedText, env: LayoutEnv) => ({
   total: env.measureText({ ...measureInputOf(text, text.frame.width), maxLines: undefined }).lines.length,
 });
 
-const wordBrokenDiagnostics = (text: PositionedText, plan: TextPlan, ctx: DiagnosticContext): readonly Diagnostic[] => {
+const wordBrokenDiagnostics = (text: PositionedText, plan: ShrinkPlan, ctx: DiagnosticContext): readonly Diagnostic[] => {
   if (!text.text.wordBroken) return [];
   const words = brokenWordsOf(text.content, text.text.paragraphs);
   const to = textStyleOf(text.props).size;
@@ -84,7 +88,7 @@ interface TextOverflows {
 // Fonte ausente: a medição é estimada, então estouro, shrink e palavra partida seriam ruído.
 const textDiagnostics = (
   text: PositionedText,
-  plan: TextPlan,
+  plan: ShrinkPlan,
   overflows: TextOverflows,
   ctx: DiagnosticContext,
   env: LayoutEnv,
@@ -126,13 +130,17 @@ const diagnosticsOf = (pass: Pass, plans: Plans, input: FitInput): readonly Diag
   const ctx: DiagnosticContext = { size: input.size.name, slide: input.slideIndex + 1 };
   const heights = textOverflowsOf(pass);
   const widths = widthOverflowsOf(pass);
+  const tables = tableOverflowsOf(pass);
   const nodes = positionedNodes(pass.positioned.children);
-  const texts = nodes.filter(isPositionedText).flatMap((text) => {
-    const plan = plans.get(text.path);
+  // Text e Table na ordem do slide.
+  const leaves = nodes.flatMap((node) => {
+    const plan = plans.get(node.path);
     if (plan === undefined) return [];
-    return textDiagnostics(text, plan, { height: heights.get(text.path), width: widths.get(text.path) }, ctx, input.env);
+    if (isPositionedTable(node)) return tableDiagnostics(node, plan, tables.get(node.path), ctx);
+    if (!isPositionedText(node)) return [];
+    return textDiagnostics(node, plan, { height: heights.get(node.path), width: widths.get(node.path) }, ctx, input.env);
   });
-  const explained = overflowingTextPaths(pass);
+  const explained = explainedPaths(pass);
   const byPath = new Map<string, PositionedNode | PositionedSlide>([
     [pass.positioned.path, pass.positioned],
     ...nodes.map((node) => [node.path, node] as const),
@@ -146,10 +154,10 @@ const diagnosticsOf = (pass: Pass, plans: Plans, input: FitInput): readonly Diag
     return node === undefined ? [] : [outOfSlide(ctx, overflow, sidesOutside(node.frame, pass.positioned.frame))];
   });
   const images = nodes.filter(isPositionedImage).flatMap((image) => imageDiagnostic(image, ctx));
-  return [...texts, ...boxes, ...outside, ...images];
+  return [...leaves, ...boxes, ...outside, ...images];
 };
 
-/** Planos que podem encolher: os Text dentro do escopo congelado ficam com o size do autor. */
+/** Planos que podem encolher: os Text/Table dentro do escopo congelado ficam com o size do autor. */
 const shrinkablePlans = (plans: Plans, frozenScope: string | undefined): Plans =>
   frozenScope === undefined ? plans : new Map([...plans].filter(([path]) => !isWithin(path, frozenScope)));
 
@@ -160,7 +168,7 @@ const shrinkablePlans = (plans: Plans, frozenScope: string | undefined): Plans =
  * partida pula direto ao size em que ela cabe. Depois: truncate + relayout final,
  * diagnósticos, causa (quem tomou o espaço) e agrupamento de irmãos iguais.
  *
- * `frozenScope` (interno, paginação): os Text dentro dele não disparam nem entram em
+ * `frozenScope` (interno, paginação): os Text/Table dentro dele não disparam nem entram em
  * busca de shrink; truncate e diagnósticos continuam valendo para eles.
  */
 export const fitSlideFrozen = (input: FitInput, frozenScope: string | undefined): FitResult => {

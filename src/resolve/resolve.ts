@@ -8,6 +8,7 @@ import type {
   TextChildren,
 } from '../core/types.ts';
 import { primitiveName } from '../primitives/index.ts';
+import { assertValidChart, assertValidTable, normalizeRows } from './data.ts';
 import { ResolveError } from './errors.ts';
 import { expandChild } from './expand.ts';
 import { assertPaginateInFlow, assertSinglePaginate } from './paginate.ts';
@@ -70,6 +71,20 @@ const resolveBox = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContex
   return { kind: 'box', path, props, children: resolveChildren(item.element.props.children, path, ctx) };
 };
 
+const resolveChart = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext): ResolvedNode => {
+  assertNoChildren(item, path);
+  const props = resolvePropsOf(item.element, 'chart', path, ctx);
+  assertValidChart(props, path);
+  return { kind: 'chart', path, props };
+};
+
+const resolveTable = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext): ResolvedNode => {
+  assertNoChildren(item, path);
+  const props = resolvePropsOf(item.element, 'table', path, ctx);
+  assertValidTable(props, path);
+  return { kind: 'table', path, props, rows: normalizeRows(props.rows) };
+};
+
 const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext): ResolvedNode => {
   switch (item.kind) {
     case 'box':
@@ -82,6 +97,10 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveConte
     case 'shape':
       assertNoChildren(item, path);
       return { kind: 'shape', path, props: resolvePropsOf(item.element, 'shape', path, ctx) };
+    case 'chart':
+      return resolveChart(item, path, ctx);
+    case 'table':
+      return resolveTable(item, path, ctx);
     case 'span':
       throw new ResolveError(SPAN_OUTSIDE_TEXT, path);
     case 'slide':

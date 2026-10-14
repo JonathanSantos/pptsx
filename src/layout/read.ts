@@ -1,16 +1,20 @@
 import type { Node as YogaNode } from 'yoga-layout';
+import { tableStyleOf } from '../core/defaults.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
 import type {
   LayoutEnv,
   PositionedNode,
   Rect,
   ResolvedBox,
+  ResolvedChart,
   ResolvedImage,
   ResolvedNode,
   ResolvedShape,
+  ResolvedTable,
   ResolvedText,
 } from '../core/types.ts';
 import { measureInputOf } from './measure.ts';
+import { measureTable } from './table.ts';
 import type { BuiltNode } from './tree.ts';
 
 interface Origin {
@@ -53,11 +57,21 @@ const readImage: Reader<ResolvedImage> = (source, { intrinsic }, frame, env) => 
 
 const readShape: Reader<ResolvedShape> = (source, _built, frame) => ({ ...source, frame });
 
+const readChart: Reader<ResolvedChart> = (source, _built, frame) => ({ ...source, frame });
+
+// Como no Text: células quebradas de novo na largura definitiva; height pode passar do frame (estouro).
+const readTable: Reader<ResolvedTable> = (source, _built, frame, env) => {
+  const { columnWidths, rowHeights, cells, height } = measureTable(source, frame.width, env);
+  return { ...source, frame, fontSize: tableStyleOf(source.props).size, columnWidths, rowHeights, cells, height };
+};
+
 const READERS: DispatchTable<ResolvedNode, PositionedNode, [built: BuiltNode, frame: Rect, env: LayoutEnv]> = {
   box: readBox,
   text: readText,
   image: readImage,
   shape: readShape,
+  chart: readChart,
+  table: readTable,
 };
 
 const readNode = (built: BuiltNode, origin: Origin, env: LayoutEnv): PositionedNode =>

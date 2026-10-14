@@ -192,6 +192,109 @@ export const fontMissing = (ctx: DiagnosticContext, path: string, style: TextSty
   });
 };
 
+// ───────── Table (M10): mesmos códigos do Text, mensagens próprias (o autor age em linhas/colunas/células).
+
+const TABLE_ADVICE = 'Reduza linhas/colunas, encurte o texto das células, aumente a área';
+
+export interface TableRows {
+  /** Linhas de dados inteiramente visíveis (o cabeçalho não conta). */
+  readonly shown: number;
+  readonly total: number;
+}
+
+/** "4 de 6 linhas cabem inteiras" / "1 de 6 linhas cabe inteira" */
+const describeRows = (rows: TableRows): string => {
+  const noun = rows.total === 1 ? 'linha' : 'linhas';
+  const fits = rows.shown === 1 ? 'cabe inteira' : 'cabem inteiras';
+  return `${rows.shown} de ${rows.total} ${noun} ${fits}`;
+};
+
+const tableAmount = (overflow: Overflow): string => `${round(overflow.overflowPt)} pt (${round(overflow.overflowPct)}%)`;
+
+const tableOverflowData = (overflow: Overflow, sizes: { readonly from: Pt; readonly to: Pt }, rows: TableRows) => ({
+  ...overflowData(overflow),
+  fromSize: round(sizes.from),
+  toSize: round(sizes.to),
+  shownRows: rows.shown,
+  totalRows: rows.total,
+});
+
+export const tableShrunk = (ctx: DiagnosticContext, path: string, fromSize: Pt, toSize: Pt): Diagnostic =>
+  make(ctx, {
+    severity: 'info',
+    code: 'text-shrunk',
+    path,
+    message: `Tabela reduzida de ${round(fromSize)} pt para ${round(toSize)} pt para caber na área. Se a redução incomodar, encurte o texto das células, reduza linhas/colunas ou aumente a área.`,
+    data: { fromSize: round(fromSize), toSize: round(toSize) },
+  });
+
+export const tableIllegible = (ctx: DiagnosticContext, path: string, fromSize: Pt, toSize: Pt): Diagnostic =>
+  make(ctx, {
+    severity: 'warning',
+    code: 'text-illegible',
+    path,
+    message: `Tabela reduzida de ${round(fromSize)} pt para ${round(toSize)} pt, abaixo do piso legível de ${DEFAULTS.text.minLegibleSize} pt; reduza linhas/colunas, encurte o texto das células, aumente a área ou aceite com minSize explícito.`,
+    data: { fromSize: round(fromSize), toSize: round(toSize) },
+  });
+
+/** shrink que ainda estoura (normalmente já no mínimo; acima dele só se as rodadas acabaram). */
+export const tableOverflowShrunk = (
+  ctx: DiagnosticContext,
+  overflow: Overflow,
+  sizes: { readonly from: Pt; readonly to: Pt; readonly min: Pt },
+  rows: TableRows,
+): Diagnostic => {
+  const where = sizes.to <= sizes.min ? `mesmo em ${round(sizes.to)} pt (mínimo)` : `em ${round(sizes.to)} pt`;
+  return make(ctx, {
+    severity: 'error',
+    code: 'table-overflow',
+    path: overflow.path,
+    message: `Tabela estourou ${tableAmount(overflow)} da altura disponível ${where}: ${describeRows(rows)}. ${TABLE_ADVICE} ou baixe minSize.`,
+    data: tableOverflowData(overflow, sizes, rows),
+  });
+};
+
+export const tableOverflowKept = (ctx: DiagnosticContext, overflow: Overflow, size: Pt, rows: TableRows): Diagnostic =>
+  make(ctx, {
+    severity: 'error',
+    code: 'table-overflow',
+    path: overflow.path,
+    message: `Tabela estourou ${tableAmount(overflow)} da altura disponível em ${round(size)} pt (fit="error" não ajusta): ${describeRows(rows)}. ${TABLE_ADVICE} ou troque para fit="shrink".`,
+    data: tableOverflowData(overflow, { from: size, to: size }, rows),
+  });
+
+export interface BrokenColumn {
+  /** `columns[c].header` */
+  readonly header: string;
+  readonly words: readonly string[];
+  /** Largura em que as células da coluna quebram (coluna − 2 × cellPadding). */
+  readonly width: Pt;
+}
+
+/** '"Implementação" não cabe inteira numa linha de 92 pt na coluna "Área"' */
+const describeBrokenColumn = (column: BrokenColumn): string => {
+  const plural = column.words.length > 1;
+  return `${quoted(column.words)} não ${plural ? 'cabem' : 'cabe'} inteira${plural ? 's' : ''} numa linha de ${round(column.width)} pt na coluna "${column.header}"`;
+};
+
+/** Palavra de célula quebrada por caractere que sobreviveu ao ajuste. */
+export const tableWordBroken = (
+  ctx: DiagnosticContext,
+  path: string,
+  broken: { readonly columns: readonly BrokenColumn[]; readonly from: Pt; readonly to: Pt },
+): Diagnostic => {
+  const plural = broken.columns.length > 1 || broken.columns.some((column) => column.words.length > 1);
+  const sizes =
+    broken.to < broken.from ? `mesmo com a tabela reduzida de ${round(broken.from)} pt para ${round(broken.to)} pt` : `em ${round(broken.to)} pt`;
+  return make(ctx, {
+    severity: 'warning',
+    code: 'text-word-broken',
+    path,
+    message: `${plural ? 'Palavras partidas' : 'Palavra partida'} no meio por falta de largura na tabela: ${broken.columns.map(describeBrokenColumn).join('; ')} ${sizes}. Encurte a palavra/valor (abrevie, ex.: "R$ 52,4 mi"), alargue a coluna (width da coluna, tabela mais larga ou menos colunas) ou reduza o size.`,
+    data: { fromSize: round(broken.from), toSize: round(broken.to) },
+  });
+};
+
 const AXIS_NAME = { width: 'horizontal', height: 'vertical' } as const;
 
 const isMainAxis = (excess: ContainerExcess): boolean =>

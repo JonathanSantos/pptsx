@@ -1,6 +1,15 @@
 import { containerOf } from '../core/defaults.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
-import type { PositionedBox, PositionedNode, PositionedSlide, PositionedText, Rect, SlideSize } from '../core/types.ts';
+import type {
+  PositionedBox,
+  PositionedNode,
+  PositionedSlide,
+  PositionedTable,
+  PositionedText,
+  Rect,
+  SlideSize,
+} from '../core/types.ts';
+import { chartSvg } from './chart.ts';
 import { loadImageUri } from './image.ts';
 import {
   backgroundColorSvg,
@@ -16,6 +25,7 @@ import {
   textSvg,
   textWidthOverflowRectOf,
 } from './svg.ts';
+import { tableOverflowRectOf, tableSvg } from './table.ts';
 import { attrs } from './xml.ts';
 
 export interface SvgOptions {
@@ -75,6 +85,8 @@ const drawers: DispatchTable<PositionedNode, string, [ctx: DrawContext, index: n
   text: (node, ctx) => textSvg(node, { fontFamilyMap: ctx.fontFamilyMap }),
   image: (node, ctx, index) => imageSvg(node, ctx.loadImage(node.props.src), `clip-${index}`),
   shape: (node) => shapeSvg(node),
+  chart: (node, ctx) => chartSvg(node, { fontFamilyMap: ctx.fontFamilyMap }),
+  table: (node, ctx, index) => tableSvg(node, { fontFamilyMap: ctx.fontFamilyMap }, `clip-${index}`),
 };
 
 const drawItem = (item: DrawItem, ctx: DrawContext): string => dispatch(drawers, item.node, ctx, item.index);
@@ -106,11 +118,25 @@ const textBandsOf = (node: PositionedText, content: Rect): readonly Rect[] =>
     (band): band is Rect => band !== undefined,
   );
 
-/** Texto que estoura a caixa (altura ou, com nowrap, largura) ganha destaque sólido; os demais, o tracejado padrão. */
+const tableBandsOf = (node: PositionedTable): readonly Rect[] => {
+  const band = tableOverflowRectOf(node);
+  return band === undefined ? [] : [band];
+};
+
+const bandsOf = (node: PositionedNode, content: Rect): readonly Rect[] => {
+  if (node.kind === 'text') return textBandsOf(node, content);
+  if (node.kind === 'table') return tableBandsOf(node);
+  return [];
+};
+
+/**
+ * Texto que estoura a caixa (altura ou, com nowrap, largura) e tabela mais alta que o frame
+ * ganham destaque sólido; os demais, o tracejado padrão.
+ */
 const outlineSvg = (item: DrawItem): string => {
   const { node } = item;
   if (node.kind === 'shape') return '';
-  const bands = node.kind === 'text' ? textBandsOf(node, item.parentContent) : [];
+  const bands = bandsOf(node, item.parentContent);
   return bands.length === 0 ? debugOutlineSvg(node.frame) : textOverflowSvg(node.frame, bands);
 };
 

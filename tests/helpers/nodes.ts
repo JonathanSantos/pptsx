@@ -4,6 +4,13 @@
  */
 import type {
   BoxProps,
+  ChartProps,
+  PositionedChart,
+  PositionedTable,
+  Pt,
+  ResolvedChart,
+  ResolvedTable,
+  TableProps,
   Dimensions,
   ImageProps,
   LayoutEnv,
@@ -31,7 +38,7 @@ import type {
   TextProps,
   TextRun,
 } from '../../src/core/types.ts';
-import { DEFAULTS } from '../../src/core/defaults.ts';
+import { DEFAULTS, tableHeaderOf, tableStyleOf } from '../../src/core/defaults.ts';
 
 export const SIZE_16X9: SlideSize = { name: '16x9', width: 720, height: 405 };
 export const SIZE_4X3: SlideSize = { name: '4x3', width: 720, height: 540 };
@@ -79,6 +86,17 @@ export const rImage = (props: ImageProps, path = 'Image'): ResolvedImage => ({ k
 export const rShape = (props: ShapeProps, path = 'Shape'): ResolvedShape => ({ kind: 'shape', path, props });
 
 export const rDeck = (...slides: ResolvedSlide[]): ResolvedDeck => ({ slides });
+
+/** M10: Chart resolvido (dados assumidos válidos). */
+export const rChart = (props: ChartProps, path = 'Chart'): ResolvedChart => ({ kind: 'chart', path, props });
+
+/** M10: Table resolvida com `rows` normalizado para string, como o resolve entrega. */
+export const rTable = (props: TableProps, path = 'Table'): ResolvedTable => ({
+  kind: 'table',
+  path,
+  props,
+  rows: props.rows.map((row) => row.map(String)),
+});
 
 // ───────────── LayoutEnv falso ─────────────
 
@@ -179,3 +197,53 @@ export const pDeck = (slides: readonly PositionedSlide[], size: SlideSize = SIZE
   size,
   slides,
 });
+
+// ───────────── M10: Chart e Table posicionados ─────────────
+
+export const pChart = (frame: Rect, props: ChartProps, path = 'Slide > Chart'): PositionedChart => ({
+  kind: 'chart',
+  path,
+  props,
+  frame,
+});
+
+export interface PTableOptions {
+  readonly path?: string;
+  /** Padrão: frame.width dividido igualmente. */
+  readonly columnWidths?: readonly Pt[];
+  /** Padrão: tableStyleOf(props).size. */
+  readonly fontSize?: Pt;
+  /** Padrão: fakeTextLayout de cada célula (cabeçalho na linha 0 quando há). */
+  readonly cells?: readonly (readonly TextLayout[])[];
+}
+
+/** Linhas de texto da tabela como o layout as mede: cabeçalho (quando há) + linhas de dados. */
+export const tableTextRows = (props: TableProps): readonly (readonly string[])[] => {
+  const data = props.rows.map((row) => row.map(String));
+  return tableHeaderOf(props) === undefined ? data : [props.columns.map((c) => c.header), ...data];
+};
+
+/**
+ * Table posicionada com células do medidor falso (uma linha por '\n', 20 pt por linha):
+ * rowHeights = célula mais alta + 2 × cellPadding; height = Σ rowHeights.
+ */
+export const pTable = (frame: Rect, props: TableProps, options: PTableOptions = {}): PositionedTable => {
+  const fontSize = options.fontSize ?? tableStyleOf(props).size;
+  const padding = props.cellPadding ?? DEFAULTS.table.cellPadding;
+  const n = props.columns.length;
+  const columnWidths = options.columnWidths ?? props.columns.map(() => frame.width / n);
+  const cells = options.cells ?? tableTextRows(props).map((row) => row.map((c) => fakeTextLayout(c, fontSize)));
+  const rowHeights = cells.map((row) => Math.max(0, ...row.map((c) => c.height)) + 2 * padding);
+  return {
+    kind: 'table',
+    path: options.path ?? 'Slide > Table',
+    props,
+    rows: props.rows.map((row) => row.map(String)),
+    frame,
+    fontSize,
+    columnWidths,
+    rowHeights,
+    cells,
+    height: rowHeights.reduce((a, b) => a + b, 0),
+  };
+};

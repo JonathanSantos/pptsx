@@ -15,18 +15,21 @@ import type {
   FlexDirection,
   LayoutEnv,
   ResolvedBox,
+  ResolvedChart,
   ResolvedImage,
   ResolvedNode,
   ResolvedShape,
+  ResolvedTable,
   ResolvedText,
 } from '../core/types.ts';
 import { applyStyle } from './apply.ts';
 import { measureInputOf } from './measure.ts';
+import { measureTable } from './table.ts';
 import {
   readsBaseline,
+  toContentStyle,
   toImageStyle,
   toItemStyle,
-  toTextStyle,
   toYogaStyle,
   withLineMinWidth,
   type YogaStyle,
@@ -72,7 +75,7 @@ const unbounded = (source: ResolvedText, env: LayoutEnv) =>
   env.measureText(measureInputOf(source, Number.POSITIVE_INFINITY));
 
 const textItemStyleOf = (source: ResolvedText, { env, parent }: BuildContext): YogaStyle => {
-  const style = toTextStyle(source.props, parent.direction);
+  const style = toContentStyle(source.props, parent.direction);
   if (source.props.nowrap !== true || parent.direction !== 'row') return style;
   return withLineMinWidth(style, unbounded(source, env).width);
 };
@@ -138,9 +141,38 @@ const buildImage: Builder<ResolvedImage> = (source, yoga, { env, parent }) => {
   return { source, yoga, children: [], intrinsic };
 };
 
-// Image/Shape são folhas sem measure function: o Yoga já usa a altura como baseline.
+// Image/Shape/Chart são folhas sem measure function: o Yoga já usa a altura como baseline.
 const buildShape: Builder<ResolvedShape> = (source, yoga, { parent }) => {
   applyStyle(yoga, toItemStyle(source.props, parent.direction));
+  return { source, yoga, children: [] };
+};
+
+// Gráfico não tem tamanho próprio: fica com o que o flex der (o resolve exige width/height/grow).
+const buildChart: Builder<ResolvedChart> = (source, yoga, { parent }) => {
+  applyStyle(yoga, toItemStyle(source.props, parent.direction));
+  return { source, yoga, children: [] };
+};
+
+/**
+ * Sem limite (ou com limite maior que o conteúdo) a largura é a natural; com limite
+ * menor, o limite. A altura sai sempre de uma medição na largura que o nó vai ter: o
+ * read remede com frame.width, e as colunas livres numa largura finita se dividem
+ * igualmente (não pela largura natural de cada uma), então a altura tem que vir dessa conta.
+ */
+const tableMeasureFunc =
+  (source: ResolvedTable, env: LayoutEnv): MeasureFunction =>
+  (width, widthMode) => {
+    if (widthMode === MeasureMode.Exactly) return { width, height: measureTable(source, width, env).height };
+    const natural = measureTable(source, Number.POSITIVE_INFINITY, env).width;
+    const limit = widthMode === MeasureMode.AtMost && Number.isFinite(width) ? width : Number.POSITIVE_INFINITY;
+    const chosen = Math.min(natural, limit);
+    return { width: chosen, height: measureTable(source, chosen, env).height };
+  };
+
+// Folha medida sem filhos: o Yoga usa a altura como baseline, sem o invólucro do Text.
+const buildTable: Builder<ResolvedTable> = (source, yoga, { env, parent }) => {
+  applyStyle(yoga, toContentStyle(source.props, parent.direction));
+  yoga.setMeasureFunc(tableMeasureFunc(source, env));
   return { source, yoga, children: [] };
 };
 
@@ -149,6 +181,8 @@ const BUILDERS: DispatchTable<ResolvedNode, BuiltNode, [yoga: YogaNode, ctx: Bui
   text: buildText,
   image: buildImage,
   shape: buildShape,
+  chart: buildChart,
+  table: buildTable,
 };
 
 const buildNode = (source: ResolvedNode, parent: YogaNode, ctx: BuildContext): BuiltNode =>
