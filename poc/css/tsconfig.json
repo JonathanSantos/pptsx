@@ -3,6 +3,14 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["./**/*.ts", "./**/*.tsx"],
-  "exclude": ["./node_modules", "./out"]
+  "include": [
+    "./**/*.ts",
+    "./**/*.tsx",
+    "../../examples/**/*.ts",
+    "../../examples/**/*.tsx"
+  ],
+  "exclude": [
+    "./node_modules",
+    "./out"
+  ]
 }

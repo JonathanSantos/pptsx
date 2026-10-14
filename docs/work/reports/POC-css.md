@@ -127,3 +127,118 @@ Spec: `docs/work/poc/browser-layout.md`. Código: `poc/css/` (guia em `poc/css/R
 
 - `causedBy` dentro de grid: nenhum (cada célula é dona do próprio estouro). Se o dono quiser causa entre linhas `auto` do grid, dá para tratar o grid como o wrap (linhas como rows).
 - Colunas auto da Table: o algoritmo é o do CSS 2.1 sem `min-width` por coluna nem `colspan`.
+
+---
+
+## P3 — vitrine, comparação e decisão
+
+**Entregue**
+
+- `poc/css/README.md` virou o **guia de 1 página** (o único material do teste do agente).
+- `poc/css/examples/showcase.tsx`, 4 slides:
+  1. capa com decoração atrás por `zIndex={-1}`, caixa translúcida girada, texto herdado do Slide e `marginTop="auto"`;
+  2. grid de KPIs com sombra, que em 4:3 vira 2 colunas e mostra uma nota com `display` responsivo;
+  3. grid `auto 1fr 1fr` com `span 2`, `2 / -1` e dois gráficos nativos em células;
+  4. tags com wrap, borda só em cima + tracejada embaixo, borda pontilhada, sublinhado/riscado por `Span`, camadas por `zIndex` com rotate e opacity.
+
+  No Keynote, 16x9 e 4x3 batem com o preview, sem diagnóstico.
+- Reescritos em CSS: `poc/css/examples/{demo,long-list,charts,m9-deck}.tsx`, com os layouts e componentes em `poc/css/examples/kit.tsx`. A aparência é equivalente à da engine (conferida lado a lado nos dois tamanhos) e a paginação é igual. As trocas:
+  - título com `borderLeft` no lugar de Box row + Shape;
+  - capa e rodapés com `marginTop="auto"`;
+  - TwoColumn e KpiRow em grid;
+  - cartões que definem fonte e cor uma vez;
+  - contato com `marginTop` no lugar de Box com padding;
+  - marcador do Bullets com `marginTop` no lugar de Box em volta do Shape.
+- Ferramentas: `poc/css/tools/count.ts` + `h1.ts` (contagem) e `poc/css/bench.ts` (tempo). Teste do agente: `poc/css/examples/agent-test/` (slide e LOG escritos pelo agente).
+
+### H1 — DX
+
+Contagem no deck expandido (componentes chamados), em 16x9 (`npx tsx --tsconfig poc/css/tsconfig.json poc/css/tools/h1.ts`):
+
+| deck | nós | props | nós + props | props responsivas | Box só para empurrar |
+|---|---|---|---|---|---|
+| demo | 92 → 68 (**−26 %**) | 316 → 261 (−17 %) | 408 → 329 (−19 %) | 42 → 32 | **15 → 3** |
+| long-list | 61 → 46 (−25 %) | 210 → 178 (−15 %) | 271 → 224 (−17 %) | 0 → 0 | 14 → 1 |
+| charts | 18 → 12 (−33 %) | 69 → 48 (−30 %) | 87 → 60 (−31 %) | 0 → 0 | 3 → 3 |
+| m9-deck | 109 → 82 (−25 %) | 353 → 297 (−16 %) | 462 → 379 (−18 %) | 58 → 40 | 21 → 2 |
+
+"Box só para empurrar" = Box sem pintura com 0 ou 1 filho. Os 3 que sobram na demo são o corpo do ContentLayout (`flex={1}` + `justifyContent`). Charts mantém 3 porque o corpo do layout existe em cada slide.
+
+**Agente virgem:** só com o guia, escreveu o slide pedido em **1 build**, sem diagnóstico e com o layout correto (conferido no PNG): grid 3×2 de cartões com borda só em cima, tags em pílulas quebrando em 2 linhas, rodapé por `marginTop="auto"`. Os atritos que ele apontou (caminho relativo do import; se fundo e raio valem em `Text`) foram incorporados ao guia.
+
+**Resultado:** nós −26 % e agente em 1 build cumprem a meta. Props −17 % ficam abaixo dos 25 %: o CSS troca props, mas não as elimina. `borderLeft` + `paddingLeft` substituem Shape `kind/width/height/fill/shrink` + Box `direction/align/gap`, e quem cai de fato são os nós e os Box de empurrar.
+
+### H6 — de/para CSS → PPTX (final)
+
+| Sai nativo | Degrada (sai, com diferença) | Vira `css-not-emitted` (warning, não sai) |
+|---|---|---|
+| `backgroundColor` (fill, alpha de rgba) | fundo/borda/padding de Text: forma atrás da caixa de texto (2 formas, não 1) | `overflow: hidden` em caixa |
+| `border` uniforme (sólida/tracejada/pontilhada, dentro do border-box), `borderRadius` | `borderRadius` + bordas por lado: o fundo arredonda, as linhas por lado saem retas (**avisa**) | raio por canto (sai o menor; **avisa**) |
+| bordas por lado (linha por lado) | `fontWeight` 100–500/800–900 → regular/bold (**avisa**) | `boxShadow` inset, spread, 2ª sombra; sombra sem fundo |
+| `boxShadow` (1 sombra externa) | `letterSpacing`: o `spc` do pptxgenjs desliga kerning (até ~1 % mais largo; folga de 3 % cobre) | `transform: scale/skew/matrix`; rotate em Chart/Table |
+| `opacity` (transparency em cada forma/run, multiplicada pelos ancestrais) | `lineHeight` numérico = múltiplo da altura natural (engine), não do font-size (CSS) | gradiente em `backgroundImage`; `filter`, `textShadow`, qualquer propriedade fora da lista |
+| `rotate`/`transform: rotate` (acumulado, centro levado pelos ancestrais) | posicionado sem `zIndex` pinta depois do fluxo (regra do browser; decks antigos mudam de ordem) | track de grid fora do subconjunto (`auto-fill`, áreas, `[linha]`) |
+| `translate` (bake no frame) | | `whiteSpace` ≠ normal/nowrap; `objectFit` ≠ contain/cover; `boxSizing` ≠ border-box |
+| `zIndex` (ordem de desenho) | | |
+| `display: none` (não emite) | | |
+| `backgroundImage: url()` (cover, atrás das bordas) | | |
+| texto: família, tamanho, peso, itálico, cor, alinhamento, `textTransform` (antes de medir), `textDecoration` por run, `letterSpacing` (`spc`) | | |
+| Table (colunas auto pelo conteúdo), Chart, Image (`objectFit`), Shape | | |
+
+Nenhuma feature some em silêncio: o que não sai nativo ou degrada com aviso, ou gera `css-not-emitted` com propriedade, valor, motivo e path. O preview também não desenha o que não sai.
+
+### H7 — custo
+
+| Medida | Resultado | Meta |
+|---|---|---|
+| Tempo de build da demo (6 slides × 3 tamanhos, com preview, mediana de 7) | engine 685 ms × PoC 691 ms (**1,01×**); demo reescrita em CSS (grid, bordas, herança) 699 ms × engine 688 ms (**1,02×**) | ≤ 2× |
+| Motor de grid | `grid.ts` 368 linhas de código (476 com comentários); integração com Yoga 199 + min-content 51 | ≤ ~600 |
+| Rodadas do fit | mesmo algoritmo e limite da engine (`maxFitIterations = 12`); nenhum deck da PoC chegou perto | ≤ 12 |
+
+### Quadro final das hipóteses
+
+| # | Resultado |
+|---|---|
+| H1 | **verde com ressalva**: nós −26 % e agente virgem em 1 build; props −17 % (meta era 25 %) |
+| H2 | **verde**: 34/34 e 30/30 no Keynote; XML dos decks de calibração byte a byte igual ao da engine |
+| H3 | **verde**: demo × fixture 3/3 tamanhos; 15/15 nó a nó com a engine. Muda só a **ordem** da decoração absoluta sem z (visual em `layout-test` slide 2) |
+| H4 | **verde**: 47/48 × Chrome 155 com a métrica da engine (a exceção é altura de texto por arredondamento de métrica do browser); 48/48 com a métrica de linha do browser |
+| H5 | **verde**: 9/9 iguais à engine (códigos, severidades, paths, causedBy, mensagens) + estouros novos (célula, wrap, margem, borda) nos nós certos |
+| H6 | **completa**: tabela acima, sem feature silenciosa |
+| H7 | **verde**: 1,02×, grid 368 linhas, fit igual |
+
+## Decisão (§11): **(A) adotar como a engine**, com duas decisões do dono antes de migrar
+
+Pela regra de go da spec (H1, H2, H4 e H5 verdes e H6 completa), **é go**. A ressalva do H1 (props −17 %) não muda isso: as metas de nós e do agente foram cumpridas, e o ganho de DX aparece no que importa ao agente. Ele escreveu grid + margin + wrap certo de primeira, só com um guia de 1 página.
+
+H3 e H7 definem o tamanho da adoção:
+
+- **H3:** nada regride em posição, tamanho, linhas ou diagnósticos. O XML da calibração é idêntico.
+- **H7:** o custo é nulo (1,02×) e o grid ficou no tamanho previsto.
+
+Por isso (A), não (B): não há peça cara para deixar de fora, e o grid é justamente o que mais reduz Box de empurrar e colunas por `grow`.
+
+Por que não (C): H1 e H2 não falharam.
+
+**O que o dono precisa decidir antes de virar M11** (registrado desde a P0):
+
+1. **Ordem de pintura de decoração absoluta sem `zIndex`.**
+   - Opção (a): regra do browser (como está na PoC) + migração (`zIndex={-1}` nas decorações). Em `examples/` só `layout-test` muda visualmente.
+   - Opção (b): açúcar de compatibilidade (absoluto sem z pinta antes do fluxo) só para nós sem CSS novo.
+2. **`lineHeight` numérico**: manter a semântica da engine (múltiplo da altura natural; a calibração foi feita assim) ou adotar a do CSS (múltiplo do font-size), que muda alturas de texto existentes.
+
+**Custos de adoção conhecidos:**
+
+- `poc/css/fit/` é cópia de `src/fit` (~2 mil linhas): na adoção, as adaptações `PoC:` vão para `src/fit` e a cópia some.
+- `src/core/types.ts` ganha `css`/`box`/`cell` nos nós e o código `css-not-emitted`.
+- O contorno do bug de wrap do Yoga 3.2.1 entra no layout.
+- O `textSafety` passa a ser lido também pelo min-content do grid.
+
+**Para validar no PowerPoint:** `dist/poc-css/showcase.16x9.pptx` e `dist/poc-css/showcase.4x3.pptx` (`npx tsx poc/css/cli.ts build poc/css/examples/showcase.tsx --size 16x9,4x3 --out dist/poc-css` regenera). O que conferir:
+
+- sombra nos cartões do slide 2;
+- traço das bordas dentro das caixas (slide 4);
+- texto girando junto com a caixa (slides 1 e 4);
+- transparência da caixa da capa;
+- ordem das camadas no slide 4;
+- tags sublinhadas/riscadas.
