@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="980" height="560" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>pptsx: de/para CSS → PPTX</title>
+<defs><filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#1B2A4A" flood-opacity="0.18"/></filter></defs>
+<rect x="0" y="0" width="980" height="560" rx="22" fill="#F4F6FA"/>
+<text x="30.0" y="44.0" font-size="13" font-weight="700" letter-spacing="2" fill="#5B6680">CADA PROPRIEDADE CSS TERMINA EM UM DESTES TRÊS LUGARES</text>
+<rect x="420" y="62" width="140" height="30" rx="15" fill="#1B2A4A"/>
+<text x="490.0" y="82.0" font-size="13.5" font-weight="700" text-anchor="middle" fill="#FFFFFF">props CSS</text>
+<polyline points="420.0,77.0 170.0,77.0 170.0,97.0" fill="none" stroke="#2F6FED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polygon points="170.0,108.0 165.1,97.0 174.9,97.0" fill="#2F6FED"/>
+<polyline points="490.0,94.0 490.0,97.0" fill="none" stroke="#5B6680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polygon points="490.0,108.0 485.1,97.0 494.9,97.0" fill="#5B6680"/>
+<polyline points="560.0,77.0 810.0,77.0 810.0,97.0" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polygon points="810.0,108.0 805.0,97.0 815.0,97.0" fill="#F59E0B"/>
+<g filter="url(#sh)"><rect x="30" y="112" width="280" height="420" rx="14" fill="#FFFFFF" stroke="#2F6FED" stroke-width="1.5"/></g>
+<rect x="30" y="112" width="280" height="50" rx="14" fill="#2F6FED"/>
+<rect x="30" y="142" width="280" height="20" fill="#2F6FED"/>
+<text x="48.0" y="144.0" font-size="17" font-weight="700" fill="#FFFFFF">sai nativo</text>
+<circle cx="52" cy="185.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="190.0" font-size="12.5" fill="#1B2A4A">backgroundColor (alpha de rgba)</text>
+<circle cx="52" cy="206.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="211.0" font-size="12.5" fill="#1B2A4A">border uniforme: sólida,</text>
+<text x="64.0" y="232.0" font-size="12.5" fill="#1B2A4A">tracejada ou pontilhada</text>
+<circle cx="52" cy="248.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="253.0" font-size="12.5" fill="#1B2A4A">bordas por lado</text>
+<circle cx="52" cy="269.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="274.0" font-size="12.5" fill="#1B2A4A">borderRadius</text>
+<circle cx="52" cy="290.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="295.0" font-size="12.5" fill="#1B2A4A">boxShadow (uma, externa)</text>
+<circle cx="52" cy="311.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="316.0" font-size="12.5" fill="#1B2A4A">opacity · rotate · translate</text>
+<circle cx="52" cy="332.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="337.0" font-size="12.5" fill="#1B2A4A">zIndex (ordem de desenho)</text>
+<circle cx="52" cy="353.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="358.0" font-size="12.5" fill="#1B2A4A">backgroundImage: url() (cover)</text>
+<circle cx="52" cy="374.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="379.0" font-size="12.5" fill="#1B2A4A">fonte, peso, itálico, cor, alinhamento</text>
+<circle cx="52" cy="395.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="400.0" font-size="12.5" fill="#1B2A4A">letterSpacing · textTransform</text>
+<circle cx="52" cy="416.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="421.0" font-size="12.5" fill="#1B2A4A">textDecoration por trecho</text>
+<circle cx="52" cy="437.5" r="3" fill="#2F6FED"/>
+<text x="64.0" y="442.0" font-size="12.5" fill="#1B2A4A">Chart e Table nativos</text>
+<rect x="44" y="452" width="252" height="64" rx="10" fill="#F4F6FA"/>
+<text x="58" y="478" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#1B2A4A">boxShadow="0 3px 10px …"</text>
+<text x="58.0" y="500.0" font-size="12" font-style="italic" fill="#5B6680">→ sombra da própria forma</text>
+<g filter="url(#sh)"><rect x="350" y="112" width="280" height="420" rx="14" fill="#FFFFFF" stroke="#5B6680" stroke-width="1.5"/></g>
+<rect x="350" y="112" width="280" height="50" rx="14" fill="#5B6680"/>
+<rect x="350" y="142" width="280" height="20" fill="#5B6680"/>
+<text x="368.0" y="144.0" font-size="17" font-weight="700" fill="#FFFFFF">sai com diferença</text>
+<circle cx="372" cy="185.5" r="3" fill="#5B6680"/>
+<text x="384.0" y="190.0" font-size="12.5" fill="#1B2A4A">fundo, borda e padding de um Text</text>
+<text x="384.0" y="211.0" font-size="12.5" fill="#1B2A4A">viram uma forma atrás da</text>
+<text x="384.0" y="232.0" font-size="12.5" fill="#1B2A4A">caixa de texto</text>
+<circle cx="372" cy="248.5" r="3" fill="#5B6680"/>
+<text x="384.0" y="253.0" font-size="12.5" fill="#1B2A4A">opacity é por forma, não de grupo:</text>
+<text x="384.0" y="274.0" font-size="12.5" fill="#1B2A4A">formas sobrepostas não se</text>
+<text x="384.0" y="295.0" font-size="12.5" fill="#1B2A4A">"apagam" como no browser</text>
+<circle cx="372" cy="311.5" r="3" fill="#5B6680"/>
+<text x="384.0" y="316.0" font-size="12.5" fill="#1B2A4A">letterSpacing desliga o kerning</text>
+<text x="384.0" y="337.0" font-size="12.5" fill="#1B2A4A">(até ~1% mais largo)</text>
+<circle cx="372" cy="353.5" r="3" fill="#5B6680"/>
+<text x="384.0" y="358.0" font-size="12.5" fill="#1B2A4A">lineHeight numérico no Keynote:</text>
+<text x="384.0" y="379.0" font-size="12.5" fill="#1B2A4A">passo truncado a pt inteiro</text>
+<rect x="364" y="452" width="252" height="64" rx="10" fill="#F4F6FA"/>
+<text x="378" y="478" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#1B2A4A">&lt;Text padding={8} …&gt;</text>
+<text x="378.0" y="500.0" font-size="12" font-style="italic" fill="#5B6680">→ retângulo + caixa de texto</text>
+<g filter="url(#sh)"><rect x="670" y="112" width="280" height="420" rx="14" fill="#FFFFFF" stroke="#F59E0B" stroke-width="1.5"/></g>
+<rect x="670" y="112" width="280" height="50" rx="14" fill="#F59E0B"/>
+<rect x="670" y="142" width="280" height="20" fill="#F59E0B"/>
+<text x="688.0" y="144.0" font-size="17" font-weight="700" fill="#FFFFFF">css-not-emitted</text>
+<text x="932.0" y="143.0" font-size="11.5" font-weight="700" text-anchor="end" fill="#FFFFFF">warning</text>
+<circle cx="692" cy="185.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="190.0" font-size="12.5" fill="#1B2A4A">overflow: hidden (não há recorte)</text>
+<circle cx="692" cy="206.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="211.0" font-size="12.5" fill="#1B2A4A">gradiente, filter, textShadow</text>
+<circle cx="692" cy="227.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="232.0" font-size="12.5" fill="#1B2A4A">scale, skew, matrix</text>
+<circle cx="692" cy="248.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="253.0" font-size="12.5" fill="#1B2A4A">rotate em Chart e Table</text>
+<circle cx="692" cy="269.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="274.0" font-size="12.5" fill="#1B2A4A">sombra inset, spread ou múltipla</text>
+<circle cx="692" cy="290.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="295.0" font-size="12.5" fill="#1B2A4A">sombra sem fundo</text>
+<circle cx="692" cy="311.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="316.0" font-size="12.5" fill="#1B2A4A">raio diferente por canto</text>
+<circle cx="692" cy="332.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="337.0" font-size="12.5" fill="#1B2A4A">raio + bordas diferentes por lado</text>
+<circle cx="692" cy="353.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="358.0" font-size="12.5" fill="#1B2A4A">fontWeight 100–500 e 800–900</text>
+<circle cx="692" cy="374.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="379.0" font-size="12.5" fill="#1B2A4A">auto-fill, áreas nomeadas no grid</text>
+<circle cx="692" cy="395.5" r="3" fill="#F59E0B"/>
+<text x="704.0" y="400.0" font-size="12.5" fill="#1B2A4A">whiteSpace ≠ normal/nowrap</text>
+<rect x="684" y="452" width="252" height="64" rx="10" fill="#F4F6FA"/>
+<text x="698" y="478" font-size="12.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#1B2A4A">overflow="hidden"</text>
+<text x="698.0" y="500.0" font-size="12" font-style="italic" fill="#5B6680">→ ▲ warning com o motivo</text>
+</svg>

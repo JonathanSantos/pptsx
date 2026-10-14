@@ -15,14 +15,15 @@
 </p>
 
 <p align="center">
-  <img src="docs/readme/hero.png" width="960" alt="Seis slides gerados pela engine: capa com decoração em camadas, grid de indicadores com sombra, grid com gráfico de barras e pizza nativos, cartões de KPI, tabela nativa e tags com wrap">
+  <img src="docs/readme/gallery/hero.png" width="960" alt="Seis slides de seis decks diferentes: capa de relatório agrícola com mosaico de talhões girado, capa de pitch com uma balança desenhada em formas, capa de festival de cinema com furos de película, painel com seis reservatórios e seus níveis, diagrama da Terra e da Lua, e um quadro de retrospectiva com adesivos girados">
 </p>
 
 <p align="center">
-  <sub>Todas as imagens deste README são PNGs que a própria engine gerou a partir de <a href="examples/showcase.tsx"><code>examples/showcase.tsx</code></a>, <a href="examples/demo.tsx"><code>examples/demo.tsx</code></a> e dos decks em <a href="docs/readme/decks/"><code>docs/readme/decks/</code></a>.</sub>
+  <sub>Um slide de cada deck da <a href="#galeria">galeria</a>. Todas as imagens deste README são PNGs que a própria engine desenhou com o mesmo layout do <code>.pptx</code>, a partir de <a href="examples/gallery/"><code>examples/gallery/</code></a>, <a href="examples/"><code>examples/</code></a> e <a href="docs/readme/decks/"><code>docs/readme/decks/</code></a>.</sub>
 </p>
 
 <p align="center">
+  <a href="#galeria">Galeria</a> ·
   <a href="#em-30-segundos">Em 30 segundos</a> ·
   <a href="#o-que-você-escreve-é-css">CSS como props</a> ·
   <a href="#como-funciona-por-dentro">Por dentro</a> ·
@@ -34,6 +35,75 @@
   <a href="#depara-css--pptx">CSS → PPTX</a> ·
   <a href="#limitações">Limitações</a>
 </p>
+
+---
+
+## Galeria
+
+Seis decks em [`examples/gallery/`](examples/gallery/), cada um com paleta, tipografia e um elemento de assinatura próprios; o comentário no topo de cada arquivo diz o que foi escolhido e por quê. A fonte é só Arial: o caráter vem de escala, peso, `letterSpacing`, caixa alta e composição. Todos saem sem `warning` em 16:9 e 4:3, e em cada montagem o slide da direita é o 4:3.
+
+### Safra 2025/26 · relatório anual de uma cooperativa
+
+<p align="center"><img src="docs/readme/gallery/safra.png" width="960" alt="Capa vinho com mosaico de talhões verdes e amarelos girado, mapa de calor de chuva por mês e núcleo com a célula da estiagem destacada, e o slide 4:3 das sobras com uma barra proporcional"></p>
+
+O mosaico da capa é um grid com `span` girado −14° atrás do título (`zIndex={-1}`); a chuva é um mapa de calor de 13 colunas de grid; as sobras são uma barra de `Box` com `flex` igual ao percentual. Também tem barras e tabela nativas. [`safra.tsx`](examples/gallery/safra.tsx)
+
+### Tara T1 · pitch de hardware
+
+<p align="center"><img src="docs/readme/gallery/tara.png" width="960" alt="Capa com uma balança azul desenhada em formas, girada e com sombra, comparação em colunas com a do produto destacada, e a ficha técnica 4:3 com nove visores LCD"></p>
+
+O aparelho da capa é um `Box` girado com `boxShadow`; chapa, saco e visor giram junto. O visor LCD volta em todo número do pitch, a comparação é um grid com a coluna do produto em relevo, e em 4:3 a ficha técnica mostra 9 itens em vez de 6 (`ctx.pick`). [`tara.tsx`](examples/gallery/tara.tsx)
+
+### Lanterna · programa de um festival de curtas
+
+<p align="center"><img src="docs/readme/gallery/lanterna.png" width="960" alt="Capa ameixa com o título LANTERNA espaçado em amarelo e furos de película no topo e na base, grade de sessões de cinco dias, e o slide 4:3 com o número 48 e pílulas das mostras"></p>
+
+Furos de película em `flex` no topo e na base de todo slide, halo do projetor em elipses com `opacity`, título com `letterSpacing` largo e um selo girado 90°. A grade tem 6 colunas de grid e uma borda esquerda por mostra; as mostras são pílulas com `flexWrap`. [`lanterna.tsx`](examples/gallery/lanterna.tsx)
+
+### Reservatórios · painel semanal de saneamento
+
+<p align="center"><img src="docs/readme/gallery/reservatorios.png" width="960" alt="Seis reservatórios com o nível de água em azul e um em vermelho abaixo da linha tracejada de mínimo, indicadores com sombra e dois gráficos, e o slide 4:3 com a tabela de prazos e o SLA"></p>
+
+Cada reservatório é um `Box` com o nível em `height` percentual, a linha de mínimo é uma borda tracejada e o número fica por cima com `zIndex`. KPIs com sombra, linha e barras em células de grid, tabela zebrada; em 4:3 o cartão do SLA desce para baixo da tabela. [`reservatorios.tsx`](examples/gallery/reservatorios.tsx)
+
+### Marés · aula de ciências
+
+<p align="center"><img src="docs/readme/gallery/mares.png" width="960" alt="Capa azul-escura com a Terra e o envelope de água, diagrama da Terra e da Lua com os pontos A, B e C e setas de força, e o slide 4:3 com quatro passos e números grandes translúcidos"></p>
+
+Terra, envelope de água e Lua são `Shape`s posicionados numa caixa de tamanho fixo; o envelope gira na direção da Lua. As setas de força são `Box` + "►", com o comprimento como dado. Passos com o número em `opacity`, maré de um dia em gráfico de linha. [`mares.tsx`](examples/gallery/mares.tsx)
+
+### Retro do Q3 · retrospectiva de time
+
+<p align="center"><img src="docs/readme/gallery/retro.png" width="960" alt="Capa com adesivos coloridos girados e com sombra, quadro com três colunas de adesivos e votos em pontos vermelhos, e o slide 4:3 com as dez ações num slide só"></p>
+
+Adesivos são `Box` levemente girados (`rotate`), com sombra; votos são elipses. Linha do tempo em `borderLeft` com pontos absolutos, citações com `<I>` e `<Span>`. As 10 ações usam `paginate`: viram dois slides em 16:9 e cabem num só em 4:3. [`retro.tsx`](examples/gallery/retro.tsx)
+
+### Como um elemento é feito
+
+O reservatório do painel, inteiro. O nível é um `Box` absoluto com `height` em %, a linha de mínimo é um `Box` de altura 0 com `borderTop` tracejada, e o número sobe com `zIndex` (posicionado, ele pinta depois do enchimento):
+
+```tsx
+<Box flex={1} border={`2px solid ${C.linha}`} borderRadius={14} backgroundColor={C.branco} padding={10}>
+  {/* Enchimento e linha de mínimo são absolutos; o número sobe com zIndex para ficar por cima. */}
+  <Box
+    position="absolute" left={4} right={4} bottom={4} height={`${level - 2}%`}
+    borderRadius={10} backgroundColor={status === 'critico' ? '#F3B6B6' : C.nivel}
+  />
+  <Box
+    position="absolute" left={0} width="100%" bottom={`${MIN_LEVEL}%`} height={0}
+    borderTop={`1.5px dashed ${C.critico}`}
+  />
+  <Text position="relative" zIndex={2} fontSize={{ base: 26, tall: 32 }} fontWeight="bold" nowrap>
+    {`${level}%`}
+  </Text>
+</Box>
+```
+
+No `.pptx`, isso são três formas e uma caixa de texto editáveis. Exportado pelo Keynote, o deck mantém rotação, sombra e camadas; à esquerda o preview da engine, à direita o PNG do Keynote:
+
+<p align="center"><img src="docs/readme/gallery/keynote.png" width="960" alt="A capa do pitch Tara lado a lado: preview da engine e exportação do Keynote, praticamente idênticas"></p>
+
+Para construir um deck da galeria: `npx tsx src/cli.ts build examples/gallery/safra.tsx --size 16x9,4x3 --out dist/gallery`.
 
 ---
 
@@ -105,22 +175,7 @@ As props são **CSS em camelCase**. Números são pt (1 pol = 72 pt), `'12px'` t
 
 Cada exemplo abaixo é um deck de verdade em [`docs/readme/decks/`](docs/readme/decks/); a imagem é o `slide-01.png` que ele gera. Os trechos omitem os imports e o `defineDeck(() => <Deck>…</Deck>)` em volta.
 
-| | conceito | onde |
-|---|---|---|
-| a | esqueleto mínimo: `Slide`, `Box`, `Text` | [acima](#em-30-segundos) |
-| b | grid de cartões com `boxShadow` | [↓](#b-grid-de-cartões) |
-| c | `flexWrap` para tags | [↓](#c-tags-que-quebram-em-linhas) |
-| d | `marginTop="auto"` para o rodapé | [↓](#d-rodapé-no-fim-sem-box-para-empurrar) |
-| e | herança de fonte, cor e alinhamento | [↓](#e-herança-de-texto) |
-| f | `zIndex`, `rotate` e `opacity` | [↓](#f-camadas-zindex-rotate-opacity) |
-| g | bordas por lado | [↓](#g-bordas-por-lado) |
-| h | breakpoints: o mesmo deck em 16:9 e 4:3 | [Responsivo](#breakpoints) |
-| i | `paginate`: um slide que vira dois | [Responsivo](#paginação) |
-| j | `<Chart>` barra, linha e pizza | [Gráficos e tabelas](#gráficos-e-tabelas-nativos) |
-| k | `<Table>` com cabeçalho, zebra e grade | [Gráficos e tabelas](#tabela) |
-| l | rich text com `<B>`, `<I>`, `<Span>` e NBSP | [↓](#l-rich-text) |
-| m | `fit="shrink"` em ação, com `--debug` | [Diagnósticos](#o-texto-encolhe-só-onde-precisa) |
-| n | estouro em vermelho e `text-overflow` | [Diagnósticos](#diagnósticos-que-um-agente-entende) |
+Os conceitos (b) a (g) e (l) estão logo abaixo. Breakpoints e `paginate` estão em [Responsivo](#responsivo-de-verdade), `Chart` e `Table` em [Gráficos e tabelas](#gráficos-e-tabelas-nativos), e `fit="shrink"` e estouro em [Diagnósticos](#diagnósticos-que-um-agente-entende).
 
 ### (b) Grid de cartões
 
@@ -347,20 +402,9 @@ A referência completa, com cada prop por primitiva (`Deck`, `Slide`, `Box`, `Te
 
 Texto que não cabe dispara uma busca **por escopo**: os textos da mesma instância de componente (os itens de um `Bullets`, label e valor de um `KpiCard`) encolhem juntos, para manter a hierarquia tipográfica; uma instância vizinha só encolhe se ela mesma estourar. Cada escopo faz uma busca binária do menor passo de fonte que resolve, e cada tentativa é um layout completo.
 
-```mermaid
-flowchart TD
-    A(["slide resolvido"]) --> P{"tem Box paginate<br/>que não cabe?"}
-    P -->|sim| Q["divide os itens em partes<br/>(clones do slide, até 10)"]
-    Q --> L
-    P -->|não| L["layout completo<br/>Yoga + grid + medição"]
-    L --> D{"algum Text estourou<br/>ou partiu palavra?"}
-    D -->|sim| S["por escopo, do mais interno ao mais externo:<br/>busca binária do menor Δ de fontSize<br/>entre fontSize e minSize"]
-    S --> R{"menos de 12 rodadas?"}
-    R -->|sim| L
-    R -->|não| T
-    D -->|não| T["fit=truncate → maxLines<br/>relayout final"]
-    T --> G["diagnósticos → causa (causedBy)<br/>→ agrupamento de irmãos"]
-```
+<p align="center">
+  <img src="docs/readme/fit-loop.svg" width="900" alt="Loop de ajuste: slide resolvido → Box paginate não cabe? (sim: paginate em clones do slide) → layout → algum Text estourou? (sim: shrink por escopo → menos de 12 rodadas? sim volta ao layout) → truncate → diagnósticos text-shrunk, slide-continued, text-truncated, text-overflow, box-overflow">
+</p>
 
 ### Por que as quebras de linha são forçadas
 
@@ -376,24 +420,6 @@ A API em CSS nasceu de uma prova de conceito medida contra a engine anterior ([r
 | tempo de build da demo (3 tamanhos, com preview) | **1,02×** a engine anterior |
 | motor de grid contra o Chrome, 48 casos (grid, flex, block, caixa) | 47/48 em ±1 pt com a métrica da engine; 48/48 com a altura de linha do browser |
 | posições e diagnósticos dos exemplos | iguais à engine anterior: frames ±1 pt, mesmos códigos, paths e mensagens (depois, as colunas sem `width` da `Table` passaram a seguir o conteúdo, de propósito) |
-
-<details>
-<summary><b>Diagrama em texto</b> (o mesmo pipeline em Mermaid)</summary>
-
-```mermaid
-flowchart LR
-    tsx["deck.tsx<br/>defineDeck(ctx), 1× por tamanho"] -->|elementos| resolve
-    resolve["resolve<br/>componentes → primitivas<br/>cascata CSS · herança · breakpoints<br/>path de cada nó"] -->|árvore resolvida| layout
-    layout["layout<br/>Yoga com padrões da web<br/>grid próprio · medição fontkit"] -->|frames em pt| fit
-    fit["fit<br/>shrink por escopo · paginate<br/>estouro · causa · agrupamento"] -->|fontSize menor| layout
-    fit -->|árvore posicionada| emit["emit<br/>pptxgenjs + pós-processamento do zip"]
-    fit -->|árvore posicionada + diagnósticos| preview["preview<br/>SVG → resvg → PNG"]
-    fit -->|diagnósticos| json[("diagnostics.json")]
-    emit --> pptx[(".pptx editável")]
-    preview --> png[("slide-NN.png<br/>overview.png")]
-```
-
-</details>
 
 ---
 
@@ -492,6 +518,9 @@ const Quote = ({ width }: { width: number }) => (
     A propriedade CSS overflow: hidden não sai no PPTX: o PPTX não recorta formas; os filhos saem inteiros. O preview também não a desenha; remova-a ou troque por uma suportada (ver docs/AGENT_GUIDE.md).
 ```
 
+<details>
+<summary><b>Todos os códigos de diagnóstico</b> (13)</summary>
+
 | code | severity | quando |
 |---|---|---|
 | `text-overflow` | error | o texto não coube nem em `minSize` (ou `fit="error"`, ou área 0 pt) |
@@ -507,6 +536,8 @@ const Quote = ({ width }: { width: number }) => (
 | `text-shrunk` | info | o texto encolheu e coube |
 | `slide-continued` | info | um `Box paginate` virou N slides |
 | `image-upscaled` | info | imagem ampliada abaixo de 96 dpi |
+
+</details>
 
 Mensagens reais, correções típicas e o checklist de correção estão no [guia, §8](docs/AGENT_GUIDE.md#8-diagnósticos).
 
@@ -751,6 +782,9 @@ for (const { size, buffer, diagnostics, preview, positioned } of results) {
 
 O `render` não grava arquivos nem imprime; devolve um resultado por tamanho.
 
+<details>
+<summary><b><code>RenderOptions</code> e <code>RenderResult</code></b></summary>
+
 | `RenderOptions` | padrão | |
 |---|---|---|
 | `sizes` | `['16x9']` | presets ou `{ width, height }` em polegadas |
@@ -770,11 +804,20 @@ O `render` não grava arquivos nem imprime; devolve um resultado por tamanho.
 | `positioned` | árvore com frames em pt, só com `includePositioned` |
 | `fontsMissing` | faces pedidas sem `file` que não foram achadas no sistema |
 
+</details>
+
 ---
 
 ## De/para CSS → PPTX
 
 O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não sai, e **sempre avisa**. O preview desenha só o que o `.pptx` tem, então o PNG nunca promete mais do que o arquivo entrega.
+
+<p align="center">
+  <img src="docs/readme/css-to-pptx.svg" width="900" alt="Três colunas: sai nativo (cores, bordas, raio, sombra, opacity, rotate, zIndex, texto, Chart e Table), sai com diferença (fundo de Text, opacity por forma, letterSpacing sem kerning, lineHeight no Keynote) e css-not-emitted com warning (overflow hidden, gradiente, scale, sombra inset, raio por canto, pesos intermediários, auto-fill)">
+</p>
+
+<details>
+<summary><b>A mesma lista em tabela</b></summary>
 
 | sai nativo | sai com diferença | `css-not-emitted` (warning) |
 |---|---|---|
@@ -787,25 +830,6 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 | `backgroundImage: url()` (cover), `Image` com `objectFit` | | `fontWeight` 100–500 e 800–900 (sai regular ou bold) |
 | fonte, tamanho, peso, itálico, cor, alinhamento, `textTransform`, `textDecoration` por trecho, `letterSpacing` | | `auto-fill`, áreas nomeadas e `[linhas]` no grid; `gridAutoFlow` diferente de `row` |
 | `Chart` (bar, line, pie) e `Table` | | `whiteSpace` além de `normal`/`nowrap`; `objectFit` além de `contain`/`cover` |
-
-<details>
-<summary><b>O mesmo de/para em Mermaid</b></summary>
-
-```mermaid
-flowchart LR
-    css(["props CSS"]) --> nat
-    css --> deg
-    css --> warn
-    nat["<b>sai nativo</b><br/>backgroundColor · border · bordas por lado<br/>borderRadius · boxShadow externa<br/>opacity · rotate · translate · zIndex<br/>backgroundImage url() · display none<br/>texto: fonte, peso, itálico, cor, alinhamento,<br/>letterSpacing, textTransform, textDecoration<br/>Chart e Table nativos"]
-    deg["<b>sai com diferença</b><br/>fundo/borda de Text = forma atrás da caixa<br/>opacity por forma, não de grupo<br/>letterSpacing sem kerning<br/>lineHeight numérico no Keynote"]
-    warn["<b>css-not-emitted</b> (warning)<br/>overflow: hidden · gradiente · filter<br/>scale / skew / matrix<br/>sombra inset, spread ou múltipla<br/>raio por canto · raio + bordas por lado<br/>fontWeight fora de regular/bold<br/>auto-fill e áreas nomeadas no grid"]
-    classDef ok fill:#E8EEFC,stroke:#2F6FED,color:#1B2A4A
-    classDef mid fill:#F4F6FA,stroke:#5B6680,color:#1B2A4A
-    classDef bad fill:#FFF4E5,stroke:#F59E0B,color:#1B2A4A
-    class nat ok
-    class deg mid
-    class warn bad
-```
 
 </details>
 
@@ -824,7 +848,7 @@ flowchart LR
 ## Validação
 
 - **Testes:** 1650 com `vitest` (unitários, layout calculado à mão, oráculo do grid contra o Chrome, XML emitido, preview).
-- **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30.
+- **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30. Da galeria, `tara` (16:9) e `safra` (4:3) foram exportados e conferidos slide a slide: grupo girado com sombra, grid girado atrás do texto, mapa de calor, tabela e barra proporcional saem como no preview; só os gráficos são redesenhados pelo Keynote, como esperado.
 - **PowerPoint e Google Slides:** ainda não validados; a conferência no PowerPoint está com o dono do projeto. O XML é corrigido nos pontos em que o PowerPoint pediria "reparar".
 
 ## Para agentes
@@ -844,6 +868,7 @@ npm run typecheck      # tsc
 npm run build          # compila src/ para dist/ (JS + .d.ts)
 npm run test:package   # npm pack → projeto vazio → init → build (lento)
 node bin/pptsx.mjs build examples/demo.tsx --size 16x9,4x3,wide --out dist/
+node bin/pptsx.mjs build examples/gallery/lanterna.tsx --size 16x9,4x3 --out dist/gallery
 scripts/keynote-export.sh dist/demo.16x9.pptx dist/keynote/   # exporta os slides pelo Keynote (macOS)
 ```
 
@@ -858,6 +883,7 @@ npx tsx --tsconfig docs/readme/decks/tsconfig.json src/cli.ts build docs/readme/
 
 | arquivo | o que mostra |
 |---|---|
+| `gallery/*.tsx` | seis decks com identidade própria ([Galeria](#galeria)): relatório agrícola, pitch de hardware, festival de cinema, painel operacional, aula de ciências e retrospectiva |
 | `demo.tsx` | deck completo com layouts e componentes: grid de KPIs, duas colunas que empilham em 4:3, gráfico e tabela nativos, sem nenhum `if` sobre o tamanho |
 | `showcase.tsx` | vitrine do CSS: grid com `span` e `2 / -1`, wrap, `marginTop="auto"`, `zIndex`, herança, bordas por lado, sombra, `rotate`, `opacity`, `display` responsivo |
 | `long-list.tsx` | lista de 12 itens paginada (3 slides em 16:9, 2 em 4:3) |
