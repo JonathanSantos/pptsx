@@ -1,0 +1,8 @@
+// PoC CSS: cópia de src/fit/index.ts com os tipos da PoC (nós com css); adaptações marcadas com 'PoC:'.
+export { fitSlide } from './fit.ts';
+export type { FitInput, FitResult } from './fit.ts';
+export { fitDeck } from './deck.ts';
+export type { FitDeckInput, FitDeckResult } from './deck.ts';
+export { detectOverflow } from './detect.ts';
+export type { Overflow } from './detect.ts';
+export { groupDiagnostics } from './group.ts';

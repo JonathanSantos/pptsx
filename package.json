@@ -42,7 +42,8 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
     "prepack": "npm run build",
-    "test:package": "PPTSX_PACKAGE_TEST=1 vitest run tests/package"
+    "test:package": "PPTSX_PACKAGE_TEST=1 vitest run tests/package",
+    "poc:test": "tsc -p poc/css/tsconfig.json && vitest run --config poc/css/vitest.config.ts"
   },
   "engines": {
     "node": ">=20"
