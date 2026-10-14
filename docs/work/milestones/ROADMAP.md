@@ -20,7 +20,7 @@ M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10
 |---|---|---|
 | Validar calibração no PowerPoint e Google Slides (`dist/calib/final2/calibration.16x9.pptx`) | relatório `docs/work/reports/M3-calibration.md` | M8-F repete a calibração com rich text |
 | Decidir o nome do pacote (`pptsx` confunde com o runner `tsx`) | `package.json`, `jsxImportSource`, docs | M7-0 |
-| Decidir se fontes embutidas no .pptx são desejadas (tamanho do arquivo × portabilidade) | spike M8-S | M8-D |
+| ~~Fontes embutidas~~ → PowerPoint usa EOT (spike M8-S, teste do dono); opção `embedFonts` desligada por padrão | — | ✅ |
 
 ## Critérios de sucesso do roadmap
 

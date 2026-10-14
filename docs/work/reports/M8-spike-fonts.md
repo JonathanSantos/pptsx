@@ -171,3 +171,13 @@ Kit em `docs/work/reports/m8-spike-fonts/`:
    - **Tamanho:** cerca de 410 KB por face da Liberation. Quatro faces somam cerca de 1,6 MB num deck de 15 KB. Subset (só os glifos usados) reduz muito, mas exige reescrever o TTF (fontkit `createSubset`) e muda o checksum. Fica para depois. O EOT tem flag de subset (`TTEMBED_SUBSET`).
    - **Padrão desligado** (`embedFonts: false`), com documentação explicando que Keynote ignora, e o Google Slides provavelmente também.
    - **Validação do PowerPoint:** ele recusa o arquivo inteiro (não só a fonte) quando não consegue instalar uma fonte embutida. Gerar o EOT com os campos do cabeçalho tirados do próprio TTF (PANOSE, pesos, ranges, `checkSumAdjustment`) e nunca embutir um TTF com checksums inválidos. Se o M8-D algum dia fizer subset, recalcular os checksums como no `build2.mts`.
+
+## Resultado do dono — rodada 2 no PowerPoint para a web (13/10/2026)
+
+**F-eot-renomeada.pptx abriu e renderizou com os glifos da Liberation** (`1` sem pé, `R` de perna reta, `Q` de cauda diagonal, `@` de cauda longa), diferente da substituta que o PowerPoint usou no A/E (`1` com pé). Como a família "PptsxProbe Sans" não existe em nenhum sistema nem na nuvem, os glifos só podem ter vindo do EOT embutido.
+
+**Veredito final:** o PowerPoint (web) respeita fontes embutidas em **EOT v2.1 sem compressão e sem XOR**; recusa o arquivo inteiro com TTF cru e com as duas ofuscações. O Keynote ignora qualquer embed. Google Slides não testado (provável que ignore).
+
+**Decisão para o M8-D/E:** implementar o embed como opção desligada por padrão (`embedFonts: true`), pós-processamento do zip depois do sanitize, só com faces usadas no deck, nunca a Liberation sob o nome Arial, respeitando `OS/2.fsType` (bit restrito → `font-not-embeddable`). Já contratado em CONTRACTS.md §M8.
+
+**G-controle-renomeada.pptx** (dono, PowerPoint web): substituta com `1` de pé e `@` de cauda curta, igual ao A. **F ≠ G e F = Liberation: prova completa.**

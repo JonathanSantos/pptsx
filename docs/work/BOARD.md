@@ -58,7 +58,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M7 | M7-E | testes M7 + `test:package` (npm pack fora do repo) | ✅ |
 | M7 | M7-F | README do pacote + AGENT_GUIDE §7 | ✅ |
 | M7 | M7-G | validação: pacote fora do repo no Keynote; auto × forced (10/34 divergem, 0 vazam) | ✅ |
-| M8 | M8-S | spike: embed de fontes — Keynote ignora todas as variantes; PowerPoint/Google com o dono (kit em reports/m8-spike-fonts) | ✅ (dono pendente) |
+| M8 | M8-S | spike: embed de fontes — Keynote ignora; PowerPoint web usa EOT (F ≠ A, glifos da Liberation); TTF cru/ofuscado recusados | ✅ |
 | M8 | M8-0 | Contrato: `Span/B/I`, `TextRun`, `lineRuns`, `nowrap`, `align="baseline"`, `FontFace` sem `file`, `embedFonts` | ✅ |
 | M8 | M8-A | resolve: runs | 🔄 |
 | M8 | M8-B | text: quebra com runs, NBSP como glue, `nowrap` | 🔄 |
@@ -119,4 +119,4 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M7-B | `WATCH_DEBOUNCE_MS` vive em `src/cli/watch.ts`, não em `DEFAULTS` | mover no próximo Mx-0 |
 | M7-B | Cada rebuild do watch cria um grafo novo (memória cresce durante sessões longas) | aceito |
 | M8-S | pptxgenjs grava `<p:sldIdLst>` antes de `<p:notesMasterIdLst>` (fora da ordem do schema CT_Presentation); PowerPoint pode pedir "reparar" | M8-E: reordenar em `sanitize.ts` |
-| M8-S | Keynote descarta `ppt/fonts/` e `embeddedFontLst` ao abrir; embed só se justifica pelo PowerPoint | decisão do dono após testar o kit |
+| M8-S | Keynote descarta `ppt/fonts/` e `embeddedFontLst`; PowerPoint web usa EOT → embed implementado como opção (`embedFonts`) | ✅ M8-D/E |

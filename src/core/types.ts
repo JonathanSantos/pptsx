@@ -406,7 +406,9 @@ export type DiagnosticCode =
   | 'box-overflow'
   | 'out-of-slide'
   | 'image-upscaled'
-  | 'font-missing';
+  | 'font-missing'
+  /** M8: fonte pedida em embedFonts com fsType restrito; não foi embutida (warning, slide 0, path ''). */
+  | 'font-not-embeddable';
 
 export interface Diagnostic {
   readonly severity: Severity;

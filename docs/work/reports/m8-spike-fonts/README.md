@@ -112,3 +112,17 @@ Para cada arquivo, nesta ordem: A, B, C1, C2, E.
 | Keynote 14.4 (macOS 26) | A–G, todas | sim | não observável (sem acesso à UI) | **não**: Helvetica em todas (F = G = A byte a byte) | resultado do spike |
 
 `build.mts` (rodada 1) e `build2.mts` (rodada 2) são os scripts que geraram os arquivos. Rode da raiz do repo com `npx tsx <script> <pasta-saída>`. Os GUIDs de C1/C2 são aleatórios a cada execução.
+
+## Resultado (dono, PowerPoint web, 13/10/2026)
+
+| Arquivo | Abriu | Fonte embutida usada |
+|---|---|---|
+| A-sem-embed | sim | — (substituta com `1` de pé) |
+| B-ttf-cru | **não** ("embedded fonts can't be installed") | — |
+| C1-ofuscado-invertido | **não** | — |
+| C2-ofuscado-direto | **não** | — |
+| E-eot | sim | indeterminado (igual ao A) |
+| F-eot-renomeada | sim | **sim** (glifos da Liberation) |
+| G-controle-renomeada | sim | não (substituta com `1` de pé, igual ao A) |
+
+Conclusão: formato = EOT v2.1 sem compressão/XOR; o PowerPoint web usa a fonte embutida (F ≠ G, F = Liberation).
