@@ -214,6 +214,8 @@ export type TextMeasurer = (input: TextMeasureInput) => Core.TextLayout;
 export interface LayoutEnv {
   readonly measureText: TextMeasurer;
   readonly imageSize: (src: string) => Core.Dimensions;
+  /** Folga da quebra do medidor (o min-content do grid precisa dela); padrão DEFAULTS.textSafety. */
+  readonly textSafety?: number;
 }
 
 export interface RenderResult extends Omit<Core.RenderResult, 'diagnostics' | 'positioned'> {

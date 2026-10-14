@@ -23,6 +23,7 @@ import type {
   ResolvedText,
 } from '../types.ts';
 import { applyStyle } from './apply.ts';
+import { gridMeasureFunc } from './grid-layout.ts';
 import { measureInputOf } from './measure.ts';
 import {
   mainAxisOf,
@@ -113,7 +114,15 @@ const buildBaselineText = (source: ResolvedText, yoga: YogaNode, ctx: BuildConte
   leaf.setMeasureFunc(textMeasureFunc(source, ctx.env));
 };
 
+/** Grid: folha medida pela grade; os itens são posicionados depois, no read (grid-layout.ts). */
+const buildGrid: Builder<ResolvedBox> = (source, yoga, ctx) => {
+  applyStyle(yoga, { ...toItemStyle(source.css, ctx.parent), ...toBoxStyle(source.css) });
+  yoga.setMeasureFunc(gridMeasureFunc(source, ctx.env));
+  return { source, yoga, children: [] };
+};
+
 const buildBox: Builder<ResolvedBox> = (source, yoga, ctx) => {
+  if (source.css.display === 'grid') return buildGrid(source, yoga, ctx);
   applyStyle(yoga, { ...toItemStyle(source.css, ctx.parent), ...toContainerStyle(source.css) });
   const parent = parentLayoutOf(source.css, readsBaseline(source.css, ctx.parent));
   return { source, yoga, children: buildChildren(source.children, yoga, { ...ctx, parent }, source.css) };

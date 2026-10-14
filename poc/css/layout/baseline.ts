@@ -66,7 +66,7 @@ export const settleBaselineRows = (
   root: YogaNode,
   children: readonly BuiltNode[],
   rootDirection: FlexDirection,
-  size: { readonly width: number; readonly height: number | undefined },
+  size: { readonly width: number | undefined; readonly height: number | undefined },
 ): void => {
   const rows = baselineRowsOf(children, rootDirection);
   const settle = (remaining: number): void => {

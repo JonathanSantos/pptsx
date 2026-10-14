@@ -1,0 +1,1272 @@
+{
+ "browser": "Chrome 155.0.8059.40",
+ "generatedAt": "2026-10-14",
+ "cases": {
+  "G01 três colunas 1fr com gap": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 90
+   },
+   "i1": {
+    "x": 0,
+    "y": 0,
+    "width": 193.328125,
+    "height": 40
+   },
+   "i2": {
+    "x": 203.328125,
+    "y": 0,
+    "width": 193.328125,
+    "height": 40
+   },
+   "i3": {
+    "x": 406.65625,
+    "y": 0,
+    "width": 193.328125,
+    "height": 40
+   },
+   "i4": {
+    "x": 0,
+    "y": 50,
+    "width": 193.328125,
+    "height": 40
+   },
+   "i5": {
+    "x": 203.328125,
+    "y": 50,
+    "width": 193.328125,
+    "height": 40
+   },
+   "i6": {
+    "x": 406.65625,
+    "y": 50,
+    "width": 193.328125,
+    "height": 40
+   }
+  },
+  "G02 coluna fixa + 1fr": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 60
+   },
+   "i1": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 30
+   },
+   "i2": {
+    "x": 216,
+    "y": 0,
+    "width": 384,
+    "height": 30
+   },
+   "i3": {
+    "x": 0,
+    "y": 30,
+    "width": 200,
+    "height": 30
+   },
+   "i4": {
+    "x": 216,
+    "y": 30,
+    "width": 384,
+    "height": 30
+   }
+  },
+  "G03 fixa, auto e 1fr": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 20
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   },
+   "b": {
+    "x": 108,
+    "y": 0,
+    "width": 120,
+    "height": 20
+   },
+   "c": {
+    "x": 236,
+    "y": 0,
+    "width": 364,
+    "height": 20
+   }
+  },
+  "G04 percentuais": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 50
+   },
+   "i1": {
+    "x": 0,
+    "y": 0,
+    "width": 150,
+    "height": 50
+   },
+   "i2": {
+    "x": 150,
+    "y": 0,
+    "width": 450,
+    "height": 50
+   }
+  },
+  "G05 2fr 1fr": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 50
+   },
+   "i1": {
+    "x": 0,
+    "y": 0,
+    "width": 392,
+    "height": 50
+   },
+   "i2": {
+    "x": 404,
+    "y": 0,
+    "width": 196,
+    "height": 50
+   }
+  },
+  "G06 minmax com mínimo maior que o espaço": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 250,
+    "height": 20
+   },
+   "i1": {
+    "x": 0,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   },
+   "i2": {
+    "x": 100,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   },
+   "i3": {
+    "x": 200,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   }
+  },
+  "G07 minmax(0, 1fr) ignora o conteúdo": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 300,
+    "height": 20
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 250,
+    "height": 20
+   },
+   "b": {
+    "x": 150,
+    "y": 0,
+    "width": 150,
+    "height": 20
+   }
+  },
+  "G08 1fr não encolhe abaixo do min-content": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 500,
+    "height": 20
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 400,
+    "height": 20
+   },
+   "b": {
+    "x": 400,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   }
+  },
+  "G09 auto auto: esticam igualmente": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 500,
+    "height": 21
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 154.96875,
+    "height": 21
+   },
+   "b": {
+    "x": 154.96875,
+    "y": 0,
+    "width": 345.03125,
+    "height": 21
+   }
+  },
+  "G10 linhas fixa e 1fr com altura definida": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 300
+   },
+   "i1": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 50
+   },
+   "i2": {
+    "x": 0,
+    "y": 50,
+    "width": 600,
+    "height": 250
+   }
+  },
+  "G11 gridAutoRows fixo": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 188
+   },
+   "i1": {
+    "x": 0,
+    "y": 0,
+    "width": 298,
+    "height": 60
+   },
+   "i2": {
+    "x": 302,
+    "y": 0,
+    "width": 298,
+    "height": 60
+   },
+   "i3": {
+    "x": 0,
+    "y": 64,
+    "width": 298,
+    "height": 60
+   },
+   "i4": {
+    "x": 302,
+    "y": 64,
+    "width": 298,
+    "height": 60
+   },
+   "i5": {
+    "x": 0,
+    "y": 128,
+    "width": 298,
+    "height": 60
+   }
+  },
+  "G12 linhas auto pela maior altura": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 86
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 193.328125,
+    "height": 30
+   },
+   "b": {
+    "x": 203.328125,
+    "y": 0,
+    "width": 193.328125,
+    "height": 70
+   },
+   "c": {
+    "x": 406.65625,
+    "y": 0,
+    "width": 193.328125,
+    "height": 50
+   },
+   "d": {
+    "x": 0,
+    "y": 76,
+    "width": 193.328125,
+    "height": 10
+   }
+  },
+  "G13 min-content e max-content": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 42
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 59.046875,
+    "height": 42
+   },
+   "b": {
+    "x": 65.046875,
+    "y": 0,
+    "width": 155.09375,
+    "height": 21
+   },
+   "c": {
+    "x": 226.140625,
+    "y": 0,
+    "width": 373.859375,
+    "height": 10
+   }
+  },
+  "G14 placement explícito": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 80
+   },
+   "a": {
+    "x": 0,
+    "y": 40,
+    "width": 400,
+    "height": 40
+   },
+   "b": {
+    "x": 400,
+    "y": 0,
+    "width": 200,
+    "height": 40
+   },
+   "c": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 40
+   }
+  },
+  "G15 span no auto-placement": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 100
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 196.65625,
+    "height": 30
+   },
+   "b": {
+    "x": 201.65625,
+    "y": 0,
+    "width": 398.34375,
+    "height": 30
+   },
+   "c": {
+    "x": 0,
+    "y": 35,
+    "width": 398.328125,
+    "height": 30
+   },
+   "d": {
+    "x": 403.328125,
+    "y": 35,
+    "width": 196.671875,
+    "height": 30
+   },
+   "e": {
+    "x": 0,
+    "y": 70,
+    "width": 196.65625,
+    "height": 30
+   }
+  },
+  "G16 1 / -1 ocupa a linha toda": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 78
+   },
+   "header": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 30
+   },
+   "i1": {
+    "x": 0,
+    "y": 38,
+    "width": 194.65625,
+    "height": 40
+   },
+   "i2": {
+    "x": 202.65625,
+    "y": 38,
+    "width": 194.671875,
+    "height": 40
+   },
+   "i3": {
+    "x": 405.328125,
+    "y": 38,
+    "width": 194.671875,
+    "height": 40
+   }
+  },
+  "G17 linha definida, coluna automática": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 40
+   },
+   "a": {
+    "x": 100,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   },
+   "b": {
+    "x": 0,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   },
+   "c": {
+    "x": 0,
+    "y": 20,
+    "width": 100,
+    "height": 20
+   },
+   "d": {
+    "x": 200,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   }
+  },
+  "G18 span de linhas": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 64
+   },
+   "tall": {
+    "x": 0,
+    "y": 0,
+    "width": 197.328125,
+    "height": 64
+   },
+   "i1": {
+    "x": 201.328125,
+    "y": 0,
+    "width": 197.328125,
+    "height": 30
+   },
+   "i2": {
+    "x": 402.65625,
+    "y": 0,
+    "width": 197.328125,
+    "height": 30
+   },
+   "i3": {
+    "x": 201.328125,
+    "y": 34,
+    "width": 197.328125,
+    "height": 30
+   },
+   "i4": {
+    "x": 402.65625,
+    "y": 34,
+    "width": 197.328125,
+    "height": 30
+   }
+  },
+  "G19 sparse: o cursor não volta": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 60
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 20
+   },
+   "wide": {
+    "x": 0,
+    "y": 20,
+    "width": 600,
+    "height": 20
+   },
+   "b": {
+    "x": 0,
+    "y": 40,
+    "width": 200,
+    "height": 20
+   }
+  },
+  "G20 coluna definida, linha automática": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 40
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 20
+   },
+   "b": {
+    "x": 200,
+    "y": 0,
+    "width": 200,
+    "height": 20
+   },
+   "c": {
+    "x": 0,
+    "y": 20,
+    "width": 200,
+    "height": 20
+   }
+  },
+  "G21 justifySelf/alignSelf": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 100
+   },
+   "start": {
+    "x": 0,
+    "y": 0,
+    "width": 40,
+    "height": 40
+   },
+   "center": {
+    "x": 130,
+    "y": 30,
+    "width": 40,
+    "height": 40
+   },
+   "end": {
+    "x": 260,
+    "y": 60,
+    "width": 40,
+    "height": 40
+   }
+  },
+  "G22 margin auto centraliza na célula": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 100
+   },
+   "a": {
+    "x": 75,
+    "y": 35,
+    "width": 50,
+    "height": 30
+   }
+  },
+  "G23 margens do item com stretch": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 80
+   },
+   "a": {
+    "x": 10,
+    "y": 10,
+    "width": 280,
+    "height": 60
+   },
+   "b": {
+    "x": 320,
+    "y": 5,
+    "width": 280,
+    "height": 75
+   }
+  },
+  "G24 justifyItems start: largura pelo conteúdo": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 21
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 229.09375,
+    "height": 21
+   }
+  },
+  "G25 padding e borda no contêiner": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 400,
+    "height": 80
+   },
+   "i1": {
+    "x": 25,
+    "y": 25,
+    "width": 170,
+    "height": 30
+   },
+   "i2": {
+    "x": 205,
+    "y": 25,
+    "width": 170,
+    "height": 30
+   }
+  },
+  "G26 grid aninhado": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 50
+   },
+   "left": {
+    "x": 0,
+    "y": 0,
+    "width": 196.65625,
+    "height": 50
+   },
+   "inner": {
+    "x": 206.65625,
+    "y": 0,
+    "width": 393.34375,
+    "height": 50
+   },
+   "n1": {
+    "x": 206.65625,
+    "y": 0,
+    "width": 194.671875,
+    "height": 20
+   },
+   "n2": {
+    "x": 405.328125,
+    "y": 0,
+    "width": 194.671875,
+    "height": 20
+   },
+   "n3": {
+    "x": 206.65625,
+    "y": 27,
+    "width": 194.671875,
+    "height": 20
+   },
+   "n4": {
+    "x": 405.328125,
+    "y": 27,
+    "width": 194.671875,
+    "height": 20
+   }
+  },
+  "G27 texto quebra na largura da coluna": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 134
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 150,
+    "height": 105
+   },
+   "b": {
+    "x": 160,
+    "y": 0,
+    "width": 150,
+    "height": 105
+   },
+   "c": {
+    "x": 320,
+    "y": 0,
+    "width": 150,
+    "height": 105
+   },
+   "d": {
+    "x": 0,
+    "y": 113,
+    "width": 150,
+    "height": 21
+   }
+  },
+  "G28 dashboard 3×2 (fr e auto)": {
+   "grid": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 210
+   },
+   "card1": {
+    "x": 16,
+    "y": 16,
+    "width": 178.65625,
+    "height": 81
+   },
+   "label1": {
+    "x": 28,
+    "y": 28,
+    "width": 154.65625,
+    "height": 16
+   },
+   "value1": {
+    "x": 28,
+    "y": 48,
+    "width": 154.65625,
+    "height": 37
+   },
+   "card2": {
+    "x": 210.65625,
+    "y": 16,
+    "width": 178.671875,
+    "height": 81
+   },
+   "label2": {
+    "x": 222.65625,
+    "y": 28,
+    "width": 154.671875,
+    "height": 16
+   },
+   "value2": {
+    "x": 222.65625,
+    "y": 48,
+    "width": 154.671875,
+    "height": 37
+   },
+   "card3": {
+    "x": 405.328125,
+    "y": 16,
+    "width": 178.671875,
+    "height": 81
+   },
+   "label3": {
+    "x": 417.328125,
+    "y": 28,
+    "width": 154.671875,
+    "height": 16
+   },
+   "value3": {
+    "x": 417.328125,
+    "y": 48,
+    "width": 154.671875,
+    "height": 37
+   },
+   "card4": {
+    "x": 16,
+    "y": 113,
+    "width": 178.65625,
+    "height": 81
+   },
+   "label4": {
+    "x": 28,
+    "y": 125,
+    "width": 154.65625,
+    "height": 16
+   },
+   "value4": {
+    "x": 28,
+    "y": 145,
+    "width": 154.65625,
+    "height": 37
+   },
+   "card5": {
+    "x": 210.65625,
+    "y": 113,
+    "width": 178.671875,
+    "height": 81
+   },
+   "label5": {
+    "x": 222.65625,
+    "y": 125,
+    "width": 154.671875,
+    "height": 16
+   },
+   "value5": {
+    "x": 222.65625,
+    "y": 145,
+    "width": 154.671875,
+    "height": 37
+   },
+   "card6": {
+    "x": 405.328125,
+    "y": 113,
+    "width": 178.671875,
+    "height": 81
+   },
+   "label6": {
+    "x": 417.328125,
+    "y": 125,
+    "width": 154.671875,
+    "height": 16
+   },
+   "value6": {
+    "x": 417.328125,
+    "y": 145,
+    "width": 154.671875,
+    "height": 37
+   }
+  },
+  "F01 wrap com gap": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 300,
+    "height": 80
+   },
+   "i1": {
+    "x": 0,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   },
+   "i2": {
+    "x": 110,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   },
+   "i3": {
+    "x": 0,
+    "y": 30,
+    "width": 100,
+    "height": 20
+   },
+   "i4": {
+    "x": 110,
+    "y": 30,
+    "width": 100,
+    "height": 20
+   },
+   "i5": {
+    "x": 0,
+    "y": 60,
+    "width": 100,
+    "height": 20
+   }
+  },
+  "F02 wrap com margens": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 300,
+    "height": 60
+   },
+   "i1": {
+    "x": 5,
+    "y": 5,
+    "width": 120,
+    "height": 20
+   },
+   "i2": {
+    "x": 135,
+    "y": 5,
+    "width": 120,
+    "height": 20
+   },
+   "i3": {
+    "x": 5,
+    "y": 35,
+    "width": 120,
+    "height": 20
+   },
+   "i4": {
+    "x": 135,
+    "y": 35,
+    "width": 120,
+    "height": 20
+   }
+  },
+  "F03 margin auto empurra para a direita": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 30
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 50,
+    "height": 30
+   },
+   "b": {
+    "x": 550,
+    "y": 0,
+    "width": 50,
+    "height": 30
+   }
+  },
+  "F04 margin auto centraliza nos dois eixos": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 300,
+    "height": 200
+   },
+   "a": {
+    "x": 120,
+    "y": 80,
+    "width": 60,
+    "height": 40
+   }
+  },
+  "F05 flex 1, 2 e basis fixa": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 300,
+    "height": 10
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 80,
+    "height": 10
+   },
+   "b": {
+    "x": 80,
+    "y": 0,
+    "width": 160,
+    "height": 10
+   },
+   "c": {
+    "x": 240,
+    "y": 0,
+    "width": 60,
+    "height": 10
+   }
+  },
+  "F06 order": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 10
+   },
+   "a": {
+    "x": 20,
+    "y": 0,
+    "width": 10,
+    "height": 10
+   },
+   "b": {
+    "x": 0,
+    "y": 0,
+    "width": 20,
+    "height": 10
+   },
+   "c": {
+    "x": 70,
+    "y": 0,
+    "width": 30,
+    "height": 10
+   },
+   "d": {
+    "x": 30,
+    "y": 0,
+    "width": 40,
+    "height": 10
+   }
+  },
+  "F07 alignContent center com wrap": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 200
+   },
+   "i1": {
+    "x": 0,
+    "y": 70,
+    "width": 90,
+    "height": 30
+   },
+   "i2": {
+    "x": 90,
+    "y": 70,
+    "width": 90,
+    "height": 30
+   },
+   "i3": {
+    "x": 0,
+    "y": 100,
+    "width": 90,
+    "height": 30
+   }
+  },
+  "F08 space-between e center": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 100
+   },
+   "a": {
+    "x": 0,
+    "y": 40,
+    "width": 40,
+    "height": 20
+   },
+   "b": {
+    "x": 280,
+    "y": 20,
+    "width": 40,
+    "height": 60
+   },
+   "c": {
+    "x": 560,
+    "y": 30,
+    "width": 40,
+    "height": 40
+   }
+  },
+  "F09 row-reverse": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 300,
+    "height": 20
+   },
+   "a": {
+    "x": 250,
+    "y": 0,
+    "width": 50,
+    "height": 20
+   },
+   "b": {
+    "x": 180,
+    "y": 0,
+    "width": 70,
+    "height": 20
+   }
+  },
+  "F10 rodapé com marginTop auto": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 300
+   },
+   "title": {
+    "x": 20,
+    "y": 20,
+    "width": 560,
+    "height": 28
+   },
+   "foot": {
+    "x": 20,
+    "y": 266,
+    "width": 560,
+    "height": 14
+   }
+  },
+  "B01 margens de irmãos colapsam": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 70
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 20
+   },
+   "b": {
+    "x": 0,
+    "y": 50,
+    "width": 600,
+    "height": 20
+   }
+  },
+  "B02 margem negativa no colapso": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 55
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 20
+   },
+   "b": {
+    "x": 0,
+    "y": 35,
+    "width": 600,
+    "height": 20
+   }
+  },
+  "B03 filhos esticam na largura de conteúdo": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 400,
+    "height": 60
+   },
+   "a": {
+    "x": 30,
+    "y": 10,
+    "width": 340,
+    "height": 20
+   },
+   "b": {
+    "x": 45,
+    "y": 30,
+    "width": 325,
+    "height": 20
+   }
+  },
+  "B04 margin 0 auto centraliza": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 400,
+    "height": 20
+   },
+   "a": {
+    "x": 150,
+    "y": 0,
+    "width": 100,
+    "height": 20
+   }
+  },
+  "X01 border-box: borda e padding dentro da largura": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 50
+   },
+   "a": {
+    "x": 15,
+    "y": 15,
+    "width": 170,
+    "height": 20
+   }
+  },
+  "X02 bordas por lado ocupam espaço": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 23
+   },
+   "a": {
+    "x": 8,
+    "y": 3,
+    "width": 192,
+    "height": 20
+   }
+  },
+  "X03 relative desloca sem mexer nos irmãos": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 40
+   },
+   "a": {
+    "x": 11,
+    "y": 7,
+    "width": 600,
+    "height": 20
+   },
+   "b": {
+    "x": 0,
+    "y": 20,
+    "width": 600,
+    "height": 20
+   }
+  },
+  "X04 absolute com right/bottom": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 300,
+    "height": 200
+   },
+   "a": {
+    "x": 240,
+    "y": 140,
+    "width": 50,
+    "height": 40
+   }
+  },
+  "I01 fontSize herdado define a altura da linha": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 34
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 34
+   }
+  },
+  "I02 letterSpacing e textTransform herdados": {
+   "root": {
+    "x": 0,
+    "y": 0,
+    "width": 600,
+    "height": 18
+   },
+   "a": {
+    "x": 0,
+    "y": 0,
+    "width": 103.734375,
+    "height": 18
+   }
+  }
+ }
+}

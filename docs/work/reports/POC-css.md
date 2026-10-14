@@ -51,4 +51,41 @@ Spec: `docs/work/poc/browser-layout.md`. Código: `poc/css/` (guia em `poc/css/R
 - **`lineHeight` CSS** (item 3 acima): manter a semântica da engine ou adotar a do CSS na adoção.
 - `charSpacing` do pptxgenjs grava `kern="0"` (desliga kerning) e a medição usa kerning: diferença pequena de largura em texto com `letterSpacing`; a medir na P2 junto com a calibração.
 - O `fit/` ainda é a cópia literal: área de conteúdo sem borda, margens fora da detecção/causa, sem estouro por célula de grid/linha de wrap (P2).
-- Grid: na P0, `display: grid` cai num flex column (P1 implementa).
+- Grid: na P0, `display: grid` caía num flex column (resolvido na P1).
+
+---
+
+## P1 — grid
+
+**Entregue**
+
+- `poc/css/layout/grid.ts` (puro, sem Yoga nem texto): subconjunto do CSS Grid Level 1 — tracks em pt/px, `%`, `fr`, `auto`, `min-content`, `max-content`, `minmax(a, b)`, `repeat(n, …)`; `gridAutoRows/Columns`; placement explícito (`gridColumn/Row` com início/fim, `span`, linhas negativas, `1 / -1`) e auto-placement em linhas, sparse (§8.5: definidos → linha definida → cursor); track sizing da §11 (iniciar, resolver tamanhos intrínsecos com itens de span 1, depois spans maiores, depois os que atravessam `fr`; maximizar; expandir `fr` com a regra iterativa do §11.7.1; esticar tracks `auto`). `1fr` é `minmax(auto, 1fr)` (não encolhe abaixo do min-content do item); `minmax(0, 1fr)` ignora o conteúdo.
+- `layout/grid-layout.ts`: o contêiner grid é uma folha do Yoga com measure function (largura → altura pela grade, com `Exactly`/`AtMost`/`Undefined`); os itens não entram na árvore principal. Depois do layout, cada item é posicionado na sua área por uma árvore Yoga própria do tamanho da área: `justifySelf/alignSelf` (padrão `stretch`; `justifyItems`/`alignItems` do contêiner como padrão), `margin` e `margin: auto`, absolutos pela caixa de padding. Contribuições: min-content por `layout/intrinsic.ts` (texto = maior trecho indivisível; row soma, column/block pega o maior; grid aninhado = grade sem espaço), max-content e altura-na-largura por Yoga isolado. Slide também pode ser `display="grid"`. Grid aninhado funciona (G26).
+- Sintaxe de track fora do subconjunto (`auto-fill`, áreas nomeadas, `[linha]`) vira `css-not-emitted` em vez de sumir.
+- **Oráculo (§9)**: `poc/css/oracle/` — `cases.ts` (48 casos como dados), `html.ts` (caso → HTML com border-box, Liberation Sans via `@font-face` como "Arial", 18 px, line-height normal) e `generate.ts` (`playwright-core` em devDependency **só da PoC**, Chrome do sistema via `channel: 'chrome'`, `getBoundingClientRect` relativo ao slide). Fixtures versionadas em `poc/css/tests/__fixtures__/css-cases.json` (Chrome 155.0.8059.40); `npm run poc:test` não abre browser. Sem `playwright-core` instalado a PoC compila e testa igual (import dinâmico); só não regenera as fixtures.
+- `poc/css/examples/dashboard.tsx`: 6 KPIs em `gridTemplateColumns={{ base: 'repeat(3, 1fr)', tall: 'repeat(2, 1fr)' }}` + `gridAutoRows="auto"` + rodapé em grid `auto 1fr` com `marginTop="auto"`.
+
+**Números (H4)**
+
+| Suíte | Resultado |
+|---|---|
+| 48 casos × Chrome 155, métrica de texto da engine, ±1 pt | **47/48** (28 de grid, 10 de flex, 4 de block, 6 de caixa/posição/herança) |
+| Mesmos 48 casos com a altura de linha arredondada como o Chromium faz | **48/48** |
+| Testes da PoC | 160 (H4 ×2, 10 unitários do grid, mais os 53 da P0) |
+| `npm test` da raiz | 1412 passados, 5 pulados |
+
+**Divergências encontradas (documentadas)**
+
+1. **G27 (texto de 5 linhas numa célula):** só altura. O Chromium arredonda ascent, descent e lineGap a px inteiro antes de somar (18 px de Liberation Sans → linha de 21 px); a engine usa a métrica exata (20,70 pt), que é a calibrada no Keynote. 5 linhas acumulam 1,5 pt. Com a altura de linha do browser o caso bate (por isso a 2ª rodada): o algoritmo de grid está certo; a diferença é métrica de fonte, e quem decide o .pptx é a métrica da engine.
+2. **Bug do Yoga 3.2.1 (F02):** com `flexWrap`, item com `alignItems` start ignora a margem do início do eixo cruzado e com `center` ignora as duas (a altura da linha já conta com elas; `flex-end` e `stretch` saem certos). Reproduzido num teste direto do Yoga, fora da PoC. Contornado em `layout/read.ts` (deslocamento pós-layout); a engine atual não é afetada (não tem wrap).
+3. Dois bugs do meu track sizing achados pelo oráculo e corrigidos antes do commit: o "maximizar" passava espaço além do limite dos tracks (G09) e o passo dos itens que atravessam `fr` aumentava também `minmax(0, 1fr)` (G07).
+4. Fora da suíte por decisão: `min-width: auto` de item flex (o Yoga não implementa; a PoC emula só o caso Text/Table em column) e palavra maior que a linha (o CSS deixa vazar, a engine quebra por caractere).
+
+**Custo (H7, parcial)**: `grid.ts` 476 linhas (368 de código sem comentários/brancos); integração `grid-layout.ts` 246 (199) e `intrinsic.ts` 70 (51). Motor + integração ≈ 620 linhas de código, na faixa estimada pela spec (400–600 para o motor).
+
+**Validação visual**: `dashboard` 16x9 (3×2) e 4x3 (2×3) exportados pelo Keynote sem erro; batem com o preview. A borda só em cima de um cartão arredondado sai como linha reta sobre o canto (o fundo continua arredondado): agora isso gera `css-not-emitted` ("as linhas das bordas saem retas").
+
+**Aberto**
+
+- `justifyContent/alignContent` no contêiner grid (grade menor que o contêiner fica no início), `grid-auto-flow: dense`, áreas nomeadas, `auto-fill/auto-fit`, subgrid e baseline em grid: fora do subconjunto (spec §3).
+- Custo de medição: cada contribuição de item é um Yoga isolado (sem cache entre chamadas da measure function); medir em P3 no tempo de build.

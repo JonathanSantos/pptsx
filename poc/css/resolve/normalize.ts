@@ -41,6 +41,7 @@ import {
   parseTransform,
   type ParsedBorder,
 } from './values.ts';
+import { parseTrackList } from '../layout/grid.ts';
 
 /**
  * Normalização de um nó: props do autor (já sem responsivo) → `CssStyle` (sem shorthands,
@@ -426,6 +427,17 @@ const pass =
   (field: string): Handler =>
   (draft, value) => ({ ...draft, own: { ...draft.own, [field]: value } });
 
+/** Tracks fora do subconjunto (áreas nomeadas, auto-fill…) viram diagnóstico em vez de sumir. */
+const trackList =
+  (field: GridTrackKey): Handler =>
+  (draft, value, key) => {
+    const text = typeof value === 'number' ? `${value}px` : String(value);
+    if (parseTrackList(text) === undefined) {
+      return reject(draft, key, value, 'sintaxe de track fora do subconjunto da PoC (px, %, fr, auto, min/max-content, minmax, repeat(n, …)); a grade ignora este valor');
+    }
+    return { ...draft, grid: { ...draft.grid, [field]: text } };
+  };
+
 const CSS_HANDLERS: Readonly<Record<string, Handler>> = {
   display: setField('display', parseDisplay),
   position: setField('position', parsePosition),
@@ -501,10 +513,10 @@ const CSS_HANDLERS: Readonly<Record<string, Handler>> = {
     return number !== undefined && Number.isInteger(number) ? number : undefined;
   }),
   overflow: overflowHandler,
-  gridTemplateColumns: (draft, value) => ({ ...draft, grid: { ...draft.grid, gridTemplateColumns: String(value) } }),
-  gridTemplateRows: (draft, value) => ({ ...draft, grid: { ...draft.grid, gridTemplateRows: String(value) } }),
-  gridAutoRows: (draft, value) => ({ ...draft, grid: { ...draft.grid, gridAutoRows: String(value) } }),
-  gridAutoColumns: (draft, value) => ({ ...draft, grid: { ...draft.grid, gridAutoColumns: String(value) } }),
+  gridTemplateColumns: trackList('gridTemplateColumns'),
+  gridTemplateRows: trackList('gridTemplateRows'),
+  gridAutoRows: trackList('gridAutoRows'),
+  gridAutoColumns: trackList('gridAutoColumns'),
   gridAutoFlow: (draft, value, key) => (value === 'row' ? draft : reject(draft, key, value, 'só auto-placement em linhas (row)')),
   gridColumn: setField('gridColumn', parseGridPlacement),
   gridRow: setField('gridRow', parseGridPlacement),

@@ -5,6 +5,7 @@ import type { Rect } from '../../../src/core/types.ts';
 import { measureTable } from '../../../src/layout/table.ts';
 import type {
   BoxMetrics,
+  CssStyle,
   LayoutEnv,
   PositionedNode,
   ResolvedBox,
@@ -16,7 +17,9 @@ import type {
   ResolvedText,
 } from '../types.ts';
 import { readSides } from './apply.ts';
+import { layoutGridChildren } from './grid-layout.ts';
 import { measureInputOf } from './measure.ts';
+import { mainAxisOf } from './style.ts';
 import type { BuiltNode } from './tree.ts';
 
 interface Origin {
@@ -55,12 +58,31 @@ type Reader<N extends ResolvedNode> = (
   env: LayoutEnv,
 ) => Extract<PositionedNode, { kind: N['kind'] }>;
 
-const readBox: Reader<ResolvedBox> = (source, built, frame, env) => ({
-  ...source,
-  frame,
-  box: boxOf(built.yoga),
-  children: readChildren(built.children, frame, env),
-});
+const numeric = (value: unknown): number => (typeof value === 'number' ? value : 0);
+
+/**
+ * Contorno de bug do Yoga 3.2.1: com flex-wrap, item alinhado em start ignora a margem do
+ * início do eixo cruzado e em center ignora as duas (a altura da linha já conta com elas;
+ * end e stretch saem certos). Medido em H4 (caso F02) e isolado num teste direto do Yoga.
+ */
+const wrapCrossOffsetOf = (container: CssStyle, child: ResolvedNode): Origin => {
+  if (container.display !== 'flex' || container.flexWrap === 'nowrap' || child.css.position === 'absolute') return { x: 0, y: 0 };
+  const align = child.css.alignSelf ?? container.alignItems;
+  const row = mainAxisOf(container) === 'row';
+  const [leading, trailing] = row ? [child.css.margin.top, child.css.margin.bottom] : [child.css.margin.left, child.css.margin.right];
+  const offset = align === 'flex-start' ? numeric(leading) : align === 'center' ? (numeric(leading) - numeric(trailing)) / 2 : 0;
+  return row ? { x: 0, y: offset } : { x: offset, y: 0 };
+};
+
+const readBox: Reader<ResolvedBox> = (source, built, frame, env) => {
+  const box = boxOf(built.yoga);
+  if (source.css.display === 'grid') return { ...source, frame, box, children: layoutGridChildren(source, frame, box, env) };
+  const children = built.children.map((child) => {
+    const fix = wrapCrossOffsetOf(source.css, child.source);
+    return readNode(child, { x: frame.x + fix.x, y: frame.y + fix.y }, env);
+  });
+  return { ...source, frame, box, children };
+};
 
 // As linhas finais são medidas de novo com a largura definitiva da área de conteúdo.
 const readText: Reader<ResolvedText> = (source, built, frame, env) => {

@@ -2,33 +2,35 @@ import Yoga, { Direction } from 'yoga-layout';
 import type { Rect, SlideSize } from '../../../src/core/types.ts';
 import type { LayoutEnv, PositionedDeck, PositionedSlide, ResolvedDeck, ResolvedSlide } from '../types.ts';
 import { applyStyle } from './apply.ts';
+import { createConfig } from './config.ts';
 import { settleBaselineRows } from './baseline.ts';
+import { layoutGridChildren } from './grid-layout.ts';
 import { boxOf, readChildren } from './read.ts';
 import { toContainerStyle } from './style.ts';
 import { buildChildren, parentLayoutOf } from './tree.ts';
 
 /**
  * Layout da PoC: Yoga com os padrões do CSS (`useWebDefaults(true)`: row, align-content
- * stretch, shrink 1), box model completo e o mesmo contrato da engine (frames absolutos).
+ * stretch, shrink 1), box model completo, grid próprio (grid.ts) e o mesmo contrato da
+ * engine (frames absolutos).
  */
-const createConfig = () => {
-  const config = Yoga.Config.create();
-  // Sem arredondar para pixel: a unidade é pt e queremos frações exatas.
-  config.setPointScaleFactor(0);
-  config.setUseWebDefaults(true);
-  return config;
-};
 
 export const layoutSlide = (slide: ResolvedSlide, size: SlideSize, env: LayoutEnv): PositionedSlide => {
   const config = createConfig();
   const root = Yoga.Node.create(config);
   try {
     applyStyle(root, { ...toContainerStyle(slide.css), width: size.width, height: size.height });
+    const frame: Rect = { x: 0, y: 0, width: size.width, height: size.height };
+    // Slide em grid: o Yoga só resolve a caixa do slide; a grade posiciona os filhos.
+    if (slide.css.display === 'grid') {
+      root.calculateLayout(size.width, size.height, Direction.LTR);
+      const box = boxOf(root);
+      return { ...slide, frame, box, children: layoutGridChildren(slide, frame, box, env) };
+    }
     const parent = parentLayoutOf(slide.css, false);
     const children = buildChildren(slide.children, root, { config, env, parent }, slide.css);
     root.calculateLayout(size.width, size.height, Direction.LTR);
     settleBaselineRows(root, children, parent.direction, size);
-    const frame: Rect = { x: 0, y: 0, width: size.width, height: size.height };
     return { ...slide, frame, box: boxOf(root), children: readChildren(children, frame, env) };
   } finally {
     root.freeRecursive();

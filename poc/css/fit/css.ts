@@ -1,4 +1,5 @@
-import type { Diagnostic, NotEmitted, PositionedDeck, PositionedNode, PositionedSlide } from '../types.ts';
+import { uniformBorderOf } from '../emit/decoration.ts';
+import type { CssStyle, Diagnostic, NotEmitted, PositionedDeck, PositionedNode, PositionedSlide } from '../types.ts';
 import { groupDiagnostics } from './group.ts';
 
 /**
@@ -8,6 +9,12 @@ import { groupDiagnostics } from './group.ts';
  * descobrem com o nó inteiro (sombra sem fundo, overflow hidden em caixa, rotate em gráfico).
  */
 
+const SIDES = ['top', 'right', 'bottom', 'left'] as const;
+
+/** Alguma borda visível e não uniforme (vira linha por lado no emissor). */
+const hasSideBorders = (css: CssStyle): boolean =>
+  SIDES.some((side) => css.border[side].width > 0 && css.border[side].style !== 'none') && uniformBorderOf(css) === undefined;
+
 const contextualOf = (node: PositionedNode): readonly NotEmitted[] => {
   const { css } = node;
   const notes: NotEmitted[] = [];
@@ -16,6 +23,9 @@ const contextualOf = (node: PositionedNode): readonly NotEmitted[] => {
   }
   if (css.boxShadow !== undefined && css.backgroundColor === undefined && node.kind !== 'shape') {
     notes.push({ property: 'boxShadow', value: 'sombra', reason: 'sem backgroundColor a forma não tem preenchimento e a sombra não aparece no PPTX' });
+  }
+  if (css.borderRadius !== undefined && css.borderRadius > 0 && hasSideBorders(css)) {
+    notes.push({ property: 'borderRadius', value: String(css.borderRadius), reason: 'com bordas diferentes por lado, as linhas das bordas saem retas (o fundo continua arredondado)' });
   }
   if (css.rotate !== 0 && (node.kind === 'chart' || node.kind === 'table')) {
     notes.push({ property: 'rotate', value: String(css.rotate), reason: `${node.kind === 'chart' ? 'gráfico' : 'tabela'} nativo não gira no PPTX` });

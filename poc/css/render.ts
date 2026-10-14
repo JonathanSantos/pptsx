@@ -45,6 +45,7 @@ export const createEnv = (options: Pick<RenderOptions, 'fonts' | 'textSafety' | 
   return {
     measureText: createCssMeasurer(createFontRegistry(faces), options.textSafety ?? DEFAULTS.textSafety),
     imageSize: readImageSize(options.baseDir ?? process.cwd()),
+    textSafety: options.textSafety ?? DEFAULTS.textSafety,
   };
 };
 
@@ -63,6 +64,7 @@ const settingsOf = (options: RenderOptions): Settings => {
     env: {
       measureText: createCssMeasurer(createFontRegistry(fonts), options.textSafety ?? DEFAULTS.textSafety),
       imageSize: readImageSize(baseDir),
+      textSafety: options.textSafety ?? DEFAULTS.textSafety,
     },
   };
 };

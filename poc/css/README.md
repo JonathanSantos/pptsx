@@ -19,7 +19,8 @@ Decks da PoC importam de `poc/css/index.ts`; decks de `examples/` (que importam 
 | Pasta | O que é | Relação com `src/` |
 |---|---|---|
 | `resolve/` | cascata: shorthands, nomes antigos como açúcar, herança de texto, `display: none` | path, componentes, responsivo e validação importados de `src/resolve` |
-| `layout/` | Yoga com `useWebDefaults(true)`, box model completo, block com colapso de margens, `order` | cópia adaptada de `src/layout` (baseline, tabela) |
+| `layout/` | Yoga com `useWebDefaults(true)`, box model completo, block com colapso de margens, `order`; grid próprio (`grid.ts` puro + `grid-layout.ts`) | cópia adaptada de `src/layout` (baseline, tabela) |
+| `oracle/` | suíte H4 (casos como dados) e gerador de fixtures pelo Chrome | `playwright-core` é devDependency só daqui (`npm install --prefix poc/css`) |
 | `text/` | medidor com `letterSpacing` | delega ao fontkit de `src/text` quando não há espaçamento |
 | `fit/` | ajuste e diagnósticos + `css-not-emitted` | cópia de `src/fit` com os tipos da PoC |
 | `paint.ts` | ordem de pintura (z-index) e transformações herdadas | novo |
