@@ -63,7 +63,7 @@ describe('brokenWordsOf', () => {
 
 // ───────────── medidores ─────────────
 
-const style = (size: number): TextStyle => ({ family: 'Arial', size, weight: 'regular', italic: false, lineHeight: 1 });
+const style = (size: number): TextStyle => ({ family: 'Arial', size, weight: 'regular', italic: false, lineHeight: 'normal' });
 
 const MEASURERS: readonly (readonly [string, TextMeasurer])[] = [
   ['estimate', createEstimateMeasurer()],

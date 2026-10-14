@@ -86,11 +86,11 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M10 | M10-G | demo: Chart nativo no slide 3 e Table no slide 5; `charts.tsx`; `probe/table.tsx`; AGENT_GUIDE §3/§6/§8/§9 | ✅ |
 | M10 | M10-H | Keynote: gráficos e tabelas nativos e editáveis (count of charts = 1, images = 0); linhas ±0,4 pt; paginação com tabelas 2/2/2 | ✅ |
 | M11 | M11-0 | Contrato: tipos CSS no core, css-props, DEFAULTS.css, lineHeight CSS; CONTRACTS §M11; plano | ✅ |
-| M11 | M11-A | resolve + primitivas: cascata, shorthands, herança, aliases | ⬜ |
-| M11 | M11-B | layout (Yoga web-defaults, grid) + text (letterSpacing, lineHeight CSS) | ⬜ |
-| M11 | M11-C | fit sobre o box model (borda/padding/margens, célula, wrap, css-not-emitted) | ⬜ |
-| M11 | M11-D | emit/preview: paint (zIndex, opacity, rotate), bordas por lado, sombra, decoração | ⬜ |
-| M11 | M11-E | testes da PoC em tests/; semânticas novas | ⬜ |
+| M11 | M11-A | resolve + primitivas: cascata, shorthands, herança, aliases | ✅ |
+| M11 | M11-B | layout (Yoga web-defaults, grid) + text (letterSpacing, lineHeight CSS) | ✅ |
+| M11 | M11-C | fit sobre o box model (borda/padding/margens, célula, wrap, css-not-emitted) | ✅ |
+| M11 | M11-D | emit/preview: paint (zIndex, opacity, rotate), bordas por lado, sombra, decoração | ✅ |
+| M11 | M11-E | testes da PoC em tests/; semânticas novas | ✅ |
 | M11 | M11-F | exemplos em CSS, showcase, AGENT_GUIDE e README em CSS | ⬜ |
 | M11 | M11-G | visual: demo antiga × CSS × PNGs; showcase; recalibração de lineHeight | ⬜ |
 | M11 | M11-H | agente virgem com o guia novo | ⬜ |
@@ -146,3 +146,7 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M10-H | Eixo de valores herda `0.0` dos rótulos ("60,0") | M11-D: eixo com `General`; CONTRACTS §M10-D ajustado |
 | M10-H | Pizza do Keynote menor que a do preview (175 × ~214 pt) | aceito; linha no guia |
 | M10-H | Validação no PowerPoint pendente (dono): gráficos editáveis e ordem, sem reparo do xlsx, decimais pt-BR, alturas de linha | dono |
+| M11-E | Tabela da demo cresce +2,8 pt (16x9) pelo arredondamento das linhas a 0,5 pt: intencional (altura emitida = altura do layout), fora do "±1 pt" do gate | aceito; gate reescrito: ±1 pt exceto linhas de tabela |
+| M11-A | Cores hex saem em maiúsculas (`#RRGGBB`) em props e css; alpha de rgba() se perde em props que guardam só o hex (fill do Shape, Table, Chart) | aceito |
+| M11-E | `calibration*.tsx` usam lineHeight numérico, cujo significado mudou: paridade XML byte a byte com a engine antiga deixou de valer; M11-G recalibra | M11-G |
+| M11-D | Chart/Table dentro de caixa girada perdem a rotação herdada em silêncio (só o próprio `rotate` avisa) | backlog: avisar também pela rotação herdada |

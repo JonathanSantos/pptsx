@@ -3,6 +3,7 @@ import { DEFAULTS } from '../core/defaults.ts';
 import type { Pt, TextLayout, TextMeasureInput, TextMeasurer } from '../core/types.ts';
 import { brokenWordsOf } from './broken.ts';
 import { createEstimateMeasurer } from './estimate.ts';
+import { lineBoxOf, spacingOf, type LineBox } from './leading.ts';
 import { layoutText } from './lines.ts';
 import type { MeasureRun } from './pieces.ts';
 import type { FontRegistry } from './registry.ts';
@@ -45,23 +46,21 @@ const cachedUnitWidth = (font: Font): UnitWidth => {
 // NBSP é medido como espaço (CONTRACTS M8): algumas fontes nem têm o glifo, e o renderizador o desenha como espaço.
 const NBSP = /\u00A0/g;
 
+// O espaçamento entra depois do cache: o cache é em unidades da fonte e não depende dele.
 const measureWidthOf =
-  (unitWidth: UnitWidth, unitsPerEm: number, size: Pt): ((text: string) => Pt) =>
+  (unitWidth: UnitWidth, unitsPerEm: number, size: Pt, letterSpacing: Pt): ((text: string) => Pt) =>
   (text) =>
-    text.length === 0 ? 0 : (unitWidth(text.replace(NBSP, ' ')) * size) / unitsPerEm;
-
-const naturalLineHeight = ({ unitsPerEm, ascent, descent, lineGap }: VerticalMetrics, size: Pt): Pt =>
-  ((ascent - descent + lineGap) / unitsPerEm) * size;
+    text.length === 0 ? 0 : (unitWidth(text.replace(NBSP, ' ')) * size) / unitsPerEm + spacingOf(text, letterSpacing);
 
 /**
- * Topo da linha → baseline. Escolha: escala proporcional, `ascent × multiplicador`.
- * O espaçamento "múltiplo" do PowerPoint (a:spcPct) e o do Keynote multiplicam a linha
- * inteira, inclusive a primeira, então a baseline desce na mesma proporção; o mesmo
- * critério do estimador (0.9 × size × lineHeight). O lineGap não entra no ascent: fica
- * abaixo do descent, como no PowerPoint. Ponto único de ajuste para a calibração (M3-F).
+ * Linha natural da face (`line-height: normal`): altura ascent − descent + lineGap; topo
+ * da linha → baseline = ascent. O lineGap não entra no ascent: fica abaixo do descent,
+ * como no PowerPoint (calibração M3-F).
  */
-export const baselineOffset = (metrics: VerticalMetrics, size: Pt, multiplier: number): Pt =>
-  (metrics.ascent / metrics.unitsPerEm) * size * multiplier;
+const naturalLineBox = ({ unitsPerEm, ascent, descent, lineGap }: VerticalMetrics, size: Pt): LineBox => ({
+  lineHeight: ((ascent - descent + lineGap) / unitsPerEm) * size,
+  ascent: (ascent / unitsPerEm) * size,
+});
 
 const metricsOf = (font: Font): VerticalMetrics => ({
   unitsPerEm: font.unitsPerEm,
@@ -85,19 +84,18 @@ const measureWithFonts = (
   input: TextMeasureInput,
   safety: number,
 ): TextLayout => {
-  const { size, lineHeight: multiplier } = input.style;
-  const metrics = metricsOf(metricsFont);
+  const { size } = input.style;
   const nowrap = input.nowrap === true;
   // Infinity × safety continua Infinity: texto sem limite nunca quebra.
   const laid = layoutText(input, input.maxWidth * safety, measure);
-  const lineHeight = naturalLineHeight(metrics, size) * multiplier;
+  const { lineHeight, ascent } = lineBoxOf(naturalLineBox(metricsOf(metricsFont), size), size, input.style.lineHeight);
   return {
     lines: laid.lines,
     paragraphs: laid.paragraphs,
     lineRuns: laid.lineRuns,
     fontSize: size,
     lineHeight,
-    ascent: baselineOffset(metrics, size, multiplier),
+    ascent,
     width: boxWidthOf(laid.widestLine, input.maxWidth, safety, nowrap),
     height: laid.lines.length * lineHeight,
     widestSegment: laid.widestSegment,
@@ -131,7 +129,8 @@ export const createFontkitMeasurer = (registry: FontRegistry, options: FontkitMe
     // (ex.: <Text font="X"><B>…</B></Text> com X só em bold), usa-se a do primeiro run.
     const metricsFont = registry.get(family, weight, italic) ?? firstFont;
     if (metricsFont === undefined) return { ...estimate(input), fontMissing: true };
-    const widths = fonts.map((font) => measureWidthOf(unitWidthOf(font), font.unitsPerEm, size));
+    const spacing = input.letterSpacing ?? 0;
+    const widths = fonts.map((font) => measureWidthOf(unitWidthOf(font), font.unitsPerEm, size, spacing));
     const measure: MeasureRun = (text, run) => widths[run]?.(text) ?? 0;
     return measureWithFonts(metricsFont, measure, input, safety);
   };

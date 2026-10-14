@@ -15,8 +15,12 @@ const COLUMNS: readonly TableColumn[] = [{ header: 'Área', width: '40%' }, { he
 const rowsOf = (n: number): readonly (readonly string[])[] =>
   Array.from({ length: n }, (_, i) => [`Linha ${i + 1}`, String(i * 3), String(i * 7)]);
 
-/** Altura de uma linha de uma linha de texto no size dado (medidor real). */
-const rowHeightAt = (size: number): number => lineHeightAt(size) + 2 * PAD;
+/**
+ * Altura de uma linha de uma linha de texto no size dado (medidor real). M11: o layout arredonda
+ * as linhas da tabela para cima a DEFAULTS.table.rowHeightStep (o passo do Keynote).
+ */
+const STEP = DEFAULTS.table.rowHeightStep;
+const rowHeightAt = (size: number): number => Math.ceil((lineHeightAt(size) + 2 * PAD) / STEP - DEFAULTS.css.layoutNoise) * STEP;
 
 const tableAt = (slide: PositionedSlide, path: string): PositionedTable => {
   const node = allNodes(slide).find((n): n is PositionedTable => n.kind === 'table' && n.path === path);

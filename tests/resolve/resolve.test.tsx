@@ -64,9 +64,13 @@ describe('resolveDeck — full tree', () => {
     </Deck>
   );
 
+  // M11: `css` é a fonte; `props` é a visão da engine derivada (padrões preenchidos). O Box
+  // guarda `fill` como css.backgroundColor; a forma (Shape) guarda o próprio fill em props.
+  const run = (text: string, weight: 'regular' | 'bold') => ({ text, weight, italic: false, color: '#000000', underline: false, lineThrough: false });
+
   it('matches the expected resolved tree', () => {
     const resolved = resolveDeck(deck, RESOLVE_CTX);
-    expect(resolved).toEqual({
+    expect(resolved).toMatchObject({
       slides: [
         {
           kind: 'slide',
@@ -77,22 +81,11 @@ describe('resolveDeck — full tree', () => {
             {
               kind: 'box',
               path: 'CoverLayout > Box',
-              props: { position: 'absolute', left: 10, top: 20, width: 300, height: 100, fill: '#ffffff' },
+              css: { position: 'absolute', inset: { left: 10, top: 20 }, width: 300, height: 100, backgroundColor: '#FFFFFF' },
+              props: { position: 'absolute', left: 10, top: 20, width: 300, height: 100 },
               children: [
-                {
-                  kind: 'text',
-                  path: 'CoverLayout > Box > Title',
-                  props: { size: 40, weight: 'bold' },
-                  content: 'Hello',
-                  runs: [{ text: 'Hello', weight: 'bold', italic: false, color: '#000000' }],
-                },
-                {
-                  kind: 'text',
-                  path: 'CoverLayout > Box > Text',
-                  props: { size: 20 },
-                  content: 'World',
-                  runs: [{ text: 'World', weight: 'regular', italic: false, color: '#000000' }],
-                },
+                { kind: 'text', path: 'CoverLayout > Box > Title', props: { size: 40, weight: 'bold' }, content: 'Hello', runs: [run('Hello', 'bold')] },
+                { kind: 'text', path: 'CoverLayout > Box > Text', props: { size: 20 }, content: 'World', runs: [run('World', 'regular')] },
               ],
             },
           ],
@@ -101,18 +94,25 @@ describe('resolveDeck — full tree', () => {
           kind: 'slide',
           path: 'Slide',
           sourceSlide: 2,
-          props: {},
           children: [
             {
               kind: 'shape',
               path: 'Slide > Shape',
-              props: { kind: 'ellipse', position: 'absolute', width: 50, height: 50, fill: '#ff0000' },
+              css: { position: 'absolute', width: 50, height: 50 },
+              props: { kind: 'ellipse', position: 'absolute', width: 50, height: 50, fill: '#FF0000' },
             },
-            { kind: 'image', path: 'Slide > Image', props: { src: 'img.png', width: 100 } },
+            { kind: 'image', path: 'Slide > Image', css: { width: 100 }, props: { src: 'img.png', width: 100 } },
           ],
         },
       ],
     });
+  });
+
+  it('every node carries css and props', () => {
+    const resolved = resolveDeck(deck, RESOLVE_CTX);
+    const walk = (node: { readonly css?: unknown; readonly props?: unknown; readonly children?: readonly unknown[] }): boolean =>
+      node.css !== undefined && node.props !== undefined && (node.children ?? []).every((c) => walk(c as typeof node));
+    expect(resolved.slides.every(walk)).toBe(true);
   });
 
   it('matches the stored snapshot', () => {
@@ -153,7 +153,7 @@ describe('resolveDeck — expansion', () => {
     expect(received).toMatchObject({ color: '#00ff00' });
     expect((received as { children: SlideElement }).children.type).toBe(Text);
     const box = firstSlide(resolved).children[0];
-    expect(box).toMatchObject({ kind: 'box', props: { fill: '#00ff00' } });
+    expect(box).toMatchObject({ kind: 'box', css: { backgroundColor: '#00FF00' } });
     expect(box && 'children' in box ? box.children[0] : undefined).toMatchObject({ kind: 'text', content: 'inside' });
   });
 
@@ -175,22 +175,21 @@ describe('resolveDeck — expansion', () => {
         RESOLVE_CTX,
       ),
     );
-    expect(slide.children).toEqual([
+    expect(slide.children).toMatchObject([
       {
         kind: 'box',
         path: 'Slide > Outer',
-        props: {},
         children: [
           {
             kind: 'text',
             path: 'Slide > Outer > Middle',
-            props: {},
             content: 'deep',
-            runs: [{ text: 'deep', weight: 'regular', italic: false, color: '#000000' }],
+            runs: [{ text: 'deep', weight: 'regular', italic: false, color: '#000000', underline: false, lineThrough: false }],
           },
         ],
       },
     ]);
+    expect(slide.children).toHaveLength(1);
   });
 
   it('flattens fragments', () => {
@@ -310,7 +309,9 @@ describe('resolveDeck — Text content', () => {
 // ───────────── props ─────────────
 
 describe('resolveDeck — props', () => {
-  it('copies props as written, without children', () => {
+  // M11: `props` é a visão da engine derivada do css (CONTRACTS §M11 nº 5): o que o autor
+  // escreveu aparece com os nomes da engine e os padrões preenchidos; o css guarda o resto.
+  it('derives the engine view of props, without children', () => {
     const slide = firstSlide(
       resolveDeck(
         <Deck>
@@ -323,19 +324,22 @@ describe('resolveDeck — props', () => {
         RESOLVE_CTX,
       ),
     );
-    expect(slide.props).toEqual({ direction: 'row', gap: 4 });
+    expect(slide.props).toMatchObject({ direction: 'row', gap: 4 });
     expect(slide.props).not.toHaveProperty('children');
     const box = slide.children[0];
-    expect(box?.props).toEqual({ padding: 8, fill: '#000000' });
+    expect(box?.props).toMatchObject({ padding: { top: 8, right: 8, bottom: 8, left: 8 } });
+    expect(box?.css).toMatchObject({ backgroundColor: '#000000', padding: { top: 8, right: 8, bottom: 8, left: 8 } });
     expect(box?.props).not.toHaveProperty('children');
     const text = box && box.kind === 'box' ? box.children[0] : undefined;
-    expect(text?.props).toEqual({ size: 12 });
+    expect(text?.props).toMatchObject({ size: 12 });
     expect(text?.props).not.toHaveProperty('children');
   });
 
-  it('does not fill in defaults', () => {
+  it('a Text without props has the initial css and no text style in props', () => {
     const node = firstSlide(resolveDeck(<Deck><Slide><Text>x</Text></Slide></Deck>, RESOLVE_CTX)).children[0];
-    expect(node?.props).toEqual({});
+    expect(node?.props).not.toHaveProperty('size');
+    expect(node?.props).not.toHaveProperty('font');
+    expect(node?.css).toMatchObject({ display: 'block', position: 'static', notEmitted: [] });
   });
 });
 

@@ -25,6 +25,9 @@ export interface RunStyle {
   readonly italic: boolean;
   /** Hex sem '#', como o pptxgenjs espera. */
   readonly color: string;
+  /** M11: `textDecoration` do Text ou do Span. */
+  readonly underline: boolean;
+  readonly lineThrough: boolean;
 }
 
 /** Pedaço de texto com estilo: vira um <a:r>. */
@@ -41,10 +44,17 @@ export const hexOf = (color: Color): string => color.replace(/^#/, '').toUpperCa
 
 export const baseStyleOf = (node: PositionedText): RunStyle => {
   const style = textStyleOf(node.props);
-  return { bold: style.weight === 'bold', italic: style.italic, color: hexOf(node.props.color ?? DEFAULTS.text.color) };
+  const { underline, lineThrough } = node.css.textDecoration;
+  return { bold: style.weight === 'bold', italic: style.italic, color: hexOf(node.props.color ?? DEFAULTS.text.color), underline, lineThrough };
 };
 
-const runStyleOf = (run: TextRun): RunStyle => ({ bold: run.weight === 'bold', italic: run.italic, color: hexOf(run.color) });
+const runStyleOf = (run: TextRun): RunStyle => ({
+  bold: run.weight === 'bold',
+  italic: run.italic,
+  color: hexOf(run.color),
+  underline: run.underline ?? false,
+  lineThrough: run.lineThrough ?? false,
+});
 
 // Guards: árvores montadas antes do M8 (ou à mão) podem não ter runs/lineRuns;
 // aí cai para um run por linha com o estilo do Text.
@@ -62,7 +72,8 @@ const lastOf = <T>(items: readonly T[]): T | undefined => items[items.length - 1
 
 const replaceLast = <T>(items: readonly T[], item: T): readonly T[] => [...items.slice(0, -1), item];
 
-const sameStyle = (a: RunStyle, b: RunStyle): boolean => a.bold === b.bold && a.italic === b.italic && a.color === b.color;
+const sameStyle = (a: RunStyle, b: RunStyle): boolean =>
+  a.bold === b.bold && a.italic === b.italic && a.color === b.color && a.underline === b.underline && a.lineThrough === b.lineThrough;
 
 /** Funde pedaços vizinhos com o mesmo estilo (ex.: um run que atravessou linhas). */
 export const mergeAdjacent = (line: StyledLine): StyledLine =>
@@ -186,6 +197,9 @@ const pptxRunOf = (piece: StyledText, softBreakBefore: boolean, breakLine: boole
     bold: piece.style.bold,
     italic: piece.style.italic,
     color: piece.style.color,
+    // M11: decoração (Span e textDecoration) só quando ligada; a caixa nunca leva underline/strike.
+    ...(piece.style.underline ? { underline: { style: 'sng' as const } } : {}),
+    ...(piece.style.lineThrough ? { strike: 'sngStrike' as const } : {}),
     ...(softBreakBefore ? { softBreakBefore } : {}),
     ...(breakLine ? { breakLine } : {}),
   },

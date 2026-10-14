@@ -35,15 +35,15 @@ const lineWidth = (font: Font, line: string, size: number): number => {
   return words.reduce((sum, w) => sum + (w ? runWidth(font, w, size) : 0), 0) + spaces * runWidth(font, ' ', size);
 };
 
-const naturalLineHeight = (font: Font, size: number, lineHeight = 1): number =>
-  ((font.ascent - font.descent + font.lineGap) / font.unitsPerEm) * size * lineHeight;
+const naturalLineHeight = (font: Font, size: number): number =>
+  ((font.ascent - font.descent + font.lineGap) / font.unitsPerEm) * size;
 
 const style = (over: Partial<TextStyle> = {}): TextStyle => ({
   family: 'Arial',
   size: 20,
   weight: 'regular',
   italic: false,
-  lineHeight: 1,
+  lineHeight: 'normal',
   ...over,
 });
 
@@ -112,12 +112,20 @@ describe('createFontkitMeasurer — widths from real metrics', () => {
 });
 
 describe('createFontkitMeasurer — line height', () => {
-  it('lineHeight = (ascent − descent + lineGap) / unitsPerEm × size × lineHeight', () => {
+  it("'normal' = (ascent − descent + lineGap) / unitsPerEm × size", () => {
     expect(measure('x', Infinity).lineHeight).toBeCloseTo(naturalLineHeight(REGULAR, 20), 6);
-    expect(measure('x', Infinity, {}, { size: 30, lineHeight: 1.5 }).lineHeight).toBeCloseTo(
-      naturalLineHeight(REGULAR, 30, 1.5),
-      6,
-    );
+  });
+
+  it('a numeric lineHeight is a multiple of the font size (CSS)', () => {
+    expect(measure('x', Infinity, {}, { size: 30, lineHeight: 1.5 }).lineHeight).toBeCloseTo(45, 6);
+    expect(measure('x', Infinity, {}, { size: 20, lineHeight: 1.2 }).lineHeight).toBeCloseTo(24, 6);
+  });
+
+  it('a numeric lineHeight moves the baseline down by the half-leading', () => {
+    const natural = measure('x', Infinity, {}, { size: 20 });
+    const spaced = measure('x', Infinity, {}, { size: 20, lineHeight: 1.2 });
+    expect(spaced.ascent).toBeCloseTo(natural.ascent + (24 - natural.lineHeight) / 2, 6);
+    expect(spaced.height).toBeCloseTo(24, 6);
   });
 
   it('height = lines × lineHeight', () => {

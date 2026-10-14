@@ -3,8 +3,9 @@ import { createEstimateMeasurer } from '../../src/text/index.ts';
 import type { TextMeasureInput, TextStyle } from '../../src/core/types.ts';
 
 /**
- * Medidor estimado (M2): caractere = 0.5 × size, linha = 1.2 × size × lineHeight,
- * ascent = 0.9 × size × lineHeight. Com size 10 cada caractere (inclusive espaço) mede 5 pt.
+ * Medidor estimado (M2): caractere = 0.5 × size; linha natural ('normal') = 1.2 × size com
+ * ascent 0.9 × size. M11 (CSS): lineHeight numérico n = n × size por linha, e a baseline desce a
+ * meia-entrelinha (n × size − 1.2 × size) / 2. Com size 10 cada caractere (inclusive espaço) mede 5 pt.
  * "Caber" é <= maxWidth (sem fator de segurança no estimador).
  */
 const style = (over: Partial<TextStyle> = {}): TextStyle => ({
@@ -12,7 +13,7 @@ const style = (over: Partial<TextStyle> = {}): TextStyle => ({
   size: 10,
   weight: 'regular',
   italic: false,
-  lineHeight: 1,
+  lineHeight: 'normal',
   ...over,
 });
 
@@ -29,14 +30,14 @@ describe('createEstimateMeasurer — metrics', () => {
     expect(measure('ab cd', Infinity).width).toBeCloseTo(25);
   });
 
-  it('line height is 1.2 × size × lineHeight', () => {
+  it("line height is 1.2 × size for 'normal' and n × size for a number", () => {
     expect(measure('a', Infinity).lineHeight).toBeCloseTo(12);
-    expect(measure('a', Infinity, {}, { size: 20, lineHeight: 1.5 }).lineHeight).toBeCloseTo(36);
+    expect(measure('a', Infinity, {}, { size: 20, lineHeight: 1.5 }).lineHeight).toBeCloseTo(30);
   });
 
-  it('ascent is 0.9 × size × lineHeight', () => {
+  it("ascent is 0.9 × size for 'normal', shifted by the half-leading for a number", () => {
     expect(measure('a', Infinity).ascent).toBeCloseTo(9);
-    expect(measure('a', Infinity, {}, { size: 20, lineHeight: 1.5 }).ascent).toBeCloseTo(27);
+    expect(measure('a', Infinity, {}, { size: 20, lineHeight: 1.5 }).ascent).toBeCloseTo((30 - 24) / 2 + 18);
   });
 
   it('reports fontSize = style.size', () => {

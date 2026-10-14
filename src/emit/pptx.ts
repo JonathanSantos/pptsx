@@ -34,3 +34,4 @@ export type TableCell = PptxTypes.default.TableCell;
 export type TableCellProps = PptxTypes.default.TableCellProps;
 export type TableProps = PptxTypes.default.TableProps;
 export type BorderProps = PptxTypes.default.BorderProps;
+export type ShadowProps = PptxTypes.default.ShadowProps;

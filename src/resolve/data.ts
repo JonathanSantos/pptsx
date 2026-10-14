@@ -1,4 +1,4 @@
-import type { ChartData, ChartKind, ChartProps, ChartSeries, TableCellValue, TableProps } from '../core/types.ts';
+import type { ChartData, ChartKind, ChartProps, ChartSeries, CssStyle, TableCellValue, TableProps } from '../core/types.ts';
 import { ResolveError } from './errors.ts';
 
 type ChartResolvedProps = Omit<ChartProps, 'children'>;
@@ -54,19 +54,24 @@ const assertFiniteValues = (series: ChartSeries, categories: readonly string[], 
   );
 };
 
-const hasOwnSize = (props: ChartResolvedProps): boolean =>
-  props.width !== undefined ||
-  props.height !== undefined ||
-  (props.grow ?? 0) > 0 ||
-  props.position === 'absolute';
+/** Gráfico precisa de tamanho de fora: width/height, flex, absoluto ou a célula de um grid. */
+const hasOwnSize = (css: CssStyle, parentCss: CssStyle | undefined): boolean =>
+  css.width !== undefined ||
+  css.height !== undefined ||
+  css.flexGrow > 0 ||
+  css.position === 'absolute' ||
+  parentCss?.display === 'grid';
 
 // Sem isso o Yoga daria 0×0 numa column sem stretch, ou só a largura: o gráfico sumiria sem aviso.
-const assertChartSize = (props: ChartResolvedProps, path: string): void => {
-  if (hasOwnSize(props)) return;
-  throw new ResolveError('<Chart> precisa de width, height ou grow: um gráfico não tem tamanho próprio', path);
+export const assertChartSize = (css: CssStyle, parentCss: CssStyle | undefined, path: string): void => {
+  if (hasOwnSize(css, parentCss)) return;
+  throw new ResolveError(
+    '<Chart> precisa de width, height, flex/flexGrow ou de uma célula de grid: um gráfico não tem tamanho próprio',
+    path,
+  );
 };
 
-/** Valida as props já resolvidas de um Chart; lança ResolveError no primeiro problema. */
+/** Valida os dados de um Chart (o tamanho é `assertChartSize`); lança ResolveError no primeiro problema. */
 export const assertValidChart = (props: ChartResolvedProps, path: string): void => {
   assertKind(props.kind, path);
   assertDataShape(props, path);
@@ -75,7 +80,6 @@ export const assertValidChart = (props: ChartResolvedProps, path: string): void 
   const { categories, series } = props.data;
   series.forEach((item) => assertSeriesLength(item, categories, path));
   series.forEach((item) => assertFiniteValues(item, categories, path));
-  assertChartSize(props, path);
 };
 
 const assertColumns = (props: TableResolvedProps, path: string): void => {

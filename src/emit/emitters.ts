@@ -1,9 +1,19 @@
 import type * as Pptx from './pptx.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
 import type { LineBreaks, PositionedNode, Rect } from '../core/types.ts';
+import { contentRectOf } from '../layout/index.ts';
 import type { LineSpacingStrategy } from './calibration.ts';
 import { chartOf } from './chart.ts';
-import { boxShapeOf, debugOutlineOf, imageOf, shapeOf, textOf, type ShapeSpec } from './options.ts';
+import {
+  backgroundImageOf,
+  decorationOf,
+  paintedImageOf,
+  paintedRunsOf,
+  paintedShapeOf,
+  placedOf,
+} from './decoration.ts';
+import { debugOutlineOf, imageOf, shapeOf, textOf, type ShapeSpec } from './options.ts';
+import type { PaintItem } from './paint.ts';
 import { tableOf } from './table.ts';
 
 export interface EmitContext {
@@ -18,46 +28,51 @@ const addShape = (slide: Pptx.Slide, spec: ShapeSpec): void => {
   slide.addShape(spec.shape, { ...spec.options });
 };
 
-// O nó vem primeiro para o `dispatch` inferir os argumentos extras.
-const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: EmitContext]> = {
-  box: (node, slide, ctx) => {
-    const spec = boxShapeOf(node);
-    if (spec) addShape(slide, spec);
-    node.children.forEach((child) => emitNode(slide, child, ctx));
+/** O conteúdo (texto, imagem, gráfico, tabela) fica na área de conteúdo: frame − borda − padding. */
+const contentOf = <N extends PositionedNode>(node: N): N => ({ ...node, frame: contentRectOf(node.frame, node.box) });
+
+// O nó vem primeiro para o `dispatch` inferir os argumentos extras. Box não tem conteúdo
+// próprio: a pintura dele é a decoração, e os filhos chegam como PaintItems próprios.
+const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: EmitContext, item: PaintItem]> = {
+  box: () => undefined,
+  text: (node, slide, ctx, item) => {
+    const content = contentOf(node);
+    const { runs, options } = textOf(content, ctx.lineSpacing, ctx.lang, ctx.lineBreaks);
+    slide.addText(paintedRunsOf(runs, node.css, item.opacity), { ...options, ...placedOf(content.frame, item.rotations) });
   },
-  text: (node, slide, ctx) => {
-    const { runs, options } = textOf(node, ctx.lineSpacing, ctx.lang, ctx.lineBreaks);
-    slide.addText(runs, options);
+  image: (node, slide, ctx, item) => {
+    const content = contentOf(node);
+    slide.addImage(paintedImageOf(imageOf(content, ctx.baseDir), content.frame, item));
   },
-  image: (node, slide, ctx) => {
-    slide.addImage(imageOf(node, ctx.baseDir));
+  shape: (node, slide, _ctx, item) => {
+    addShape(slide, paintedShapeOf(shapeOf(node), node, item));
   },
-  shape: (node, slide) => {
-    addShape(slide, shapeOf(node));
-  },
+  // Gráfico e tabela nativos não giram nem têm opacidade no PPTX (o fit avisa com css-not-emitted).
   // addChart/addTable mutam dados e opções em profundidade (labels, bordas, unidades): cópia funda.
   chart: (node, slide) => {
-    const { type, data, options } = structuredClone(chartOf(node));
+    const { type, data, options } = structuredClone(chartOf(contentOf(node)));
     slide.addChart(type, data, options);
   },
   table: (node, slide, ctx) => {
-    const { rows, options } = structuredClone(tableOf(node, ctx));
+    const { rows, options } = structuredClone(tableOf(contentOf(node), ctx));
     slide.addTable(rows, options);
   },
 };
 
-/** Ordem de desenho = ordem da árvore: pai antes dos filhos. */
-export const emitNode = (slide: Pptx.Slide, node: PositionedNode, ctx: EmitContext): void =>
-  dispatch(emitters, node, slide, ctx);
+/** Fundo/sombra, imagem de fundo, bordas e, por cima, o conteúdo do nó. */
+export const emitItem = (slide: Pptx.Slide, item: PaintItem, ctx: EmitContext): void => {
+  const decoration = decorationOf(item.node, item);
+  decoration.under.forEach((spec) => addShape(slide, spec));
+  const backgroundImage = backgroundImageOf(item.node, item, ctx.baseDir);
+  if (backgroundImage) slide.addImage(backgroundImage);
+  decoration.over.forEach((spec) => addShape(slide, spec));
+  dispatch(emitters, item.node, slide, ctx, item);
+};
 
-const hasDebugFrame = (node: PositionedNode): boolean => node.kind !== 'shape';
+/** Frames de Box/Text/Image/Chart/Table na ordem de pintura, para o contorno de debug. */
+export const debugFramesOf = (items: readonly PaintItem[]): readonly Rect[] =>
+  items.filter((item) => item.node.kind !== 'shape').map((item) => item.node.frame);
 
-const childrenOf = (node: PositionedNode): readonly PositionedNode[] => (node.kind === 'box' ? node.children : []);
-
-/** Frames de Box/Text/Image/Chart/Table em ordem de árvore, para o contorno de debug. */
-export const debugFramesOf = (nodes: readonly PositionedNode[]): readonly Rect[] =>
-  nodes.flatMap((node) => [...(hasDebugFrame(node) ? [node.frame] : []), ...debugFramesOf(childrenOf(node))]);
-
-export const emitDebugOutlines = (slide: Pptx.Slide, nodes: readonly PositionedNode[]): void => {
-  debugFramesOf(nodes).forEach((frame) => addShape(slide, debugOutlineOf(frame)));
+export const emitDebugOutlines = (slide: Pptx.Slide, items: readonly PaintItem[]): void => {
+  debugFramesOf(items).forEach((frame) => addShape(slide, debugOutlineOf(frame)));
 };

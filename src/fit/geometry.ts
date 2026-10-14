@@ -1,4 +1,5 @@
 import { containerOf } from '../core/defaults.ts';
+import { contentRectOf } from '../layout/index.ts';
 import type { FlexDirection, PositionedBox, PositionedNode, PositionedSlide, Rect } from '../core/types.ts';
 
 // Geometria pura usada pela detecção e pelas mensagens (mesmas contas nos dois lugares).
@@ -46,22 +47,35 @@ export const excessOf = (inner: Rect, outer: Rect): Excess =>
 export const largest = (excesses: readonly Excess[]): Excess =>
   excesses.reduce((max, excess) => (excess.pt > max.pt ? excess : max), NO_EXCESS);
 
-export const contentOf = (container: Container): Rect => {
-  const { padding } = containerOf(container.props);
-  const { x, y, width, height } = container.frame;
+// M11: área de conteúdo = frame − borda − padding (resolvidos pelo layout, % inclusive).
+export const contentOf = (node: Container | PositionedNode): Rect => contentRectOf(node.frame, node.box);
+
+/** M11: caixa de margem (frame + margens); é o que o filho ocupa no contêiner. */
+export const marginBoxOf = (node: PositionedNode): Rect => {
+  const { margin } = node.box;
   return {
-    x: x + padding.left,
-    y: y + padding.top,
-    width: Math.max(0, width - padding.left - padding.right),
-    height: Math.max(0, height - padding.top - padding.bottom),
+    x: node.frame.x - margin.left,
+    y: node.frame.y - margin.top,
+    width: node.frame.width + margin.left + margin.right,
+    height: node.frame.height + margin.top + margin.bottom,
   };
 };
+
+/** M11: soma das margens verticais (a demanda de altura de um filho inclui as dele). */
+export const verticalMarginOf = (node: PositionedNode): number => node.box.margin.top + node.box.margin.bottom;
 
 export interface ContainerExcess extends Excess {
   /** Tamanho da área de conteúdo no eixo do estouro. */
   readonly available: number;
   readonly direction: FlexDirection;
+  /** M11: grade ou flex com wrap (as linhas se empilham; a mensagem fala delas). */
+  readonly layout?: 'grid' | 'wrap';
 }
+
+const layoutOf = (container: Container): ContainerExcess['layout'] => {
+  if (container.css.display === 'grid') return 'grid';
+  return container.css.display === 'flex' && container.css.flexWrap !== 'nowrap' ? 'wrap' : undefined;
+};
 
 /** Estouro dos filhos em fluxo sobre a área de conteúdo, ignorando os já explicados. */
 export const containerExcessOf = (container: Container, explained: ReadonlySet<string>): ContainerExcess => {
@@ -70,7 +84,9 @@ export const containerExcessOf = (container: Container, explained: ReadonlySet<s
     container.children
       .filter(isInFlow)
       .filter((child) => !explained.has(child.path))
-      .map((child) => excessOf(child.frame, content)),
+      // M11: o filho ocupa a caixa de margem (CSS: margens contam no overflow do contêiner).
+      .map((child) => excessOf(marginBoxOf(child), content)),
   );
-  return { ...excess, available: content[excess.axis], direction: containerOf(container.props).direction };
+  const layout = layoutOf(container);
+  return { ...excess, available: content[excess.axis], direction: containerOf(container.props).direction, ...(layout === undefined ? {} : { layout }) };
 };

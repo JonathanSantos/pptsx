@@ -1,4 +1,5 @@
 import { DEFAULTS, chartColorOf, chartLabelStyleOf, chartLegendOf } from '../core/defaults.ts';
+import { labelDecimalsOf } from '../emit/chart.ts';
 import type { ChartKind, ChartProps, PositionedChart, Pt, Rect } from '../core/types.ts';
 import { type TextSvgOptions } from './svg.ts';
 import { element, escapeXml, type Attrs } from './xml.ts';
@@ -34,8 +35,6 @@ const ZERO_LINE = { color: '#999999', width: 0.75 } as const;
 const PIE_SEPARATOR = { color: '#FFFFFF', width: 0.75 } as const;
 /** Rótulo de valor da fatia: a esta fração do raio, a partir do centro. */
 const PIE_LABEL_RADIUS = 0.62;
-/** Casas decimais máximas nos rótulos de valor. */
-const VALUE_DECIMALS = 2;
 
 interface LabelStyle {
   readonly family: string;
@@ -63,7 +62,23 @@ const roundTo = (value: number, decimals: number): number => {
 
 const decimalsOf = (step: number): number => Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
 
-export const formatValue = (value: number, decimals = VALUE_DECIMALS): string => String(roundTo(value, decimals));
+/** Opções do chartSvg: as do texto + o idioma dos números (separador decimal, como no PPTX). */
+export interface ChartSvgOptions extends TextSvgOptions {
+  /** Padrão DEFAULTS.lang. */
+  readonly lang?: string;
+}
+
+/**
+ * Número como o PPTX mostra: `fixed` casas (rótulos de valor, formato '0.0' do emissor) ou
+ * até `decimals` casas (eixo, formato 'General'), no separador decimal do idioma e sem
+ * separador de milhar (nenhum dos dois formatos agrupa).
+ */
+export const formatValue = (value: number, decimals: number, lang: string = DEFAULTS.lang, fixed = false): string =>
+  new Intl.NumberFormat(lang, {
+    minimumFractionDigits: fixed ? decimals : 0,
+    maximumFractionDigits: decimals,
+    useGrouping: false,
+  }).format(value);
 
 const intervalsOf = (min: number, max: number, step: number): number =>
   Math.ceil(max / step - 1e-9) - Math.floor(min / step + 1e-9);
@@ -100,7 +115,7 @@ const estimateWidth = (text: string, size: Pt): Pt => text.length * size * CHAR_
 
 // ───────────────────────── texto ─────────────────────────
 
-const textAttrsOf = (style: LabelStyle, options: TextSvgOptions): Attrs => ({
+const textAttrsOf = (style: LabelStyle, options: ChartSvgOptions): Attrs => ({
   'font-family': options.fontFamilyMap?.[style.family] ?? style.family,
   'font-size': style.size,
   fill: style.color,
@@ -111,7 +126,7 @@ const labelSvg = (text: string, x: Pt, y: Pt, anchor: 'start' | 'middle' | 'end'
   element('text', { ...base, x, y, 'text-anchor': anchor }, escapeXml(text));
 
 /** Título numa linha no topo; devolve o SVG e a altura consumida. */
-const titleOf = (props: ChartProps, area: Rect, style: LabelStyle, options: TextSvgOptions) => {
+const titleOf = (props: ChartProps, area: Rect, style: LabelStyle, options: ChartSvgOptions) => {
   if (props.title === undefined) return { svg: '', height: 0 };
   const size = style.size + TITLE_SIZE_DELTA;
   const base = textAttrsOf({ ...style, size }, options);
@@ -125,7 +140,7 @@ const legendItemsOf = (props: ChartProps): readonly LegendItem[] =>
     : props.data.series.map((series, i) => ({ name: series.name, color: chartColorOf(props, i) }));
 
 /** Uma linha centrada embaixo: quadrado colorido + nome por item. */
-const legendOf = (props: ChartProps, area: Rect, style: LabelStyle, options: TextSvgOptions) => {
+const legendOf = (props: ChartProps, area: Rect, style: LabelStyle, options: ChartSvgOptions) => {
   if (!chartLegendOf(props)) return { svg: '', height: 0 };
   const swatch = style.size * LEGEND_SWATCH_EM;
   const swatchGap = style.size * LEGEND_SWATCH_GAP_EM;
@@ -168,11 +183,11 @@ interface Axes {
 }
 
 /** Grade + rótulos do eixo de valores + rótulos de categoria; devolve a área de plotagem. */
-const axesOf = (props: ChartProps, area: Rect, style: LabelStyle, options: TextSvgOptions): Axes => {
+const axesOf = (props: ChartProps, area: Rect, style: LabelStyle, options: ChartSvgOptions): Axes => {
   const { categories, series } = props.data;
   const scale = niceScaleOf(series.flatMap((s) => s.values));
   const ticks = ticksOf(scale);
-  const tickLabels = ticks.map((t) => formatValue(t, decimalsOf(scale.step)));
+  const tickLabels = ticks.map((t) => formatValue(t, decimalsOf(scale.step), options.lang));
   const gap = style.size * LABEL_GAP_EM;
   const axisWidth = Math.max(...tickLabels.map((l) => estimateWidth(l, style.size))) + gap;
   const categoryHeight = style.size * LABEL_LINE_EM + gap;
@@ -227,14 +242,18 @@ const axesOf = (props: ChartProps, area: Rect, style: LabelStyle, options: TextS
  * Acima do ponto (positivo) ou abaixo (negativo); embaixo não passa da área de plotagem,
  * senão colide com os rótulos de categoria.
  */
-const valueLabelSvg = (value: number, x: Pt, y: Pt, axes: Axes, style: LabelStyle, base: Attrs): string => {
+/** Rótulo de valor com as casas do `dataLabelFormatCode` do emissor. */
+const valueTextOf = (props: ChartProps, value: number, options: ChartSvgOptions): string =>
+  formatValue(value, labelDecimalsOf(props), options.lang, true);
+
+const valueLabelSvg = (label: string, value: number, x: Pt, y: Pt, axes: Axes, style: LabelStyle, base: Attrs): string => {
   const gap = style.size * LABEL_GAP_EM;
   const floor = axes.plot.y + axes.plot.height - style.size * (1 - LABEL_ASCENT_EM);
   const baseline = value >= 0 ? y - gap : Math.min(y + gap + style.size * LABEL_ASCENT_EM, floor);
-  return labelSvg(formatValue(value), x, baseline, 'middle', base);
+  return labelSvg(label, x, baseline, 'middle', base);
 };
 
-const barsSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: TextSvgOptions): string => {
+const barsSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: ChartSvgOptions): string => {
   const { categories, series } = props.data;
   const groupRatio = 1 / (1 + DEFAULTS.chart.barGapWidthPct / 100);
   const base = textAttrsOf(style, options);
@@ -258,7 +277,7 @@ const barsSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: Text
             fill: chartColorOf(props, i),
           });
           const label =
-            props.showValues === true ? valueLabelSvg(value, x + barWidth / 2, y, axes, style, base) : '';
+            props.showValues === true ? valueLabelSvg(valueTextOf(props, value, options), value, x + barWidth / 2, y, axes, style, base) : '';
           return bar + label;
         })
         .join('');
@@ -266,7 +285,7 @@ const barsSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: Text
     .join('');
 };
 
-const linesSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: TextSvgOptions): string => {
+const linesSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: ChartSvgOptions): string => {
   const { categories, series } = props.data;
   const base = textAttrsOf(style, options);
   const xOf = (c: number): Pt => {
@@ -286,7 +305,7 @@ const linesSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: Tex
       });
       const labels =
         props.showValues === true
-          ? points.map((p) => valueLabelSvg(p.value, p.x, p.y, axes, style, base)).join('')
+          ? points.map((p) => valueLabelSvg(valueTextOf(props, p.value, options), p.value, p.x, p.y, axes, style, base)).join('')
           : '';
       return line + labels;
     })
@@ -309,7 +328,7 @@ const sliceSvg = (cx: Pt, cy: Pt, r: Pt, start: number, end: number, fill: strin
   return element('path', { d, fill, ...stroke });
 };
 
-const pieSvg = (props: ChartProps, area: Rect, style: LabelStyle, options: TextSvgOptions): string => {
+const pieSvg = (props: ChartProps, area: Rect, style: LabelStyle, options: ChartSvgOptions): string => {
   // O sinal não tem significado numa fatia: usa o módulo.
   const values = (props.data.series[0]?.values ?? []).map(Math.abs);
   const total = values.reduce((sum, v) => sum + v, 0);
@@ -328,14 +347,14 @@ const pieSvg = (props: ChartProps, area: Rect, style: LabelStyle, options: TextS
       if (props.showValues !== true) return slice;
       const mid = pointAt(cx, cy, r * PIE_LABEL_RADIUS, (start + end) / 2);
       const original = props.data.series[0]?.values[i] ?? value;
-      return slice + labelSvg(formatValue(original), mid.x, mid.y + style.size * (LABEL_ASCENT_EM - 0.5), 'middle', base);
+      return slice + labelSvg(valueTextOf(props, original, options), mid.x, mid.y + style.size * (LABEL_ASCENT_EM - 0.5), 'middle', base);
     })
     .join('');
 };
 
 // ───────────────────────── montagem ─────────────────────────
 
-type PlotDrawer = (props: ChartProps, area: Rect, style: LabelStyle, options: TextSvgOptions) => string;
+type PlotDrawer = (props: ChartProps, area: Rect, style: LabelStyle, options: ChartSvgOptions) => string;
 
 const plotDrawers: Readonly<Record<ChartKind, PlotDrawer>> = {
   bar: (props, area, style, options) => {
@@ -349,7 +368,7 @@ const plotDrawers: Readonly<Record<ChartKind, PlotDrawer>> = {
   pie: pieSvg,
 };
 
-export const chartSvg = (node: PositionedChart, options: TextSvgOptions = {}): string => {
+export const chartSvg = (node: PositionedChart, options: ChartSvgOptions = {}): string => {
   const { props } = node;
   const style = chartLabelStyleOf(props);
   const area = insetOf(node.frame, style.size);

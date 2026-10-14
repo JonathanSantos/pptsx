@@ -96,6 +96,12 @@ export const DEFAULTS = {
     fit: 'shrink' as TableFitPolicy,
     /** Espessura das bordas (pt) quando `border` é informado. */
     borderWidth: 0.5,
+    /**
+     * M11: passo (pt) a que a altura de cada linha é arredondada PARA CIMA já no layout, porque o
+     * Keynote/PowerPoint só crescem a linha quando falta espaço; assim frame, fit, emissão e preview
+     * usam a mesma altura (achado M10-H: drift de até 0,4 pt por linha).
+     */
+    rowHeightStep: 0.5,
   },
   /** 16:9 de referência para ctx.scale */
   referenceSize: { width: 720, height: 405 },

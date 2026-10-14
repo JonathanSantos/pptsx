@@ -4,7 +4,6 @@ import type {
   FontWeight,
   ImageFit,
   LineRun,
-  PositionedBox,
   PositionedImage,
   PositionedShape,
   PositionedText,
@@ -80,14 +79,6 @@ const shapeBuilders: Readonly<Record<ShapeKind, ShapeBuilder>> = {
 export const shapeSvg = (node: PositionedShape): string =>
   shapeBuilders[node.props.kind](node.frame, { ...node.props, stroke: strokeColorOf(node.props) });
 
-/** Box só desenha algo quando tem fill ou stroke; senão é só contêiner. */
-export const boxSvg = (node: PositionedBox): string => {
-  const { fill, stroke, radius } = node.props;
-  if (fill === undefined && stroke === undefined) return '';
-  const kind: ShapeKind = radius !== undefined && radius > 0 ? 'roundRect' : 'rect';
-  return shapeBuilders[kind](node.frame, node.props);
-};
-
 export const ANCHORS: Readonly<Record<TextAlign, { readonly anchor: string; readonly offset: number }>> = {
   left: { anchor: 'start', offset: 0 },
   center: { anchor: 'middle', offset: 0.5 },
@@ -109,12 +100,21 @@ interface SvgRunStyle {
   readonly weight: FontWeight;
   readonly italic: boolean;
   readonly color: Color;
+  /** M11: `textDecoration` do Text ou do Span, como no run do PPTX. */
+  readonly underline?: boolean;
+  readonly lineThrough?: boolean;
 }
+
+const textDecorationOf = (style: SvgRunStyle): string | undefined => {
+  const parts = [style.underline ? 'underline' : '', style.lineThrough ? 'line-through' : ''].filter(Boolean);
+  return parts.length === 0 ? undefined : parts.join(' ');
+};
 
 const runStyleAttrs = (style: SvgRunStyle): Attrs => ({
   'font-weight': style.weight === 'bold' ? 'bold' : 'normal',
   'font-style': style.italic ? 'italic' : 'normal',
   fill: style.color,
+  'text-decoration': textDecorationOf(style),
 });
 
 const tspanOf = (text: string, style: SvgRunStyle): string =>
@@ -128,10 +128,15 @@ const lineTspansOf = (node: PositionedText, base: SvgRunStyle): readonly string[
   return lineRuns.map((pieces) => pieces.map((piece) => tspanOf(piece.text, runs[piece.run] ?? base)).join(''));
 };
 
-/** Um <text> por linha já quebrada: o SVG nunca decide quebra sozinho. */
+/**
+ * Um <text> por linha já quebrada: o SVG nunca decide quebra sozinho. `node.frame` é a área
+ * onde as linhas ficam (o chamador passa a área de conteúdo). A decoração vai só nos tspans,
+ * como nos runs do PPTX; `letterSpacing` vira `letter-spacing` (o `charSpacing` do run).
+ */
 export const textSvg = (node: PositionedText, options: TextSvgOptions = {}): string => {
   const style = textStyleOf(node.props);
-  const base: SvgRunStyle = { weight: style.weight, italic: style.italic, color: node.props.color ?? DEFAULTS.text.color };
+  const { underline, lineThrough } = node.css.textDecoration;
+  const base: SvgRunStyle = { weight: style.weight, italic: style.italic, color: node.props.color ?? DEFAULTS.text.color, underline, lineThrough };
   const { anchor, offset } = ANCHORS[node.props.align ?? DEFAULTS.text.align];
   const { lineHeight, ascent, fontSize } = node.text;
   const common: Attrs = {
@@ -139,7 +144,8 @@ export const textSvg = (node: PositionedText, options: TextSvgOptions = {}): str
     'text-anchor': anchor,
     'font-family': options.fontFamilyMap?.[style.family] ?? style.family,
     'font-size': fontSize,
-    ...runStyleAttrs(base),
+    'letter-spacing': node.css.letterSpacing === 0 ? undefined : node.css.letterSpacing,
+    ...runStyleAttrs({ ...base, underline: false, lineThrough: false }),
     'xml:space': 'preserve',
   };
   return lineTspansOf(node, base)

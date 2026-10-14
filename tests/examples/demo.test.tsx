@@ -83,6 +83,8 @@ describe('examples/demo.tsx — render', () => {
  * antes disso, da demo do commit 77c0143 (pré-M9-D), e o M9-D a manteve idêntica:
  * por tamanho, por slide, cada nó em pré-ordem com path, kind, frame (2 casas) e, em Text,
  * fontSize e número de linhas pós-ajuste. Frames comparados com tolerância de 1 pt.
+ * M11: a altura da Table de 16x9 (slide 5) passou de 168.69 para 171.5 — as linhas da tabela
+ * são arredondadas para cima a DEFAULTS.table.rowHeightStep no layout (antes, só no emissor).
  */
 interface BaselineNode {
   readonly path: string;

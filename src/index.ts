@@ -10,6 +10,9 @@ export type { PptsxConfig, TsxSlidesConfig } from './config.ts';
 /** Identidade tipada: só existe para o arquivo do deck ganhar inferência de ctx. */
 export const defineDeck = (fn: DeckDefinition): DeckDefinition => fn;
 
+/** M11: props CSS do autor (camelCase) por primitiva. */
+export type * from './core/css-props.ts';
+
 export type {
   Align,
   AuthorPropsMap,

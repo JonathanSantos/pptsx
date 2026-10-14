@@ -107,8 +107,10 @@ describe('resolveDeck — responsive props by size', () => {
     );
     expect(responsiveLeftovers(deck)).toEqual([]);
     const slide = deck.slides[0]!;
-    expect(slide.props).toMatchObject({ padding: 32, gap: 8, background: '#eeeeee', direction: 'column' });
-    expect(nodeAt(slide, 'Slide > Box').props).toMatchObject({ direction: 'column', gap: 20, fill: '#ff0000', grow: 1 });
+    // M11: padding na visão da engine vem nos 4 lados; o fill do Box é css.backgroundColor.
+    expect(slide.props).toMatchObject({ padding: { top: 32, right: 32, bottom: 32, left: 32 }, gap: 8, background: '#EEEEEE', direction: 'column' });
+    expect(nodeAt(slide, 'Slide > Box').props).toMatchObject({ direction: 'column', gap: 20, grow: 1 });
+    expect(nodeAt(slide, 'Slide > Box').css).toMatchObject({ backgroundColor: '#FF0000' });
     expect(nodeAt(slide, 'Slide > Box > Text').props).toMatchObject({ size: 24, color: '#222222', weight: 'regular', fit: 'truncate' });
     expect(nodeAt(slide, 'Slide > Box > Image').props).toMatchObject({ src: 'x.png', width: 200, fit: 'cover' });
     expect(nodeAt(slide, 'Slide > Box > Shape').props).toMatchObject({ kind: 'rect', width: 20, height: 10, radius: 4 });
@@ -144,7 +146,7 @@ describe('resolveDeck — responsive props by size', () => {
       </Slide>,
       CTX_4X3,
     );
-    expect((nodeAt(slide, 'Slide > Box') as ResolvedBox).props.padding).toEqual({ top: 8, bottom: 8 });
+    expect((nodeAt(slide, 'Slide > Box') as ResolvedBox).props.padding).toEqual({ top: 8, right: 0, bottom: 8, left: 0 });
   });
 });
 
@@ -159,8 +161,9 @@ describe('resolveDeck — non-responsive objects pass intact', () => {
         </Slide>,
         ctx,
       );
-      expect(slide.props.padding).toEqual({ top: 10 });
-      expect((nodeAt(slide, 'Slide > Box') as ResolvedBox).props.padding).toEqual({ top: 10, left: 4 });
+      // M11: lados ausentes valem 0 na visão da engine (o objeto em si não é responsivo).
+      expect(slide.props.padding).toEqual({ top: 10, right: 0, bottom: 0, left: 0 });
+      expect((nodeAt(slide, 'Slide > Box') as ResolvedBox).props.padding).toEqual({ top: 10, right: 0, bottom: 0, left: 4 });
     }
   });
 
@@ -206,6 +209,16 @@ describe('resolveDeck — values that resolve to undefined', () => {
 // ───────────── malformados (JS sem tipos) ─────────────
 
 describe('resolveDeck — malformed responsive objects', () => {
+  it('a malformed responsive value inside style → ResolveError (M11)', () => {
+    expect(() => resolveAt(<Slide><Box style={{ marginTop: { tall: 8 } } as never} /></Slide>)).toThrow(ResolveError);
+  });
+
+  it('a responsive value inside style resolves per size (M11)', () => {
+    const el = <Slide><Box height={10} style={{ marginTop: { base: 4, tall: 8 } }} /></Slide>;
+    expect(nodeAt(resolveAt(el, CTX_16X9), 'Slide > Box').css.margin.top).toBe(4);
+    expect(nodeAt(resolveAt(el, CTX_4X3), 'Slide > Box').css.margin.top).toBe(8);
+  });
+
   it('object without base → ResolveError naming the prop and the path', () => {
     const error = resolveErrorOf(() =>
       resolveAt(

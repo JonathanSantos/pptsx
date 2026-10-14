@@ -7,12 +7,11 @@ import Yoga, {
   type MeasureFunction,
   type Node as YogaNode,
 } from 'yoga-layout';
-import { DEFAULTS, containerOf } from '../core/defaults.ts';
+import { DEFAULTS } from '../core/defaults.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
 import type {
-  Align,
+  CssStyle,
   Dimensions,
-  FlexDirection,
   LayoutEnv,
   ResolvedBox,
   ResolvedChart,
@@ -23,15 +22,18 @@ import type {
   ResolvedText,
 } from '../core/types.ts';
 import { applyStyle } from './apply.ts';
+import { gridMeasureFunc } from './grid-layout.ts';
 import { measureInputOf } from './measure.ts';
 import { measureTable } from './table.ts';
 import {
+  mainAxisOf,
   readsBaseline,
-  toContentStyle,
+  toBoxStyle,
+  toContainerStyle,
   toImageStyle,
   toItemStyle,
-  toYogaStyle,
   withLineMinWidth,
+  type ParentLayout,
   type YogaStyle,
 } from './style.ts';
 
@@ -39,27 +41,25 @@ import {
 export interface BuiltNode {
   readonly source: ResolvedNode;
   readonly yoga: YogaNode;
+  /** Na ordem da árvore resolvida (não na de `order`): o read e os paths seguem o autor. */
   readonly children: readonly BuiltNode[];
   readonly intrinsic?: Dimensions;
-}
-
-/** O que o item precisa saber do contêiner pai. */
-export interface ParentContext {
-  /** Define o eixo principal do item. */
-  readonly direction: FlexDirection;
-  /** align-items do pai (alignSelf ausente herda). */
-  readonly align: Align;
-  /** A baseline do pai é lida por um ancestral (então a dos filhos também importa). */
-  readonly baseline: boolean;
 }
 
 export interface BuildContext {
   readonly config: Config;
   readonly env: LayoutEnv;
-  readonly parent: ParentContext;
+  readonly parent: ParentLayout;
 }
 
 type Builder<N extends ResolvedNode> = (source: N, yoga: YogaNode, ctx: BuildContext) => BuiltNode;
+
+export const parentLayoutOf = (css: CssStyle, baseline: boolean): ParentLayout => ({
+  direction: css.display === 'block' ? 'column' : mainAxisOf(css),
+  display: css.display,
+  alignItems: css.alignItems,
+  baseline,
+});
 
 const textMeasureFunc =
   (source: ResolvedText, env: LayoutEnv): MeasureFunction =>
@@ -71,13 +71,15 @@ const textMeasureFunc =
     return { width: text.width, height: text.height };
   };
 
-const unbounded = (source: ResolvedText, env: LayoutEnv) =>
-  env.measureText(measureInputOf(source, Number.POSITIVE_INFINITY));
+const unbounded = (source: ResolvedText, env: LayoutEnv) => env.measureText(measureInputOf(source, Number.POSITIVE_INFINITY));
+
+const horizontalBoxOf = (css: CssStyle): number =>
+  css.border.left.width + css.border.right.width + (typeof css.padding.left === 'number' ? css.padding.left : 0) + (typeof css.padding.right === 'number' ? css.padding.right : 0);
 
 const textItemStyleOf = (source: ResolvedText, { env, parent }: BuildContext): YogaStyle => {
-  const style = toContentStyle(source.props, parent.direction);
+  const style = { ...toItemStyle(source.css, parent, true), ...toBoxStyle(source.css) };
   if (source.props.nowrap !== true || parent.direction !== 'row') return style;
-  return withLineMinWidth(style, unbounded(source, env).width);
+  return withLineMinWidth(style, unbounded(source, env).width + horizontalBoxOf(source.css));
 };
 
 const createChild = (parent: YogaNode, config: Config): YogaNode => {
@@ -92,16 +94,18 @@ const BASELINE_WRAPPER: YogaStyle = {
   flexDirection: YogaFlexDirection.Column,
   alignItems: YogaAlign.Stretch,
   justifyContent: YogaJustify.FlexStart,
-  gap: 0,
+  rowGap: 0,
+  columnGap: 0,
 };
 
 /**
  * O binding JS do yoga-layout 3.x não expõe setBaselineFunc: para a folha medida o Yoga
  * usa a altura como baseline. Quando a baseline do Text é lida, o nó vira um invólucro
- * com (1) um marcador de largura 0 e altura = ascent da 1ª linha, com margem inferior
- * −ascent para não ocupar espaço, e (2) a folha com a measure function. A baseline de um
- * contêiner é a do 1º filho, então a do invólucro sai igual ao ascent. O ascent não
- * depende da largura (vem da face do estilo), por isso uma medição basta.
+ * com (1) um marcador de largura 0 e altura = ascent da 1ª linha (topo da caixa de
+ * conteúdo → baseline, meia-entrelinha incluída), com margem inferior −ascent para não
+ * ocupar espaço, e (2) a folha com a measure function. A baseline de um contêiner é a do
+ * 1º filho, então a do invólucro sai igual ao ascent (mais borda/padding do Text). O ascent
+ * não depende da largura (vem da face do estilo), por isso uma medição basta.
  */
 const buildBaselineText = (source: ResolvedText, yoga: YogaNode, ctx: BuildContext): void => {
   applyStyle(yoga, { ...textItemStyleOf(source, ctx), ...BASELINE_WRAPPER });
@@ -114,19 +118,22 @@ const buildBaselineText = (source: ResolvedText, yoga: YogaNode, ctx: BuildConte
   leaf.setMeasureFunc(textMeasureFunc(source, ctx.env));
 };
 
+/** Grid: folha medida pela grade; os itens são posicionados depois, no read (grid-layout.ts). */
+const buildGrid: Builder<ResolvedBox> = (source, yoga, ctx) => {
+  applyStyle(yoga, { ...toItemStyle(source.css, ctx.parent), ...toBoxStyle(source.css) });
+  yoga.setMeasureFunc(gridMeasureFunc(source, ctx.env));
+  return { source, yoga, children: [] };
+};
+
 const buildBox: Builder<ResolvedBox> = (source, yoga, ctx) => {
-  applyStyle(yoga, toYogaStyle(source.props, ctx.parent.direction));
-  const container = containerOf(source.props);
-  const parent: ParentContext = {
-    direction: container.direction,
-    align: container.align,
-    baseline: readsBaseline(source.props, ctx.parent),
-  };
-  return { source, yoga, children: buildChildren(source.children, yoga, { ...ctx, parent }) };
+  if (source.css.display === 'grid') return buildGrid(source, yoga, ctx);
+  applyStyle(yoga, { ...toItemStyle(source.css, ctx.parent), ...toContainerStyle(source.css) });
+  const parent = parentLayoutOf(source.css, readsBaseline(source.css, ctx.parent));
+  return { source, yoga, children: buildChildren(source.children, yoga, { ...ctx, parent }, source.css) };
 };
 
 const buildText: Builder<ResolvedText> = (source, yoga, ctx) => {
-  if (readsBaseline(source.props, ctx.parent)) {
+  if (readsBaseline(source.css, ctx.parent)) {
     buildBaselineText(source, yoga, ctx);
     return { source, yoga, children: [] };
   }
@@ -137,27 +144,19 @@ const buildText: Builder<ResolvedText> = (source, yoga, ctx) => {
 
 const buildImage: Builder<ResolvedImage> = (source, yoga, { env, parent }) => {
   const intrinsic = env.imageSize(source.props.src);
-  applyStyle(yoga, toImageStyle(source.props, intrinsic, parent.direction));
+  applyStyle(yoga, toImageStyle(source.css, intrinsic, parent));
   return { source, yoga, children: [], intrinsic };
 };
 
-// Image/Shape/Chart são folhas sem measure function: o Yoga já usa a altura como baseline.
-const buildShape: Builder<ResolvedShape> = (source, yoga, { parent }) => {
-  applyStyle(yoga, toItemStyle(source.props, parent.direction));
-  return { source, yoga, children: [] };
-};
-
-// Gráfico não tem tamanho próprio: fica com o que o flex der (o resolve exige width/height/grow).
-const buildChart: Builder<ResolvedChart> = (source, yoga, { parent }) => {
-  applyStyle(yoga, toItemStyle(source.props, parent.direction));
+const buildLeaf: Builder<ResolvedShape | ResolvedChart> = (source, yoga, { parent }) => {
+  applyStyle(yoga, { ...toItemStyle(source.css, parent), ...toBoxStyle(source.css) });
   return { source, yoga, children: [] };
 };
 
 /**
- * Sem limite (ou com limite maior que o conteúdo) a largura é a natural; com limite
- * menor, o limite. A altura sai sempre de uma medição na largura que o nó vai ter: o
- * read remede com frame.width, e as colunas livres numa largura finita se dividem
- * igualmente (não pela largura natural de cada uma), então a altura tem que vir dessa conta.
+ * Sem limite (ou com limite maior que o conteúdo) a largura é a natural; com limite menor,
+ * o limite. A altura sai sempre de uma medição na largura que o nó vai ter: o read remede
+ * na largura definitiva, então a altura tem que vir da mesma conta.
  */
 const tableMeasureFunc =
   (source: ResolvedTable, env: LayoutEnv): MeasureFunction =>
@@ -169,9 +168,8 @@ const tableMeasureFunc =
     return { width: chosen, height: measureTable(source, chosen, env).height };
   };
 
-// Folha medida sem filhos: o Yoga usa a altura como baseline, sem o invólucro do Text.
 const buildTable: Builder<ResolvedTable> = (source, yoga, { env, parent }) => {
-  applyStyle(yoga, toContentStyle(source.props, parent.direction));
+  applyStyle(yoga, { ...toItemStyle(source.css, parent, true), ...toBoxStyle(source.css) });
   yoga.setMeasureFunc(tableMeasureFunc(source, env));
   return { source, yoga, children: [] };
 };
@@ -180,17 +178,58 @@ const BUILDERS: DispatchTable<ResolvedNode, BuiltNode, [yoga: YogaNode, ctx: Bui
   box: buildBox,
   text: buildText,
   image: buildImage,
-  shape: buildShape,
-  chart: buildChart,
+  shape: buildLeaf,
+  chart: buildLeaf,
   table: buildTable,
 };
+
+const isInFlow = (node: ResolvedNode): boolean => node.css.position !== 'absolute';
+
+/**
+ * Colapso de margens verticais entre irmãos em block (CSS 2.1 §8.3.1, só entre irmãos):
+ * a margem efetiva entre dois blocos é max(positivas) + min(negativas). O Yoga soma as duas,
+ * então a margem de cima do segundo vira `colapsada − margem de baixo do primeiro`.
+ * Margem de pai com filho não colapsa (fora do escopo).
+ */
+const collapsedTopsOf = (children: readonly ResolvedNode[]): ReadonlyMap<ResolvedNode, number> => {
+  const flow = children.filter(isInFlow);
+  return new Map(
+    flow.slice(1).flatMap((child, index) => {
+      const previous = flow[index]!.css.margin.bottom;
+      const own = child.css.margin.top;
+      if (typeof previous !== 'number' || (typeof own !== 'number' && own !== 'auto')) return [];
+      const top = own === 'auto' ? 0 : own;
+      const collapsed = Math.max(0, previous, top) + Math.min(0, previous, top);
+      return [[child, collapsed - previous] as const];
+    }),
+  );
+};
+
+/** `order` muda a ordem do fluxo (estável); os BuiltNode voltam na ordem da árvore. */
+const flowOrderOf = (children: readonly ResolvedNode[]): readonly ResolvedNode[] =>
+  children
+    .map((child, index) => ({ child, index }))
+    .sort((a, b) => a.child.css.order - b.child.css.order || a.index - b.index)
+    .map(({ child }) => child);
 
 const buildNode = (source: ResolvedNode, parent: YogaNode, ctx: BuildContext): BuiltNode =>
   dispatch(BUILDERS, source, createChild(parent, ctx.config), ctx);
 
-/** Cria (e anexa ao `parent`) a subárvore Yoga dos filhos. */
+/** Cria (e anexa ao `parent`) a subárvore Yoga dos filhos de um contêiner com estilo `css`. */
 export const buildChildren = (
   children: readonly ResolvedNode[],
   parent: YogaNode,
   ctx: BuildContext,
-): readonly BuiltNode[] => children.map((child) => buildNode(child, parent, ctx));
+  css: CssStyle,
+): readonly BuiltNode[] => {
+  const collapsed = css.display === 'block' ? collapsedTopsOf(children) : new Map<ResolvedNode, number>();
+  const built = new Map(
+    flowOrderOf(children).map((child) => {
+      const node = buildNode(child, parent, ctx);
+      const top = collapsed.get(child);
+      if (top !== undefined) applyStyle(node.yoga, { margin: { top } });
+      return [child, node] as const;
+    }),
+  );
+  return children.map((child) => built.get(child)!);
+};

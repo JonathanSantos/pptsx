@@ -31,7 +31,7 @@ import {
   resolveFontFaces,
   type FileFontFace,
 } from './fonts/index.ts';
-import { fitDeck } from './fit/index.ts';
+import { cssNotEmittedOf, fitDeck } from './fit/index.ts';
 import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
 import { resolveDeck } from './resolve/index.ts';
 import { createContext, resolveSize } from './sizes.ts';
@@ -74,7 +74,8 @@ const settingsOf = (options: RenderOptions): RenderSettings => {
     fontsMissing,
     embedFonts: options.embedFonts ?? DEFAULTS.embedFonts,
     preview: options.preview ?? { mode: 'native', width: DEFAULTS.preview.width },
-    env: { measureText, imageSize: readImageSize(baseDir) },
+    // M11: o min-content do grid precisa da mesma folga do medidor.
+    env: { measureText, imageSize: readImageSize(baseDir), textSafety: options.textSafety ?? DEFAULTS.textSafety },
   };
 };
 
@@ -99,6 +100,7 @@ const renderPreview = (
     debug: settings.debug,
     baseDir: settings.baseDir,
     fontFamilyMap: fontFamilyMapOf(settings.fonts),
+    lang: settings.lang,
   };
   const slides = deck.slides.map((slide) => svgToPng(slideToSvg(slide, deck.size, svgOptions), { widthPx, fontFiles }));
   const overview = buildOverview(
@@ -211,7 +213,8 @@ const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: Rende
     lineBreaks: settings.lineBreaks,
     embedFonts: embed.fonts,
   });
-  const diagnostics = [...fitted.diagnostics, ...embed.diagnostics];
+  // M11: propriedades CSS sem de/para para o PPTX viram warning aqui (uma vez por nó).
+  const diagnostics = [...fitted.diagnostics, ...cssNotEmittedOf(positioned), ...embed.diagnostics];
   const result: RenderResult = {
     size: size.name,
     buffer,

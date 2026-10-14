@@ -20,14 +20,6 @@ export interface TableEmitContext {
   readonly lineBreaks?: LineBreaks;
 }
 
-/**
- * O Keynote só cresce a linha quando falta espaço e trunca o passo de linha
- * (16,1 → 16,0); arredondar para cima ao meio ponto dá folga sem mexer no layout.
- */
-const ROW_HEIGHT_STEP_PT = 0.5;
-/** Evita que 28 + ruído de ponto flutuante suba para 28,5. */
-const ROUNDING_EPSILON = 1e-9;
-
 /** Erro de emissão: a árvore é válida, mas o PPTX não consegue representá-la. */
 export class EmitError extends Error {
   constructor(message: string) {
@@ -35,9 +27,6 @@ export class EmitError extends Error {
     this.name = 'EmitError';
   }
 }
-
-export const roundRowHeight = (height: number): number =>
-  Math.ceil(height / ROW_HEIGHT_STEP_PT - ROUNDING_EPSILON) * ROW_HEIGHT_STEP_PT;
 
 const sum = (values: readonly number[]): number => values.reduce((total, value) => total + value, 0);
 
@@ -107,12 +96,30 @@ const rowStyleOf = (node: PositionedTable, rowIndex: number): RowStyle => {
   return dataStyleOf(rowIndex - 1, node.props.stripe);
 };
 
-const cellOptionsOf = (node: PositionedTable, style: RowStyle, columnIndex: number, lang: string): Pptx.TableCellProps => ({
+/** O .d.ts não lista lineSpacing na célula, mas o pptxgenjs passa as opções da célula aos runs (genXmlTextBody). */
+type CellLineSpacing = Pick<Pptx.TextPropsOptions, 'lineSpacing'>;
+
+/**
+ * M11: `lineHeight` numérico (CSS, múltiplo do size) sai como `spcPts` exato = passo de linha
+ * do layout da célula, como no Text. Com 'normal' a célula continua sem lnSpc: o Keynote bate
+ * em ±0,25 pt com a altura natural (M10-spike).
+ */
+const cellLineSpacingOf = (node: PositionedTable, layout: TextLayout): CellLineSpacing =>
+  tableStyleOf(node.props).lineHeight === 'normal' ? {} : { lineSpacing: layout.lineHeight };
+
+const cellOptionsOf = (
+  node: PositionedTable,
+  style: RowStyle,
+  columnIndex: number,
+  lang: string,
+  layout: TextLayout,
+): Pptx.TableCellProps & CellLineSpacing => ({
   align: node.props.columns[columnIndex]?.align ?? DEFAULTS.text.align,
   valign: 'top',
   bold: style.bold,
   // lang não está entre as opções que o pptxgenjs copia da tabela para a célula.
   lang,
+  ...cellLineSpacingOf(node, layout),
   ...(style.fill === undefined ? {} : { fill: { color: hexOf(style.fill) } }),
   ...(style.color === undefined ? {} : { color: hexOf(style.color) }),
 });
@@ -125,13 +132,14 @@ export const tableRowsOf = (node: PositionedTable, ctx: TableEmitContext = {}): 
     const style = rowStyleOf(node, rowIndex);
     return row.map((layout, columnIndex) => ({
       text: cellRunsOf(layout, sources[rowIndex]?.[columnIndex], lineBreaks),
-      options: cellOptionsOf(node, style, columnIndex, lang),
+      options: cellOptionsOf(node, style, columnIndex, lang, layout),
     }));
   });
 };
 
 export const tableOptionsOf = (node: PositionedTable, ctx: TableEmitContext = {}): Pptx.TableProps => {
-  const rowHeights = node.rowHeights.map(roundRowHeight);
+  // M11: o layout já arredonda as linhas para cima ao passo do Keynote (DEFAULTS.table.rowHeightStep).
+  const { rowHeights } = node;
   return {
     x: ptToInches(node.frame.x),
     y: ptToInches(node.frame.y),

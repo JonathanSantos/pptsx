@@ -31,17 +31,30 @@ export type LineSpacingOptions = Pick<Pptx.TextPropsOptions, 'lineSpacing' | 'li
 export const ACTIVE_LINE_SPACING: LineSpacingStrategy = 'exact';
 
 /**
- * Só vale para 'multiple': fator aplicado sobre style.lineHeight antes de ir
- * ao pptx. 1 = sem correção; >1 abre as linhas, <1 aperta. Ajustado pela
+ * Só vale para 'multiple' (e só com `lineHeight: 'normal'`): fator aplicado
+ * sobre o 100% antes de ir ao pptx. 1 = sem correção; >1 abre as linhas, <1 aperta. Ajustado pela
  * calibração quando o "100%" do renderizador difere do lineHeight do medidor.
  */
 export const LINE_SPACING_CALIBRATION = 1;
 
+/** `lineHeight: 'normal'` é a altura natural da face: o "100%" do renderizador. */
+const NORMAL_MULTIPLE = 1;
+
+/**
+ * Estratégias para `lineHeight: 'normal'`, o único caso em que a altura depende das métricas
+ * da fonte e por isso do renderizador.
+ */
 export const LINE_SPACING_STRATEGIES: Readonly<Record<LineSpacingStrategy, (node: PositionedText) => LineSpacingOptions>> = {
-  multiple: (node) => ({ lineSpacingMultiple: textStyleOf(node.props).lineHeight * LINE_SPACING_CALIBRATION }),
+  multiple: () => ({ lineSpacingMultiple: NORMAL_MULTIPLE * LINE_SPACING_CALIBRATION }),
   // pptxgenjs grava spcPts = round(pt × 100), ou seja, centésimos de pt.
   exact: (node) => ({ lineSpacing: node.text.lineHeight }),
 };
 
+/**
+ * M11: `lineHeight` numérico é CSS (múltiplo do fontSize, já aplicado pelo medidor em
+ * `text.lineHeight`), uma altura absoluta que não depende da face: sempre `spcPts` exato,
+ * qualquer que seja a estratégia. Um `spcPct` seria relativo à altura natural de cada
+ * renderizador e daria outra altura.
+ */
 export const lineSpacingOf = (node: PositionedText, strategy: LineSpacingStrategy = ACTIVE_LINE_SPACING): LineSpacingOptions =>
-  LINE_SPACING_STRATEGIES[strategy](node);
+  textStyleOf(node.props).lineHeight === 'normal' ? LINE_SPACING_STRATEGIES[strategy](node) : LINE_SPACING_STRATEGIES.exact(node);

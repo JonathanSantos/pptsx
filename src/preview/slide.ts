@@ -1,19 +1,12 @@
-import { containerOf } from '../core/defaults.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
-import type {
-  PositionedBox,
-  PositionedNode,
-  PositionedSlide,
-  PositionedTable,
-  PositionedText,
-  Rect,
-  SlideSize,
-} from '../core/types.ts';
+import type { PositionedNode, PositionedSlide, PositionedTable, PositionedText, Rect, SlideSize } from '../core/types.ts';
+import { paintOrderOf, type PaintItem } from '../emit/paint.ts';
+import { contentRectOf } from '../layout/index.ts';
 import { chartSvg } from './chart.ts';
+import { decorationSvg } from './decoration.ts';
 import { loadImageUri } from './image.ts';
 import {
   backgroundColorSvg,
-  boxSvg,
   debugOutlineSvg,
   imageElementSvg,
   imageSvg,
@@ -26,7 +19,13 @@ import {
   textWidthOverflowRectOf,
 } from './svg.ts';
 import { tableOverflowRectOf, tableSvg } from './table.ts';
-import { attrs } from './xml.ts';
+import { attrs, element } from './xml.ts';
+
+/**
+ * Preview SVG do slide (M11): a mesma ordem de pintura do emissor (`paintOrderOf`) e a mesma
+ * pintura CSS (fundo, bordas, sombra, opacidade, rotação). O preview é do .pptx: o que não sai
+ * no arquivo (css-not-emitted) também não é desenhado.
+ */
 
 export interface SvgOptions {
   readonly widthPx: number;
@@ -36,60 +35,48 @@ export interface SvgOptions {
   readonly fontFamilyMap?: Readonly<Record<string, string>>;
   /** leitura de arquivo injetável (padrão fs.readFileSync) para manter o SVG testável */
   readonly readFile?: (path: string) => Buffer;
+  /** Idioma dos números do gráfico (separador decimal); padrão DEFAULTS.lang. */
+  readonly lang?: string;
 }
-
-/** Nó achatado em ordem de árvore, com o frame do pai para o realce de overflow. */
-interface DrawItem {
-  readonly node: PositionedNode;
-  readonly parent: Rect;
-  /** Área de conteúdo do pai (frame menos padding): limite da largura de um nowrap. */
-  readonly parentContent: Rect;
-  readonly index: number;
-  /** position="absolute" (ou dentro de um): decoração intencional, pode sair do pai. */
-  readonly absolute: boolean;
-}
-
-/** Mesma conta do fit (contentOf em fit/geometry.ts). */
-const contentOf = (container: PositionedSlide | PositionedBox): Rect => {
-  const { padding } = containerOf(container.props);
-  const { x, y, width, height } = container.frame;
-  return {
-    x: x + padding.left,
-    y: y + padding.top,
-    width: Math.max(0, width - padding.left - padding.right),
-    height: Math.max(0, height - padding.top - padding.bottom),
-  };
-};
-
-const flatten = (
-  nodes: readonly PositionedNode[],
-  parent: PositionedSlide | PositionedBox,
-  insideAbsolute: boolean,
-): readonly Omit<DrawItem, 'index'>[] =>
-  nodes.flatMap((node) => {
-    const absolute = insideAbsolute || node.props.position === 'absolute';
-    const children = node.kind === 'box' ? flatten(node.children, node, absolute) : [];
-    return [{ node, parent: parent.frame, parentContent: contentOf(parent), absolute }, ...children];
-  });
-
-const drawItemsOf = (slide: PositionedSlide): readonly DrawItem[] =>
-  flatten(slide.children, slide, false).map((item, index) => ({ ...item, index }));
 
 interface DrawContext {
   readonly fontFamilyMap?: Readonly<Record<string, string>>;
+  readonly lang?: string;
   readonly loadImage: (src: string) => string;
 }
 
+/** Área de conteúdo: frame − borda − padding (mesma conta do layout e do fit). */
+const contentOf = <N extends PositionedNode>(node: N): N => ({ ...node, frame: contentRectOf(node.frame, node.box) });
+
+// Box não tem conteúdo próprio: a pintura dele é a decoração, e os filhos são itens próprios.
 const drawers: DispatchTable<PositionedNode, string, [ctx: DrawContext, index: number]> = {
-  box: (node) => boxSvg(node),
-  text: (node, ctx) => textSvg(node, { fontFamilyMap: ctx.fontFamilyMap }),
-  image: (node, ctx, index) => imageSvg(node, ctx.loadImage(node.props.src), `clip-${index}`),
+  box: () => '',
+  text: (node, ctx) => textSvg(contentOf(node), { fontFamilyMap: ctx.fontFamilyMap }),
+  image: (node, ctx, index) => imageSvg(contentOf(node), ctx.loadImage(node.props.src), `clip-${index}`),
   shape: (node) => shapeSvg(node),
-  chart: (node, ctx) => chartSvg(node, { fontFamilyMap: ctx.fontFamilyMap }),
-  table: (node, ctx, index) => tableSvg(node, { fontFamilyMap: ctx.fontFamilyMap }, `clip-${index}`),
+  chart: (node, ctx) => chartSvg(contentOf(node), { fontFamilyMap: ctx.fontFamilyMap, lang: ctx.lang }),
+  table: (node, ctx, index) => tableSvg(contentOf(node), { fontFamilyMap: ctx.fontFamilyMap }, `clip-${index}`),
 };
 
-const drawItem = (item: DrawItem, ctx: DrawContext): string => dispatch(drawers, item.node, ctx, item.index);
+const transformOf = (item: PaintItem): string | undefined =>
+  item.rotations.length === 0 ? undefined : item.rotations.map((r) => `rotate(${r.degrees} ${r.cx} ${r.cy})`).join(' ');
+
+/** Opacidade e rotação herdadas num <g> (o emissor aplica as mesmas em cada forma). */
+const groupOf = (item: PaintItem, body: string): string => {
+  const transform = transformOf(item);
+  if (body === '' || (transform === undefined && item.opacity === 1)) return body;
+  return element('g', { transform, opacity: item.opacity === 1 ? undefined : item.opacity }, body);
+};
+
+/** Gráfico e tabela nativos não giram nem ficam translúcidos no PPTX (css-not-emitted): só a decoração. */
+const isNativeFrame = (node: PositionedNode): boolean => node.kind === 'chart' || node.kind === 'table';
+
+const drawItem = (item: PaintItem, ctx: DrawContext): string => {
+  const decoration = decorationSvg(item.node, ctx.loadImage, item.index);
+  const content = dispatch(drawers, item.node, ctx, item.index);
+  if (isNativeFrame(item.node)) return groupOf(item, decoration) + content;
+  return groupOf(item, decoration + content);
+};
 
 const BACKGROUND_CLIP_ID = 'clip-background';
 
@@ -103,58 +90,84 @@ const backgroundSvg = (slide: PositionedSlide, area: Rect, ctx: DrawContext): st
   return base + imageElementSvg(area, ctx.loadImage(background.image), 'cover', BACKGROUND_CLIP_ID);
 };
 
-const outsideParentSvg = (item: DrawItem): string =>
+// ───────────── debug ─────────────
+
+/** Nó com o frame e a área de conteúdo do pai, para o realce de overflow. */
+interface DebugItem {
+  readonly node: PositionedNode;
+  readonly parent: Rect;
+  /** Área de conteúdo do pai (frame − borda − padding): limite da largura de um nowrap. */
+  readonly parentContent: Rect;
+  /** position="absolute" (ou dentro de um): decoração intencional, pode sair do pai. */
+  readonly absolute: boolean;
+}
+
+const flatten = (
+  nodes: readonly PositionedNode[],
+  parent: PositionedSlide | PositionedNode,
+  insideAbsolute: boolean,
+): readonly DebugItem[] =>
+  nodes.flatMap((node) => {
+    const absolute = insideAbsolute || node.css.position === 'absolute';
+    const children = node.kind === 'box' ? flatten(node.children, node, absolute) : [];
+    return [{ node, parent: parent.frame, parentContent: contentRectOf(parent.frame, parent.box), absolute }, ...children];
+  });
+
+const outsideParentSvg = (item: DebugItem): string =>
   item.absolute ? '' : overflowRectsOf(item.node.frame, item.parent).map(overflowSvg).join('');
 
-/** Largura disponível como no fit: em fluxo, o frame cortado pela área de conteúdo do pai. */
-const availableWidthOf = (node: PositionedText, content: Rect): number => {
-  if (node.props.position === 'absolute') return node.frame.width;
-  const right = Math.min(node.frame.x + node.frame.width, content.x + content.width);
-  return Math.max(0, right - node.frame.x);
+/** Largura disponível como no fit: em fluxo, a área de conteúdo cortada pela área de conteúdo do pai. */
+const availableWidthOf = (content: Rect, absolute: boolean, parentContent: Rect): number => {
+  if (absolute) return content.width;
+  const right = Math.min(content.x + content.width, parentContent.x + parentContent.width);
+  return Math.max(0, right - content.x);
 };
 
-const textBandsOf = (node: PositionedText, content: Rect): readonly Rect[] =>
-  [textOverflowRectOf(node), textWidthOverflowRectOf(node, availableWidthOf(node, content))].filter(
-    (band): band is Rect => band !== undefined,
-  );
+const textBandsOf = (node: PositionedText, item: DebugItem): readonly Rect[] => {
+  const content = contentOf(node);
+  const available = availableWidthOf(content.frame, node.css.position === 'absolute', item.parentContent);
+  return [textOverflowRectOf(content), textWidthOverflowRectOf(content, available)].filter((band): band is Rect => band !== undefined);
+};
 
 const tableBandsOf = (node: PositionedTable): readonly Rect[] => {
-  const band = tableOverflowRectOf(node);
+  const band = tableOverflowRectOf(contentOf(node));
   return band === undefined ? [] : [band];
 };
 
-const bandsOf = (node: PositionedNode, content: Rect): readonly Rect[] => {
-  if (node.kind === 'text') return textBandsOf(node, content);
+const bandsOf = (item: DebugItem): readonly Rect[] => {
+  const { node } = item;
+  if (node.kind === 'text') return textBandsOf(node, item);
   if (node.kind === 'table') return tableBandsOf(node);
   return [];
 };
 
 /**
- * Texto que estoura a caixa (altura ou, com nowrap, largura) e tabela mais alta que o frame
- * ganham destaque sólido; os demais, o tracejado padrão.
+ * Texto que estoura a área de conteúdo (altura ou, com nowrap, largura) e tabela mais alta
+ * que o frame ganham destaque sólido; os demais, o tracejado padrão.
  */
-const outlineSvg = (item: DrawItem): string => {
-  const { node } = item;
-  if (node.kind === 'shape') return '';
-  const bands = bandsOf(node, item.parentContent);
-  return bands.length === 0 ? debugOutlineSvg(node.frame) : textOverflowSvg(node.frame, bands);
+const debugOutlineOfItem = (item: DebugItem): string => {
+  if (item.node.kind === 'shape') return '';
+  const bands = bandsOf(item);
+  return bands.length === 0 ? debugOutlineSvg(item.node.frame) : textOverflowSvg(item.node.frame, bands);
 };
 
-/** Debug fica por cima de tudo para não ser escondido por fills. */
-const debugSvg = (items: readonly DrawItem[]): string =>
-  [...items.map(outsideParentSvg), ...items.map(outlineSvg)].join('');
+/** Debug fica por cima de tudo para não ser escondido por fills; frames sem rotação (os do layout). */
+const debugSvg = (slide: PositionedSlide): string => {
+  const items = flatten(slide.children, slide, false);
+  return [...items.map(outsideParentSvg), ...items.map(debugOutlineOfItem)].join('');
+};
 
 export const slideToSvg = (slide: PositionedSlide, size: SlideSize, options: SvgOptions): string => {
   const ctx: DrawContext = {
     fontFamilyMap: options.fontFamilyMap,
+    lang: options.lang,
     loadImage: (src) => loadImageUri(src, options.baseDir, options.readFile),
   };
-  const items = drawItemsOf(slide);
   const area: Rect = { x: 0, y: 0, width: size.width, height: size.height };
   const body = [
     backgroundSvg(slide, area, ctx),
-    ...items.map((item) => drawItem(item, ctx)),
-    options.debug ? debugSvg(items) : '',
+    ...paintOrderOf(slide).map((item) => drawItem(item, ctx)),
+    options.debug ? debugSvg(slide) : '',
   ].join('');
   const root = attrs({
     xmlns: 'http://www.w3.org/2000/svg',

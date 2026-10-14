@@ -1,5 +1,5 @@
 import { DEFAULTS } from '../core/defaults.ts';
-import type { Diagnostic, Pt, TextStyle } from '../core/types.ts';
+import type { Diagnostic, PositionedNode, Pt, TextStyle } from '../core/types.ts';
 import type { Overflow } from './detect.ts';
 import type { ContainerExcess, Side, SideExcess } from './geometry.ts';
 
@@ -304,6 +304,9 @@ const isMainAxis = (excess: ContainerExcess): boolean =>
 const describeUse = (excess: ContainerExcess): string => {
   const used = round(excess.available + excess.pt);
   const axis = AXIS_NAME[excess.axis];
+  // M11: em grid e em wrap quem ocupa o espaço são as linhas/tracks, não um filho.
+  if (excess.layout === 'grid') return `Os tracks do grid ocupam ${used} pt na ${axis}`;
+  if (excess.layout === 'wrap' && !isMainAxis(excess)) return `As linhas do wrap ocupam ${used} pt na ${axis}`;
   return isMainAxis(excess)
     ? `Os filhos em fluxo somam ${used} pt na ${axis} (${excess.direction})`
     : `O maior filho em fluxo ocupa ${used} pt na ${axis} (eixo cruzado da ${excess.direction})`;
@@ -317,6 +320,18 @@ export const boxOverflow = (ctx: DiagnosticContext, overflow: Overflow, excess: 
     message: `${describeUse(excess)}, mas a área de conteúdo tem ${round(excess.available)} pt: estouro de ${round(overflow.overflowPt)} pt (${round(overflow.overflowPct)}%). Reduza width/height fixos ou gap/padding, permita shrink nos filhos (shrink={0} impede), ou aumente o contêiner.`,
     data: overflowData(overflow),
   });
+
+/** M11: item de grid maior que a célula (track fixo ou fr que não cresce com o conteúdo). */
+export const cellOverflow = (ctx: DiagnosticContext, overflow: Overflow, node: PositionedNode): Diagnostic => {
+  const cell = node.cell ?? node.frame;
+  return make(ctx, {
+    severity: 'error',
+    code: 'box-overflow',
+    path: overflow.path,
+    message: `O item ocupa ${round(node.frame.width)} × ${round(node.frame.height)} pt (com margens), mas a célula do grid tem ${round(cell.width)} × ${round(cell.height)} pt: estouro de ${round(overflow.overflowPt)} pt (${round(overflow.overflowPct)}%). Use um track auto/minmax(auto, …) nessa linha/coluna, reduza o conteúdo ou o tamanho fixo do item.`,
+    data: overflowData(overflow),
+  });
+};
 
 const SIDE_NAME: Readonly<Record<Side, string>> = { top: 'pelo topo', right: 'pela direita', bottom: 'pela base', left: 'pela esquerda' };
 

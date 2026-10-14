@@ -1,5 +1,6 @@
 import type { TextLayout, TextMeasureInput, TextMeasurer } from '../core/types.ts';
 import { brokenWordsOf } from './broken.ts';
+import { lineBoxOf, spacingOf } from './leading.ts';
 import { layoutText } from './lines.ts';
 import type { MeasureRun } from './pieces.ts';
 
@@ -10,21 +11,23 @@ const ASCENT_RATIO = 0.9;
 
 // Sem métricas não há diferença entre faces: bold e itálico medem como a regular, NBSP como espaço.
 const estimateWidth =
-  (size: number): MeasureRun =>
+  (size: number, letterSpacing: number): MeasureRun =>
   (text) =>
-    [...text].length * CHAR_WIDTH_RATIO * size;
+    [...text].length * CHAR_WIDTH_RATIO * size + spacingOf(text, letterSpacing);
 
 const measureEstimate = (input: TextMeasureInput): TextLayout => {
-  const { size, lineHeight: multiplier } = input.style;
-  const laid = layoutText(input, input.maxWidth, estimateWidth(size));
-  const lineHeight = LINE_HEIGHT_RATIO * size * multiplier;
+  const { size } = input.style;
+  const laid = layoutText(input, input.maxWidth, estimateWidth(size, input.letterSpacing ?? 0));
+  // A linha "natural" da estimativa faz o papel da face: 'normal' = 1.2 × size com baseline em 0.9 × size.
+  const natural = { lineHeight: LINE_HEIGHT_RATIO * size, ascent: ASCENT_RATIO * size };
+  const { lineHeight, ascent } = lineBoxOf(natural, size, input.style.lineHeight);
   return {
     lines: laid.lines,
     paragraphs: laid.paragraphs,
     lineRuns: laid.lineRuns,
     fontSize: size,
     lineHeight,
-    ascent: ASCENT_RATIO * size * multiplier,
+    ascent,
     width: laid.widestLine,
     height: laid.lines.length * lineHeight,
     widestSegment: laid.widestSegment,

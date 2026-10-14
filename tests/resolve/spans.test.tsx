@@ -32,6 +32,9 @@ const run = (text: string, over: Partial<Omit<TextRun, 'text'>> = {}): TextRun =
   weight: 'regular',
   italic: false,
   color: '#000000',
+  // M11: o resolve sempre preenche a decoração do run.
+  underline: false,
+  lineThrough: false,
   ...over,
 });
 
@@ -170,13 +173,26 @@ describe('resolve — runs from Span/B/I', () => {
     expect(node.runs).toEqual([run('total '), run('R$ 10', { weight: 'bold' })]);
   });
 
-  it('props of the resolved Text stay as the author wrote them (no runs inside props)', () => {
+  // M11: `props` é a visão da engine derivada do css (padrões preenchidos), sem runs.
+  it('props of the resolved Text are the engine view (no runs inside props)', () => {
     const node = textNode(
       <Text size={20}>
         a<B>b</B>
       </Text>,
     );
-    expect(node.props).toEqual({ size: 20 });
+    expect(node.props).toMatchObject({ size: 20 });
+    expect(node.props).not.toHaveProperty('runs');
+    expect(node.props).not.toHaveProperty('children');
+  });
+
+  it('Span textDecoration marks its run (M11)', () => {
+    const node = textNode(
+      <Text>
+        a<Span textDecoration="underline">b</Span>
+        <Span textDecoration="line-through">c</Span>
+      </Text>,
+    );
+    expect(node.runs).toEqual([run('a'), run('b', { underline: true }), run('c', { lineThrough: true })]);
   });
 });
 

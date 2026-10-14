@@ -36,6 +36,9 @@ const charEnv = () => {
 
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0);
 
+/** M11 (colunas auto pelo conteúdo): as células são medidas antes sem limite (max-content); estas são as medidas finais, na coluna. */
+const finalCalls = (calls: readonly TextMeasureInput[]): readonly TextMeasureInput[] => calls.filter((c) => c.maxWidth !== Infinity);
+
 const expectWidths = (actual: readonly number[], expected: readonly number[]): void => {
   expect(actual).toHaveLength(expected.length);
   expected.forEach((w, i) => expect(actual[i], `column ${i}`).toBeCloseTo(w, 6));
@@ -102,8 +105,8 @@ describe('measureTable', () => {
   it('measures each cell with maxWidth = column − 2 × padding and the table style', () => {
     const { env, calls } = charEnv();
     measureTable(table({ size: 16, font: 'Arial' }), 200, env);
-    expect(calls.length).toBe(4); // cabeçalho + 1 linha × 2 colunas
-    for (const call of calls) {
+    expect(finalCalls(calls).length).toBe(4); // cabeçalho + 1 linha × 2 colunas
+    for (const call of finalCalls(calls)) {
       expect(call.maxWidth).toBeCloseTo(100 - 2 * PAD, 6);
       expect(call.style.size).toBe(16);
       expect(call.style.family).toBe(tableStyleOf({ columns: TWO_FREE, rows: [] }).family);
@@ -113,8 +116,8 @@ describe('measureTable', () => {
   it('header cells are measured bold, data cells regular', () => {
     const { env, calls } = charEnv();
     measureTable(table(), 200, env);
-    const headerCalls = calls.filter((c) => c.content === 'A' || c.content === 'B');
-    const dataCalls = calls.filter((c) => c.content === 'a' || c.content === 'b');
+    const headerCalls = finalCalls(calls).filter((c) => c.content === 'A' || c.content === 'B');
+    const dataCalls = finalCalls(calls).filter((c) => c.content === 'a' || c.content === 'b');
     expect(headerCalls.map((c) => c.style.weight)).toEqual(['bold', 'bold']);
     expect(dataCalls.map((c) => c.style.weight)).toEqual(['regular', 'regular']);
   });
@@ -142,7 +145,7 @@ describe('measureTable', () => {
     const { env, calls } = charEnv();
     const layout = measureTable(table({ cellPadding: 10 }), 200, env);
     expect(layout.rowHeights).toEqual([FAKE_LINE_HEIGHT + 20, FAKE_LINE_HEIGHT + 20]);
-    expect(calls[0]?.maxWidth).toBeCloseTo(80, 6);
+    expect(finalCalls(calls)[0]?.maxWidth).toBeCloseTo(80, 6);
   });
 
   it('header is row 0 of cells', () => {
@@ -182,11 +185,11 @@ describe('measureTable', () => {
     expect(layout.width).toBeCloseTo(600, 6);
   });
 
-  it('Infinity width: every free column = widest free cell of the table + 2 × padding', () => {
+  it('Infinity width: every free column = its own max-content + 2 × padding (table-layout: auto)', () => {
     const { env, calls } = charEnv();
     const layout = measureTable(table({ rows: [['abc', 'x'], ['a', 'wxyzw']] }), Infinity, env);
     expect(calls.some((c) => c.maxWidth === Infinity)).toBe(true);
-    expectWidths(layout.columnWidths, [5 * CHAR_WIDTH + 2 * PAD, 5 * CHAR_WIDTH + 2 * PAD]);
+    expectWidths(layout.columnWidths, [3 * CHAR_WIDTH + 2 * PAD, 5 * CHAR_WIDTH + 2 * PAD]);
     expect(layout.width).toBeCloseTo(sum(layout.columnWidths), 6);
   });
 

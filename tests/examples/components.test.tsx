@@ -101,10 +101,14 @@ describe('KpiCard', () => {
   const labelOf = (props: Partial<CardProps> = {}) => cardTexts(props).find((t) => t.content === 'Receita')!;
   const rootOf = (props: Partial<CardProps> = {}) => resolveOne(<KpiCard label="L" value="V" {...props} />)[0] as ResolvedBox;
 
+  /** M11: o padding na visão da engine vem nos 4 lados. */
+  const sides = (n: number) => ({ top: n, right: n, bottom: n, left: n });
+
   it('surface box with radius 8 and padding', () => {
     const root = rootOf();
     expect(root.path.split(' > ').pop()).toBe('KpiCard');
-    expect(root.props).toMatchObject({ fill: tokens.color.surface, radius: 8 });
+    // M11: fill/radius do Box são alias de backgroundColor/borderRadius (ficam no css).
+    expect(root.css).toMatchObject({ backgroundColor: tokens.color.surface, borderRadius: 8 });
     expect(root.props.padding).toBeDefined();
   });
 
@@ -150,13 +154,13 @@ describe('KpiCard', () => {
 
     it.each(Object.entries(SPEC))('%s → padding %s, label/value sizes', (size, [padding, label, value]) => {
       const props = { size: size as CardProps['size'] };
-      expect(rootOf(props).props.padding).toBe(padding);
+      expect(rootOf(props).props.padding).toEqual(sides(padding));
       expect(labelOf(props).props.size).toBe(label);
       expect(valueOf(props).props.size).toBe(value);
     });
 
     it("defaults to 'md'", () => {
-      expect(rootOf().props.padding).toBe(SPEC.md[0]);
+      expect(rootOf().props.padding).toEqual(sides(SPEC.md[0]));
       expect(labelOf().props.size).toBe(SPEC.md[1]);
       expect(valueOf().props.size).toBe(SPEC.md[2]);
     });

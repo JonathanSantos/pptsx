@@ -1,10 +1,11 @@
 import { pickResponsive, responsiveProblemOf } from '../core/responsive.ts';
 import type { ResponsiveContext } from '../core/responsive.ts';
-import type { NonResponsiveKey, PrimitiveKind, PrimitivePropsMap, SlideElement } from '../core/types.ts';
+import type { NonResponsiveKey, PrimitiveKind, SlideElement } from '../core/types.ts';
 import { primitiveName } from '../primitives/index.ts';
 import { ResolveError } from './errors.ts';
 
-export type PropsOf<K extends PrimitiveKind> = Omit<PrimitivePropsMap[K], 'children'>;
+/** Props do autor já com valores concretos (nomes CSS, antigos ou da primitiva; ainda não normalizadas). */
+export type RawProps = Readonly<Record<string, unknown>>;
 
 type Entry = readonly [string, unknown];
 
@@ -24,19 +25,24 @@ const resolveEntry = (entry: Entry, kind: PrimitiveKind, path: string, ctx: Resp
   return [key, pickResponsive(value, ctx)];
 };
 
+const resolveEntries = (record: RawProps, kind: PrimitiveKind, path: string, ctx: ResponsiveContext): RawProps =>
+  Object.fromEntries(
+    Object.entries(record)
+      .map((entry) => resolveEntry(entry, kind, path, ctx))
+      .filter(([, value]) => value !== undefined),
+  );
+
+const isRecord = (value: unknown): value is RawProps => typeof value === 'object' && value !== null && !Array.isArray(value);
+
 /**
- * Props do nó sem children, com cada valor responsivo resolvido para o ctx. O que resolve
- * para undefined some do objeto: o resto do pipeline trata como "autor não escreveu".
+ * Props do nó sem children, com cada valor responsivo resolvido para o ctx, inclusive dentro
+ * de `style`. O que resolve para undefined some do objeto: o resto do pipeline trata como
+ * "autor não escreveu".
  */
-export const resolvePropsOf = <K extends PrimitiveKind>(
-  element: SlideElement,
-  kind: K,
-  path: string,
-  ctx: ResponsiveContext,
-): PropsOf<K> => {
-  const { children: _children, ...rest } = element.props;
-  const entries = Object.entries(rest)
-    .map((entry) => resolveEntry(entry, kind, path, ctx))
-    .filter(([, value]) => value !== undefined);
-  return Object.fromEntries(entries) as unknown as PropsOf<K>;
+export const resolvePropsOf = (element: SlideElement, kind: PrimitiveKind, path: string, ctx: ResponsiveContext): RawProps => {
+  const { children: _children, ...rest } = element.props as RawProps;
+  const props = resolveEntries(rest, kind, path, ctx);
+  const { style } = props;
+  if (!isRecord(style)) return props;
+  return { ...props, style: resolveEntries(style, kind, path, ctx) };
 };

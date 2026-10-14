@@ -3,7 +3,8 @@ import type { ResolvedText, TextMeasureInput } from '../core/types.ts';
 
 /**
  * Entrada única do medidor para um Text: layout, remedição final e fit medem com os
- * mesmos runs e o mesmo nowrap, senão a altura do Yoga e as linhas finais divergem.
+ * mesmos runs, o mesmo nowrap e o mesmo letterSpacing, senão a altura do Yoga e as
+ * linhas finais divergem.
  */
 export const measureInputOf = (source: ResolvedText, maxWidth: number): TextMeasureInput => ({
   content: source.content,
@@ -12,4 +13,5 @@ export const measureInputOf = (source: ResolvedText, maxWidth: number): TextMeas
   maxWidth,
   maxLines: source.props.maxLines,
   nowrap: source.props.nowrap,
+  letterSpacing: source.css.letterSpacing,
 });

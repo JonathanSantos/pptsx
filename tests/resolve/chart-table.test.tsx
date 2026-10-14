@@ -126,7 +126,7 @@ describe('resolve — Chart', () => {
           <Chart kind="bar" data={TWO_SERIES} />
         </Slide>,
       ),
-    ).toThrow(/<Chart> precisa de width, height ou grow/);
+    ).toThrow(/<Chart> precisa de width, height, flex\/flexGrow ou de uma célula de grid/);
   });
 
   it('grow={0} counts as no size', () => {
@@ -136,7 +136,19 @@ describe('resolve — Chart', () => {
           <Chart kind="bar" data={TWO_SERIES} grow={0} />
         </Slide>,
       ),
-    ).toThrow(/precisa de width, height ou grow/);
+    ).toThrow(/precisa de width, height, flex\/flexGrow ou de uma célula de grid/);
+  });
+
+  it('a Chart in a grid cell counts as sized (M11)', () => {
+    expect(() =>
+      resolveAt(
+        <Slide>
+          <Box display="grid" gridTemplateColumns="1fr 1fr" height={200}>
+            <Chart kind="bar" data={TWO_SERIES} />
+          </Box>
+        </Slide>,
+      ),
+    ).not.toThrow();
   });
 
   it('empty categories → error', () => {

@@ -39,6 +39,7 @@ import type {
   TextRun,
 } from '../../src/core/types.ts';
 import { DEFAULTS, tableHeaderOf, tableStyleOf } from '../../src/core/defaults.ts';
+import { boxOf, legacyCssOf } from './css.ts';
 
 export const SIZE_16X9: SlideSize = { name: '16x9', width: 720, height: 405 };
 export const SIZE_4X3: SlideSize = { name: '4x3', width: 720, height: 540 };
@@ -49,13 +50,13 @@ export const rSlide = (
   children: readonly ResolvedNode[] = [],
   props: Omit<SlideProps, 'children'> = {},
   path = 'Slide',
-): ResolvedSlide => ({ kind: 'slide', path, sourceSlide: 1, props, children });
+): ResolvedSlide => ({ kind: 'slide', path, sourceSlide: 1, css: legacyCssOf('slide', props), props, children });
 
 export const rBox = (
   props: Omit<BoxProps, 'children'> = {},
   children: readonly ResolvedNode[] = [],
   path = 'Box',
-): ResolvedBox => ({ kind: 'box', path, props, children });
+): ResolvedBox => ({ kind: 'box', path, css: legacyCssOf('box', props), props, children });
 
 /** M8: runs como o resolve gera sem Span — um run com o estilo do Text; conteúdo vazio → nenhum. */
 export const runsOf = (content: string, props: Omit<TextProps, 'children'> = {}): readonly TextRun[] =>
@@ -67,6 +68,8 @@ export const runsOf = (content: string, props: Omit<TextProps, 'children'> = {})
           weight: props.weight ?? DEFAULTS.text.weight,
           italic: props.italic ?? DEFAULTS.text.italic,
           color: props.color ?? DEFAULTS.text.color,
+          underline: false,
+          lineThrough: false,
         },
       ];
 
@@ -79,21 +82,22 @@ export const rText = (
   props: Omit<TextProps, 'children'> = {},
   path = 'Text',
   runs: readonly TextRun[] = runsOf(content, props),
-): ResolvedText => ({ kind: 'text', path, props, content, runs });
+): ResolvedText => ({ kind: 'text', path, css: legacyCssOf('text', props), props, content, runs });
 
-export const rImage = (props: ImageProps, path = 'Image'): ResolvedImage => ({ kind: 'image', path, props });
+export const rImage = (props: ImageProps, path = 'Image'): ResolvedImage => ({ kind: 'image', path, css: legacyCssOf('image', props), props });
 
-export const rShape = (props: ShapeProps, path = 'Shape'): ResolvedShape => ({ kind: 'shape', path, props });
+export const rShape = (props: ShapeProps, path = 'Shape'): ResolvedShape => ({ kind: 'shape', path, css: legacyCssOf('shape', props), props });
 
 export const rDeck = (...slides: ResolvedSlide[]): ResolvedDeck => ({ slides });
 
 /** M10: Chart resolvido (dados assumidos válidos). */
-export const rChart = (props: ChartProps, path = 'Chart'): ResolvedChart => ({ kind: 'chart', path, props });
+export const rChart = (props: ChartProps, path = 'Chart'): ResolvedChart => ({ kind: 'chart', path, css: legacyCssOf('chart', props), props });
 
 /** M10: Table resolvida com `rows` normalizado para string, como o resolve entrega. */
 export const rTable = (props: TableProps, path = 'Table'): ResolvedTable => ({
   kind: 'table',
   path,
+  css: legacyCssOf('table', props),
   props,
   rows: props.rows.map((row) => row.map(String)),
 });
@@ -151,6 +155,12 @@ export const createFakeEnv = (image: Dimensions = FAKE_IMAGE) => {
 
 export const rect = (x: number, y: number, width: number, height: number): Rect => ({ x, y, width, height });
 
+/** M11: `css` derivado das props da engine e o `box` que o layout daria a ele. */
+const placed = (kind: Parameters<typeof legacyCssOf>[0], props: object) => {
+  const css = legacyCssOf(kind, props);
+  return { css, box: boxOf(css) };
+};
+
 export const pSlide = (
   children: readonly PositionedNode[] = [],
   props: Omit<SlideProps, 'children'> = {},
@@ -159,6 +169,7 @@ export const pSlide = (
   kind: 'slide',
   path: 'Slide',
   sourceSlide: 1,
+  ...placed('slide', props),
   props,
   frame: rect(0, 0, size.width, size.height),
   children,
@@ -168,7 +179,7 @@ export const pBox = (
   frame: Rect,
   props: Omit<BoxProps, 'children'> = {},
   children: readonly PositionedNode[] = [],
-): PositionedBox => ({ kind: 'box', path: 'Slide > Box', props, frame, children });
+): PositionedBox => ({ kind: 'box', path: 'Slide > Box', ...placed('box', props), props, frame, children });
 
 export const pText = (
   frame: Rect,
@@ -176,11 +187,12 @@ export const pText = (
   props: Omit<TextProps, 'children'> = {},
   text: TextLayout = fakeTextLayout(content, props.size ?? 18),
   runs: readonly TextRun[] = runsOf(content, props),
-): PositionedText => ({ kind: 'text', path: 'Slide > Text', props, content, runs, frame, text });
+): PositionedText => ({ kind: 'text', path: 'Slide > Text', ...placed('text', props), props, content, runs, frame, text });
 
 export const pImage = (frame: Rect, props: ImageProps, intrinsic: Dimensions = FAKE_IMAGE): PositionedImage => ({
   kind: 'image',
   path: 'Slide > Image',
+  ...placed('image', props),
   props,
   frame,
   intrinsic,
@@ -189,6 +201,7 @@ export const pImage = (frame: Rect, props: ImageProps, intrinsic: Dimensions = F
 export const pShape = (frame: Rect, props: ShapeProps): PositionedShape => ({
   kind: 'shape',
   path: 'Slide > Shape',
+  ...placed('shape', props),
   props,
   frame,
 });
@@ -203,6 +216,7 @@ export const pDeck = (slides: readonly PositionedSlide[], size: SlideSize = SIZE
 export const pChart = (frame: Rect, props: ChartProps, path = 'Slide > Chart'): PositionedChart => ({
   kind: 'chart',
   path,
+  ...placed('chart', props),
   props,
   frame,
 });
@@ -237,6 +251,7 @@ export const pTable = (frame: Rect, props: TableProps, options: PTableOptions = 
   return {
     kind: 'table',
     path: options.path ?? 'Slide > Table',
+    ...placed('table', props),
     props,
     rows: props.rows.map((row) => row.map(String)),
     frame,

@@ -40,12 +40,23 @@ export const decimalsOf = (value: number): number =>
     (digits) => Math.abs(Number(value.toFixed(digits)) - value) <= Math.abs(value) * DECIMALS_TOLERANCE,
   ) ?? MAX_LABEL_DECIMALS;
 
+/** Casas decimais dos rótulos de valor: o maior número de casas entre os dados (o preview usa o mesmo). */
+export const labelDecimalsOf = (props: ChartProps): number => {
+  const values = props.data.series.flatMap((series) => series.values);
+  return Math.max(0, ...values.map(decimalsOf));
+};
+
 /** '0', '0.0', '0.00'…: o padrão '#,##0' do pptxgenjs arredonda 38,2 para "38". */
 export const numberFormatOf = (props: ChartProps): string => {
-  const values = props.data.series.flatMap((series) => series.values);
-  const digits = Math.max(0, ...values.map(decimalsOf));
+  const digits = labelDecimalsOf(props);
   return digits === 0 ? '0' : `0.${'0'.repeat(digits)}`;
 };
+
+/**
+ * Eixo de valores em 'General' (M10-H): com o formato dos rótulos o Keynote mostrava os ticks
+ * como "60,0 / 45,0". 'General' mostra o tick como ele é (60, 2,5), no separador do idioma.
+ */
+export const VALUE_AXIS_FORMAT = 'General';
 
 /** Uma cor por série (bar/line) ou por fatia (pie): com menos cores, a pizza sorteia as que faltam. */
 export const chartColorsOf = (props: ChartProps): string[] => {
@@ -106,7 +117,7 @@ export const chartOptionsOf = (node: PositionedChart): Pptx.ChartOptions => {
     valAxisLabelFontFace: face,
     valAxisLabelFontSize: size,
     valAxisLabelColor: color,
-    valAxisLabelFormatCode: format,
+    valAxisLabelFormatCode: VALUE_AXIS_FORMAT,
     ...titleOptionsOf(props, face, size, color),
     ...KIND_OPTIONS[props.kind],
   };

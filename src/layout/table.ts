@@ -1,3 +1,5 @@
+// Colunas sem width seguem o conteúdo (min/max-content por coluna, como `table-layout: auto`
+// do CSS 2.1 §17.5.2.2); `columnWidthsOf` continua sendo a divisão igual (fixas sem conteúdo).
 import { DEFAULTS, tableHeaderOf, tableStyleOf } from '../core/defaults.ts';
 import type { LayoutEnv, Pt, ResolvedTable, TableColumn, TextLayout, TextStyle } from '../core/types.ts';
 
@@ -73,6 +75,16 @@ const measureCells = (
     texts.map((content, column) => env.measureText({ content, style, maxWidth: maxWidths[column] ?? 0 })),
   );
 
+/**
+ * Altura emitida da linha: para cima no passo do Keynote (M10-H: ele só cresce a linha quando
+ * falta espaço), para frame, fit, emissão e preview usarem a mesma. O ruído de ponto flutuante
+ * logo acima de um múltiplo não pode somar um passo inteiro.
+ */
+const roundRowHeight = (height: Pt): Pt => {
+  const step = DEFAULTS.table.rowHeightStep;
+  return Math.ceil(height / step - DEFAULTS.css.layoutNoise) * step;
+};
+
 const layoutAt = (
   specs: readonly TableRowSpec[],
   columnWidths: readonly Pt[],
@@ -84,37 +96,65 @@ const layoutAt = (
     columnWidths.map((width) => Math.max(0, width - 2 * padding)),
     env,
   );
-  const rowHeights = cells.map((row) => Math.max(0, ...row.map((cell) => cell.height)) + 2 * padding);
+  // As células ficam com a medição crua; só a altura da linha é arredondada.
+  const rowHeights = cells.map((row) => roundRowHeight(Math.max(0, ...row.map((cell) => cell.height)) + 2 * padding));
   return { columnWidths, rowHeights, cells, height: sum(rowHeights), width: sum(columnWidths) };
 };
 
+interface ContentWidths {
+  /** Maior trecho indivisível da coluna + padding: abaixo disso a palavra quebra por caractere. */
+  readonly min: Pt;
+  /** Linha mais larga sem quebrar + padding. */
+  readonly max: Pt;
+}
+
+/** min/max-content de cada coluna (cabeçalho incluído), medidos sem limite de largura. */
+const contentWidthsOf = (specs: readonly TableRowSpec[], columns: number, padding: Pt, env: LayoutEnv): readonly ContentWidths[] => {
+  const safety = env.textSafety ?? DEFAULTS.textSafety;
+  const cells = measureCells(specs, Array.from({ length: columns }, () => Number.POSITIVE_INFINITY), env);
+  return Array.from({ length: columns }, (_, index) => {
+    const column = cells.map((row) => row[index]).filter((cell): cell is TextLayout => cell !== undefined);
+    return {
+      min: Math.max(0, ...column.map((cell) => cell.widestSegment / safety)) + 2 * padding,
+      max: Math.max(0, ...column.map((cell) => cell.width)) + 2 * padding,
+    };
+  });
+};
+
 /**
- * Sem limite: coluna em pt fica com o valor; as livres (e `%`, sem base) ficam todas com
- * a célula livre mais larga + padding dos dois lados. Iguais, e não cada uma com a sua,
- * porque numa largura finita as livres dividem igualmente: o read remede com frame.width
- * e, com larguras diferentes aqui, a coluna mais larga ficaria estreita e quebraria.
- * Assim medir de novo na largura natural devolve as mesmas colunas.
+ * Colunas auto pelo conteúdo. Com espaço para o max-content de todas, cada uma fica com o
+ * seu e a sobra é repartida na proporção do max-content; sem espaço nem para o min-content, o
+ * min-content escala para caber; entre os dois, interpola de min para max (CSS 2.1 §17.5.2.2).
  */
-const naturalColumnWidthsOf = (table: ResolvedTable, specs: readonly TableRowSpec[], padding: Pt, env: LayoutEnv) => {
+const autoWidthsOf = (content: readonly ContentWidths[], available: Pt): readonly Pt[] => {
+  const minTotal = sum(content.map((c) => c.min));
+  const maxTotal = sum(content.map((c) => c.max));
+  if (!Number.isFinite(available)) return content.map((c) => c.max);
+  if (maxTotal <= available) return content.map((c) => c.max + (maxTotal > 0 ? ((available - maxTotal) * c.max) / maxTotal : (available - maxTotal) / content.length));
+  if (minTotal >= available) return content.map((c) => (minTotal > 0 ? (available * c.min) / minTotal : available / content.length));
+  const ratio = (available - minTotal) / (maxTotal - minTotal);
+  return content.map((c) => c.min + (c.max - c.min) * ratio);
+};
+
+/** Fixas em pt/% ficam; as auto dividem o resto pelo conteúdo. */
+const contentColumnWidthsOf = (table: ResolvedTable, specs: readonly TableRowSpec[], tableWidth: Pt, padding: Pt, env: LayoutEnv): readonly Pt[] => {
   const { columns } = table.props;
-  const fixed = columns.map((column) => fixedWidthOf(column, Number.POSITIVE_INFINITY));
-  const unbounded = measureCells(
-    specs,
-    columns.map(() => Number.POSITIVE_INFINITY),
-    env,
-  );
-  const freeCells = unbounded.flatMap((row) => row.filter((_cell, index) => fixed[index] === undefined));
-  const free = Math.max(0, ...freeCells.map((cell) => cell.width)) + 2 * padding;
-  return fixed.map((width) => width ?? free);
+  const fixed = columns.map((column) => fixedWidthOf(column, tableWidth));
+  const free = fixed.map((width, index) => (width === undefined ? index : -1)).filter((index) => index >= 0);
+  if (free.length === 0) return columnWidthsOf(columns, tableWidth);
+  const content = contentWidthsOf(specs, columns.length, padding, env);
+  const available = Number.isFinite(tableWidth) ? Math.max(0, tableWidth - sum(fixed.map((width) => width ?? 0))) : Number.POSITIVE_INFINITY;
+  const autos = autoWidthsOf(free.map((index) => content[index]!), available);
+  const widths = fixed.map((width, index) => width ?? autos[free.indexOf(index)] ?? 0);
+  // Fixas que já passam da largura: escala tudo para fechar a soma.
+  return Number.isFinite(tableWidth) && sum(widths) > tableWidth + 1e-6 ? scaleTo(widths, tableWidth) : widths;
 };
 
 /** Mede a tabela na largura dada (`Infinity` = largura natural pelo conteúdo). */
 export const measureTable = (table: ResolvedTable, width: Pt, env: LayoutEnv): TableLayout => {
   const specs = rowSpecsOf(table);
   const padding = cellPaddingOf(table);
-  if (Number.isFinite(width)) {
-    return { ...layoutAt(specs, columnWidthsOf(table.props.columns, width), padding, env), width };
-  }
-  // As células são remedidas nas larguras naturais: uma coluna em pt mais estreita que o conteúdo quebra.
-  return layoutAt(specs, naturalColumnWidthsOf(table, specs, padding, env), padding, env);
+  const widths = contentColumnWidthsOf(table, specs, width, padding, env);
+  const layout = layoutAt(specs, widths, padding, env);
+  return Number.isFinite(width) ? { ...layout, width } : layout;
 };

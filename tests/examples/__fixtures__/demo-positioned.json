@@ -92,7 +92,7 @@
       {"path":"ContentLayout > Box[0] > Shape","kind":"shape","frame":{"x":40,"y":40.4,"width":6,"height":36}},
       {"path":"ContentLayout > Box[0] > Text","kind":"text","frame":{"x":60,"y":40,"width":620,"height":36.8},"fontSize":32,"lines":1},
       {"path":"ContentLayout > Box[1]","kind":"box","frame":{"x":40,"y":106.8,"width":640,"height":258.2}},
-      {"path":"ContentLayout > Box[1] > Table","kind":"table","frame":{"x":40,"y":106.8,"width":640,"height":168.69}}
+      {"path":"ContentLayout > Box[1] > Table","kind":"table","frame":{"x":40,"y":106.8,"width":640,"height":171.5}}
     ],
     [
       {"path":"ClosingLayout","kind":"slide","frame":{"x":0,"y":0,"width":720,"height":405}},

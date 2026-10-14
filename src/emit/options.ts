@@ -5,7 +5,6 @@ import { DEFAULTS, imageFitOf, strokeColorOf, textStyleOf } from '../core/defaul
 import type {
   Color,
   LineBreaks,
-  PositionedBox,
   PositionedImage,
   PositionedShape,
   PositionedSlide,
@@ -20,7 +19,9 @@ import { hexOf, textRunsOfNode } from './runs.ts';
 
 /**
  * Funções puras: nó posicionado → opções do pptxgenjs. Nenhuma toca a
- * instância do pptx, então são testáveis isoladamente.
+ * instância do pptx, então são testáveis isoladamente. Aqui fica o conteúdo
+ * de cada nó (texto, imagem, shape); a pintura CSS da caixa (fundo, bordas,
+ * sombra, opacidade, rotação) fica em decoration.ts.
  */
 
 export interface InchPosition {
@@ -91,14 +92,6 @@ const shapeSpecOf = (kind: ShapeKind, props: StrokeProps & { readonly radius?: n
       ...geometryOf(kind, props.radius, frame),
     },
   };
-};
-
-/** Box só desenha algo quando tem fill ou stroke; senão é só contêiner. */
-export const boxShapeOf = (node: PositionedBox): ShapeSpec | undefined => {
-  const { fill, stroke, radius } = node.props;
-  if (fill === undefined && stroke === undefined) return undefined;
-  const kind: ShapeKind = radius !== undefined && radius > 0 ? 'roundRect' : 'rect';
-  return shapeSpecOf(kind, node.props, node.frame);
 };
 
 /** Shape 'line' usa o próprio frame: pptxgenjs desenha da quina sup. esq. à inf. dir. */

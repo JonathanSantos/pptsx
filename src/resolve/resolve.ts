@@ -1,6 +1,8 @@
+import { DEFAULTS } from '../core/defaults.ts';
 import type { ResponsiveContext } from '../core/responsive.ts';
 import type {
   Children,
+  CssStyle,
   ResolvedDeck,
   ResolvedNode,
   ResolvedSlide,
@@ -8,13 +10,26 @@ import type {
   TextChildren,
 } from '../core/types.ts';
 import { primitiveName } from '../primitives/index.ts';
-import { assertValidChart, assertValidTable, normalizeRows } from './data.ts';
-import { ResolveError } from './errors.ts';
+import { assertChartSize, assertValidChart, assertValidTable, normalizeRows } from './data.ts';
+import { ROOT_TEXT } from './draft.ts';
+import type { InheritedText } from './draft.ts';
+import { InvalidPropError, ResolveError } from './errors.ts';
 import { expandChild } from './expand.ts';
+import type { Expanded, ExpandedPrimitive } from './expand.ts';
+import { legacyPropsOf } from './legacy.ts';
+import { normalizeProps } from './normalize.ts';
+import type { Normalized } from './normalize.ts';
 import { assertPaginateInFlow, assertSinglePaginate } from './paginate.ts';
 import { resolvePropsOf } from './props.ts';
 import { runsOf } from './runs.ts';
-import type { Expanded, ExpandedPrimitive } from './expand.ts';
+import type { RunStyle } from './runs.ts';
+
+/**
+ * Árvore do autor → árvore resolvida: path, componentes, responsivo e validação, com a
+ * cascata CSS no meio: cada nó é normalizado (shorthands, nomes antigos, `style`) e recebe o
+ * estilo de texto do pai. `display: none` poda o nó depois do path calculado, para os irmãos
+ * manterem os índices de quem lê o JSX.
+ */
 
 const SEPARATOR = ' > ';
 
@@ -54,10 +69,23 @@ const siblingSegments = (segments: readonly string[]): readonly string[] => {
   });
 };
 
-const resolveText = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext): ResolvedNode => {
-  const props = resolvePropsOf(item.element, 'text', path, ctx);
-  const runs = runsOf(item.element.props.children as TextChildren, props, path);
-  return { kind: 'text', path, props, content: runs.map((run) => run.text).join(''), runs };
+/** O que desce do pai: o texto herdado e o css (num grid, o tamanho do Chart vem da célula). */
+interface ParentInfo {
+  readonly text: InheritedText;
+  readonly css: CssStyle | undefined;
+}
+
+const parentOf = (n: Normalized): ParentInfo => ({ text: n.text, css: n.css });
+
+/** A normalização não conhece o path: o erro de valor ganha aqui o path e a primitiva. */
+const normalizedOf = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext, parent: ParentInfo): Normalized => {
+  const props = resolvePropsOf(item.element, item.kind, path, ctx);
+  try {
+    return normalizeProps(item.kind, props, parent.text);
+  } catch (error) {
+    if (!(error instanceof InvalidPropError)) throw error;
+    throw new ResolveError(`Prop "${error.property}" de <${nameOf(item)}>: ${error.message}`, path);
+  }
 };
 
 const assertNoChildren = (item: ExpandedPrimitive, path: string): void => {
@@ -65,42 +93,60 @@ const assertNoChildren = (item: ExpandedPrimitive, path: string): void => {
   throw new ResolveError(`<${nameOf(item)}> não aceita filhos`, path);
 };
 
-const resolveBox = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext): ResolvedNode => {
-  const props = resolvePropsOf(item.element, 'box', path, ctx);
-  assertPaginateInFlow(props, path);
-  return { kind: 'box', path, props, children: resolveChildren(item.element.props.children, path, ctx) };
+const baseRunStyleOf = (n: Normalized): RunStyle => ({
+  weight: n.text.weight ?? DEFAULTS.text.weight,
+  italic: n.text.italic ?? DEFAULTS.text.italic,
+  color: n.text.color ?? DEFAULTS.text.color,
+  underline: n.css.textDecoration.underline,
+  lineThrough: n.css.textDecoration.lineThrough,
+});
+
+const resolveText = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
+  const children = item.element.props.children as TextChildren;
+  const runs = runsOf(children, baseRunStyleOf(n), n.css.textTransform, path);
+  const content = runs.map((run) => run.text).join('');
+  return { kind: 'text', path, props: legacyPropsOf('text', n), css: n.css, content, runs };
 };
 
-const resolveChart = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext): ResolvedNode => {
+const resolveChart = (item: ExpandedPrimitive, path: string, n: Normalized, parent: ParentInfo): ResolvedNode => {
   assertNoChildren(item, path);
-  const props = resolvePropsOf(item.element, 'chart', path, ctx);
+  const props = legacyPropsOf('chart', n);
+  assertChartSize(n.css, parent.css, path);
   assertValidChart(props, path);
-  return { kind: 'chart', path, props };
+  return { kind: 'chart', path, props, css: n.css };
 };
 
-const resolveTable = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext): ResolvedNode => {
+const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
   assertNoChildren(item, path);
-  const props = resolvePropsOf(item.element, 'table', path, ctx);
+  const props = legacyPropsOf('table', n);
   assertValidTable(props, path);
-  return { kind: 'table', path, props, rows: normalizeRows(props.rows) };
+  return { kind: 'table', path, props, css: n.css, rows: normalizeRows(props.rows) };
 };
 
-const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext): ResolvedNode => {
+const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: ResponsiveContext): ResolvedNode => {
+  const props = legacyPropsOf('box', n);
+  assertPaginateInFlow(props, path);
+  const children = resolveChildren(item.element.props.children, path, ctx, parentOf(n));
+  return { kind: 'box', path, props, css: n.css, children };
+};
+
+const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext, parent: ParentInfo): ResolvedNode => {
+  const n = normalizedOf(item, path, ctx, parent);
   switch (item.kind) {
     case 'box':
-      return resolveBox(item, path, ctx);
+      return resolveBox(item, path, n, ctx);
     case 'text':
-      return resolveText(item, path, ctx);
+      return resolveText(item, path, n);
     case 'image':
       assertNoChildren(item, path);
-      return { kind: 'image', path, props: resolvePropsOf(item.element, 'image', path, ctx) };
+      return { kind: 'image', path, props: legacyPropsOf('image', n), css: n.css };
     case 'shape':
       assertNoChildren(item, path);
-      return { kind: 'shape', path, props: resolvePropsOf(item.element, 'shape', path, ctx) };
+      return { kind: 'shape', path, props: legacyPropsOf('shape', n), css: n.css };
     case 'chart':
-      return resolveChart(item, path, ctx);
+      return resolveChart(item, path, n, parent);
     case 'table':
-      return resolveTable(item, path, ctx);
+      return resolveTable(item, path, n);
     case 'span':
       throw new ResolveError(SPAN_OUTSIDE_TEXT, path);
     case 'slide':
@@ -109,11 +155,23 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveConte
   }
 };
 
-const resolveChildren = (children: Children, parentPath: string, ctx: ResponsiveContext): readonly ResolvedNode[] => {
+// display: none sai da árvore inteira (layout, fit, emissão), depois dos paths calculados.
+const isDisplayed = (node: ResolvedNode): boolean => node.css.display !== 'none';
+
+const resolveChildren = (
+  children: Children,
+  parentPath: string,
+  ctx: ResponsiveContext,
+  parent: ParentInfo,
+): readonly ResolvedNode[] => {
   const items = onlyPrimitives(expandChild(children), parentPath);
   const segments = siblingSegments(items.map((item) => item.segment));
-  return items.map((item, index) => resolveNode(item, joinPath(parentPath, segments[index] ?? item.segment), ctx));
+  return items
+    .map((item, index) => resolveNode(item, joinPath(parentPath, segments[index] ?? item.segment), ctx, parent))
+    .filter(isDisplayed);
 };
+
+const ROOT_PARENT: ParentInfo = { text: ROOT_TEXT, css: undefined };
 
 /** O slide é o primeiro segmento do path e não leva índice (o índice vai em Diagnostic.slide). */
 const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResponsiveContext): ResolvedSlide => {
@@ -121,12 +179,14 @@ const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResponsiveCon
     throw new ResolveError(`Filhos de <Deck> têm que ser <Slide>; encontrado <${nameOf(item)}>`, item.segment);
   }
   const path = item.segment;
+  const n = normalizedOf(item, path, ctx, ROOT_PARENT);
   const slide: ResolvedSlide = {
     kind: 'slide',
     path,
     sourceSlide: index + 1,
-    props: resolvePropsOf(item.element, 'slide', path, ctx),
-    children: resolveChildren(item.element.props.children, path, ctx),
+    props: legacyPropsOf('slide', n),
+    css: n.css,
+    children: resolveChildren(item.element.props.children, path, ctx, parentOf(n)),
   };
   assertSinglePaginate(slide);
   return slide;
@@ -142,7 +202,7 @@ const expandRoot = (root: SlideElement): ExpandedPrimitive => {
   return deck;
 };
 
-/** Valores responsivos das primitivas são resolvidos aqui para `ctx`; a árvore resolvida só tem valores concretos. */
+/** Valores responsivos são resolvidos aqui para `ctx`; a árvore resolvida só tem valores concretos. */
 export const resolveDeck = (root: SlideElement, ctx: ResponsiveContext): ResolvedDeck => {
   const deck = expandRoot(root);
   const slides = onlyPrimitives(expandChild(deck.element.props.children), '').map((item, index) =>

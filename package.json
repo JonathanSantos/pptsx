@@ -43,7 +43,7 @@
     "build": "tsc -p tsconfig.build.json",
     "prepack": "npm run build",
     "test:package": "PPTSX_PACKAGE_TEST=1 vitest run tests/package",
-    "poc:test": "tsc -p poc/css/tsconfig.json && vitest run --config poc/css/vitest.config.ts"
+    "oracle:generate": "tsx tools/oracle/generate.ts"
   },
   "engines": {
     "node": ">=20"

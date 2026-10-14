@@ -3,9 +3,10 @@ import { DEFAULTS } from '../core/defaults.ts';
 import type { LineBreaks, PositionedDeck, PositionedSlide } from '../core/types.ts';
 import { ptToInches } from '../sizes.ts';
 import type { LineSpacingStrategy } from './calibration.ts';
-import { emitDebugOutlines, emitNode, type EmitContext } from './emitters.ts';
+import { emitDebugOutlines, emitItem, type EmitContext } from './emitters.ts';
 import { backgroundOf } from './options.ts';
 import { embedFonts, type EmbeddedFont } from './embed.ts';
+import { paintOrderOf } from './paint.ts';
 import { sanitizePptx } from './sanitize.ts';
 
 export interface EmitOptions {
@@ -31,13 +32,17 @@ const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOpti
   };
   const background = backgroundOf(slide, options.baseDir);
   if (background) target.background = background;
-  slide.children.forEach((node) => emitNode(target, node, ctx));
+  // M11: ordem de pintura CSS (zIndex, camadas), não a ordem da árvore.
+  const items = paintOrderOf(slide);
+  items.forEach((item) => emitItem(target, item, ctx));
   // Contornos depois de tudo para ficarem por cima do conteúdo.
-  if (options.debug) emitDebugOutlines(target, slide.children);
+  if (options.debug) emitDebugOutlines(target, items);
   if (slide.props.notes) target.addNotes(slide.props.notes);
 };
 
 export type { EmbeddedFont } from './embed.ts';
+export { paintOrderOf, placementOf, type PaintItem, type Placement, type Rotation } from './paint.ts';
+export { decorationOf, uniformBorderOf, type Decoration } from './decoration.ts';
 export { ACTIVE_LINE_SPACING, LINE_SPACING_CALIBRATION, type LineSpacingStrategy } from './calibration.ts';
 
 export const emitPptx = async (deck: PositionedDeck, options: EmitOptions): Promise<Buffer> => {

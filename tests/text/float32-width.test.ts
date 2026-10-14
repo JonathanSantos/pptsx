@@ -16,7 +16,7 @@ const style = (size: number, weight: TextStyle['weight'] = 'regular'): TextStyle
   size,
   weight,
   italic: false,
-  lineHeight: 1,
+  lineHeight: 'normal',
 });
 
 describe('breakLines — float32 width tolerance', () => {

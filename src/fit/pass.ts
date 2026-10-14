@@ -126,4 +126,5 @@ export const widthOverflowsOf = (pass: Pass): ReadonlyMap<string, Overflow> =>
 
 /** Text/Table com qualquer estouro: não contam para o box do pai (mesma regra da detecção). */
 export const explainedPaths = (pass: Pass): ReadonlySet<string> =>
-  new Set(pass.overflows.filter((overflow) => isText(overflow) || isTable(overflow)).map((overflow) => overflow.path));
+  // M11: o item de grid que passou da célula também já explica o estouro do grid.
+  new Set(pass.overflows.filter((overflow) => isText(overflow) || isTable(overflow) || overflow.cell === true).map((overflow) => overflow.path));

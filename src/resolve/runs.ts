@@ -1,36 +1,62 @@
+import type { CssSpanProps } from '../core/css-props.ts';
 import { DEFAULTS } from '../core/defaults.ts';
-import type { SpanProps, TextChildren, TextProps, TextRun } from '../core/types.ts';
-import { ResolveError } from './errors.ts';
+import type { FontWeight, TextChildren, TextRun, TextTransform } from '../core/types.ts';
+import { hexOf } from './colors.ts';
+import { InvalidPropError, ResolveError } from './errors.ts';
 import { expandChild } from './expand.ts';
 import type { Expanded } from './expand.ts';
+import { parseFontWeight } from './values.ts';
 
-type RunStyle = Omit<TextRun, 'text'>;
+/**
+ * Runs de um Text: cada trecho de texto vira um run com o estilo do caminho até ele. O estilo
+ * base vem da cascata; o Span aceita weight/italic e fontWeight/fontStyle/textDecoration; o
+ * textTransform é aplicado antes de medir (o PPTX recebe o texto já transformado).
+ */
+
+export type RunStyle = Omit<TextRun, 'text'>;
 
 const TEXT_CHILD_ERROR = '<Text> só aceita strings, números e <Span>/<B>/<I> como filhos';
 
-const baseStyleOf = (props: Omit<TextProps, 'children'>): RunStyle => ({
-  weight: props.weight ?? DEFAULTS.text.weight,
-  italic: props.italic ?? DEFAULTS.text.italic,
-  color: props.color ?? DEFAULTS.text.color,
-});
+const spanWeightOf = (span: CssSpanProps): FontWeight | undefined =>
+  span.weight ?? (span.fontWeight === undefined ? undefined : parseFontWeight(span.fontWeight)?.weight);
+
+const spanItalicOf = (span: CssSpanProps): boolean | undefined =>
+  span.italic ?? (span.fontStyle === undefined ? undefined : span.fontStyle === 'italic');
+
+const decorationOf = (value: string | undefined, token: string): boolean | undefined =>
+  value === undefined ? undefined : value.split(/\s+/).includes(token);
 
 // Só o que o Span declara sobrescreve; o resto vem do estilo herdado.
-const overrideStyle = (style: RunStyle, span: SpanProps): RunStyle => ({
-  weight: span.weight ?? style.weight,
-  italic: span.italic ?? style.italic,
-  color: span.color ?? style.color,
+const overrideStyle = (style: RunStyle, span: CssSpanProps): RunStyle => ({
+  weight: spanWeightOf(span) ?? style.weight,
+  italic: spanItalicOf(span) ?? style.italic,
+  color: span.color === undefined ? style.color : hexOf('color', span.color),
+  underline: decorationOf(span.textDecoration, 'underline') ?? style.underline ?? false,
+  lineThrough: decorationOf(span.textDecoration, 'line-through') ?? style.lineThrough ?? false,
 });
 
-const sameStyle = (a: RunStyle, b: RunStyle): boolean =>
-  a.weight === b.weight && a.italic === b.italic && a.color === b.color;
+const spanStyleOf = (style: RunStyle, span: CssSpanProps, path: string): RunStyle => {
+  try {
+    return overrideStyle(style, span);
+  } catch (error) {
+    if (!(error instanceof InvalidPropError)) throw error;
+    throw new ResolveError(`Prop "${error.property}" de <Span>: ${error.message}`, path);
+  }
+};
 
-/** Percorre os filhos em ordem; cada trecho de texto vira um run com o estilo do caminho até ele. */
+const sameStyle = (a: RunStyle, b: RunStyle): boolean =>
+  a.weight === b.weight &&
+  a.italic === b.italic &&
+  a.color === b.color &&
+  (a.underline ?? false) === (b.underline ?? false) &&
+  (a.lineThrough ?? false) === (b.lineThrough ?? false);
+
 const collectRuns = (children: TextChildren, style: RunStyle, path: string): readonly TextRun[] =>
   expandChild(children).flatMap((item: Expanded): readonly TextRun[] => {
     if (item.type === 'text') return [{ text: String(item.value), ...style }];
     if (item.kind !== 'span') throw new ResolveError(TEXT_CHILD_ERROR, path);
-    const span = item.element.props as SpanProps;
-    return collectRuns(span.children, overrideStyle(style, span), path);
+    const span = item.element.props as CssSpanProps;
+    return collectRuns(span.children, spanStyleOf(style, span, path), path);
   });
 
 const mergeAdjacent = (runs: readonly TextRun[]): readonly TextRun[] =>
@@ -41,9 +67,28 @@ const mergeAdjacent = (runs: readonly TextRun[]): readonly TextRun[] =>
     return [...merged.slice(0, -1), { ...last, text: last.text + run.text }];
   }, []);
 
-/** Runs fundidos de um Text; `content` é a concatenação deles. */
-export const runsOf = (
-  children: TextChildren,
-  props: Omit<TextProps, 'children'>,
-  path: string,
-): readonly TextRun[] => mergeAdjacent(collectRuns(children, baseStyleOf(props), path));
+// capitalize: 1ª letra de cada palavra, como o CSS (o resto fica como está).
+const TRANSFORMS: Readonly<Record<TextTransform, (text: string) => string>> = {
+  none: (text) => text,
+  uppercase: (text) => text.toLocaleUpperCase(DEFAULTS.lang),
+  lowercase: (text) => text.toLocaleLowerCase(DEFAULTS.lang),
+  capitalize: (text) => text.replace(/(^|[\s \-/])(\p{L})/gu, (_match, before: string, letter: string) => before + letter.toLocaleUpperCase(DEFAULTS.lang)),
+};
+
+/**
+ * capitalize olha a fronteira de palavra através dos runs: o run seguinte começa palavra só
+ * se o anterior terminou em espaço.
+ */
+const transformRuns = (runs: readonly TextRun[], transform: TextTransform): readonly TextRun[] => {
+  if (transform !== 'capitalize') return runs.map((run) => ({ ...run, text: TRANSFORMS[transform](run.text) }));
+  return runs.reduce<readonly TextRun[]>((done, run) => {
+    const previous = done.map((r) => r.text).join('');
+    const glued = previous !== '' && !/[\s \-/]$/.test(previous);
+    const text = TRANSFORMS.capitalize(glued ? `x${run.text}` : run.text);
+    return [...done, { ...run, text: glued ? text.slice(1) : text }];
+  }, []);
+};
+
+/** Runs fundidos e transformados de um Text; `content` é a concatenação deles. */
+export const runsOf = (children: TextChildren, base: RunStyle, transform: TextTransform, path: string): readonly TextRun[] =>
+  transformRuns(mergeAdjacent(collectRuns(children, base, path)), transform);
