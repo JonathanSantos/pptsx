@@ -1,116 +1,684 @@
-# pptsx
+<h1 align="center">pptsx</h1>
 
-Slides escritos em TSX com **CSS como props** (box model, flexbox, grid, `zIndex`), sem coordenadas, viram um `.pptx` editável que se adapta sozinho a vários tamanhos de slide (16:9, 4:3, wide…). Feito para devs e para agentes de IA: o layout é calculado pela engine e todo problema volta como diagnóstico com caminho até o nó.
+<p align="center">
+  <b>Slides em TSX, layout em CSS, saída em PPTX nativo e editável.</b><br>
+  Box model, flexbox, grid e <code>zIndex</code> escritos como props. Sem coordenadas.<br>
+  O mesmo arquivo vira 16:9, 4:3 e wide, e todo problema volta como diagnóstico com o caminho até o nó.
+</p>
 
-## Instalação
+<p align="center">
+  <img alt="TypeScript ESM" src="https://img.shields.io/badge/TypeScript-ESM-2F6FED?logo=typescript&logoColor=white">
+  <img alt="Node 20+" src="https://img.shields.io/badge/Node-%E2%89%A5%2020-1B2A4A?logo=nodedotjs&logoColor=white">
+  <img alt="Testes: 1650" src="https://img.shields.io/badge/testes-1650%20passando-1E9E6A">
+  <img alt="Calibração no Keynote: 34/34" src="https://img.shields.io/badge/Keynote-34%2F34%20linhas-5B6680">
+  <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-F4F6FA?labelColor=5B6680&color=E8EEFC">
+</p>
 
-```sh
-npm install pptsx
-```
+<p align="center">
+  <img src="docs/readme/hero.png" width="960" alt="Seis slides gerados pela engine: capa com decoração em camadas, grid de indicadores com sombra, grid com gráfico de barras e pizza nativos, cartões de KPI, tabela nativa e tags com wrap">
+</p>
 
-Requer Node ≥ 20. O projeto precisa ser ESM (`"type": "module"` no `package.json`), porque o pacote usa top-level await; o `pptsx init` cuida disso.
+<p align="center">
+  <sub>Todas as imagens deste README são PNGs que a própria engine gerou a partir de <a href="examples/showcase.tsx"><code>examples/showcase.tsx</code></a>, <a href="examples/demo.tsx"><code>examples/demo.tsx</code></a> e dos decks em <a href="docs/readme/decks/"><code>docs/readme/decks/</code></a>.</sub>
+</p>
 
-## Início rápido
+<p align="center">
+  <a href="#em-30-segundos">Em 30 segundos</a> ·
+  <a href="#o-que-você-escreve-é-css">CSS como props</a> ·
+  <a href="#como-funciona-por-dentro">Por dentro</a> ·
+  <a href="#diagnósticos-que-um-agente-entende">Diagnósticos</a> ·
+  <a href="#responsivo-de-verdade">Responsivo</a> ·
+  <a href="#gráficos-e-tabelas-nativos">Gráficos e tabelas</a> ·
+  <a href="#cli">CLI</a> ·
+  <a href="#api-programática">API</a> ·
+  <a href="#depara-css--pptx">CSS → PPTX</a> ·
+  <a href="#limitações">Limitações</a>
+</p>
+
+---
+
+## Em 30 segundos
 
 ```sh
 mkdir meu-deck && cd meu-deck
 npm install pptsx
-npx pptsx init
-npx pptsx build deck.tsx --size 16x9,4x3
+npx pptsx init                               # deck.tsx, tsconfig.json, pptsx.config.ts, assets/
+npx pptsx build deck.tsx --size 16x9,4x3     # .pptx + PNG por slide + overview + diagnósticos
 ```
 
-O `init` cria (ou completa) no diretório atual, ou em `npx pptsx init <dir>`:
+Um deck é uma função que devolve `<Deck>` com `<Slide>`s. Contêineres são `Box`, todo texto fica dentro de `Text`, e ninguém informa x/y.
 
-| arquivo | conteúdo |
-|---|---|
-| `deck.tsx` | deck de exemplo com 2 slides, só primitivas |
-| `tsconfig.json` | `jsx: react-jsx`, `jsxImportSource: pptsx`, `module: NodeNext`, `strict` |
-| `pptsx.config.ts` | `defineConfig({})` com as opções comentadas |
-| `assets/.gitkeep` | pasta para imagens (caminhos relativos ao deck) |
-| `.gitignore` | `dist/` (acrescentado se o arquivo já existe) |
-| `package.json` | criado com `"type": "module"`; se já existe, ganha `"type": "module"` (um `"commonjs"` é trocado, com aviso) |
-
-Se `deck.tsx` já existe, o `init` para; `--force` sobrescreve os arquivos gerados (`.gitignore` e `package.json` são sempre mesclados, nunca apagados).
-
-O `build` grava em `dist/`:
-
-```
-dist/
-├── deck.16x9.pptx
-├── deck.16x9.overview.png      ← grade com todos os slides; selo vermelho = error, amarelo = warning
-├── deck.16x9/slide-01.png …    ← um PNG por slide
-├── deck.4x3.pptx / deck.4x3.overview.png / deck.4x3/…
-└── deck.diagnostics.json       ← diagnósticos de todos os tamanhos
-```
-
-Durante a edição, `npx pptsx build deck.tsx --size 16x9,4x3 --watch` refaz tudo a cada arquivo salvo.
-
-## Primeiro deck
+<table>
+<tr>
+<td width="50%" valign="top">
 
 ```tsx
 import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
 
-export default defineDeck((ctx) => (
+export default defineDeck(() => (
   <Deck>
-    <Slide padding={40} gap={20} backgroundColor="#FFFFFF" color="#1B2A4A">
-      <Text fontSize={36} fontWeight="bold" borderLeft="6px solid #2F6FED" paddingLeft={14}>
-        Resultados do trimestre
+    <Slide padding={48} gap={20} color="#1B2A4A">
+      <Text fontSize={40} fontWeight="bold">
+        Olá, pptsx
       </Text>
-      <Box display="grid" gridTemplateColumns={{ base: '1fr 1fr', tall: '1fr' }} gap={20}>
-        <Box backgroundColor="#F4F6FA" borderRadius={8} padding={20}><Text>Receita cresceu 18%.</Text></Box>
-        <Box backgroundColor="#F4F6FA" borderRadius={8} padding={20}><Text>Churn caiu para 2,1%.</Text></Box>
+      <Box flex={1} justifyContent="center" padding={32}
+        backgroundColor="#F4F6FA" borderRadius={12}>
+        <Text fontSize={28}>
+          Sem coordenadas: o layout é CSS.
+        </Text>
+        <Text fontSize={16} color="#5B6680" marginTop={8}>
+          Este Box ocupa o resto da altura (flex: 1).
+        </Text>
       </Box>
-      <Text fontSize={11} color="#5B6680" marginTop="auto">Fonte: dados internos · {ctx.name}</Text>
     </Slide>
   </Deck>
 ));
 ```
 
-- As props são **CSS em camelCase**: números são pt (`'12px'` também), `'50%'` é do pai, e os shorthands funcionam como no browser (`padding="8 16"`, `border="2px solid #ccc"`, `margin="0 auto"`, `flex={1}`).
-- `Slide` e `Box` são contêineres. A única diferença intencional em relação ao browser: **`Box` sem `display` é uma coluna flex** que estica os filhos; `display="flex"` é row, `display="grid"` é grid, `display="none"` some.
-- Não existem coordenadas: posição e tamanho de tudo saem do layout, em pt (1 pol = 72 pt).
-- O texto é medido com a fonte real e quebrado em linhas; se não couber, a fonte encolhe até um mínimo, corta com reticências ou vira erro, conforme `fit`.
-- Qualquer prop aceita um valor por breakpoint: `{ base, tall?, wide?, '4x3'?, … }`. `tall` vale quando a proporção é menor que 1,5 (4:3, 16:10); `wide` quando o slide é maior que o 16:9 de referência; o nome exato do tamanho vence os dois. O grid acima vira uma coluna em 4:3 sem nenhum `if` no deck.
-- A função ainda recebe um `ctx` por tamanho (`name`, `width`, `height`, `aspect`, `scale`) e `ctx.pick(valor)` resolve um valor responsivo em código, para contagens ou textos alternativos.
-- Um `<Box paginate>` com itens demais continua num slide clonado (mesmo título, mesmas decorações) em vez de encolher a fonte: a lista de 12 bullets vira dois slides e o diagnóstico `slide-continued` conta as partes.
+</td>
+<td width="50%" valign="top">
+<img src="docs/readme/a-minimo.png" alt="Slide com o título Olá, pptsx e um bloco cinza que ocupa o resto da altura">
+<br><br>
+<sub><code>docs/readme/decks/a-minimo.tsx</code> → <code>a-minimo.16x9/slide-01.png</code></sub>
+</td>
+</tr>
+</table>
 
-## CSS que funciona
+O `build` grava, para cada tamanho pedido:
 
-**Grid.** `gridTemplateColumns`/`Rows` com pt, `%`, `fr`, `auto`, `min-content`, `max-content`, `minmax()` e `repeat(n, …)`; no item, `gridColumn="span 2"`, `"2 / -1"`, `gridRow`, `justifySelf`/`alignSelf`. Um `Chart` numa célula estica nela.
-
-```tsx
-<Box display="grid" gridTemplateColumns="repeat(3, minmax(0, 1fr))" gap={16}>
-  {cards.map((c) => <Box padding={14} backgroundColor="#FFFFFF" boxShadow="0 3px 10px rgba(0,0,0,.15)">…</Box>)}
-</Box>
+```
+dist/
+├── deck.16x9.pptx               ← formas, textos, gráficos e tabelas nativos (editáveis)
+├── deck.16x9.overview.png       ← grade com todos os slides; selo vermelho = error, amarelo = warning
+├── deck.16x9/slide-01.png …     ← um PNG por slide, desenhado com o mesmo layout do .pptx
+├── deck.4x3.pptx / deck.4x3.overview.png / deck.4x3/…
+└── deck.diagnostics.json        ← diagnósticos de todos os tamanhos
 ```
 
-**Margin auto.** `marginTop="auto"` empurra um rodapé para o fim do slide; `margin="0 auto"` centraliza um bloco com largura. Nada de Box vazio para empurrar.
+Requer Node ≥ 20 e um projeto ESM (`"type": "module"`); o `init` cuida disso. Durante a edição, `--watch` refaz tudo a cada arquivo salvo.
 
-**Herança.** `fontFamily`, `fontSize`, `fontWeight`, `fontStyle`, `color`, `lineHeight`, `textAlign`, `letterSpacing` e `textTransform` declarados num `Slide` ou `Box` descem para os `Text` de dentro. Um cartão define a fonte e a cor uma vez; os textos dizem só o que muda.
+---
 
-**Camadas.** Como no browser, nós posicionados, com `zIndex`, `opacity` ou `rotate` sobem de camada: `zIndex={-1}` põe uma decoração absoluta atrás do conteúdo (sem ele, ela pinta por cima).
+## O que você escreve é CSS
+
+As props são **CSS em camelCase**. Números são pt (1 pol = 72 pt), `'12px'` também vale, `'50%'` é do pai, e os shorthands funcionam como no browser: `padding="8 16"`, `border="2px solid #ccc"`, `margin="0 auto"`, `flex={1}`. A única diferença intencional: **`Box` sem `display` é uma coluna flex** que estica os filhos (o que um slide quer quase sempre); `display="flex"` é row, como no CSS.
+
+Cada exemplo abaixo é um deck de verdade em [`docs/readme/decks/`](docs/readme/decks/); a imagem é o `slide-01.png` que ele gera. Os trechos omitem os imports e o `defineDeck(() => <Deck>…</Deck>)` em volta.
+
+| | conceito | onde |
+|---|---|---|
+| a | esqueleto mínimo: `Slide`, `Box`, `Text` | [acima](#em-30-segundos) |
+| b | grid de cartões com `boxShadow` | [↓](#b-grid-de-cartões) |
+| c | `flexWrap` para tags | [↓](#c-tags-que-quebram-em-linhas) |
+| d | `marginTop="auto"` para o rodapé | [↓](#d-rodapé-no-fim-sem-box-para-empurrar) |
+| e | herança de fonte, cor e alinhamento | [↓](#e-herança-de-texto) |
+| f | `zIndex`, `rotate` e `opacity` | [↓](#f-camadas-zindex-rotate-opacity) |
+| g | bordas por lado | [↓](#g-bordas-por-lado) |
+| h | breakpoints: o mesmo deck em 16:9 e 4:3 | [Responsivo](#breakpoints) |
+| i | `paginate`: um slide que vira dois | [Responsivo](#paginação) |
+| j | `<Chart>` barra, linha e pizza | [Gráficos e tabelas](#gráficos-e-tabelas-nativos) |
+| k | `<Table>` com cabeçalho, zebra e grade | [Gráficos e tabelas](#tabela) |
+| l | rich text com `<B>`, `<I>`, `<Span>` e NBSP | [↓](#l-rich-text) |
+| m | `fit="shrink"` em ação, com `--debug` | [Diagnósticos](#o-texto-encolhe-só-onde-precisa) |
+| n | estouro em vermelho e `text-overflow` | [Diagnósticos](#diagnósticos-que-um-agente-entende) |
+
+### (b) Grid de cartões
+
+`display="grid"` com `repeat`, `minmax` e `fr`; os cartões esticam na célula. `minmax(0, 1fr)` mantém as colunas iguais mesmo com valores longos. A sombra sai como sombra nativa da forma.
 
 ```tsx
-<Shape kind="ellipse" position="absolute" right={-90} top={-110} width={360} height={360} backgroundColor="#101B33" zIndex={-1} />
+const kpis = [
+  ['Receita (R$\u00A0mi)', '52,4', '▲ +14,2%'],
+  ['Clientes ativos', '1.284', '▲ +86'],
+  ['NPS', '62', '▼ −4 pts'],
+  ['Churn', '1,8%', '▼ −0,6 pp'],
+  ['Disponibilidade', '99,95%', 'meta 99,9%'],
+  ['Áreas no catálogo', '11', '▲ +3'],
+];
+
+<Slide padding={36} gap={18} backgroundColor="#F4F6FA" color="#1B2A4A">
+  <Text fontSize={26} fontWeight="bold">Indicadores</Text>
+  <Box display="grid" gap={16} flex={1}
+    gridTemplateColumns="repeat(3, minmax(0, 1fr))"
+    gridAutoRows="minmax(0, 1fr)">
+    {kpis.map(([label, value, delta]) => (
+      <Box backgroundColor="#FFFFFF" borderRadius={10}
+        padding={18} fontSize={14} color="#5B6680"
+        justifyContent="center"
+        boxShadow="0 3px 10px rgba(27,42,74,0.18)">
+        <Text>{label}</Text>
+        <Text fontSize={38} fontWeight="bold" color="#1B2A4A">
+          {value}
+        </Text>
+        <Text fontWeight="bold" color="#2F6FED">{delta}</Text>
+      </Box>
+    ))}
+  </Box>
+</Slide>
 ```
 
-Também: `flexWrap="wrap"` (tags que quebram em linhas), bordas por lado (`borderTop`, `borderLeft="4px solid …"`, tracejada/pontilhada), `borderRadius`, `boxShadow` (uma, externa), `opacity`, `rotate`/`transform: rotate() translate()`, `backgroundImage="url(…)"`, `letterSpacing`, `textTransform`, `textDecoration`. O guia completo, com receitas e a tabela de migração das props antigas (`direction`, `grow`, `fill`, `size`…, ainda aceitas como alias), está em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
+<p align="center"><img src="docs/readme/b-grid.png" width="720" alt="Grid 3 por 2 de cartões brancos com sombra sobre fundo cinza claro"></p>
 
-## Rich text
+### (c) Tags que quebram em linhas
+
+Um `Text` com `padding`, fundo e `borderRadius` vira uma pílula da largura do conteúdo; numa row com `flexWrap="wrap"`, o que não cabe desce.
 
 ```tsx
-import { B, I, Span, Text } from 'pptsx';
+const tags = ['TypeScript', 'TSX', 'flexbox', 'grid', 'margin: auto',
+  'z-index', 'herança', 'bordas por lado', 'box-shadow', 'opacity',
+  'rotate', 'breakpoints', 'paginação', 'gráficos nativos', 'tabelas',
+  'diagnósticos', 'PPTX editável'];
 
-<Text fontSize={20}>
-  Receita <B>subiu 14%</B> em <Span color="#2F6FED" fontStyle="italic">todas</Span> as regiões, <I>exceto</I> no Norte.
-</Text>
+<Slide padding={44} gap={22} color="#1B2A4A">
+  <Text fontSize={28} fontWeight="bold">O que cabe num deck</Text>
+  <Box display="flex" flexWrap="wrap" gap={12}>
+    {tags.map((tag) => (
+      <Text fontSize={20} padding="7 16" borderRadius={16}
+        backgroundColor="#E8EEFC" color="#2F6FED">
+        {tag}
+      </Text>
+    ))}
+  </Box>
+</Slide>
 ```
 
-- `Span` muda `fontWeight`, `fontStyle`, `color` e `textDecoration` de um trecho; `B` e `I` são atalhos. Só valem dentro de `Text`. Tamanho, fonte e entrelinha são do `Text` inteiro.
-- A medição soma a largura de cada trecho com a face certa (regular, negrito, itálico), e o `.pptx` sai com um run por trecho.
-- `alignItems="baseline"` numa row (`display="flex"`) alinha textos de tamanhos diferentes pela linha de base (valor grande + variação pequena).
-- `lineHeight` segue o CSS: `'normal'` (padrão) é a altura natural da fonte; um número é múltiplo do `fontSize` (`1.2` em 20 pt = 24 pt por linha).
-- Para a linha não quebrar entre número e unidade, use NBSP (`R$&nbsp;52,4&nbsp;mi` no texto JSX, `'\u00A0'` em strings); para um texto inteiro numa linha só, `<Text nowrap>` (se não couber, encolhe até `minSize` e depois vira `text-overflow`).
+<p align="center"><img src="docs/readme/c-wrap.png" width="720" alt="Dezessete tags azuis em pílulas distribuídas em quatro linhas"></p>
+
+### (d) Rodapé no fim, sem Box para empurrar
+
+`marginTop="auto"` absorve a sobra da coluna: o rodapé vai para o fim do slide em qualquer tamanho.
+
+```tsx
+<Slide padding={44} gap={12} color="#1B2A4A">
+  <Text fontSize={30} fontWeight="bold">Próximos passos</Text>
+  <Text fontSize={20} color="#5B6680">
+    Abrir o catálogo de dados para crédito e logística no Q4.
+  </Text>
+  <Text fontSize={12} color="#5B6680" marginTop="auto"
+    paddingTop={10} borderTop="1px solid #CCD3E0">
+    Fonte: plataforma de dados, setembro de 2026.
+  </Text>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/d-rodape.png" width="720" alt="Slide com título e uma linha no topo e o rodapé com borda superior colado na base"></p>
+
+### (e) Herança de texto
+
+`fontFamily`, `fontSize`, `fontWeight`, `fontStyle`, `color`, `lineHeight`, `textAlign`, `letterSpacing` e `textTransform` declarados num `Slide` ou `Box` descem para os `Text` de dentro. O cartão diz a cor e o alinhamento uma vez; cada texto diz só o que muda.
+
+```tsx
+<Slide padding={40} gap={20} color="#1B2A4A" fontSize={16}>
+  <Text fontSize={28} fontWeight="bold">Herança de texto</Text>
+  <Box display="flex" gap={20} flex={1} textAlign="center">
+    <Box flex={1} justifyContent="center" borderRadius={12}
+      backgroundColor="#1B2A4A" color="#FFFFFF">
+      <Text letterSpacing={2} textTransform="uppercase">receita</Text>
+      <Text fontSize={56} fontWeight="bold">52,4</Text>
+      <Text color="#9DB8F5">R$ mi no Q3</Text>
+    </Box>
+    <Box flex={1} justifyContent="center" borderRadius={12}
+      backgroundColor="#E8EEFC" color="#2F6FED">
+      <Text letterSpacing={2} textTransform="uppercase">clientes</Text>
+      <Text fontSize={56} fontWeight="bold">1.284</Text>
+      <Text color="#5B6680">ativos no mês</Text>
+    </Box>
+  </Box>
+  <Text color="#5B6680">
+    Cor, tamanho e alinhamento são declarados uma vez no cartão.
+  </Text>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/e-heranca.png" width="720" alt="Dois cartões lado a lado, um azul-marinho com texto branco e um azul-claro com texto azul, ambos centralizados"></p>
+
+### (f) Camadas: `zIndex`, `rotate`, `opacity`
+
+A ordem de pintura é a do CSS: nós posicionados, com `zIndex`, `opacity` ou `rotate`, sobem de camada. `zIndex={-1}` põe a decoração atrás do conteúdo; sem ele, ela pintaria por cima. Rotação e opacidade valem para o nó e os filhos e saem como atributos nativos das formas.
+
+```tsx
+<Slide padding={56} justifyContent="center"
+  backgroundColor="#1B2A4A" color="#FFFFFF">
+  <Shape kind="ellipse" position="absolute" zIndex={-1}
+    right={-110} top={-130} width={400} height={400}
+    backgroundColor="#101B33" />
+  <Box position="absolute" right={96} top={84}
+    width={130} height={130} borderRadius={16}
+    backgroundColor="#2F6FED" opacity={0.45} rotate={18} />
+  <Box position="absolute" left={0} bottom={0}
+    width="100%" height={8} backgroundColor="#2F6FED" />
+  <Text fontSize={48} fontWeight="bold">Nova fase</Text>
+  <Text fontSize={20} color="#C9D6F5" marginTop={8}>
+    Decoração atrás, conteúdo na frente.
+  </Text>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/f-camadas.png" width="720" alt="Capa azul-marinho com um círculo escuro atrás, um quadrado azul translúcido girado e uma faixa azul na base"></p>
+
+### (g) Bordas por lado
+
+Barra de título, faixa de status e divisória são **bordas**, não nós extras. Sólida, tracejada ou pontilhada; a borda ocupa espaço e o traço fica dentro da caixa, como no CSS.
+
+```tsx
+<Slide padding={44} gap={24} color="#1B2A4A" fontSize={20}>
+  <Text fontSize={30} fontWeight="bold"
+    borderLeft="6px solid #2F6FED" paddingLeft={14}>
+    Bordas por lado
+  </Text>
+  <Text color="#5B6680" paddingBottom={14}
+    borderBottom="1px solid #CCD3E0">
+    A barra do título é a borda esquerda do próprio Text;
+    a divisória abaixo, a borda de baixo deste.
+  </Text>
+  <Box display="grid" gap={18}
+    gridTemplateColumns="repeat(3, minmax(0, 1fr))">
+    <Box padding={18} backgroundColor="#F4F6FA"
+      borderTop="5px solid #1E9E6A">
+      <Text>borderTop como faixa de status</Text>
+    </Box>
+    <Box padding={18} borderBottom="2px dashed #5B6680">
+      <Text>borderBottom tracejada como divisória</Text>
+    </Box>
+    <Box padding={18} borderRadius={10}
+      border="2px dotted #F59E0B">
+      <Text>border pontilhada, com raio</Text>
+    </Box>
+  </Box>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/g-bordas.png" width="720" alt="Título com barra azul à esquerda, um texto com divisória embaixo e três caixas: faixa verde no topo, borda tracejada embaixo e borda pontilhada laranja arredondada"></p>
+
+### (l) Rich text
+
+`Span` muda peso, itálico, cor e decoração de um trecho; `B` e `I` são atalhos. A medição soma cada trecho com a face certa (regular, negrito, itálico) e o `.pptx` sai com um run por trecho. `&nbsp;` cola número e unidade.
+
+```tsx
+<Slide padding={56} gap={24} justifyContent="center" color="#1B2A4A">
+  <Text fontSize={30} lineHeight={1.3}>
+    A receita <B>subiu 14%</B> em <Span color="#2F6FED" fontStyle="italic">todas</Span> as
+    regiões, <I>exceto</I> no Norte, e fechou o trimestre em
+    R$&nbsp;52,4&nbsp;mi (<Span textDecoration="line-through" color="#5B6680">meta antiga</Span>{' '}
+    <Span color="#1E9E6A" fontWeight="bold">meta batida</Span>).
+  </Text>
+  <Text fontSize={14} color="#5B6680">
+    Um run por trecho no .pptx; o NBSP mantém “R$ 52,4 mi” numa linha só.
+  </Text>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/l-rich.png" width="720" alt="Parágrafo com trechos em negrito, itálico azul, riscado e verde em negrito"></p>
+
+### Resumo das props
+
+| tema | props | nota |
+|---|---|---|
+| Display | `display="flex" \| "block" \| "grid" \| "none"` | `Box` sem `display` = coluna flex; `none` tira o nó do layout e do PPTX |
+| Caixa | `width`, `height`, `min*`/`max*`, `aspectRatio`, `margin` (com `auto`), `padding`, `border`, `borderTop/Right/Bottom/Left`, `borderRadius` | sempre `border-box`; vale também em `Text`, `Image` e `Table` |
+| Flex | `flexDirection`, `flexWrap`, `gap`/`rowGap`/`columnGap`, `justifyContent`, `alignItems` (inclusive `baseline`), `alignSelf`, `flex`, `flexGrow`, `flexShrink`, `flexBasis`, `order` | valores do CSS (`'space-between'`, `'flex-end'`…) |
+| Grid | `gridTemplateColumns/Rows` (pt, `%`, `fr`, `auto`, `min-content`, `max-content`, `minmax()`, `repeat(n, …)`), `gridAutoRows/Columns`; no item `gridColumn="span 2"`, `"2 / -1"`, `gridRow`, `justifySelf`, `alignSelf` | auto-placement por linhas; itens esticam na célula |
+| Posição | `position="relative" \| "absolute"`, `top/right/bottom/left/inset`, `zIndex` | absoluto mede pela borda do pai; é para decoração |
+| Texto (herda) | `fontFamily`, `fontSize`, `fontWeight`, `fontStyle`, `color`, `lineHeight`, `textAlign`, `letterSpacing`, `textTransform` | `lineHeight` como no CSS: `'normal'` ou múltiplo do `fontSize` |
+| Pintura | `backgroundColor`, `backgroundImage="url(…)"`, `boxShadow` (uma, externa), `opacity`, `rotate` / `transform="rotate() translate()"`, `textDecoration` | o que não tem de/para vira [`css-not-emitted`](#depara-css--pptx) |
+| Responsivo | qualquer prop aceita `{ base, tall?, wide?, '4x3'?, … }` | [Responsivo de verdade](#responsivo-de-verdade) |
+| Engine | `fit`, `minSize`, `maxLines`, `nowrap` (Text); `paginate` (Box) | não existem no CSS; controlam o ajuste |
+
+A referência completa, com cada prop por primitiva (`Deck`, `Slide`, `Box`, `Text`, `Span`/`B`/`I`, `Image`, `Shape`, `Chart`, `Table`), está no [guia do agente](docs/AGENT_GUIDE.md#3-primitivas-e-props-css).
+
+---
+
+## Como funciona por dentro
+
+<p align="center">
+  <img src="docs/readme/pipeline.svg" width="960" alt="Pipeline: deck.tsx → resolve → layout ⇄ fit → emit (.pptx) e preview (PNG), com diagnostics.json saindo do fit">
+</p>
+
+`render(deck, { sizes })` repete o mesmo caminho para cada tamanho de slide. Cada etapa é uma função pura (árvore entra, árvore sai); ler fontes, imagens e arquivos fica só nas bordas.
+
+1. **TSX.** O runtime JSX é próprio, sem React: `jsx()` só cria objetos congelados. `defineDeck((ctx) => …)` roda uma vez por tamanho e recebe `ctx` com `name`, `width`, `height` (pt), `aspect`, `scale` e `pick`.
+2. **resolve.** Chama os componentes até sobrarem primitivas e valida a estrutura (texto só dentro de `Text`, só `Slide` no `Deck`). Escolhe o valor de cada prop responsiva, expande shorthands (`padding="8 16"`, `border="2px solid …"`, `flex={1}`), aplica a cascata (longhand vence shorthand, `style` vence as props) e a herança de texto, e dá a cada nó o seu `path` (`ContentLayout > Box > Bullets > Box[2] > Text`).
+3. **layout.** O [Yoga](https://yogalayout.dev) (flexbox em WASM) roda com os padrões da web e `border-box`, em frações de pt sem arredondar para pixel. O `display: grid` é um motor próprio: dimensiona os tracks pelo algoritmo do CSS Grid (`fr`, `minmax`, `min-content`, `span`, linhas negativas) e posiciona cada item na sua célula. O texto entra como folha medida pelo [fontkit](https://github.com/foliojs/fontkit), com as métricas reais da fonte (largura dos glifos, kerning, ascender/descender, `letterSpacing`). Sai uma árvore com o frame absoluto de cada nó, em pt.
+4. **fit.** Detecta o que não cabe (texto, caixa, célula de grid, linha de wrap, nó fora do slide) e ajusta: encolhe a fonte por escopo, corta com reticências ou pagina, refazendo o layout a cada tentativa. No fim, gera os diagnósticos, aponta a causa (`causedBy`) e agrupa irmãos com o mesmo problema.
+5. **emit.** O [pptxgenjs](https://gitbrent.github.io/PptxGenJS/) converte pt → polegadas e emite formas, textos, imagens, gráficos e tabelas nativos. Depois a engine pós-processa o zip: corrige o XML que o PowerPoint pediria para "reparar", conserta a planilha embutida dos gráficos (sem isso o Keynote descarta o gráfico) e renumera as partes para a saída ser determinística.
+6. **preview.** Os mesmos itens posicionados viram SVG, que o [resvg](https://github.com/yisibl/resvg-js) rasteriza com as mesmas fontes da medição. O overview junta as miniaturas e põe um selo em cada slide com `error` ou `warning`.
+
+### O loop de ajuste
+
+Texto que não cabe dispara uma busca **por escopo**: os textos da mesma instância de componente (os itens de um `Bullets`, label e valor de um `KpiCard`) encolhem juntos, para manter a hierarquia tipográfica; uma instância vizinha só encolhe se ela mesma estourar. Cada escopo faz uma busca binária do menor passo de fonte que resolve, e cada tentativa é um layout completo.
+
+```mermaid
+flowchart TD
+    A(["slide resolvido"]) --> P{"tem Box paginate<br/>que não cabe?"}
+    P -->|sim| Q["divide os itens em partes<br/>(clones do slide, até 10)"]
+    Q --> L
+    P -->|não| L["layout completo<br/>Yoga + grid + medição"]
+    L --> D{"algum Text estourou<br/>ou partiu palavra?"}
+    D -->|sim| S["por escopo, do mais interno ao mais externo:<br/>busca binária do menor Δ de fontSize<br/>entre fontSize e minSize"]
+    S --> R{"menos de 12 rodadas?"}
+    R -->|sim| L
+    R -->|não| T
+    D -->|não| T["fit=truncate → maxLines<br/>relayout final"]
+    T --> G["diagnósticos → causa (causedBy)<br/>→ agrupamento de irmãos"]
+```
+
+### Por que as quebras de linha são forçadas
+
+PowerPoint e Keynote quebram linhas cada um do seu jeito. Para o `.pptx` sair igual ao PNG, cada linha que a engine mediu vira uma quebra manual dentro do parágrafo (`lineBreaks: 'forced'`, o padrão). O texto continua nativo e editável; só as quebras ficam fixas. A medição foi calibrada exportando pelo Keynote: **34 de 34** amostras de texto simples e **30 de 30** de rich text com as mesmas linhas da engine. Com `--line-breaks auto` o aplicativo requebra (mais editável), e no Keynote 10 das 34 amostras quebram em outra palavra; nenhuma vaza do frame, porque a engine quebra com 3 % de folga (`textSafety: 0.97`).
+
+### Quanto custou trocar para CSS
+
+A API em CSS nasceu de uma prova de conceito medida contra a engine anterior ([relatório](docs/work/reports/POC-css.md)):
+
+| medida | resultado |
+|---|---|
+| nós no deck da demo | 92 → 68 (**−26 %**); "Box só para empurrar": 15 → 3 |
+| tempo de build da demo (3 tamanhos, com preview) | **1,02×** a engine anterior |
+| motor de grid contra o Chrome, 48 casos (grid, flex, block, caixa) | 47/48 em ±1 pt com a métrica da engine; 48/48 com a altura de linha do browser |
+| posições e diagnósticos dos exemplos | iguais à engine anterior: frames ±1 pt, mesmos códigos, paths e mensagens (depois, as colunas sem `width` da `Table` passaram a seguir o conteúdo, de propósito) |
+
+<details>
+<summary><b>Diagrama em texto</b> (o mesmo pipeline em Mermaid)</summary>
+
+```mermaid
+flowchart LR
+    tsx["deck.tsx<br/>defineDeck(ctx), 1× por tamanho"] -->|elementos| resolve
+    resolve["resolve<br/>componentes → primitivas<br/>cascata CSS · herança · breakpoints<br/>path de cada nó"] -->|árvore resolvida| layout
+    layout["layout<br/>Yoga com padrões da web<br/>grid próprio · medição fontkit"] -->|frames em pt| fit
+    fit["fit<br/>shrink por escopo · paginate<br/>estouro · causa · agrupamento"] -->|fontSize menor| layout
+    fit -->|árvore posicionada| emit["emit<br/>pptxgenjs + pós-processamento do zip"]
+    fit -->|árvore posicionada + diagnósticos| preview["preview<br/>SVG → resvg → PNG"]
+    fit -->|diagnósticos| json[("diagnostics.json")]
+    emit --> pptx[(".pptx editável")]
+    preview --> png[("slide-NN.png<br/>overview.png")]
+```
+
+</details>
+
+---
+
+## Diagnósticos que um agente entende
+
+Todo problema vira um diagnóstico com `path` até o nó e uma `message` que diz **o que fazer**. Com `--debug`, cada Box/Text/Image/Chart/Table ganha um contorno vermelho tracejado (no `.pptx` e no PNG), e o texto que estoura fica vermelho no PNG.
+
+```tsx
+<Slide padding={40} gap={16} color="#1B2A4A">
+  <Text fontSize={26} fontWeight="bold">Resumo executivo</Text>
+  <Box height={110} padding={16} backgroundColor="#F4F6FA">
+    <Text fontSize={20} fit="error">
+      A plataforma migrou os pipelines legados antes do prazo, reduziu o custo
+      por consulta em 22% com o novo cache e abriu o catálogo para três áreas
+      novas, mantendo a disponibilidade acima da meta em todos os meses.
+    </Text>
+  </Box>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/n-estouro-debug.png" width="720" alt="Slide em modo debug: caixa de altura fixa com o texto vazando pela base, destacado em vermelho"></p>
+
+```
+$ npx pptsx build n-estouro.tsx --debug
+
+Diagnósticos: 1 error, 0 warning, 0 info
+  ✖ [16x9 · slide 1] text-overflow em Slide > Box > Text
+    Texto estourou 17.9% (14 pt) da altura disponível em 20 pt (fit="error" não ajusta); reduza o conteúdo, aumente a área ou troque para fit="shrink" ou fit="truncate".
+```
+
+O exit code é `1` (há um `error`). Com `--json`, o stdout tem só JSON, pronto para um agente ler:
+
+```json
+{
+  "files": ["dist/n-estouro.16x9.pptx", "…"],
+  "diagnostics": [
+    {
+      "size": "16x9",
+      "slide": 1,
+      "severity": "error",
+      "code": "text-overflow",
+      "path": "Slide > Box > Text",
+      "message": "Texto estourou 17.9% (14 pt) da altura disponível em 20 pt (fit=\"error\" não ajusta); reduza o conteúdo, aumente a área ou troque para fit=\"shrink\" ou fit=\"truncate\".",
+      "data": { "overflowPt": 14, "overflowPct": 17.9 }
+    }
+  ]
+}
+```
+
+### O overview com selos
+
+`<deck>.<tamanho>.overview.png` mostra o deck inteiro numa imagem. Selo vermelho = o slide tem `error`; amarelo = `warning`. Abaixo, o overview de [`examples/overflow.tsx`](examples/overflow.tsx), um deck lotado de propósito:
+
+<p align="center"><img src="docs/readme/overview-selos.png" width="840" alt="Overview com cinco miniaturas numeradas; três têm selo vermelho e uma tem selo amarelo"></p>
+
+### O texto encolhe só onde precisa
+
+`fit="shrink"` é o padrão: a engine procura o **maior** `fontSize` entre o do autor e `minSize` em que o texto cabe. Abaixo, o mesmo componente em duas larguras: na caixa larga o texto fica em 22 pt; na estreita desce para 17 pt, e só ela recebe o diagnóstico (contornos do `--debug`).
+
+```tsx
+// Cada instância de componente é um escopo de shrink: só encolhe quem não coube.
+const Quote = ({ width }: { width: number }) => (
+  <Box width={width} height={150} padding={16} backgroundColor="#F4F6FA">
+    <Text fontSize={22} minSize={12}>
+      O catálogo de dados reduziu pela metade o tempo para achar uma tabela confiável.
+    </Text>
+  </Box>
+);
+
+<Slide padding={40} gap={20} color="#1B2A4A">
+  <Text fontSize={26} fontWeight="bold">fit="shrink" (padrão)</Text>
+  <Box display="flex" gap={24} alignItems="flex-start">
+    <Quote width={400} />
+    <Quote width={180} />
+  </Box>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/m-shrink-debug.png" width="720" alt="Dois cartões com contornos de debug: o largo com texto em 22 pt, o estreito com o mesmo texto menor"></p>
+
+```
+  • [16x9 · slide 1] text-shrunk em Slide > Box > Quote[1] > Text
+    Texto reduzido de 22 pt para 17 pt para caber na área. Se a redução incomodar, encurte o conteúdo ou aumente a área.
+```
+
+### O que vem em cada diagnóstico
+
+- `size`, `slide` (a partir de 1, no arquivo gerado), `severity` (`error` corrige, `warning` é aceitável se intencional, `info` é só aviso), `code`, `path`, `message` e `data` opcional (`overflowPt`, `fromSize`/`toSize`, `axis`…).
+- **Causa antes do efeito.** `data.causedBy` marca o estouro que é consequência de outro nó; a mensagem termina com "corrija `<causa>` primeiro", e no terminal os derivados aparecem com `↳` sob a causa.
+- **Grupos.** Irmãos com o mesmo problema viram um item só: `Box[0..7]`, com `data.count` e `data.paths`. Corrija uma vez, no `.map` ou no componente.
+- **Grid e wrap falam a língua do layout:** "o item ocupa 212 × 98.6 pt, mas a célula do grid tem 212 × 60 pt"; "as linhas do wrap ocupam 64.2 pt na vertical".
+- **Nada some em silêncio.** CSS sem equivalente no PPTX vira `css-not-emitted` com a propriedade, o valor e o motivo:
+
+```
+  ▲ [16x9 · slide 1] css-not-emitted em Slide > Box
+    A propriedade CSS overflow: hidden não sai no PPTX: o PPTX não recorta formas; os filhos saem inteiros. O preview também não a desenha; remova-a ou troque por uma suportada (ver docs/AGENT_GUIDE.md).
+```
+
+| code | severity | quando |
+|---|---|---|
+| `text-overflow` | error | o texto não coube nem em `minSize` (ou `fit="error"`, ou área 0 pt) |
+| `box-overflow` | error | filhos em fluxo, linhas do wrap ou item de grid maiores que a área |
+| `out-of-slide` | error | nó em fluxo fora do slide |
+| `table-overflow` | error | a tabela não cabe nem no mínimo; diz quantas linhas cabem |
+| `font-missing` | error | família não registrada ou não achada no sistema |
+| `text-word-broken` | warning | palavra mais larga que a linha, partida por caractere |
+| `text-truncated` | warning | `fit="truncate"`/`maxLines` cortou com `…` |
+| `text-illegible` | warning | o shrink desceu abaixo de 10 pt (só com `minSize` explícito) |
+| `css-not-emitted` | warning | propriedade CSS sem de/para no PPTX |
+| `font-not-embeddable` | warning | com `--embed-fonts`, uma face que não pode ser embutida |
+| `text-shrunk` | info | o texto encolheu e coube |
+| `slide-continued` | info | um `Box paginate` virou N slides |
+| `image-upscaled` | info | imagem ampliada abaixo de 96 dpi |
+
+Mensagens reais, correções típicas e o checklist de correção estão no [guia, §8](docs/AGENT_GUIDE.md#8-diagnósticos).
+
+---
+
+## Responsivo de verdade
+
+### Breakpoints
+
+16:9 e 4:3 têm a **mesma largura** (720 pt); o 4:3 é mais alto. Qualquer prop aceita um valor por breakpoint, sem `if` sobre o tamanho:
+
+| chave | ativa quando | 16x9 | 16x10 | 4x3 | wide |
+|---|---|:-:|:-:|:-:|:-:|
+| `tall` | proporção < 1,5 (muda a **estrutura**) | | ✓ | ✓ | |
+| `wide` | escala > 1,2 (muda a **tipografia**) | | | | ✓ |
+| nome exato (`'4x3'`, `'custom-10x7.5'`) | o tamanho atual tem esse nome | ✓ | ✓ | ✓ | ✓ |
+
+Precedência: nome exato > `wide` > `tall` > `base`. O deck abaixo é **um arquivo só**, construído com `--size 16x9,4x3`:
+
+```tsx
+const areas = ['Varejo', 'Crédito', 'Seguros', 'Logística', 'Marketing', 'Jurídico'];
+
+<Slide padding={36} gap={16} backgroundColor="#F4F6FA" color="#1B2A4A">
+  <Text fontSize={26} fontWeight="bold">Um arquivo, dois formatos</Text>
+  <Box display="grid" gap={16} flex={1}
+    gridAutoRows="minmax(0, 1fr)"
+    gridTemplateColumns={{
+      base: 'repeat(3, minmax(0, 1fr))',
+      tall: 'repeat(2, minmax(0, 1fr))',
+    }}>
+    {areas.map((area) => (
+      <Box backgroundColor="#FFFFFF" padding={16}
+        justifyContent="center" borderLeft="4px solid #2F6FED">
+        <Text fontSize={20} fontWeight="bold">{area}</Text>
+      </Box>
+    ))}
+  </Box>
+  <Text fontSize={13} color="#5B6680"
+    display={{ base: 'none', tall: 'flex' }}>
+    Esta nota só existe em 4:3, onde sobra altura.
+  </Text>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/h-breakpoints.png" width="900" alt="O mesmo slide em 16:9 com três colunas e em 4:3 com duas colunas e uma nota no rodapé"></p>
+
+Para o que não é prop de primitiva (quantos itens mostrar, um título mais curto), `ctx.pick` resolve com a mesma regra:
+
+```tsx
+items.slice(0, ctx.pick({ base: 4, tall: 6 }))
+title={ctx.pick({ base: 'Receita', wide: 'Receita recorrente mensal' })}
+```
+
+Na [`examples/demo.tsx`](examples/demo.tsx), o componente `TwoColumn` recebe `stacked={{ base: false, tall: true }}`: lado a lado em 16:9, empilhado em 4:3, com o gráfico ocupando a altura que sobra.
+
+<p align="center"><img src="docs/readme/demo-twocolumn.png" width="900" alt="Slide de receita em 16:9 com bullets e gráfico lado a lado, e em 4:3 com o gráfico embaixo dos bullets"></p>
+
+### Paginação
+
+`<Box paginate>` divide os filhos em fluxo entre slides quando não cabem, em vez de encolher a fonte. O resto continua num **clone do slide** (mesmo título, fundo, decoração, rodapé e notas). Em 4:3, com mais altura, os mesmos 9 itens cabem num slide só:
+
+```tsx
+const items = [
+  'Migrar os três pipelines legados de faturamento.',
+  'Revisar o contrato de armazenamento (+38% de volume).',
+  'Treinar crédito e logística no catálogo de dados.',
+  'Definir donos para 42 conjuntos sem responsável.',
+  'Automatizar o alerta de atraso das cargas noturnas.',
+  'Publicar o SLA de disponibilidade por domínio.',
+  'Encerrar as planilhas locais dos relatórios oficiais.',
+  'Padronizar colunas de data e moeda entre as áreas.',
+  'Arquivar painéis que ninguém abre há 90 dias.',
+];
+
+<Slide padding={40} gap={18} color="#1B2A4A">
+  <Text fontSize={28} fontWeight="bold"
+    borderLeft="6px solid #2F6FED" paddingLeft={14}>
+    Pontos de atenção para o Q4
+  </Text>
+  <Box paginate flex={1} gap={14}>
+    {items.map((item) => (
+      <Box display="flex" gap={12} alignItems="flex-start">
+        <Shape kind="ellipse" width={9} height={9} flexShrink={0}
+          marginTop={8} backgroundColor="#2F6FED" />
+        <Text fontSize={22} flex={1}>{item}</Text>
+      </Box>
+    ))}
+  </Box>
+  <Text fontSize={11} color="#5B6680" marginTop="auto">
+    Título e rodapé se repetem em cada parte.
+  </Text>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/i-paginate.png" width="960" alt="16:9 dividido em duas partes de 6 e 3 itens com o mesmo título, e 4:3 com os 9 itens num slide"></p>
+
+```
+  • [16x9 · slide 1] slide-continued em Slide > Box
+    Slide 1 do autor virou 2 slides (6 de 9 itens no 1º, 3 no 2º). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo.
+```
+
+Os paths dos itens não mudam entre as partes, e os diagnósticos dos slides seguintes trazem `data.sourceSlide` (o índice no deck do autor).
+
+---
+
+## Gráficos e tabelas nativos
+
+`<Chart>` e `<Table>` saem como objetos nativos do PowerPoint/Keynote: quem recebe o `.pptx` edita os dados, não uma imagem. O gráfico não tem tamanho próprio: estica numa célula de grid, com `flex={1}` ou com `width`/`height`.
+
+```tsx
+const quarters = ['Q4', 'Q1', 'Q2', 'Q3'];
+
+<Slide padding={36} gap={16} color="#1B2A4A">
+  <Text fontSize={26} fontWeight="bold">Gráficos nativos e editáveis</Text>
+  <Box display="grid" gap={16} flex={1}
+    gridTemplateColumns="repeat(3, minmax(0, 1fr))">
+    <Chart kind="bar" title="Receita (R$ mi)" showValues
+      colors={['#2F6FED']}
+      data={{ categories: quarters,
+        series: [{ name: 'Receita', values: [38.2, 41.5, 45.9, 52.4] }] }} />
+    <Chart kind="line" title="Latência p95 (ms)"
+      colors={['#2F6FED', '#D64545']}
+      data={{ categories: quarters, series: [
+        { name: 'Com cache', values: [420, 310, 260, 220] },
+        { name: 'Sem cache', values: [610, 600, 650, 630] }] }} />
+    <Chart kind="pie" title="Receita nova"
+      colors={['#2F6FED', '#1E9E6A', '#F59E0B', '#5B6680']}
+      data={{ categories: ['Varejo', 'Crédito', 'Seguros', 'Outros'],
+        series: [{ name: 'Q3', values: [4.0, 0.6, 0.7, 1.2] }] }} />
+  </Box>
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/j-graficos.png" width="720" alt="Três gráficos lado a lado: barras, duas linhas e pizza de quatro fatias"></p>
+
+Os três tipos ocupando o corpo inteiro do slide ([`examples/charts.tsx`](examples/charts.tsx)):
+
+<p align="center"><img src="docs/readme/charts.png" width="960" alt="Três slides: barras de realizado contra meta, linhas de latência e pizza de receita por área"></p>
+
+### Tabela
+
+A `Table` é medida pela engine: colunas com `width` ficam fixas e as outras seguem o conteúdo (como `table-layout: auto`); a altura é a soma das linhas. Ela encolhe como uma unidade junto com os textos do slide; se nem assim couber, vem `table-overflow` dizendo quantas linhas cabem.
+
+```tsx
+<Slide padding={40} gap={20} color="#1B2A4A">
+  <Text fontSize={28} fontWeight="bold">Receita por área</Text>
+  <Table
+    fontSize={15}
+    header={{ fill: '#1B2A4A', color: '#FFFFFF' }}
+    stripe="#F4F6FA"
+    border="#CCD3E0"
+    cellPadding={6}
+    columns={[
+      { header: 'Área', width: '40%' },
+      { header: 'Q2 (R$\u00A0mi)', align: 'right' },
+      { header: 'Q3 (R$\u00A0mi)', align: 'right' },
+      { header: 'Δ', align: 'right' },
+    ]}
+    rows={[
+      ['Varejo', '18,6', '22,6', '+21,5%'],
+      ['Crédito', '9,8', '10,4', '+6,1%'],
+      ['Seguros', '6,1', '6,8', '+11,5%'],
+      ['Logística', '4,7', '5,0', '+6,4%'],
+      ['Marketing', '3,9', '4,2', '+7,7%'],
+    ]}
+  />
+</Slide>
+```
+
+<p align="center"><img src="docs/readme/k-tabela.png" width="720" alt="Tabela com cabeçalho azul-marinho, linhas zebradas e grade cinza"></p>
+
+---
 
 ## CLI
 
@@ -119,32 +687,23 @@ pptsx build <deck.tsx> [flags]
 pptsx init [dir] [--force] [--json]
 ```
 
-| comando / flag | padrão | o que faz |
+| flag | padrão | o que faz |
 |---|---|---|
-| `build <deck.tsx>` | — | renderiza o deck (export default `defineDeck(...)`) e grava os arquivos |
 | `--size <lista>` | `16x9` | tamanhos separados por vírgula: `16x9`, `16x10`, `4x3`, `wide` ou custom em polegadas (`10x7.5in`) |
 | `--out <dir>` | `dist` | diretório de saída |
-| `--debug` | desligado | contorno vermelho tracejado em toda Box/Text/Image/Chart/Table, no `.pptx` e no PNG; no PNG, o texto que estoura fica em vermelho |
-| `--json` | desligado | stdout só com JSON (ver abaixo) |
-| `--preview native\|none` | `native` | `none` não gera PNGs (só `.pptx` e diagnósticos) |
+| `--debug` | desligado | contorno vermelho tracejado em toda caixa, no `.pptx` e no PNG; texto que estoura em vermelho no PNG |
+| `--json` | desligado | stdout só com `{ files, diagnostics }` (ou `{ error }` se o deck nem roda) |
+| `--watch` | desligado | rebuild a cada mudança na pasta do deck ou na config; com `--json`, um JSON por linha |
+| `--preview native\|none` | `native` | `none` não gera PNGs |
 | `--preview-width <px>` | `1280` | largura de cada PNG de slide |
 | `--lang <tag>` | `pt-BR` | idioma do texto no `.pptx` (corretor ortográfico) |
-| `--line-breaks forced\|auto` | `forced` | como as linhas saem no `.pptx` (ver [Limitações](#limitações-atuais)) |
-| `--watch` | desligado | build inicial e rebuild a cada mudança na pasta do deck ou na config |
-| `--embed-fonts` | desligado | embute no `.pptx` (EOT) as fontes registradas que o deck usa; só o PowerPoint respeita (o Keynote ignora) |
-| `init [dir]` | `.` | cria o projeto (ver [Início rápido](#início-rápido)) |
-| `init --force` | desligado | sobrescreve um `deck.tsx` existente e os demais arquivos gerados |
-| `init --json` | desligado | stdout `{ "files": [...] }` com os arquivos gravados; avisos vão para stderr |
+| `--line-breaks forced\|auto` | `forced` | [quebras forçadas ou deixadas ao aplicativo](#por-que-as-quebras-de-linha-são-forçadas) |
+| `--embed-fonts` | desligado | embute (EOT) as fontes registradas que o deck usa; só o PowerPoint respeita |
 
-**Exit codes:** `build` sai com `1` se houver qualquer diagnóstico `error`, erro de sintaxe/estrutura do deck ou flag inválida, e `0` caso contrário (`warning` e `info` não falham). `init` sai com `1` se `deck.tsx` já existe sem `--force`. `--watch` só termina com Ctrl-C, e sai com `0`.
+**Exit code:** `build` sai com `1` se houver algum diagnóstico `error`, erro de sintaxe/estrutura ou flag inválida; `warning` e `info` não falham. `init` sai com `1` se `deck.tsx` já existe sem `--force`.
 
-**`--json`:** stdout tem só `{ "files": [...], "diagnostics": [...] }`, com o caminho de cada `.pptx`, PNG, overview e do `diagnostics.json` (mais `fontsMissing`, se alguma fonte do sistema pedida em `fonts` não foi achada). Se o deck nem roda (erro de sintaxe, texto fora de `<Text>`…), stdout tem `{ "error": "mensagem" }`.
-
-**`--watch --json`:** um JSON por build, um por linha (NDJSON), no mesmo formato (`{ files, diagnostics }` ou `{ error }`). Um erro no deck não derruba o watch. Cada build recarrega o deck, a config e os componentes e tokens que eles importam. A pasta de saída, `node_modules` e `.git` são ignorados.
-
-## Config
-
-`pptsx.config.ts` no diretório de onde a CLI é chamada (opcional):
+<details>
+<summary><b>Config: <code>pptsx.config.ts</code></b></summary>
 
 ```ts
 import { defineConfig } from 'pptsx';
@@ -167,117 +726,150 @@ export default defineConfig({
 | campo | o que faz |
 |---|---|
 | `sizes` | tamanhos usados quando `--size` não é passado |
-| `lang` | como `--lang` |
+| `lang`, `lineBreaks`, `embedFonts` | como as flags |
 | `textSafety` | fração da largura usada na quebra de linha (padrão `0.97`); a caixa sai com a largura cheia |
-| `lineBreaks` | como `--line-breaks` |
-| `fonts` | `{ family, weight: 'regular' \| 'bold', italic?, file? }`, uma entrada por face; caminhos relativos ao arquivo de config. Sem `file`, a face é procurada nas pastas de fontes do sistema (macOS, Linux, Windows); se não existir, sai em `fontsMissing` e cada `Text` que a usa ganha `font-missing`. **Substitui** as fontes padrão: se o deck ainda usa Arial, registre também a Arial (do sistema ou por arquivo) |
-| `embedFonts` | como `--embed-fonts` |
+| `fonts` | uma entrada por face, `{ family, weight: 'regular' \| 'bold', italic?, file? }`. Sem `file`, a face é procurada nas pastas de fontes do sistema. **Substitui** o padrão: se o deck ainda usa Arial, registre a Arial também |
 
-Precedência: flag da CLI > config > padrão.
+Precedência: flag > config > padrão. De fábrica só existe Arial, medida com a Liberation Sans incluída no pacote (mesmas métricas) e gravada como `Arial` no arquivo.
+
+</details>
+
+---
 
 ## API programática
 
 ```ts
 import { render } from 'pptsx';
-import type { RenderOptions, RenderResult } from 'pptsx';
+import deck from './deck.tsx';
 
-render(deck: DeckDefinition, options?: RenderOptions): Promise<RenderResult[]>  // um resultado por tamanho
+const results = await render(deck, { sizes: ['16x9', '4x3'], includePositioned: true });
+
+for (const { size, buffer, diagnostics, preview, positioned } of results) {
+  // buffer: o .pptx · preview: { slides: Buffer[], overview: Buffer } · positioned: frames em pt
+}
 ```
+
+O `render` não grava arquivos nem imprime; devolve um resultado por tamanho.
 
 | `RenderOptions` | padrão | |
 |---|---|---|
 | `sizes` | `['16x9']` | presets ou `{ width, height }` em polegadas |
-| `fonts` | Liberation Sans como Arial | `FontFace[]`, como na config (`file` opcional: sem ele, fonte do sistema) |
+| `fonts` | Liberation Sans como Arial | `FontFace[]`, como na config |
 | `preview` | `{ mode: 'native', width: 1280 }` | `false` desliga os PNGs |
 | `debug` | `false` | contornos de debug no `.pptx` e no PNG |
-| `baseDir` | `process.cwd()` | base para `src` relativos de imagens (a CLI usa a pasta do deck) |
-| `lang` | `'pt-BR'` | |
-| `textSafety` | `0.97` | |
-| `lineBreaks` | `'forced'` | `'forced'` ou `'auto'` |
+| `baseDir` | `process.cwd()` | base dos `src` relativos de imagens (a CLI usa a pasta do deck) |
+| `lang` / `textSafety` / `lineBreaks` / `embedFonts` | `'pt-BR'` / `0.97` / `'forced'` / `false` | como na config |
 | `includePositioned` | `false` | devolve a árvore posicionada (pós-fit) em `positioned` |
-| `embedFonts` | `false` | embute as faces usadas (`.ttf` de uma face, licença que permita embed; nunca a Arial padrão); as que não podem geram `font-not-embeddable` |
 
 | `RenderResult` | |
 |---|---|
 | `size` | nome do tamanho (`'16x9'`, `'custom-10x7.5'`) |
 | `buffer` | o `.pptx` (`Buffer`) |
 | `diagnostics` | `Diagnostic[]` deste tamanho |
-| `preview` | `{ slides: Buffer[], overview: Buffer }` (PNGs), se o preview estiver ligado |
+| `preview` | `{ slides, overview }` em PNG, se o preview estiver ligado |
 | `positioned` | árvore com frames em pt, só com `includePositioned` |
-| `fontsMissing` | faces pedidas em `fonts` sem `file` que não foram achadas no sistema (`['Inter bold']`); ausente se nenhuma |
+| `fontsMissing` | faces pedidas sem `file` que não foram achadas no sistema |
 
-O `render` não grava arquivos nem imprime. Exemplo (`build.ts`, rodado com `npx tsx build.ts` num projeto criado pelo `init`):
+---
 
-```ts
-import { mkdir, writeFile } from 'node:fs/promises';
-import { render } from 'pptsx';
-import deck from './deck.tsx';
+## De/para CSS → PPTX
 
-const results = await render(deck, { sizes: ['16x9', '4x3'], preview: false });
-await mkdir('dist', { recursive: true });
-for (const { size, buffer, diagnostics } of results) {
-  await writeFile(`dist/deck.${size}.pptx`, buffer);
-  diagnostics.forEach((d) => console.log(`${d.severity} ${d.code} em ${d.path}: ${d.message}`));
-}
+O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não sai, e **sempre avisa**. O preview desenha só o que o `.pptx` tem, então o PNG nunca promete mais do que o arquivo entrega.
+
+| sai nativo | sai com diferença | `css-not-emitted` (warning) |
+|---|---|---|
+| `backgroundColor` (com alpha de `rgba`) | fundo, borda e padding de um `Text` saem como uma forma atrás da caixa de texto | `overflow: hidden` (o PPTX não recorta) |
+| `border` uniforme sólida, tracejada ou pontilhada, dentro da caixa | `opacity` é por forma, não de grupo: formas sobrepostas não se "apagam" como no browser | gradiente em `backgroundImage`, `filter`, `textShadow`, propriedade desconhecida |
+| bordas por lado (uma linha por lado) | `letterSpacing` desliga o kerning no arquivo (até ~1 % mais largo; a folga de 3 % cobre) | `transform: scale/skew/matrix`; `rotate` em `Chart`/`Table` |
+| `borderRadius` | `lineHeight` numérico no Keynote: passo truncado a pt inteiro e 1ª linha até ~2 pt mais baixa | sombra `inset`, `spread` ou múltipla; sombra sem fundo |
+| `boxShadow` (uma, externa) | | raio diferente por canto (sai o menor) |
+| `opacity`, `rotate`, `translate`, `zIndex` (ordem de desenho) | | `borderRadius` com bordas diferentes por lado (o fundo arredonda, as linhas saem retas) |
+| `backgroundImage: url()` (cover), `Image` com `objectFit` | | `fontWeight` 100–500 e 800–900 (sai regular ou bold) |
+| fonte, tamanho, peso, itálico, cor, alinhamento, `textTransform`, `textDecoration` por trecho, `letterSpacing` | | `auto-fill`, áreas nomeadas e `[linhas]` no grid; `gridAutoFlow` diferente de `row` |
+| `Chart` (bar, line, pie) e `Table` | | `whiteSpace` além de `normal`/`nowrap`; `objectFit` além de `contain`/`cover` |
+
+<details>
+<summary><b>O mesmo de/para em Mermaid</b></summary>
+
+```mermaid
+flowchart LR
+    css(["props CSS"]) --> nat
+    css --> deg
+    css --> warn
+    nat["<b>sai nativo</b><br/>backgroundColor · border · bordas por lado<br/>borderRadius · boxShadow externa<br/>opacity · rotate · translate · zIndex<br/>backgroundImage url() · display none<br/>texto: fonte, peso, itálico, cor, alinhamento,<br/>letterSpacing, textTransform, textDecoration<br/>Chart e Table nativos"]
+    deg["<b>sai com diferença</b><br/>fundo/borda de Text = forma atrás da caixa<br/>opacity por forma, não de grupo<br/>letterSpacing sem kerning<br/>lineHeight numérico no Keynote"]
+    warn["<b>css-not-emitted</b> (warning)<br/>overflow: hidden · gradiente · filter<br/>scale / skew / matrix<br/>sombra inset, spread ou múltipla<br/>raio por canto · raio + bordas por lado<br/>fontWeight fora de regular/bold<br/>auto-fill e áreas nomeadas no grid"]
+    classDef ok fill:#E8EEFC,stroke:#2F6FED,color:#1B2A4A
+    classDef mid fill:#F4F6FA,stroke:#5B6680,color:#1B2A4A
+    classDef bad fill:#FFF4E5,stroke:#F59E0B,color:#1B2A4A
+    class nat ok
+    class deg mid
+    class warn bad
 ```
 
-Para checar tipos desse script com `tsc`, instale `@types/node`.
+</details>
 
-## Diagnósticos
+---
 
-- Cada diagnóstico tem `size`, `slide` (a partir de 1), `severity`, `code`, `path`, `message` (o que fazer) e `data` opcional.
-- `severity`: `error` precisa de correção; `warning` é aceitável se intencional; `info` é só aviso (ex.: fonte reduzida).
-- `path` vai do slide até o nó, com nomes de primitivas e de componentes: `ContentLayout > Box > Bullets > Box[2] > Text`.
-- Dentro de grid, o estouro diz o tamanho da célula ("a célula do grid tem 212 × 60 pt"); num wrap, quanto as linhas ocupam.
-- `css-not-emitted` (warning) lista toda propriedade CSS que não tem de/para no PPTX, com o valor, o motivo e o path; o preview também não a desenha.
-- `data.causedBy` marca um estouro que é consequência de outro nó: corrija a causa primeiro e os derivados somem.
-- Irmãos com o mesmo problema viram um item só (`Box[0..7]`, com `data.count` e `data.paths`).
-- Exit code `1` se houver algum `error`. O formato completo, os códigos e as correções estão em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
+## Limitações
 
-## Como funciona
+- **Fora do escopo do CSS:** `float`, `position: fixed/sticky`, unidades `em`/`rem`/`vw`, áreas nomeadas e `auto-fill` no grid. `position: absolute` é para decoração: mede pela borda do pai e não gera diagnóstico de caixa.
+- **Só Arial de fábrica.** Outras famílias entram em `fonts` (por arquivo ou instaladas no sistema); uma família não registrada gera `font-missing`. `fontWeight` só tem regular e bold.
+- **Fonte embutida só no PowerPoint.** `--embed-fonts` grava as faces em EOT; o Keynote ignora. Só entram `.ttf` de uma face com licença que permite embed.
+- **Quebras forçadas por padrão.** Quem editar o texto no PowerPoint herda as quebras manuais; `lineBreaks: 'auto'` troca isso por possíveis diferenças de quebra (ver [acima](#por-que-as-quebras-de-linha-são-forçadas)).
+- **Rich text por trecho** muda peso, itálico, cor e decoração; tamanho, fonte e entrelinha valem para o `Text` inteiro.
+- **`Table` não pagina** e não tem `truncate`: encolhe ou vira `table-overflow`. `Chart` e `Table` não giram.
+- **O gráfico do PNG é uma aproximação**: PowerPoint e Keynote redesenham o gráfico nativo dentro do mesmo frame.
 
-1. O deck é TSX com um runtime JSX próprio (sem React): `defineDeck(ctx)` roda uma vez por tamanho e devolve uma árvore de elementos.
-2. A árvore é resolvida: componentes viram primitivas, a estrutura é validada (texto só dentro de `Text`, só `Slide` no `Deck`), cada nó recebe seu `path` e as props viram um estilo CSS normalizado (shorthands expandidos, valores responsivos escolhidos, propriedades de texto herdadas, nomes antigos convertidos).
-3. O layout segue o browser: o Yoga (flexbox em WASM, com os padrões da web) calcula o box model e o flex, e um motor de grid próprio dimensiona os tracks e posiciona os itens nas células; o texto entra como folha medida.
-4. O fontkit mede o texto com as métricas reais da fonte (largura dos glifos, kerning, ascender/descender, `letterSpacing`) e quebra as linhas por palavra.
-5. O fit aplica a política de cada `Text` (`shrink`, `truncate`, `error`) sobre a área de conteúdo (frame − borda − padding, ou a célula do grid), refaz o layout quando a fonte muda e gera os diagnósticos.
-6. A pintura segue a ordem do CSS (`zIndex`, opacidade e rotação herdadas); o pptxgenjs emite o `.pptx` com formas, texto, gráficos e tabelas nativos, e o preview desenha os mesmos itens em SVG, rasterizados pelo resvg.
+## Validação
 
-## Limitações atuais
+- **Testes:** 1650 com `vitest` (unitários, layout calculado à mão, oráculo do grid contra o Chrome, XML emitido, preview).
+- **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30.
+- **PowerPoint e Google Slides:** ainda não validados; a conferência no PowerPoint está com o dono do projeto. O XML é corrigido nos pontos em que o PowerPoint pediria "reparar".
 
-- **CSS sem equivalente no PPTX não sai** (warning `css-not-emitted`, e o preview também não desenha): `overflow: hidden` (o PPTX não recorta), gradientes em `backgroundImage`, `filter`, `transform: scale/skew`, sombra `inset`/`spread`/múltipla, raio diferente por canto (sai o menor), `fontWeight` fora de regular/bold.
-- **Opacidade é por forma, não de grupo.** `opacity` num Box multiplica a transparência de cada forma e texto de dentro; onde elas se sobrepõem, a de cima não "apaga" a de baixo como num grupo do browser.
-- **Bordas por lado são linhas.** Com `borderRadius` e bordas diferentes por lado, o fundo arredonda mas as linhas saem retas (avisa). `Chart` e `Table` não giram.
-- **Fora do escopo do CSS:** `float`, `position: fixed/sticky`, unidades `em`/`rem`/`vw`, áreas nomeadas e `auto-fill` no grid.
-- **Só Arial por padrão.** A engine mede com Liberation Sans (métricas compatíveis, incluída no pacote) e o arquivo sai com `Arial`. Outras famílias entram em `fonts`, por arquivo ou instaladas no sistema (sem `file`); uma família não registrada ou não achada gera `font-missing`.
-- **Fonte embutida só no PowerPoint.** `--embed-fonts` grava as faces em EOT dentro do `.pptx`. O PowerPoint usa a fonte embutida; o Keynote ignora e troca pela dele (o Google Slides não foi testado). Só entram `.ttf` de uma face com licença que permite embed (`.ttc` e `.otf` CFF geram `font-not-embeddable`).
-- **Quebra de linha forçada por padrão.** Com `lineBreaks: 'forced'`, cada linha calculada vira uma quebra manual no `.pptx`: o resultado bate com o preview, mas quem editar o texto no PowerPoint herda essas quebras. `lineBreaks: 'auto'` emite só os parágrafos e deixa o aplicativo requebrar: fica mais editável, mas pode divergir da medição (no Keynote, 10 de 34 amostras quebram em outra palavra e 2 perdem uma linha; nenhuma vaza do frame, porque a engine mede com 3 % de folga). O preview PNG mostra sempre as quebras da engine, não as do aplicativo.
-- **Rich text limitado ao estilo do trecho.** `Span`/`B`/`I` mudam peso, itálico, cor e decoração; tamanho, fonte e entrelinha valem para o `Text` inteiro.
-- **Validado no Keynote.** A calibração da medição de texto foi feita exportando pelo Keynote; PowerPoint e Google Slides ainda não foram validados.
+## Para agentes
+
+O [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md) é o único documento de que um agente precisa: modelo mental, esqueleto, todas as props, receitas, o formato dos diagnósticos, o checklist de correção e as armadilhas comuns. O fluxo é:
+
+1. `npx pptsx build deck.tsx --size 16x9,4x3 --json` e ler o exit code;
+2. corrigir primeiro os `error` **sem** `causedBy` (são as causas), seguindo o `path` e a `message`;
+3. olhar o overview do tamanho afetado;
+4. repetir até exit 0 e, depois, revisar `warning`.
 
 ## Desenvolvimento
 
 ```sh
-npm test               # vitest
+npm test               # vitest (1650 testes)
 npm run typecheck      # tsc
 npm run build          # compila src/ para dist/ (JS + .d.ts)
-npm run test:package   # npm pack → instala num projeto vazio → init → build (lento; precisa de rede ou do cache do npm)
+npm run test:package   # npm pack → projeto vazio → init → build (lento)
 node bin/pptsx.mjs build examples/demo.tsx --size 16x9,4x3,wide --out dist/
 scripts/keynote-export.sh dist/demo.16x9.pptx dist/keynote/   # exporta os slides pelo Keynote (macOS)
 ```
 
-Dentro do repo, `bin/pptsx.mjs` roda direto de `src/` (sem build) e os decks importam `pptsx` pelo `paths` do `tsconfig.json`. Exemplos em `examples/`, todos em CSS:
+Dentro do repo, `bin/pptsx.mjs` roda direto de `src/` (sem build) e os decks importam `pptsx` pelo `paths` do `tsconfig.json`. Os decks deste README ficam fora do `tsconfig` raiz e têm um `tsconfig.json` próprio:
+
+```sh
+npx tsx --tsconfig docs/readme/decks/tsconfig.json src/cli.ts build docs/readme/decks/b-grid.tsx --size 16x9,4x3 --out dist/readme
+```
+
+<details>
+<summary><b>Exemplos em <code>examples/</code></b></summary>
 
 | arquivo | o que mostra |
 |---|---|
-| `demo.tsx` | deck completo com layouts e componentes (grid de KPIs, duas colunas que empilham em 4:3, gráfico e tabela nativos), sem nenhum `if` sobre o tamanho |
+| `demo.tsx` | deck completo com layouts e componentes: grid de KPIs, duas colunas que empilham em 4:3, gráfico e tabela nativos, sem nenhum `if` sobre o tamanho |
 | `showcase.tsx` | vitrine do CSS: grid com `span` e `2 / -1`, wrap, `marginTop="auto"`, `zIndex`, herança, bordas por lado, sombra, `rotate`, `opacity`, `display` responsivo |
-| `long-list.tsx` | lista paginada em slides de continuação |
-| `charts.tsx` | os três gráficos nativos (barra, linha, pizza) |
+| `long-list.tsx` | lista de 12 itens paginada (3 slides em 16:9, 2 em 4:3) |
+| `charts.tsx` | os três gráficos nativos |
 | `hello.tsx`, `layout-test.tsx` | posicionamento absoluto; flex, imagens (`objectFit`) e alinhamentos |
-| `overflow.tsx`, `probe/cause.tsx`, `probe/table.tsx`, `probe/css.tsx` | slides lotados de propósito: cada um termina com o diagnóstico esperado (exit 1) |
-| `calibration.tsx`, `calibration-rich.tsx` | grades de calibração da medição de texto e do rich text |
-| `layouts/`, `components/`, `tokens.ts` | `CoverLayout`, `ContentLayout`, `ClosingLayout`; `Bullets`, `KpiCard`, `KpiRow`, `TwoColumn` | Spec em [`docs/spec.md`](docs/spec.md); guia para agentes em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
+| `overflow.tsx`, `probe/*.tsx` | slides lotados de propósito: cada um termina com o diagnóstico esperado (exit 1) |
+| `calibration.tsx`, `calibration-rich.tsx` | grades de calibração da medição de texto |
+| `layouts/`, `components/`, `tokens.ts` | `CoverLayout`, `ContentLayout`, `ClosingLayout`; `Bullets`, `KpiCard`, `KpiRow`, `TwoColumn` |
+
+</details>
+
+Spec do produto em [`docs/spec.md`](docs/spec.md); contratos entre módulos em [`docs/work/CONTRACTS.md`](docs/work/CONTRACTS.md).
 
 ## Licença
 
