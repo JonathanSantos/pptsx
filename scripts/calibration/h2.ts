@@ -4,8 +4,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { render } from '../../src/render.ts';
-import type { DeckDefinition, PositionedNode as EngineNode } from '../../src/core/types.ts';
-import type { PositionedNode, PositionedText } from '../types.ts';
+import type { DeckDefinition, PositionedNode, PositionedText } from '../../src/core/types.ts';
 
 /**
  * Calibração no Keynote pela metodologia do M3-F/M8-H (vinda da PoC CSS, M11): gera o .pptx pela
@@ -24,7 +23,7 @@ const RETRY_DELAY_MS = 30_000;
 const BELOW_LINES = 0;
 const SAMPLE_LABEL = /^([CR]\d\d) · /;
 
-type AnyNode = PositionedNode | EngineNode;
+type AnyNode = PositionedNode;
 
 const flatten = (nodes: readonly AnyNode[]): readonly AnyNode[] =>
   nodes.flatMap((node) => [node, ...(node.kind === 'box' ? flatten(node.children as readonly AnyNode[]) : [])]);
@@ -55,7 +54,7 @@ const keyOf = (page: number, text: PositionedText): string => `${page}|${text.pa
 
 // A caixa de texto do PPTX é a área de conteúdo (frame sem padding/borda).
 const boxOf = (page: number, text: PositionedText) => {
-  const box = (text as Partial<PositionedText>).box;
+  const box = text.box;
   const left = (box?.padding.left ?? 0) + (box?.border.left ?? 0);
   const top = (box?.padding.top ?? 0) + (box?.border.top ?? 0);
   return {

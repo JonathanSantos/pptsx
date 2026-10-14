@@ -37,3 +37,4 @@ M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10  ─▶  M11
 - [x] Um slide com 12 bullets longos vira dois slides automaticamente, sem diagnóstico `error`. → M9-E: `long-list.tsx` vira 2 slides em 4x3 (6/6) e 3 em 16x9 (4/4/4), só `slide-continued` (info).
 - [x] O gráfico da demo é um gráfico nativo editável no PowerPoint. → M10-H: nativo e editável no Keynote (`count of charts` = 1); PowerPoint pelo dono.
 - [ ] `npm test` continua verde em cada gate; nenhum marco reduz a cobertura dos contratos.
+- [x] **M11:** `src/` é o motor CSS; `poc/` removido; demo antiga (aliases) ±1 pt das fixtures; calibração 34/34 e 30/30 no Keynote; agente virgem com grid + margin + wrap em 3 builds (1º já sem erro). → gate M11.

@@ -1,6 +1,6 @@
 {
   "name": "pptsx",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "TSX → PPTX engine with automatic layout (MVP)",
   "license": "MIT",
   "type": "module",

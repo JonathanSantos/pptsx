@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Exporta um .pptx como PDF vetorial pelo Keynote (o texto continua texto: o PDFKit lê as linhas).
-# Uso: poc/css/calibration/keynote-pdf.sh <arquivo.pptx> <saida.pdf>
+# Uso: scripts/calibration/keynote-pdf.sh <arquivo.pptx> <saida.pdf>
 set -euo pipefail
 [[ $# -eq 2 ]] || { echo "uso: $0 <arquivo.pptx> <saida.pdf>" >&2; exit 2; }
 input="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"

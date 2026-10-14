@@ -186,6 +186,8 @@ Baseline de cada filho: `Text` = 1ª linha; `Box` = a do 1º filho em fluxo; `Im
   - `truncate`: corta a última linha visível com `…` → `text-truncated` (warning).
   - `error`: não ajusta; se estourar → `text-overflow` (error).
 
+**`lineHeight` numérico no Keynote:** o passo entre linhas sai exato quando `lineHeight × fontSize` é inteiro (fracionário é truncado, até −0,8 pt por linha), e a 1ª baseline fica em ≈ 0,8 × espaçamento, não na meia-entrelinha do CSS: com `lineHeight ≥ 1.5` o texto desce até ~2 pt em relação ao preview. Prefira `'normal'` (padrão) ou 1.2; para espaço entre parágrafos use `gap`/`margin`.
+
 ### Rich text (`Span`, `B`, `I`)
 
 ```tsx

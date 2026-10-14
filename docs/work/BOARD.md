@@ -92,7 +92,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M11 | M11-D | emit/preview: paint (zIndex, opacity, rotate), bordas por lado, sombra, decoração | ✅ |
 | M11 | M11-E | testes da PoC em tests/; semânticas novas | ✅ |
 | M11 | M11-F | exemplos em CSS, showcase, AGENT_GUIDE e README em CSS | ✅ |
-| M11 | M11-G | visual: demo antiga × CSS × PNGs; showcase; recalibração de lineHeight | ⬜ |
+| M11 | M11-G | Keynote: demo antiga = legada (exceto gráfico/tabela/ordem) e legada ≈ CSS (±1 pt); vitrine confere (bordas por lado, sombra, rotação, opacidade, camadas, grid, wrap, display responsivo); calibração 34/34 e 30/30 | ✅ |
 | M11 | M11-H | agente virgem: deck de 4 slides com grid, herança, margin auto, wrap, zIndex e paginate em 3 builds (1º já exit 0); 3 lacunas do guia aplicadas | ✅ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
@@ -153,3 +153,7 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M11-F | `TwoColumn` ficou com `stacked?: Responsive<boolean>` (não `direction`, que é alias antigo); `KpiRow` em `repeat(n, minmax(0, 1fr))` porque `1fr` cresce até a palavra mais longa | documentado no guia §3/§9 |
 | M11-B | Image com `width="100%"` + `maxHeight` mantém a proporção (diferença intencional em relação ao browser); em grid, Image sem tamanho não estica | CONTRACTS §M11 layout; guia §6.3 |
 | M11-E | Paridade dos aliases roda sobre cópias congeladas dos decks antigos em `tests/examples/legacy/`; decks em CSS têm `css-positioned.json` | — |
+| M11-G | 1ª baseline no Keynote com `lineHeight` numérico fica em ≈ 0,8 × ⌊spcPts⌋, não na meia-entrelinha: com 1.5 o texto desce até 2,3 pt (C07, C12, C24, C31); 1.2 fica em ±0,3 pt | M12: conferir no PowerPoint e, se igual, subir a caixa em 0,8·⌊lh⌋ − (ascent + meia-entrelinha); guia §4 avisa |
+| M11-G | `spcPts` fracionário é truncado pelo Keynote (−0,4 a −0,8 pt/linha), como já valia para 'normal' desde o M3 | aceito; guia §4 |
+| M11-G | Colunas livres da Table seguem o conteúdo (`table-layout: auto`): demo 16x9 256/141,4/141,4/101,2 (antes 128×3) | aceito; CONTRACTS §M10-B atualizado |
+| M11-G | Validação no PowerPoint pendente (dono): regra 0,8 × espaçamento na calibração (C07, C12, C29–C31), bordas por lado, sombra, rotação, opacidade, camadas, display responsivo | dono |
