@@ -84,7 +84,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M10 | M10-E | preview: SVG de bar/line/pie e tabela | ✅ |
 | M10 | M10-F | testes M10 (+158) | ✅ |
 | M10 | M10-G | demo: Chart nativo no slide 3 e Table no slide 5; `charts.tsx`; `probe/table.tsx`; AGENT_GUIDE §3/§6/§8/§9 | ✅ |
-| M10 | M10-H | validação visual + PowerPoint pelo dono | ⬜ |
+| M10 | M10-H | Keynote: gráficos e tabelas nativos e editáveis (count of charts = 1, images = 0); linhas ±0,4 pt; paginação com tabelas 2/2/2 | ✅ |
 | M11 | M11-0 | Contrato: tipos CSS no core, css-props, DEFAULTS.css, lineHeight CSS; CONTRACTS §M11; plano | ✅ |
 | M11 | M11-A | resolve + primitivas: cascata, shorthands, herança, aliases | ⬜ |
 | M11 | M11-B | layout (Yoga web-defaults, grid) + text (letterSpacing, lineHeight CSS) | ⬜ |
@@ -141,3 +141,8 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M9-E | Linha da CLI não mostrava o slide do autor após paginação → `slide 5 (3 no deck)` (gate) | ✅ gate M9 |
 | M9-E | Deck fora do cwd com tsconfig próprio falha com "React is not defined": `assertDeckTsconfig` valida o tsconfig da pasta do deck, mas `src/cli/loader.ts` compila com o do cwd | backlog: usar o tsconfig da pasta do deck (M10-0 ou correção isolada) |
 | M10-G | Preview do gráfico mostra 4.0 como "4" e usa ponto decimal; o .pptx grava formatCode 0.0 e segue o idioma | backlog: preview formata com as casas dos dados e vírgula em pt-BR |
+| M10-H | Soma dos rowH arredondados (0,5 pt) deixa a tabela até 0,4 pt × linhas mais alta no Keynote; pode estourar sem diagnóstico | M11-C: fit usa Σ rowH arredondados |
+| M10-H | Preview do gráfico com ponto decimal e sem as casas do formatCode (Keynote: "38,2", "40,0") | M11-D: Intl.NumberFormat(lang) com as casas dos dados |
+| M10-H | Eixo de valores herda `0.0` dos rótulos ("60,0") | M11-D: eixo com `General`; CONTRACTS §M10-D ajustado |
+| M10-H | Pizza do Keynote menor que a do preview (175 × ~214 pt) | aceito; linha no guia |
+| M10-H | Validação no PowerPoint pendente (dono): gráficos editáveis e ordem, sem reparo do xlsx, decimais pt-BR, alturas de linha | dono |
