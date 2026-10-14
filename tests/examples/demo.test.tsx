@@ -25,14 +25,14 @@ const pathTree = (deck: ResolvedDeck): string[][] => deck.slides.map((slide) => 
 const allPaths = (deck: ResolvedDeck): string[] => pathTree(deck).flat();
 
 describe('examples/demo.tsx — resolved tree', () => {
-  it('has 5 slides in 16x9 and 4x3', () => {
-    expect(resolvedAt('16x9').slides).toHaveLength(5);
-    expect(resolvedAt('4x3').slides).toHaveLength(5);
+  it('has 6 slides in 16x9 and 4x3', () => {
+    expect(resolvedAt('16x9').slides).toHaveLength(6);
+    expect(resolvedAt('4x3').slides).toHaveLength(6);
   });
 
   it('slide roots are the layouts: cover · content ×3 · closing', () => {
     const roots = resolvedAt('16x9').slides.map((slide) => slide.path);
-    expect(roots).toEqual(['CoverLayout', 'ContentLayout', 'ContentLayout', 'ContentLayout', 'ClosingLayout']);
+    expect(roots).toEqual(['CoverLayout', 'ContentLayout', 'ContentLayout', 'ContentLayout', 'ContentLayout', 'ClosingLayout']);
   });
 
   it('paths name the components (Bullets, TwoColumn, KpiRow, KpiCard)', () => {
@@ -71,15 +71,16 @@ describe('examples/demo.tsx — render', () => {
     }
   }, 120_000);
 
-  it('render() with preview produces 5 slide PNGs per size', async () => {
+  it('render() with preview produces 6 slide PNGs per size', async () => {
     const results = await render(demo, { sizes: ['16x9', '4x3'], preview: { mode: 'native', width: 320 }, baseDir: EXAMPLES_DIR });
-    for (const result of results) expect(result.preview?.slides).toHaveLength(5);
+    for (const result of results) expect(result.preview?.slides).toHaveLength(6);
   }, 120_000);
 });
 
 /**
  * M9: a demo reescrita com props responsivas (M9-D) tem que posicionar igual à de antes.
- * `__fixtures__/demo-positioned.json` foi gerado a partir da demo do commit 77c0143 (antes do M9-D):
+ * `__fixtures__/demo-positioned.json` foi gerado da demo após o M10-G (Chart nativo no slide 3, Table no slide 5);
+ * antes disso, da demo do commit 77c0143 (pré-M9-D), e o M9-D a manteve idêntica:
  * por tamanho, por slide, cada nó em pré-ordem com path, kind, frame (2 casas) e, em Text,
  * fontSize e número de linhas pós-ajuste. Frames comparados com tolerância de 1 pt.
  */
@@ -114,7 +115,7 @@ const textDiffs = (expected: BaselineNode, actual: PositionedNode | PositionedSl
   return out;
 };
 
-describe('examples/demo.tsx — positioned tree matches the pre-M9 baseline (≤ 1 pt)', () => {
+describe('examples/demo.tsx — positioned tree matches the stored baseline (≤ 1 pt)', () => {
   const sizes = Object.keys(BASELINE) as SizePresetName[];
 
   it('baseline covers 16x9, 4x3 and wide', () => {

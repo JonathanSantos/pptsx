@@ -1,9 +1,25 @@
-import { B, Box, Deck, Image, Shape, Text, defineDeck } from 'pptsx';
+import { B, Box, Chart, Deck, Shape, Table, Text, defineDeck } from 'pptsx';
 import { tokens } from './tokens.ts';
 import { ClosingLayout, ContentLayout, CoverLayout } from './layouts/index.ts';
 import { Bullets, KpiRow, TwoColumn } from './components/index.ts';
 
 const { color, font, space } = tokens;
+
+// Valores com ponto (número no gráfico); o PowerPoint exibe com a vírgula do idioma.
+const revenue = {
+  categories: ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026'],
+  series: [{ name: 'Receita (R$\u00A0mi)', values: [38.2, 41.5, 45.9, 52.4] }],
+};
+
+// Na tabela as células são texto: a vírgula decimal e o sinal vão como o autor escreveu.
+const revenueByArea = [
+  ['Varejo', '18,6', '22,6', '+21,5%'],
+  ['Crédito', '9,8', '10,4', '+6,1%'],
+  ['Seguros', '6,1', '6,8', '+11,5%'],
+  ['Logística', '4,7', '5,0', '+6,4%'],
+  ['Marketing', '3,9', '4,2', '+7,7%'],
+  ['Corporativo', '2,8', '3,4', '+21,4%'],
+];
 
 // Mesmo código para 16x9, 4x3 e wide: o flexbox redistribui o espaço e os valores
 // responsivos só mudam onde a estrutura muda (colunas empilhadas em telas mais
@@ -47,10 +63,17 @@ export default defineDeck((ctx) => (
             ]}
           />
         }
-        // A maior caixa com a proporção do gráfico que cabe na coluna, no canto de cima à
-        // esquerda: lado a lado, a largura limita (topo alinhado ao texto); empilhado, a
-        // altura que sobra limita e o gráfico encosta à esquerda, alinhado às bullets.
-        right={<Image src="./assets/revenue-chart.png" width="100%" maxHeight="100%" alignSelf="start" />}
+        // Gráfico nativo (editável no PowerPoint): sem tamanho próprio, ocupa a coluna
+        // inteira com grow; lado a lado fica com a altura do corpo, empilhado com a sobra.
+        right={
+          <Chart
+            kind="bar"
+            data={revenue}
+            colors={[color.accent]}
+            showValues
+            grow={1}
+          />
+        }
       />
     </ContentLayout>
 
@@ -73,6 +96,23 @@ export default defineDeck((ctx) => (
           </Text>
         </Box>
       </Box>
+    </ContentLayout>
+
+    <ContentLayout title="Receita por área">
+      <Table
+        columns={[
+          { header: 'Área', width: '40%' },
+          { header: 'Q2 (R$\u00A0mi)', align: 'right' },
+          { header: 'Q3 (R$\u00A0mi)', align: 'right' },
+          { header: 'Δ', align: 'right' },
+        ]}
+        rows={revenueByArea}
+        size={{ base: font.small, tall: font.small + 2, wide: font.small + 2 }}
+        color={color.ink}
+        header={{ fill: color.brand, color: color.white }}
+        stripe={color.surface}
+        border={color.muted}
+      />
     </ContentLayout>
 
     <ClosingLayout

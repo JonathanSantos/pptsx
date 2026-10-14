@@ -83,7 +83,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M10 | M10-D | emit: addChart/addTable, correção do ref no xlsx, renumeração dos gráficos | ✅ |
 | M10 | M10-E | preview: SVG de bar/line/pie e tabela | ✅ |
 | M10 | M10-F | testes M10 (+158) | ✅ |
-| M10 | M10-G | demo com Chart e Table; `charts.tsx`; AGENT_GUIDE | ⬜ |
+| M10 | M10-G | demo: Chart nativo no slide 3 e Table no slide 5; `charts.tsx`; `probe/table.tsx`; AGENT_GUIDE §3/§6/§8/§9 | ✅ |
 | M10 | M10-H | validação visual + PowerPoint pelo dono | ⬜ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
@@ -131,3 +131,4 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M9-E | `long-list.tsx` sem `notes` → `ContentLayout.notes` repassada ao Slide (gate) | ✅ gate M9 |
 | M9-E | Linha da CLI não mostrava o slide do autor após paginação → `slide 5 (3 no deck)` (gate) | ✅ gate M9 |
 | M9-E | Deck fora do cwd com tsconfig próprio falha com "React is not defined": `assertDeckTsconfig` valida o tsconfig da pasta do deck, mas `src/cli/loader.ts` compila com o do cwd | backlog: usar o tsconfig da pasta do deck (M10-0 ou correção isolada) |
+| M10-G | Preview do gráfico mostra 4.0 como "4" e usa ponto decimal; o .pptx grava formatCode 0.0 e segue o idioma | backlog: preview formata com as casas dos dados e vírgula em pt-BR |

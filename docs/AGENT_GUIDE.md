@@ -53,7 +53,7 @@ Note: 16:9 e 4:3 têm a **mesma largura**; o 4:3 é **mais alto**. Por isso em 4
 
 ### Breakpoints (props responsivas)
 
-Toda prop de `Slide`, `Box`, `Text`, `Image` e `Shape` aceita um valor fixo **ou** um objeto por breakpoint com `base` obrigatória:
+Toda prop de `Slide`, `Box`, `Text`, `Image`, `Shape`, `Chart` e `Table` aceita um valor fixo **ou** um objeto por breakpoint com `base` obrigatória:
 
 ```tsx
 <Text size={{ base: 24, tall: 28, wide: 30 }}>…</Text>
@@ -70,7 +70,7 @@ Toda prop de `Slide`, `Box`, `Text`, `Image` e `Shape` aceita um valor fixo **ou
 - **Precedência:** nome exato > `wide` > `tall` > `base`. Vale a primeira chave ativa presente no objeto; nenhuma → `base`. Um custom grande e quadrado (`13.33x10in`) é `wide` e `tall`: `wide` vence.
 - **`base` é obrigatória**: `{ tall: 24 }` não compila e, vindo de JS, é erro de estrutura `Prop "size" de <Text>: objeto responsivo sem a chave "base"`. Chave errada (`{ base: 20, tal: 24 }`) → `breakpoint desconhecido: "tal"`.
 - Não há como "desligar" uma prop num breakpoint (`{ base: '100%', tall: undefined }` resolve para `'100%'` no `tall`): escolha props que valem nos dois casos ou mude o valor, não a presença.
-- **Não são responsivos:** `src`, `kind`, `notes`, `children`, e o estilo de `Span`/`B`/`I`. `padding: { top: 10 }` e `background: { image }` (sem `base`) continuam valores comuns.
+- **Não são responsivos:** `src`, `kind`, `notes`, `children`, e o estilo de `Span`/`B`/`I`. `data` (Chart), `columns` e `rows` (Table) são objetos/arrays sem `base`: valem como valor comum, e também aceitam `{ base: …, tall: … }`. `padding: { top: 10 }` e `background: { image }` (sem `base`) continuam valores comuns.
 - **`ctx.pick(valor)`** resolve com a mesma regra no seu código, para o que não é prop de primitiva: quantos itens mostrar, texto alternativo. `items.slice(0, ctx.pick({ base: 4, tall: 6 }))`, `title={ctx.pick({ base: 'Receita', wide: 'Receita recorrente mensal' })}`.
 - Componentes repassam o valor responsivo **sem resolver** (`<Text size={size}>`); a engine resolve ao chegar na primitiva (§5).
 
@@ -88,7 +88,7 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 | `align` | `'start' \| 'center' \| 'end' \| 'stretch' \| 'baseline'` | `'stretch'` | eixo cruzado (align-items); `'baseline'` só em row (ver "Baseline" abaixo) |
 | `justify` | `'start' \| 'center' \| 'end' \| 'between' \| 'around' \| 'evenly'` | `'start'` | eixo principal |
 
-### Item flex (`Box`, `Text`, `Image`, `Shape`)
+### Item flex (`Box`, `Text`, `Image`, `Shape`, `Chart`, `Table`)
 
 | prop | tipo | padrão | nota |
 |---|---|---|---|
@@ -112,6 +112,8 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 | `B` / `I` | atalhos de `Span weight="bold"` / `Span italic` (aceitam as mesmas props) | como `Span` |
 | `Image` | `src: string` (obrigatório; relativo ao arquivo do deck), `fit?: 'contain' \| 'cover'` (padrão `'contain'`) | nenhum |
 | `Shape` | `kind: 'rect' \| 'roundRect' \| 'ellipse' \| 'line'` (obrigatório), `fill?`, `stroke?`, `strokeWidth?`, `radius?` (roundRect) | nenhum |
+| `Chart` | `kind: 'bar' \| 'line' \| 'pie'` e `data: { categories: string[], series: { name, values: number[] }[] }` (obrigatórios), `colors?` (por série; na pizza por fatia; padrão paleta cíclica), `legend?` (padrão: só com 2+ séries; pizza sempre), `showValues?` (padrão `false`), `title?`, `font?`/`size?` (12)/`color?` dos rótulos, eixos, legenda e título | nenhum |
+| `Table` | `columns: { header, width?, align? }[]` e `rows: (string \| number)[][]` (obrigatórios), `header?: { fill?, color?, weight? } \| false` (padrão: negrito sem fundo), `stripe?` (fundo da 2ª, 4ª… linha de dados), `border?` (cor de todas as bordas, 0,5 pt; sem = sem borda), `cellPadding?` (4 pt por lado), `font?`, `size?` (14), `color?`, `lineHeight?`, `minSize?`, `fit?: 'shrink' \| 'error'` (padrão `'shrink'`) | nenhum |
 
 - `Slide` ocupa o slide inteiro e é um contêiner flex (coluna por padrão).
 - `Box` sem `fill`/`stroke` é invisível (só agrupa). Com eles vira um retângulo (arredondado se `radius > 0`).
@@ -119,6 +121,9 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 - `line` vai do canto superior esquerdo ao inferior direito do frame; sem `stroke` é preta. Divisória horizontal: `<Shape kind="line" height={0} stroke="#CCCCCC" />` numa coluna.
 - `Image` com só `width` (ou só `height`) mantém a proporção. Com `grow={1}` e sem tamanho, ocupa a área toda e `fit` decide (`contain` mostra tudo, `cover` preenche e recorta). Sem tamanho nem grow: tamanho natural (px × 0.75 pt).
 - Ordem de desenho = ordem no código: decoração **antes** do conteúdo fica por trás.
+- `Chart` é um gráfico **nativo** (editável no PowerPoint/Keynote, com planilha embutida) e **não tem tamanho próprio**: dê `grow={1}` (o normal: ocupa a área), `width`/`height`, ou é erro de estrutura. `values` são números (`38.2`, com ponto); o PowerPoint formata com a vírgula do idioma e com as casas decimais do maior número de casas dos dados. Cada série tem um valor por categoria. `pie` aceita **uma** série (cada categoria é uma fatia).
+- `Table` é uma tabela **nativa** medida pela engine: a largura vem do flex (como um Box; numa coluna, a largura toda), a altura é a soma das linhas, e cada linha tem a altura da célula mais alta + 2 × `cellPadding`. Colunas: `width` em pt fica fixa, em `'%'` é fração da largura da tabela; as **sem `width` dividem o resto igualmente**. `align` vale para a coluna inteira (cabeçalho junto). Cada linha de `rows` tem uma célula por coluna; números viram texto, strings ficam como estão (`'18,6'`, `'+21,5%'`; NBSP e `\n` valem como no `Text`).
+- A `Table` encolhe como **uma unidade** (todas as células com o mesmo `size`, junto com os `Text` do slide), com `size`/`minSize`/`fit` iguais aos do `Text` (§4), exceto que não há `truncate`: ou encolhe ou é `table-overflow`. Uma tabela não pagina e não quebra entre slides.
 
 ### Baseline (`align="baseline"`)
 
@@ -321,7 +326,7 @@ Largura útil do cartão = largura do cartão − 2 × padding. Ex.: 3 cards `md
 
 ## 6. Receitas
 
-Os trechos abaixo são filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape` de `'pptsx'` e `TwoColumn`, `KpiCard` de `'../components/index.ts'` quando usados).
+Os trechos abaixo são filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape`, `Chart`, `Table` de `'pptsx'` e `TwoColumn`, `KpiCard` de `'../components/index.ts'` quando usados).
 
 ### 6.1 Conteúdo com bullets, só primitivas
 
@@ -426,6 +431,59 @@ Decoração vem **antes** do conteúdo (fica por trás) e usa `position="absolut
 
 Com os 12 itens de `examples/long-list.tsx` (2 linhas cada em 16:9), 16:9 vira 3 slides com o mesmo título (4 itens cada) e 4:3 vira 2 (6 cada); itens de 1 linha cabem mais por parte. O encerramento passa a ser o slide 4 (ou 3) da saída. Leia `data.parts` e a mensagem do `slide-continued` para saber a divisão real; se a última parte ficar com poucos itens, veja "Partes desequilibradas" na §3. Prefira isso a baixar `minSize` até a lista caber.
 
+### 6.8 Gráfico nativo no lugar da imagem
+
+```tsx
+<ContentLayout title="Receita recorrente em alta">
+  <TwoColumn
+    direction={{ base: 'row', tall: 'column' }}
+    ratio={0.45}
+    left={<Bullets size={{ base: 18, wide: 22 }} items={['Quarto trimestre seguido de crescimento.', 'Churn caiu para 1,8%.']} />}
+    right={
+      <Chart
+        kind="bar"
+        data={{
+          categories: ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026'],
+          series: [{ name: 'Receita (R$\u00A0mi)', values: [38.2, 41.5, 45.9, 52.4] }],
+        }}
+        colors={[color.accent]}
+        showValues
+        grow={1}
+      />
+    }
+  />
+</ContentLayout>
+```
+
+É o slide 3 de `examples/demo.tsx`. Prefira `Chart` a um PNG de gráfico: quem recebe o `.pptx` edita os dados, e o gráfico ocupa a área inteira (`grow={1}`) em qualquer tamanho, sem a proporção fixa da imagem. Duas séries (`[{ name: 'Realizado', … }, { name: 'Meta', … }]`) ganham legenda sozinhas; `title="…"` põe um título dentro do gráfico. `kind="line"` para tendência, `kind="pie"` com uma série para composição. Mais exemplos em `examples/charts.tsx`.
+
+### 6.9 Tabela de resultados
+
+```tsx
+<ContentLayout title="Receita por área">
+  <Table
+    columns={[
+      { header: 'Área', width: '40%' },
+      { header: 'Q2 (R$\u00A0mi)', align: 'right' },
+      { header: 'Q3 (R$\u00A0mi)', align: 'right' },
+      { header: 'Δ', align: 'right' },
+    ]}
+    rows={[
+      ['Varejo', '18,6', '22,6', '+21,5%'],
+      ['Crédito', '9,8', '10,4', '+6,1%'],
+      ['Seguros', '6,1', '6,8', '+11,5%'],
+    ]}
+    size={{ base: font.small, tall: font.small + 2, wide: font.small + 2 }}
+    color={color.ink}
+    header={{ fill: color.brand, color: color.white }}
+    stripe={color.surface}
+    border={color.muted}
+  />
+</ContentLayout>
+```
+
+A 1ª coluna fica com 40% e as outras três dividem os 60% restantes. Números alinhados à direita, escritos como string para manter a vírgula e o sinal. A tabela ocupa só a altura das linhas (o resto do corpo fica vazio); se não couber, encolhe junto com o slide e, abaixo do mínimo, vira `table-overflow` (§8). Mais de ~10 linhas num slide 16:9: divida em dois slides ou mostre só as principais.
+
 ## 7. CLI e fluxo de trabalho
 
 Dois cenários; o fluxo (build → ler diagnósticos → corrigir) é o mesmo.
@@ -444,7 +502,7 @@ node bin/pptsx.mjs build examples/agent-test/meu-deck.tsx --size 16x9,4x3,wide -
 npx pptsx build deck.tsx --size 16x9,4x3 --json
 ```
 
-Flags: `--size` (lista: `16x9`, `16x10`, `4x3`, `wide`, ou `10x7.5in`; padrão `16x9`), `--out` (padrão `dist/`), `--debug` (contornos vermelhos tracejados em toda Box/Text/Image e estouro de texto em vermelho no PNG), `--json`, `--preview native|none`, `--preview-width 1280`, `--lang pt-BR`, `--line-breaks forced|auto` (padrão `forced`: cada linha medida vira quebra manual, igual ao PNG; `auto` deixa o PowerPoint requebrar, mais editável, pode divergir 1 linha), `--watch` (build inicial e rebuild a cada mudança salva na pasta do deck ou na config; componentes e tokens importados recarregam; com `--json`, **um JSON por linha** por build; Ctrl-C sai com 0), `--embed-fonts` (embute no `.pptx` as fontes registradas que o deck usa; só o PowerPoint respeita, o Keynote ignora; ver §4 "Fontes").
+Flags: `--size` (lista: `16x9`, `16x10`, `4x3`, `wide`, ou `10x7.5in`; padrão `16x9`), `--out` (padrão `dist/`), `--debug` (contornos vermelhos tracejados em toda Box/Text/Image/Chart/Table e estouro de texto ou tabela em vermelho no PNG), `--json`, `--preview native|none`, `--preview-width 1280`, `--lang pt-BR`, `--line-breaks forced|auto` (padrão `forced`: cada linha medida vira quebra manual, igual ao PNG; `auto` deixa o PowerPoint requebrar, mais editável, pode divergir 1 linha), `--watch` (build inicial e rebuild a cada mudança salva na pasta do deck ou na config; componentes e tokens importados recarregam; com `--json`, **um JSON por linha** por build; Ctrl-C sai com 0), `--embed-fonts` (embute no `.pptx` as fontes registradas que o deck usa; só o PowerPoint respeita, o Keynote ignora; ver §4 "Fontes").
 
 `pptsx init [dir] [--force] [--json]`: recusa se `deck.tsx` já existe (salvo `--force`); com `--json`, stdout é `{ "files": [...] }`.
 
@@ -483,7 +541,7 @@ Formato (cada item de `diagnostics.json` / `diagnostics` do `--json`):
 
 `slide` começa em 1 e é o índice no **arquivo gerado** (deck de saída). Sem `paginate` coincide com a ordem no `<Deck>`; com paginação, os slides depois de um slide paginado andam, e o diagnóstico traz `data.sourceSlide` = índice no `<Deck>` do autor (presente em toda parte de uma paginação e sempre que os dois índices diferem). `severity`: `error` (precisa corrigir), `warning` (aceitável se intencional), `info` (só aviso).
 
-Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou), `fromSize`/`toSize` (size do autor → size final), `axis` (`"width"` no `text-overflow` de um `Text` com `nowrap` que não cabe na largura; ausente = altura) e:
+Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou), `fromSize`/`toSize` (size do autor → size final), `axis` (`"width"` no `text-overflow` de um `Text` com `nowrap` que não cabe na largura; ausente = altura), `shownRows`/`totalRows` (`table-overflow`: linhas de dados que cabem inteiras / total, sem contar o cabeçalho) e:
 
 - `causedBy`: path do nó que **provocou** este estouro (um irmão que pede mais espaço do que há e espreme os outros). Este diagnóstico é **consequência**: corrija a causa primeiro; os derivados costumam sumir sozinhos. A causa em si não tem `causedBy`. Só `text-overflow` e `box-overflow` recebem.
 - `sourceSlide` e `parts`: ver `slide` acima e `slide-continued` abaixo. Para achar o slide no seu código, use `sourceSlide` quando existir.
@@ -492,7 +550,7 @@ Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou)
 ### Como ler o `path`
 
 - Segmentos separados por ` > `, do slide até o nó. O `Deck` não aparece.
-- Segmento = nome da primitiva (`Slide`, `Box`, `Text`, `Image`, `Shape`) **ou o nome do componente** que devolveu aquele nó (`CoverLayout`, `Bullets`, ou o seu `MeuCard`). O primeiro segmento é `Slide` ou o layout que devolveu o slide.
+- Segmento = nome da primitiva (`Slide`, `Box`, `Text`, `Image`, `Shape`, `Chart`, `Table`) **ou o nome do componente** que devolveu aquele nó (`CoverLayout`, `Bullets`, ou o seu `MeuCard`). O primeiro segmento é `Slide` ou o layout que devolveu o slide.
 - `[i]` aparece quando o pai tem mais de um filho com o mesmo segmento: é o índice **entre esses irmãos homônimos**, começando em 0.
 - Exemplo: `ContentLayout > Box[1] > Bullets > Box[2] > Text` = no slide do ContentLayout, segundo `Box` filho do slide (o corpo), dentro dele o `Bullets`, o terceiro item, o Text do item.
 - Dica: dê nomes a componentes seus (`const Agenda = () => …`): o path fica legível. Funções anônimas viram `Anonymous`.
@@ -501,9 +559,10 @@ Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou)
 
 | code | severity | causa | correção típica |
 |---|---|---|---|
-| `text-shrunk` | info | o texto foi reduzido e coube | nada; se a fonte ficou pequena, encurte o texto ou dê mais área |
+| `text-shrunk` | info | o texto (ou a tabela inteira, no path da `Table`: "Tabela reduzida de…") foi reduzido e coube | nada; se a fonte ficou pequena, encurte o texto ou dê mais área |
 | `text-overflow` | error | `shrink` chegou em `minSize` e ainda não cabe, `fit="error"` estourou, ou a área do texto é 0 pt. Com `data.axis: "width"`: um `nowrap` mais largo que a área | com `causedBy`: corrija a causa primeiro. Senão: encurte o texto; dê área (`grow={1}` no contêiner, menos padding/gap, menos irmãos); baixe `minSize`; divida em dois slides; ou use `fit="truncate"`. Área 0 pt: tire `grow` do Text em coluna (§9). Largura (`nowrap`): encurte, alargue a área ou tire `nowrap` (NBSP cola só as palavras que importam) |
-| `text-word-broken` | warning | palavra ou número sem espaço mais largo que a linha, partido por caractere (mesmo no mínimo, no `shrink`) | abrevie ("R$ 52,4 mi"); dê largura (menos colunas, `grow`); `size="sm"` no `KpiCard`; ou size menor |
+| `text-word-broken` | warning | palavra ou número sem espaço mais largo que a linha, partido por caractere (mesmo no mínimo, no `shrink`). Numa `Table`: no path da tabela, citando a coluna (`na coluna "Código"`) | abrevie ("R$ 52,4 mi"); dê largura (menos colunas, `grow`); `size="sm"` no `KpiCard`; ou size menor. Tabela: `width` maior nessa coluna ou menos colunas |
+| `table-overflow` | error | a `Table` não cabe na altura nem no `minSize` (ou com `fit="error"`); `data.shownRows` de `data.totalRows` linhas cabem inteiras | menos linhas (divida em dois slides), texto mais curto nas células, mais área (`grow`, menos irmãos), ou `minSize` menor |
 | `text-illegible` | warning | o `shrink` reduziu o texto abaixo de 10 pt (só com `minSize` explícito < 10) | encurte o texto ou dê mais área; se a fonte pequena é intencional, ignore |
 | `text-truncated` | warning | `truncate`/`maxLines` cortou com `…` | se não era a intenção: encurte, aumente a área ou `maxLines` |
 | `box-overflow` | error | tamanhos fixos (com `shrink={0}`), gap e padding somam mais que o contêiner | reduza `width`/`height` fixos ou gap/padding; troque fixos por `grow`/`%`; tire `shrink={0}`; empilhe em 4:3 |
@@ -532,6 +591,12 @@ Mensagens reais:
   Texto reduzido de 20 pt para 19 pt para caber na área. Se a redução incomodar, encurte o conteúdo ou aumente a área. (×4: mesmo problema em Box[0..3])
 ▲ text-word-broken em ContentLayout > Box[1] > KpiRow > KpiCard[0,1,2,4] > Text[1]
   Palavra partida no meio por falta de largura: "52.400.000,00" não cabe inteira numa linha de 72 pt mesmo reduzido de 44 pt para 28 pt. Encurte a palavra/valor (abrevie, ex.: "R$ 52,4 mi"), alargue a área (menos colunas, grow, width maior) ou reduza o size. (×4: mesmo problema em KpiCard[0,1,2,4])
+• text-shrunk em ContentLayout > Box[1] > Box > Table
+  Tabela reduzida de 14 pt para 12 pt para caber na área. Se a redução incomodar, encurte o texto das células, reduza linhas/colunas ou aumente a área.
+✖ table-overflow em ContentLayout > Box[1] > Box > Table
+  Tabela estourou 41.5 pt (25.9%) da altura disponível mesmo em 10 pt (mínimo): 9 de 12 linhas cabem inteiras. Reduza linhas/colunas, encurte o texto das células, aumente a área ou baixe minSize.
+▲ text-word-broken em Slide > Box > Table
+  Palavras partidas no meio por falta de largura na tabela: "52.400.000,00" não cabe inteira numa linha de 42 pt na coluna "Valor" mesmo com a tabela reduzida de 14 pt para 10 pt. Encurte a palavra/valor (abrevie, ex.: "R$ 52,4 mi"), alargue a coluna (width da coluna, tabela mais larga ou menos colunas) ou reduza o size.
 ▲ text-illegible em Slide > Text
   Texto reduzido de 11 pt para 8 pt, abaixo do piso legível de 10 pt; encurte o conteúdo, aumente a área ou aceite com minSize explícito.
 ▲ text-truncated em Slide > Text
@@ -574,7 +639,14 @@ Texto "Olá" fora de <Text>; envolva o conteúdo em <Text> (em Slide > Box)
 <Span> só pode aparecer dentro de <Text> (em Slide > Box)
 ```
 
-Também: `Filhos de <Deck> têm que ser <Slide>…`, `<Image> não aceita filhos`.
+Também: `Filhos de <Deck> têm que ser <Slide>…`, `<Image> não aceita filhos` (idem `<Chart>`, `<Table>`), e os de dados:
+
+```
+<Chart> precisa de width, height ou grow: um gráfico não tem tamanho próprio (em Slide > Chart)
+<Chart>: a série "Receita" tem 3 valores para 4 categorias
+<Chart kind="pie"> aceita uma única série; recebeu 2
+<Table>: a linha 3 tem 3 células para 4 colunas
+```
 
 Sem duplicatas: um texto estourado é reportado no `Text`, não na Box pai; algo que sai do slide no nível do `Slide` vira `out-of-slide`, não `box-overflow`.
 
@@ -625,3 +697,7 @@ Sem duplicatas: um texto estourado é reportado no `Text`, não na Box pai; algo
 - **`position="absolute"` para posicionar conteúdo**: não faça; absoluto é só decoração (não participa do layout nem dos diagnósticos de caixa). Conteúdo vai em fluxo.
 - **`fit="error"`** só se você quer ser avisado em vez de ajuste; o padrão `shrink` é o mais seguro.
 - **Caminhos de imagem** são relativos ao arquivo do deck: de `examples/agent-test/`, use `'../assets/chart.png'`.
+- **`Chart` sem tamanho** é erro de estrutura ("um gráfico não tem tamanho próprio"): dê `grow={1}` (ou `width`/`height`). Numa coluna de altura pelo conteúdo, `grow` não tem o que ocupar: o gráfico vai no corpo do slide (`grow={1}` até ele) ou com `height` fixo.
+- **O gráfico real não é o do PNG**: o PowerPoint e o Keynote redesenham o gráfico dentro do frame (margens internas, área de plotagem, posição dos rótulos e da legenda são deles). O preview é uma aproximação para conferir dados e proporções; não ajuste números pelo PNG.
+- **Vírgula decimal**: no `Chart`, `values` são números (`52.4`; `'52,4'` não compila); na `Table`, células são texto e você escreve como quer ver (`'52,4'`, `'+14,2%'`). Número na célula vira `String(n)` (`52.4` sai com ponto).
+- **Tabela larga demais**: muitas colunas dividem a largura e partem palavras (`text-word-broken` "na coluna …"). Dê `width` às colunas de texto longo (`'40%'`), corte colunas, ou deixe a tabela sozinha no slide em vez de numa `TwoColumn`.

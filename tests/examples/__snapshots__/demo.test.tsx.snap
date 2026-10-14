@@ -62,7 +62,7 @@ exports[`examples/demo.tsx — resolved tree > snapshot of the resolved path tre
     "ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Box > Shape",
     "ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Text",
     "ContentLayout > Box[1] > TwoColumn > Box[1]",
-    "ContentLayout > Box[1] > TwoColumn > Box[1] > Image",
+    "ContentLayout > Box[1] > TwoColumn > Box[1] > Chart",
   ],
   [
     "ContentLayout",
@@ -87,6 +87,14 @@ exports[`examples/demo.tsx — resolved tree > snapshot of the resolved path tre
     "ContentLayout > Box[1] > Box > Box",
     "ContentLayout > Box[1] > Box > Box > Shape",
     "ContentLayout > Box[1] > Box > Box > Text",
+  ],
+  [
+    "ContentLayout",
+    "ContentLayout > Box[0]",
+    "ContentLayout > Box[0] > Shape",
+    "ContentLayout > Box[0] > Text",
+    "ContentLayout > Box[1]",
+    "ContentLayout > Box[1] > Table",
   ],
   [
     "ClosingLayout",
@@ -162,7 +170,7 @@ exports[`examples/demo.tsx — resolved tree > snapshot of the resolved path tre
     "ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Box > Shape",
     "ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Text",
     "ContentLayout > Box[1] > TwoColumn > Box[1]",
-    "ContentLayout > Box[1] > TwoColumn > Box[1] > Image",
+    "ContentLayout > Box[1] > TwoColumn > Box[1] > Chart",
   ],
   [
     "ContentLayout",
@@ -187,6 +195,14 @@ exports[`examples/demo.tsx — resolved tree > snapshot of the resolved path tre
     "ContentLayout > Box[1] > Box > Box",
     "ContentLayout > Box[1] > Box > Box > Shape",
     "ContentLayout > Box[1] > Box > Box > Text",
+  ],
+  [
+    "ContentLayout",
+    "ContentLayout > Box[0]",
+    "ContentLayout > Box[0] > Shape",
+    "ContentLayout > Box[0] > Text",
+    "ContentLayout > Box[1]",
+    "ContentLayout > Box[1] > Table",
   ],
   [
     "ClosingLayout",

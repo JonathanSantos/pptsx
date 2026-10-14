@@ -60,7 +60,7 @@
       {"path":"ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Box > Shape","kind":"shape","frame":{"x":40,"y":221.14,"width":8,"height":8}},
       {"path":"ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Text","kind":"text","frame":{"x":62,"y":214.79,"width":252.5,"height":41.4},"fontSize":18,"lines":2},
       {"path":"ContentLayout > Box[1] > TwoColumn > Box[1]","kind":"box","frame":{"x":344.5,"y":106.8,"width":335.5,"height":258.2}},
-      {"path":"ContentLayout > Box[1] > TwoColumn > Box[1] > Image","kind":"image","frame":{"x":344.5,"y":106.8,"width":335.5,"height":218.07}}
+      {"path":"ContentLayout > Box[1] > TwoColumn > Box[1] > Chart","kind":"chart","frame":{"x":344.5,"y":106.8,"width":335.5,"height":258.2}}
     ],
     [
       {"path":"ContentLayout","kind":"slide","frame":{"x":0,"y":0,"width":720,"height":405}},
@@ -85,6 +85,14 @@
       {"path":"ContentLayout > Box[1] > Box > Box","kind":"box","frame":{"x":40,"y":279.59,"width":512,"height":36.8}},
       {"path":"ContentLayout > Box[1] > Box > Box > Shape","kind":"shape","frame":{"x":40,"y":279.59,"width":4,"height":36.8}},
       {"path":"ContentLayout > Box[1] > Box > Box > Text","kind":"text","frame":{"x":58,"y":279.59,"width":494,"height":36.8},"fontSize":16,"lines":2}
+    ],
+    [
+      {"path":"ContentLayout","kind":"slide","frame":{"x":0,"y":0,"width":720,"height":405}},
+      {"path":"ContentLayout > Box[0]","kind":"box","frame":{"x":40,"y":40,"width":640,"height":36.8}},
+      {"path":"ContentLayout > Box[0] > Shape","kind":"shape","frame":{"x":40,"y":40.4,"width":6,"height":36}},
+      {"path":"ContentLayout > Box[0] > Text","kind":"text","frame":{"x":60,"y":40,"width":620,"height":36.8},"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box[1]","kind":"box","frame":{"x":40,"y":106.8,"width":640,"height":258.2}},
+      {"path":"ContentLayout > Box[1] > Table","kind":"table","frame":{"x":40,"y":106.8,"width":640,"height":168.69}}
     ],
     [
       {"path":"ClosingLayout","kind":"slide","frame":{"x":0,"y":0,"width":720,"height":405}},
@@ -157,7 +165,7 @@
       {"path":"ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Box > Shape","kind":"shape","frame":{"x":40,"y":179.74,"width":8,"height":8}},
       {"path":"ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Text","kind":"text","frame":{"x":62,"y":173.39,"width":618,"height":20.7},"fontSize":18,"lines":1},
       {"path":"ContentLayout > Box[1] > TwoColumn > Box[1]","kind":"box","frame":{"x":40,"y":214.09,"width":640,"height":285.91}},
-      {"path":"ContentLayout > Box[1] > TwoColumn > Box[1] > Image","kind":"image","frame":{"x":40,"y":214.09,"width":439.86,"height":285.91}}
+      {"path":"ContentLayout > Box[1] > TwoColumn > Box[1] > Chart","kind":"chart","frame":{"x":40,"y":214.09,"width":640,"height":285.91}}
     ],
     [
       {"path":"ContentLayout","kind":"slide","frame":{"x":0,"y":0,"width":720,"height":540}},
@@ -182,6 +190,14 @@
       {"path":"ContentLayout > Box[1] > Box > Box","kind":"box","frame":{"x":40,"y":301.99,"width":512,"height":41.4}},
       {"path":"ContentLayout > Box[1] > Box > Box > Shape","kind":"shape","frame":{"x":40,"y":301.99,"width":4,"height":41.4}},
       {"path":"ContentLayout > Box[1] > Box > Box > Text","kind":"text","frame":{"x":58,"y":301.99,"width":494,"height":41.4},"fontSize":18,"lines":2}
+    ],
+    [
+      {"path":"ContentLayout","kind":"slide","frame":{"x":0,"y":0,"width":720,"height":540}},
+      {"path":"ContentLayout > Box[0]","kind":"box","frame":{"x":40,"y":40,"width":640,"height":36.8}},
+      {"path":"ContentLayout > Box[0] > Shape","kind":"shape","frame":{"x":40,"y":40.4,"width":6,"height":36}},
+      {"path":"ContentLayout > Box[0] > Text","kind":"text","frame":{"x":60,"y":40,"width":620,"height":36.8},"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box[1]","kind":"box","frame":{"x":40,"y":106.8,"width":640,"height":393.2}},
+      {"path":"ContentLayout > Box[1] > Table","kind":"table","frame":{"x":40,"y":106.8,"width":640,"height":184.79}}
     ],
     [
       {"path":"ClosingLayout","kind":"slide","frame":{"x":0,"y":0,"width":720,"height":540}},
@@ -254,7 +270,7 @@
       {"path":"ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Box > Shape","kind":"shape","frame":{"x":40,"y":247.44,"width":8,"height":8}},
       {"path":"ContentLayout > Box[1] > TwoColumn > Box[0] > Bullets > Box[2] > Text","kind":"text","frame":{"x":62,"y":238.79,"width":360.5,"height":25.3},"fontSize":22,"lines":1},
       {"path":"ContentLayout > Box[1] > TwoColumn > Box[1]","kind":"box","frame":{"x":452.5,"y":106.8,"width":467.5,"height":393.2}},
-      {"path":"ContentLayout > Box[1] > TwoColumn > Box[1] > Image","kind":"image","frame":{"x":452.5,"y":106.8,"width":467.5,"height":303.88}}
+      {"path":"ContentLayout > Box[1] > TwoColumn > Box[1] > Chart","kind":"chart","frame":{"x":452.5,"y":106.8,"width":467.5,"height":393.2}}
     ],
     [
       {"path":"ContentLayout","kind":"slide","frame":{"x":0,"y":0,"width":960,"height":540}},
@@ -279,6 +295,14 @@
       {"path":"ContentLayout > Box[1] > Box > Box","kind":"box","frame":{"x":40,"y":301.99,"width":704,"height":41.4}},
       {"path":"ContentLayout > Box[1] > Box > Box > Shape","kind":"shape","frame":{"x":40,"y":301.99,"width":4,"height":41.4}},
       {"path":"ContentLayout > Box[1] > Box > Box > Text","kind":"text","frame":{"x":58,"y":301.99,"width":686,"height":41.4},"fontSize":18,"lines":2}
+    ],
+    [
+      {"path":"ContentLayout","kind":"slide","frame":{"x":0,"y":0,"width":960,"height":540}},
+      {"path":"ContentLayout > Box[0]","kind":"box","frame":{"x":40,"y":40,"width":880,"height":36.8}},
+      {"path":"ContentLayout > Box[0] > Shape","kind":"shape","frame":{"x":40,"y":40.4,"width":6,"height":36}},
+      {"path":"ContentLayout > Box[0] > Text","kind":"text","frame":{"x":60,"y":40,"width":860,"height":36.8},"fontSize":32,"lines":1},
+      {"path":"ContentLayout > Box[1]","kind":"box","frame":{"x":40,"y":106.8,"width":880,"height":393.2}},
+      {"path":"ContentLayout > Box[1] > Table","kind":"table","frame":{"x":40,"y":106.8,"width":880,"height":184.79}}
     ],
     [
       {"path":"ClosingLayout","kind":"slide","frame":{"x":0,"y":0,"width":960,"height":540}},
