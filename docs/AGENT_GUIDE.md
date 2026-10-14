@@ -87,7 +87,7 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 | tema | props | notas |
 |---|---|---|
 | Display | `display="flex" \| "block" \| "grid" \| "none"` | `block` = coluna com colapso de margens verticais entre irmãos; `none` não emite o nó (os irmãos mantêm o índice no path) |
-| Caixa | `width`, `height`, `minWidth`, `maxWidth`, `minHeight`, `maxHeight`, `aspectRatio`, `margin` (`marginTop="auto"` empurra), `padding`, `border`, `borderTop/Right/Bottom/Left`, `borderWidth/Color/Style` (`solid`/`dashed`/`dotted`), `borderRadius` (número) | vale em `Box`, `Text`, `Image`, `Table`: uma "pílula" é um `<Text padding backgroundColor borderRadius>`. Borda ocupa espaço (como no CSS) |
+| Caixa | `width`, `height`, `minWidth`, `maxWidth`, `minHeight`, `maxHeight`, `aspectRatio`, `margin` (`marginTop="auto"` empurra), `padding`, `border`, `borderTop/Right/Bottom/Left`, `borderWidth/Color/Style` (`solid`/`dashed`/`dotted`), `borderRadius` (número) | vale em `Box`, `Text`, `Image`, `Table`: uma "pílula" é um `<Text padding backgroundColor borderRadius>`. Borda ocupa espaço (como no CSS). `borderRadius` só sai com borda **igual** nos quatro lados (ou sem borda): com `borderTop`/`borderLeft` isolado o fundo arredonda mas a linha sai reta → `css-not-emitted`. Cartão com faixa colorida: `borderTop` **sem** `borderRadius`, ou `borderRadius` + `boxShadow` sem borda por lado |
 | Flex | `flexDirection`, `flexWrap="wrap"`, `gap` / `rowGap` / `columnGap`, `justifyContent`, `alignItems`, `alignContent`, `alignSelf`, `flex={1}`, `flexGrow`, `flexShrink`, `flexBasis`, `order` | valores CSS: `'flex-start'`, `'center'`, `'flex-end'`, `'space-between'`, `'space-around'`, `'space-evenly'`, `'stretch'`, `'baseline'` (`'start'`/`'end'` também valem) |
 | Grid | `gridTemplateColumns/Rows` (pt, `%`, `fr`, `auto`, `min-content`, `max-content`, `minmax(a, b)`, `repeat(n, …)`), `gridAutoRows/Columns`, `gap`; no item: `gridColumn="1 / 3"`, `"span 2"`, `"2 / -1"`, `gridRow`, `justifySelf`, `alignSelf`, `placeItems/placeSelf` | auto-placement por linhas; itens esticam na célula por padrão |
 | Posição | `position="relative" \| "absolute"`, `top/right/bottom/left/inset`, `zIndex` | absoluto mede pela borda do pai e sai do fluxo (só para **decoração**: não gera diagnóstico de caixa). Ordem de pintura abaixo |
@@ -146,6 +146,7 @@ Baseline de cada filho: `Text` = 1ª linha; `Box` = a do 1º filho em fluxo; `Im
 - Os paths dos itens **não mudam** nas partes: o 8º item é `Box[7]` na parte 2 também.
 - Cada parte é um slide no `.pptx`, no overview e nos diagnósticos; a 1ª recebe `slide-continued` (info) com `data.parts`.
 - **Partes desequilibradas:** a divisão é gulosa (12 itens podem virar 10 + 2). Aumente `fontSize`/`gap` dos itens no breakpoint em que sobrou espaço e confira a contagem na mensagem do `slide-continued` ("7 de 12 itens no 1º, 5 no 2º").
+- **Só primitivas:** `<Slide …><Text>Título</Text><Box paginate flex={1} gap={12}>{itens}</Box><Text marginTop="auto">Rodapé</Text></Slide>`. Título e rodapé (irmãos do Box) se repetem em cada parte; `flex={1}` no Box dá a ele a altura que sobra.
 - **Nada cabe** (nem o 1º item): o slide fica inteiro, o shrink volta e saem os diagnósticos normais. **Limite de 10 partes:** a 10ª leva o resto e recebe `box-overflow`.
 
 ### Regras de flex e grid que mais importam
@@ -315,7 +316,7 @@ Trechos filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports 
 </Slide>
 ```
 
-Linhas `auto` por padrão: cada linha tem a altura do cartão mais alto, e os cartões esticam nela.
+Linhas `auto` por padrão: cada linha tem a altura do cartão mais alto, e os cartões esticam nela. Para os cartões ocuparem a altura que sobra do slide (qualquer número de linhas): `flex={1}` no grid + `gridAutoRows="minmax(0, 1fr)"`, e `justifyContent="center"` no cartão.
 
 ### 6.3 Duas colunas que empilham em 4:3
 
@@ -495,7 +496,7 @@ Campos de `data` (opcionais): `overflowPt`/`overflowPct`, `fromSize`/`toSize`, `
 | `text-truncated` | warning | `truncate`/`maxLines` cortou com `…` | se não era a intenção: encurte ou aumente a área |
 | `box-overflow` | error | filhos em fluxo (tamanhos fixos, margens, gap, padding, borda) somam mais que a área de conteúdo; linhas do wrap que não cabem; item maior que a sua **célula de grid** | reduza fixos/gap/margens; `flexShrink` volta a 1; troque fixos por `flex`/`%`; no grid, track `auto` ou `minmax(auto, …)`; no wrap, dê altura ou menos itens |
 | `out-of-slide` | error | nó **em fluxo** fora do slide | reduza; use `%`/`flex`; decoração → `position="absolute"` |
-| `css-not-emitted` | warning | propriedade CSS sem de/para no PPTX (`overflow: hidden`, gradiente, `filter`, `scale`/`skew`, sombra `inset`/`spread`/múltipla, sombra sem fundo, raio por canto, `fontWeight` 100–500/800–900, track fora do subconjunto, rotate em Chart/Table, propriedade desconhecida). O preview também não desenha | remova ou troque por uma suportada (§3); se o efeito é dispensável, ignore |
+| `css-not-emitted` | warning | propriedade CSS sem de/para no PPTX (`overflow: hidden`, gradiente, `filter`, `scale`/`skew`, sombra `inset`/`spread`/múltipla, sombra sem fundo, raio por canto, raio com bordas diferentes por lado, `fontWeight` 100–500/800–900, track fora do subconjunto, rotate em Chart/Table, propriedade desconhecida). O preview também não desenha | remova ou troque por uma suportada (§3); se o efeito é dispensável, ignore |
 | `slide-continued` | info | um `Box paginate` virou `data.parts` slides | nada; partes desequilibradas → `fontSize`/`gap` responsivos |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi | arquivo com mais resolução ou área menor |
 | `font-missing` | error | família não registrada ou não achada; único diagnóstico desse Text | tire `fontFamily` (Arial), registre a face ou instale |
@@ -572,6 +573,8 @@ Texto "Olá" fora de <Text>; envolva o conteúdo em <Text> (em Slide > Box)
 - **`display="flex"` é row**: um `Box` sem `display` empilha; com `display="flex"` os filhos ficam lado a lado. Para coluna explícita: `flexDirection="column"`.
 - **Decoração absoluta sem `zIndex={-1}` pinta por cima** do conteúdo (regra do browser). Toda elipse/forma de fundo leva `zIndex={-1}`.
 - **`overflow: hidden` não recorta**: o PPTX não tem recorte; vira `css-not-emitted` e os filhos saem inteiros. Dimensione o conteúdo para caber.
+- **`borderRadius` + borda só de um lado** não sai no PPTX (a linha sai reta): use `borderTop` sem raio, ou raio + `boxShadow` (§3).
+- **Dois `marginTop="auto"` irmãos** dividem o espaço livre igualmente (como no CSS).
 - **`1fr` cresce com a palavra mais longa**: cartões com valores longos num grid `repeat(n, 1fr)` empurram o grid para fora do slide. Use `repeat(n, minmax(0, 1fr))` (§3).
 - **`Chart` sem tamanho** é erro de estrutura: `flex={1}`, `width`/`height` ou célula de grid. Numa coluna de altura pelo conteúdo, `flex` não tem o que ocupar.
 - **`flex={1}` em Text dentro de coluna** de altura pelo conteúdo colapsa o texto (área 0 pt → `text-overflow` "A área disponível para o texto é 0 pt"). Use `flex` em Text só em row.
@@ -595,7 +598,7 @@ Texto "Olá" fora de <Text>; envolva o conteúdo em <Text> (em Slide > Box)
 
 ## Apêndice — Migração das props antigas → CSS
 
-As props antigas continuam aceitas como alias (resolvidas para CSS), mas saem numa versão futura. Ao mexer num deck antigo, troque assim:
+As props antigas continuam aceitas como alias (resolvidas para CSS), mas saem numa versão futura. **Não são aliases (continuam válidas):** `size` de `Bullets`/`KpiCard`/`KpiRow`/`Chart`, `justify` de `ContentLayout`, `radius`/`stroke`/`strokeWidth` de `Shape`, `fill` em `Table.header`, `fit`/`minSize`/`maxLines`/`nowrap` de `Text`. Ao mexer num deck antigo, troque assim:
 
 | antiga | CSS | nota |
 |---|---|---|

@@ -93,7 +93,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M11 | M11-E | testes da PoC em tests/; semânticas novas | ✅ |
 | M11 | M11-F | exemplos em CSS, showcase, AGENT_GUIDE e README em CSS | ✅ |
 | M11 | M11-G | visual: demo antiga × CSS × PNGs; showcase; recalibração de lineHeight | ⬜ |
-| M11 | M11-H | agente virgem com o guia novo | ⬜ |
+| M11 | M11-H | agente virgem: deck de 4 slides com grid, herança, margin auto, wrap, zIndex e paginate em 3 builds (1º já exit 0); 3 lacunas do guia aplicadas | ✅ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
 
