@@ -13,6 +13,17 @@
  *   PositionedSlide     -> SVG -> PNG / overview   (preview)
  */
 
+import type {
+  CssBoxPropsAuthor,
+  CssChartPropsAuthor,
+  CssImagePropsAuthor,
+  CssShapePropsAuthor,
+  CssSlideProps,
+  CssSpanProps,
+  CssTablePropsAuthor,
+  CssTextPropsAuthor,
+} from './css-props.ts';
+
 // ───────────────────────── Unidades e valores básicos ─────────────────────────
 
 /** Pontos tipográficos. 1 pol = 72 pt. */
@@ -175,8 +186,11 @@ export interface TextStyleProps {
   readonly italic?: boolean;
   /** padrão '#000000' */
   readonly color?: Color;
-  /** Multiplicador sobre a altura natural da fonte; padrão 1. */
-  readonly lineHeight?: number;
+  /**
+   * M11 (semântica CSS): 'normal' (padrão) = altura natural da face (ascent − descent + lineGap);
+   * número = múltiplo do fontSize (1.2 em 20 pt = 24 pt por linha), com meia-entrelinha acima e abaixo.
+   */
+  readonly lineHeight?: number | 'normal';
   readonly align?: TextAlign;
 }
 
@@ -297,6 +311,145 @@ export interface TableProps extends FlexItemProps, Pick<TextStyleProps, 'font' |
   readonly minSize?: Pt;
 }
 
+// ───────────────────────── Valores CSS (M11) ─────────────────────────
+// Estilo normalizado que o resolve produz e o layout/pintura consomem. Vindo da PoC (docs/work/poc).
+
+/** Comprimento normalizado: número = pt; string = percentual do pai. */
+export type Len = number | `${number}%`;
+export type MarginLen = Len | 'auto';
+
+export interface Sides<T> {
+  readonly top: T;
+  readonly right: T;
+  readonly bottom: T;
+  readonly left: T;
+}
+
+export type Side = keyof Sides<unknown>;
+
+export type BorderStyle = 'solid' | 'dashed' | 'dotted' | 'none';
+
+export interface BorderSide {
+  readonly width: Pt;
+  readonly style: BorderStyle;
+  /** Hex '#RRGGBB'; undefined = currentColor (resolvido para a cor de texto herdada). */
+  readonly color: Color;
+  /** 0..1, de rgba(); 1 = opaca. */
+  readonly alpha: number;
+}
+
+export interface Shadow {
+  readonly x: Pt;
+  readonly y: Pt;
+  readonly blur: Pt;
+  readonly spread: Pt;
+  readonly color: Color;
+  readonly alpha: number;
+  readonly inset: boolean;
+}
+
+export type Display = 'flex' | 'block' | 'grid' | 'none';
+export type CssPosition = 'static' | 'relative' | 'absolute';
+export type CssFlexDirection = 'row' | 'column' | 'row-reverse' | 'column-reverse';
+export type CssFlexWrap = 'nowrap' | 'wrap' | 'wrap-reverse';
+export type CssJustify = 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly';
+export type CssAlign = 'flex-start' | 'center' | 'flex-end' | 'stretch' | 'baseline';
+export type CssAlignContent = CssJustify | 'stretch';
+/** Alinhamento de item de grid na célula (eixo de linha ou de coluna). */
+export type CssPlace = 'start' | 'center' | 'end' | 'stretch';
+
+/**
+ * De onde vem o flex-basis: 'author' (flexBasis/flex 'a b c'), 'flex' (`flex: n` → 0, salvo
+ * Text/Table em column, que emula o min-height:auto do browser) ou 'grow' (açúcar antigo
+ * `grow={n}`: a regra da engine, basis 0 só sem tamanho no eixo principal).
+ */
+export type BasisSource = 'none' | 'author' | 'flex' | 'grow';
+
+export interface TextDecoration {
+  readonly underline: boolean;
+  readonly lineThrough: boolean;
+}
+
+export type TextTransform = 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+
+/** Propriedade que chegou ao nó e não tem de/para para o PPTX (vira css-not-emitted). */
+export interface NotEmitted {
+  readonly property: string;
+  readonly value: string;
+  /** Frase curta para a mensagem: o que acontece com ela. */
+  readonly reason: string;
+}
+
+/** Linha de grid: número (1-based, negativo conta do fim), span n ou auto. */
+export type GridLine = { readonly kind: 'line'; readonly index: number } | { readonly kind: 'span'; readonly count: number } | { readonly kind: 'auto' };
+
+export interface GridPlacement {
+  readonly start: GridLine;
+  readonly end: GridLine;
+}
+
+/** Estilo CSS normalizado de um nó (sem shorthands, sem responsivo, já com herança). */
+export interface CssStyle {
+  readonly display: Display;
+  readonly position: CssPosition;
+  readonly inset: Partial<Sides<Len>>;
+  readonly width?: Len;
+  readonly height?: Len;
+  readonly minWidth?: Len;
+  readonly maxWidth?: Len;
+  readonly minHeight?: Len;
+  readonly maxHeight?: Len;
+  readonly aspectRatio?: number;
+  readonly flexDirection: CssFlexDirection;
+  readonly flexWrap: CssFlexWrap;
+  readonly justifyContent: CssJustify;
+  readonly alignItems: CssAlign;
+  readonly alignContent: CssAlignContent;
+  readonly alignSelf?: CssAlign;
+  readonly justifySelf?: CssPlace;
+  readonly justifyItems?: CssPlace;
+  readonly flexGrow: number;
+  readonly flexShrink: number;
+  readonly flexBasis: Len | 'auto';
+  readonly basisSource: BasisSource;
+  readonly order: number;
+  readonly rowGap: Pt;
+  readonly columnGap: Pt;
+  readonly margin: Sides<MarginLen>;
+  readonly padding: Sides<Len>;
+  readonly border: Sides<BorderSide>;
+  readonly borderRadius?: Pt;
+  readonly backgroundColor?: Color;
+  readonly backgroundAlpha: number;
+  readonly backgroundImage?: string;
+  /** Açúcar antigo `stroke`: contorno que não ocupa espaço (como `outline`), centrado na borda. */
+  readonly outline?: { readonly color: Color; readonly width: Pt };
+  readonly boxShadow?: Shadow;
+  readonly opacity: number;
+  /** Graus, sentido horário (como CSS e PPTX). */
+  readonly rotate: number;
+  readonly translate: { readonly x: Pt; readonly y: Pt };
+  readonly zIndex?: number;
+  readonly overflow: 'visible' | 'hidden';
+  readonly gridTemplateColumns?: string;
+  readonly gridTemplateRows?: string;
+  readonly gridAutoRows?: string;
+  readonly gridAutoColumns?: string;
+  readonly gridColumn: GridPlacement;
+  readonly gridRow: GridPlacement;
+  readonly textDecoration: TextDecoration;
+  readonly letterSpacing: Pt;
+  readonly textTransform: TextTransform;
+  readonly notEmitted: readonly NotEmitted[];
+}
+
+/** M11: caixa resolvida pelo layout (pt; % e auto já calculados). */
+export interface BoxMetrics {
+  readonly margin: Sides<Pt>;
+  readonly border: Sides<Pt>;
+  readonly padding: Sides<Pt>;
+}
+
 // ───────────────────────── JSX / árvore não resolvida ─────────────────────────
 
 export type PrimitiveKind = 'deck' | 'slide' | 'box' | 'text' | 'image' | 'shape' | 'span' | 'chart' | 'table';
@@ -314,17 +467,20 @@ export interface PrimitivePropsMap {
   readonly table: TableProps;
 }
 
-/** M9: o que o AUTOR escreve no JSX — as mesmas props, aceitando Responsive<X> (Deck e Span não têm props responsivas). */
+/**
+ * M11: o que o AUTOR escreve no JSX — CSS em camelCase (ver core/css-props.ts), mais as props da
+ * engine (fit, minSize, src, data…) e os nomes antigos como alias. Toda prop aceita Responsive<X>.
+ */
 export interface AuthorPropsMap {
   readonly deck: DeckProps;
-  readonly slide: ResponsiveProps<SlideProps>;
-  readonly box: ResponsiveProps<BoxProps>;
-  readonly text: ResponsiveProps<TextProps>;
-  readonly image: ResponsiveProps<ImageProps>;
-  readonly shape: ResponsiveProps<ShapeProps>;
-  readonly span: SpanProps;
-  readonly chart: ResponsiveProps<ChartProps>;
-  readonly table: ResponsiveProps<TableProps>;
+  readonly slide: CssSlideProps;
+  readonly box: CssBoxPropsAuthor;
+  readonly text: CssTextPropsAuthor;
+  readonly image: CssImagePropsAuthor;
+  readonly shape: CssShapePropsAuthor;
+  readonly span: CssSpanProps;
+  readonly chart: CssChartPropsAuthor;
+  readonly table: CssTablePropsAuthor;
 }
 
 /** Marca que identifica uma primitiva (vs componente do usuário). */
@@ -375,7 +531,12 @@ export type DeckDefinition = (ctx: DeckContext) => SlideElement;
 interface ResolvedBase<K extends PrimitiveKind, P> {
   readonly kind: K;
   readonly path: string;
-  /** Props como o autor escreveu, sem children. Padrões: core/defaults.ts. */
+  /**
+   * M11: estilo CSS normalizado do nó (sem shorthands, sem responsivo, já com herança). É a fonte.
+   * `props` é a "visão da engine" derivada do mesmo estilo (nomes antigos), lida por fit/emit/preview.
+   */
+  readonly css: CssStyle;
+  /** Visão da engine (derivada de `css` + props não-CSS como fit/minSize/src/data). Padrões: core/defaults.ts. */
   readonly props: P;
 }
 
@@ -389,6 +550,9 @@ export interface TextRun {
   readonly weight: FontWeight;
   readonly italic: boolean;
   readonly color: Color;
+  /** M11: decoração por run (Span textDecoration). */
+  readonly underline?: boolean;
+  readonly lineThrough?: boolean;
 }
 
 export interface ResolvedText extends ResolvedBase<'text', Omit<TextProps, 'children'>> {
@@ -439,7 +603,8 @@ export interface TextStyle {
   readonly size: Pt;
   readonly weight: FontWeight;
   readonly italic: boolean;
-  readonly lineHeight: number;
+  /** M11: 'normal' = altura natural da face; número = múltiplo do size (CSS). */
+  readonly lineHeight: number | 'normal';
 }
 
 export interface TextMeasureInput {
@@ -453,6 +618,8 @@ export interface TextMeasureInput {
   readonly maxLines?: number;
   /** M8: um parágrafo = uma linha; `width` pode passar de maxWidth. */
   readonly nowrap?: boolean;
+  /** M11: pt somados a cada caractere (CSS letter-spacing; `spc` no PPTX). */
+  readonly letterSpacing?: Pt;
 }
 
 /** M8: pedaço de uma linha já quebrada que pertence a um run. */
@@ -505,11 +672,17 @@ export interface LayoutEnv {
   readonly measureText: TextMeasurer;
   /** Dimensões intrínsecas da imagem em px. */
   readonly imageSize: (src: string) => Dimensions;
+  /** M11: folga da quebra do medidor (o min-content do grid precisa dela); padrão DEFAULTS.textSafety. */
+  readonly textSafety?: number;
 }
 
 interface Positioned {
-  /** Retângulo ABSOLUTO no slide, em pt. */
+  /** Border-box ABSOLUTO no slide, em pt, antes de girar (o layout ignora a rotação, como o browser). */
   readonly frame: Rect;
+  /** M11: margem, borda e padding resolvidos pelo layout (pt; % e auto já calculados). */
+  readonly box: BoxMetrics;
+  /** M11: item de grid: a célula que o grid lhe deu (absoluta). É a área disponível do item no fit. */
+  readonly cell?: Rect;
 }
 
 export interface PositionedBox extends Omit<ResolvedBox, 'children'>, Positioned {
@@ -569,7 +742,9 @@ export type DiagnosticCode =
   /** M9: slide do autor dividido em partes por um Box paginate (info, só na 1ª parte). */
   | 'slide-continued'
   /** M10: tabela não coube nem no minSize (ou fit="error"); data: overflowPt/Pct, fromSize, toSize, shown/total linhas. */
-  | 'table-overflow';
+  | 'table-overflow'
+  /** M11: propriedade CSS que chegou ao nó e não tem de/para para o PPTX (warning; não sai no arquivo nem no preview). */
+  | 'css-not-emitted';
 
 export interface Diagnostic {
   readonly severity: Severity;

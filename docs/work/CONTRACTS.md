@@ -435,3 +435,31 @@ export const tableSvg: (node: PositionedTable, options: TextSvgOptions) => strin
 ### `src/index.ts` / docs (M10-0 já ligou)
 
 `Chart`, `Table` e os tipos acima exportados. `CLAUDE.md`/guia são do M10-G.
+
+## M11 — motor CSS (adoção da PoC; regras por módulo)
+
+Origem: `docs/work/poc/browser-layout.md`, `docs/work/reports/POC-css.md` e o código de `poc/css/` (apagado no gate). Decisões em `docs/work/milestones/M11.md` §Decisões. Tipos em `src/core/types.ts` (bloco "Valores CSS (M11)", `ResolvedBase.css`, `Positioned.box/cell`, `TextRun.underline/lineThrough`, `'css-not-emitted'`, `TextMeasureInput.letterSpacing`, `LayoutEnv.textSafety`, `lineHeight: number | 'normal'`, `AuthorPropsMap` CSS) e `src/core/css-props.ts`; padrões em `DEFAULTS.css` e `DEFAULTS.text.lineHeight = 'normal'`.
+
+**Regra geral da adoção:** cada módulo substitui ou funde o seu com o equivalente de `poc/css/<módulo>/`, trocando os imports de `poc/css/types.ts` pelos de `src/core/types.ts` (mesmos nomes). Onde a PoC tinha um comentário `PoC:` numa cópia de `src/`, a adaptação entra no original. O comportamento validado na PoC (H2–H5) é o contrato; divergir é bug.
+
+### `src/resolve/` + `src/primitives/` (M11-A)
+- `resolveDeck(root, ctx)` produz nós com `css` (normalizado, herdado) **e** `props` (visão da engine derivada; `poc/css/resolve/legacy.ts`). Shorthands (`margin`, `padding`, `inset`, `border*`, `gap`, `flex`, `place*`, `background`), `style` (vence props; o que não tem de/para vai para `css.notEmitted`), herança de `fontFamily/fontSize/fontWeight/fontStyle/color/lineHeight/textAlign/letterSpacing/textTransform` (Table herda família/size/cor/lineHeight; Chart, família e cor), aliases antigos (`direction/align/justify/grow/shrink/fill/stroke/strokeWidth/radius`, `font/size/weight/italic/align` em Text), `display: none` poda depois do path (irmãos mantêm índice), responsivo em qualquer prop inclusive dentro de `style`. `lineHeight` chega a `props` como `number | 'normal'` sem conversão.
+- `src/primitives/index.ts`: as primitivas ficam tipadas por `AuthorPropsMap` (já é o caso via `Primitive<K>`); `Span` aceita `fontWeight/fontStyle/textDecoration`.
+
+### `src/layout/` + `src/text/` (M11-B)
+- `src/layout/` = `poc/css/layout/` (config com `useWebDefaults(true)`, `tree.ts`, `read.ts` com `box`/`cell`, `style.ts`, `grid.ts`, `grid-layout.ts`, `intrinsic.ts`, `baseline.ts`, `table.ts`, `measure.ts`). Exporta `layoutSlide`, `layoutDeck`, `measureInputOf`, `contentRectOf`, `columnWidthsOf`, `measureTable`, e do grid o que os testes da PoC importam.
+- `src/text/`: o medidor fontkit ganha `letterSpacing` (pt por caractere, como `poc/css/text/measure.ts`) e a **semântica CSS do `lineHeight`**: `'normal'` → `(ascent − descent + lineGap)/unitsPerEm × size` (igual a hoje); número `n` → `lineHeight = n × size`, com meia-entrelinha `(lineHeight − natural)/2` acima e abaixo; `TextLayout.ascent` passa a ser `meia-entrelinha + ascent natural` (distância do topo da linha à baseline). `createEstimateMeasurer` idem.
+
+### `src/fit/` (M11-C)
+- Aplica as adaptações `PoC:` de `poc/css/fit/` em `src/fit/`: área de conteúdo = frame − border − padding (`contentRectOf`); margens dos filhos entram na soma do `box-overflow` e na demanda da causa; item de grid usa `cell` como área disponível (célula estourada = `box-overflow` do item com a célula como contêiner; sem `causedBy` entre células); linha de wrap = "row" para a causa; `css.ts` com `cssNotEmittedOf(positioned)` (warning por propriedade/valor/motivo/path, uma vez por nó); `scope.ts` inalterado. `fitSlide`/`fitDeck` mantêm assinatura.
+
+### `src/emit/` + `src/preview/` (M11-D)
+- `src/emit/paint.ts` (de `poc/css/paint.ts`): ordem de pintura e transformações herdadas (contexto de empilhamento: z negativo antes do fluxo, auto/0 depois, positivo por último; opacidade = produto dos ancestrais; rotação acumulada com centro levado pelos ancestrais). Emissor e preview iteram pelos `PaintItem`s, nunca pela árvore.
+- Pintura (de `poc/css/emit/decoration.ts` e `runs.ts`): fundo com alpha de rgba, borda uniforme dentro do border-box (frame deslocado em `width/2`), bordas por lado como shapes `line`, `borderRadius`, sombra única externa, `opacity` por forma/run, `rotate`/`translate`, `backgroundImage` cover atrás das bordas, `outline` (alias `stroke`) sem ocupar espaço, Text com fundo/borda/padding = forma atrás da caixa de texto, `textDecoration` por run, `letterSpacing` → `charSpacing`, `textTransform` já aplicado. `lineHeight` numérico → `lineSpacing` exato em pt (`text.lineHeight`); `'normal'` → como hoje (Strategy ativa). Chart/Table não giram (`css-not-emitted`).
+- Preview: mesmas regras; o que não sai no PPTX não é desenhado.
+
+### `src/render.ts`, `src/cli.ts`, `src/index.ts` (orquestrador, integração)
+- `render` usa o medidor com `letterSpacing`, `fitDeck` + `cssNotEmittedOf`; `LayoutEnv.textSafety` preenchido. `index.ts` exporta os tipos de `css-props.ts`. `poc/` e `poc:test` somem; `tools/oracle/` (dev-only) e `scripts/` recebem o oráculo e a calibração.
+
+### Aliases antigos (M11, até remoção futura)
+`direction→flexDirection`, `align→alignItems`, `justify→justifyContent`, `grow→flexGrow` (basis pela regra antiga), `shrink→flexShrink`, `fill→backgroundColor`, `stroke/strokeWidth→outline`, `radius→borderRadius`, `font→fontFamily`, `size→fontSize`, `weight→fontWeight`, `italic→fontStyle`, `align` (Text)→`textAlign`. Documentados só no apêndice de migração do guia.

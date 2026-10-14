@@ -9,16 +9,17 @@ Origem: `docs/work/reports/REVIEW-2026-10-13.md`. Cada marco segue o fluxo de `d
 | [M8](M8.md) | Rich text, NBSP/`nowrap`, `align="baseline"`, fontes do sistema e embed | Limitação mais sentida ao escrever slides reais | — (depende de M6 e M7) |
 | [M9](M9.md) | Props responsivas por breakpoint; slide de continuação | Tira os ternários do deck e resolve listas longas | — (depende de M8) |
 | [M10](M10.md) | `Chart` e `Table` nativos | Fecha a promessa de "tudo editável" | — (depende de M9) |
+| [M11](M11.md) | Motor CSS (adoção da PoC): box model, grid, z-index, herança | DX: agentes e devs escrevem CSS; nós −26 % na demo | — (depende de M10) |
 
 ```
-M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10
+M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10  ─▶  M11
 ```
 
 ## Exploração proposta
 
 | Item | Onde | Estado |
 |---|---|---|
-| PoC: motor de layout "como um browser" em memória (box model, display, flex completo, grid, z-index, herança) com de/para para PPTX | [`../poc/browser-layout.md`](../poc/browser-layout.md) | aguardando aprovação do dono |
+| PoC: motor de layout "como um browser" em memória (box model, display, flex completo, grid, z-index, herança) com de/para para PPTX | [`../poc/browser-layout.md`](../poc/browser-layout.md) | aprovada (14/10) → [M11](M11.md) |
 
 ## Pendências do dono (não bloqueiam os marcos, mas valem antes de publicar)
 

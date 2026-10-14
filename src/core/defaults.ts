@@ -31,7 +31,8 @@ export const DEFAULTS = {
     weight: 'regular',
     italic: false,
     color: '#000000',
-    lineHeight: 1,
+    /** M11 (CSS): 'normal' = altura natural da face; número = múltiplo do size. */
+    lineHeight: 'normal' as number | 'normal',
     align: 'left' as TextAlign,
     fit: 'shrink' as FitPolicy,
     /** minSize = max(floor(size * minSizeRatio), minLegibleSize) quando não informado */
@@ -98,6 +99,33 @@ export const DEFAULTS = {
   },
   /** 16:9 de referência para ctx.scale */
   referenceSize: { width: 720, height: 405 },
+  /** M11: padrões do modelo CSS (vindos da PoC). */
+  css: {
+    /** Box sem `display` continua flex column (a única diferença intencional em relação ao browser); `display: 'flex'` explícito é row. */
+    boxDisplay: 'flex',
+    legacyDirection: 'column',
+    cssFlexDirection: 'row',
+    flexShrink: 1,
+    flexGrow: 0,
+    order: 0,
+    opacity: 1,
+    /** Espessura de `border: solid #000` sem largura (CSS: medium). */
+    borderMediumWidth: 3,
+    degreesPerTurn: 360,
+    radiansToDegrees: 180 / Math.PI,
+    /** `font-weight` numérico a partir do qual a face é bold (a engine tem só regular/bold). */
+    boldWeightFrom: 600,
+    regularWeight: 400,
+    boldWeight: 700,
+    percentBase: 100,
+    colorChannelMax: 255,
+    /** Ruído de ponto flutuante do Yoga ao comparar frames. */
+    layoutNoise: 1e-6,
+    /** Tolerância (pt) das comparações com fixtures do browser. */
+    frameTolerance: 1,
+    /** PPTX: transparência é 0..100. */
+    transparencyScale: 100,
+  },
   preview: { width: 1280, thumbWidth: 320, overviewColumns: 4 },
 } as const;
 
