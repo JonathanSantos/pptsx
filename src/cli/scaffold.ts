@@ -17,47 +17,48 @@ const DECK_TEMPLATE = `// Deck criado por \`pptsx init\`. Para gerar dist/deck.1
 // Durante a edição, \`--watch\` refaz o build a cada mudança salva.
 import { Box, Deck, Shape, Slide, Text, defineDeck } from 'pptsx';
 
-// O mesmo código serve para todos os tamanhos: ctx diz a proporção e a escala do slide atual.
-export default defineDeck((ctx) => {
-  const stacked = ctx.aspect < 1.5;
-  return (
-    <Deck>
-      <Slide background="#1B2A4A" padding={48} justify="end" gap={16}>
-        <Shape kind="rect" width={56} height={6} fill="#F2A541" />
-        <Text size={44} weight="bold" color="#FFFFFF">
-          Meu primeiro deck
-        </Text>
-        <Text size={20} color="#C9D3E8">
-          TSX entra, PPTX editável sai.
-        </Text>
-      </Slide>
+// O mesmo código serve para todos os tamanhos: valores responsivos ({ base, tall, wide })
+// trocam o layout por breakpoint, sem ler ctx. Fonte e cor definidas no Slide descem para os Text.
+export default defineDeck(() => (
+  <Deck>
+    <Slide backgroundColor="#1B2A4A" padding={48} justifyContent="flex-end" gap={16} color="#FFFFFF">
+      <Shape kind="rect" width={56} height={6} fill="#F2A541" />
+      <Text fontSize={44} fontWeight="bold">
+        Meu primeiro deck
+      </Text>
+      <Text fontSize={20} color="#C9D3E8">
+        TSX entra, PPTX editável sai.
+      </Text>
+    </Slide>
 
-      <Slide background="#FFFFFF" padding={48} gap={24}>
-        <Text size={32} weight="bold" color="#1B2A4A">
-          Como funciona
-        </Text>
-        <Box direction={stacked ? 'column' : 'row'} gap={24} grow={1}>
-          <Box grow={1} fill="#F4F6FA" radius={8} padding={20} gap={8}>
-            <Text size={20} weight="bold" color="#2F6FED">
-              Layout automático
-            </Text>
-            <Text size={16} color="#44506A">
-              Box, Slide e Text usam flexbox: posições e tamanhos são calculados para cada formato.
-            </Text>
-          </Box>
-          <Box grow={1} fill="#F4F6FA" radius={8} padding={20} gap={8}>
-            <Text size={20} weight="bold" color="#2F6FED">
-              Texto que cabe
-            </Text>
-            <Text size={16} color="#44506A">
-              Se o texto não couber, a fonte encolhe; o que não tiver jeito vira diagnóstico.
-            </Text>
-          </Box>
+    <Slide backgroundColor="#FFFFFF" padding={48} gap={24} color="#44506A">
+      <Text fontSize={32} fontWeight="bold" color="#1B2A4A">
+        Como funciona
+      </Text>
+      <Box display="grid" gridTemplateColumns={{ base: 'repeat(2, minmax(0, 1fr))', tall: 'minmax(0, 1fr)' }} gap={24} flex={1}>
+        <Box backgroundColor="#F4F6FA" borderRadius={8} padding={20} gap={8}>
+          <Text fontSize={20} fontWeight="bold" color="#2F6FED">
+            Layout em CSS
+          </Text>
+          <Text fontSize={16}>
+            Box, Slide e Text usam box model, flexbox e grid: posições e tamanhos são calculados para cada formato.
+          </Text>
         </Box>
-      </Slide>
-    </Deck>
-  );
-});
+        <Box backgroundColor="#F4F6FA" borderRadius={8} padding={20} gap={8}>
+          <Text fontSize={20} fontWeight="bold" color="#2F6FED">
+            Texto que cabe
+          </Text>
+          <Text fontSize={16}>
+            Se o texto não couber, a fonte encolhe; o que não tiver jeito vira diagnóstico com o caminho até o nó.
+          </Text>
+        </Box>
+      </Box>
+      <Text fontSize={12} marginTop="auto" color="#8A94A8">
+        Rodapé no fim do slide com marginTop="auto".
+      </Text>
+    </Slide>
+  </Deck>
+));
 `;
 
 const TSCONFIG = {
