@@ -466,7 +466,7 @@ Mensagens reais:
 • image-upscaled em Slide > Image
   Imagem desenhada com 700 pt de largura, acima do natural (800 px = 600 pt a 96 dpi); pode sair borrada. Use um arquivo com mais resolução ou reduza a área da imagem.
 ✖ font-missing em Slide > Text
-  Fonte "Helvetica Neue regular" não está registrada; o texto foi medido por estimativa e a quebra de linha pode não bater com o PowerPoint. Registre a fonte em options.fonts ou use uma família registrada.
+  Fonte "Helvetica Neue regular" não foi encontrada: não está em options.fonts, ou foi registrada sem "file" e não existe no sistema. O texto foi medido por estimativa e a quebra de linha pode não bater com o PowerPoint. Registre a face com "file", instale a fonte ou use uma família disponível.
 ✖ text-overflow em Slide > Box > Text
   Texto com nowrap tem 238.2 pt de largura numa área de 130 pt mesmo em 14 pt (mínimo); encurte o texto, alargue a área ou remova nowrap.
 ▲ font-not-embeddable em 
@@ -486,7 +486,7 @@ Diagnósticos: 2 error (+2 derivados), 1 warning, 0 info
     ↳ ✖ [16x9 · slide 1] text-overflow em Slide > Box > Box[0..7] > Text
       Texto estourou … corrija Slide > Text[1] primeiro. (×8: mesmo problema em Box[0..7])
   ✖ [16x9 · slide 1] font-missing em Slide > Text[2]
-    Fonte "Inter regular" não está registrada; …
+    Fonte "Inter regular" não foi encontrada: …
 ```
 
 Erros de estrutura (o deck não chega a ser medido; exit 1, sem `diagnostics.json` novo):

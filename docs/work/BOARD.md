@@ -66,8 +66,8 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M8 | M8-D | fontes do sistema + embed | ✅ |
 | M8 | M8-E | emit/preview: run por linha, tspan, embed no zip | ✅ |
 | M8 | M8-F | testes M8 | ✅ |
-| M8 | M8-G | exemplos: Bullets por baseline, `calibration-rich.tsx`, demo com negrito inline; AGENT_GUIDE | 🔄 |
-| M8 | M8-H | calibração rich text nativo × Keynote (+ PowerPoint pelo dono) | 🔄 |
+| M8 | M8-G | exemplos: Bullets por baseline, `calibration-rich.tsx`, demo com negrito inline; AGENT_GUIDE | ✅ |
+| M8 | M8-H | calibração rich text nativo × Keynote: 29/30 quebras iguais, estilos no mesmo caractere, largura ±0,07 pt; baseline ±0,25 pt; Helvetica `.ttc` ok; embed EOT no zip (Keynote ignora) | ✅ |
 | M9 | M9-0 | Contrato: `Responsive<T>`, breakpoints, `resolveDeck(root, ctx)`, `paginate`, `slide-continued` | ⬜ |
 | M9 | M9-A | resolve: valores responsivos; `ctx.pick` | ⬜ |
 | M9 | M9-B | fit: paginação no nível do deck | ⬜ |
@@ -120,3 +120,8 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M7-B | Cada rebuild do watch cria um grafo novo (memória cresce durante sessões longas) | aceito |
 | M8-S | pptxgenjs grava `<p:sldIdLst>` antes de `<p:notesMasterIdLst>` (fora da ordem do schema CT_Presentation); PowerPoint pode pedir "reparar" | M8-E: reordenar em `sanitize.ts` |
 | M8-S | Keynote descarta `ppt/fonts/` e `embeddedFontLst`; PowerPoint web usa EOT → embed implementado como opção (`embedFonts`) | ✅ M8-D/E |
+| M8-H | `nowrap` saía com `wrap="square"`: Keynote requebrava a linha que estourou (R20) → `wrap="none"` no gate | ✅ gate M8 |
+| M8-H | `font-missing` dizia "não está registrada" mesmo para face registrada sem `file` e ausente no sistema → mensagem reescrita no gate | ✅ gate M8 |
+| M8-H | `text-truncated` agrupado (R24/R25) mostra só os números do pior caso | aceito (regra do contrato: mensagem do pior + ×N) |
+| M8-H | Baseline entre Text 40 pt e Text 12 pt desvia ~1,25 pt no Keynote (deslocamento da 1ª linha varia com o size, M3) | aceito; anotar no guia se virar queixa |
+| M8-H | Scripts de Keynote: outra sessão (skill-ppt) travou o app; `scripts/keynote-export.sh` não tem retry nem trava de máquina | backlog: retry em -1712/-609 |

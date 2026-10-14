@@ -121,7 +121,9 @@ export const textOf = (
     // placeholder herda otherStyle/defaultTextStyle, que não têm spcBef/
     // spcAft nem autofit, e o padrão OOXML é espaço 0 e sem autofit.
     fit: 'none',
-    wrap: true,
+    // nowrap vira wrap="none" no <a:bodyPr>: senão o renderizador requebra a linha que
+    // estourou (M8-H, R20) e o estouro vai para baixo em vez de para a lateral.
+    wrap: node.props.nowrap !== true,
     paraSpaceBefore: 0,
     paraSpaceAfter: 0,
     ...lineSpacingOf(node, lineSpacing),

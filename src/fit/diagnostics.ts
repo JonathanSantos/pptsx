@@ -188,7 +188,7 @@ export const fontMissing = (ctx: DiagnosticContext, path: string, style: TextSty
     severity: 'error',
     code: 'font-missing',
     path,
-    message: `Fonte "${face}" não está registrada; o texto foi medido por estimativa e a quebra de linha pode não bater com o PowerPoint. Registre a fonte em options.fonts ou use uma família registrada.`,
+    message: `Fonte "${face}" não foi encontrada: não está em options.fonts, ou foi registrada sem "file" e não existe no sistema. O texto foi medido por estimativa e a quebra de linha pode não bater com o PowerPoint. Registre a face com "file", instale a fonte ou use uma família disponível.`,
   });
 };
 
