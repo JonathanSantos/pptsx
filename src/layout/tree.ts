@@ -1,5 +1,6 @@
 import Yoga, { type Config, MeasureMode, type MeasureFunction, type Node as YogaNode } from 'yoga-layout';
 import { containerOf, textStyleOf } from '../core/defaults.ts';
+import { dispatch, type DispatchTable } from '../core/dispatch.ts';
 import type {
   Dimensions,
   FlexDirection,
@@ -68,7 +69,7 @@ const buildShape: Builder<ResolvedShape> = (source, yoga, { parentDirection }) =
   return { source, yoga, children: [] };
 };
 
-const BUILDERS: { readonly [K in ResolvedNode['kind']]: Builder<Extract<ResolvedNode, { kind: K }>> } = {
+const BUILDERS: DispatchTable<ResolvedNode, BuiltNode, [yoga: YogaNode, ctx: BuildContext]> = {
   box: buildBox,
   text: buildText,
   image: buildImage,
@@ -79,9 +80,7 @@ const buildNode = (source: ResolvedNode, parent: YogaNode, ctx: BuildContext): B
   const yoga = Yoga.Node.create(ctx.config);
   // Anexar antes de configurar: se algo lançar no meio, o freeRecursive da raiz ainda alcança este nó.
   parent.insertChild(yoga, parent.getChildCount());
-  // TS não correlaciona source.kind com a entrada da tabela; o tipo da tabela garante a coerência.
-  const builder = BUILDERS[source.kind] as Builder<ResolvedNode>;
-  return builder(source, yoga, ctx);
+  return dispatch(BUILDERS, source, yoga, ctx);
 };
 
 /** Cria (e anexa ao `parent`) a subárvore Yoga dos filhos. */

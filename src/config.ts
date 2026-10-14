@@ -1,36 +1,94 @@
 import { existsSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { FontFace, SizeSpec } from './core/types.ts';
+import type { ImportModule, ImportOptions, UserModule } from './cli/loader.ts';
+import type { FontFace, LineBreaks, SizeSpec } from './core/types.ts';
 
 export const CONFIG_FILE_NAME = 'pptsx.config.ts';
 
-export interface TsxSlidesConfig {
+export const LINE_BREAKS: readonly LineBreaks[] = ['forced', 'auto'];
+
+export interface PptsxConfig {
   /** Substitui as fontes padrão (Liberation Sans como Arial), como em RenderOptions.fonts. */
   readonly fonts?: readonly FontFace[];
   readonly sizes?: readonly SizeSpec[];
   readonly lang?: string;
   readonly textSafety?: number;
+  /** Como em RenderOptions.lineBreaks; a flag --line-breaks vence. */
+  readonly lineBreaks?: LineBreaks;
 }
 
+/** @deprecated Use PptsxConfig (nome antigo, de antes do pacote se chamar pptsx). */
+export type TsxSlidesConfig = PptsxConfig;
+
 /** Identidade tipada: só existe para o arquivo de config ganhar inferência. */
-export const defineConfig = (config: TsxSlidesConfig): TsxSlidesConfig => config;
+export const defineConfig = (config: PptsxConfig): PptsxConfig => config;
+
+export const isLineBreaks = (value: unknown): value is LineBreaks => LINE_BREAKS.some((mode) => mode === value);
+
+export const lineBreaksErrorOf = (source: string, value: unknown): string =>
+  `${source} inválido: ${JSON.stringify(value)} (use ${LINE_BREAKS.join(' ou ')})`;
 
 /** Caminhos de fonte na config são relativos ao arquivo de config, não ao cwd de quem roda a CLI. */
-export const resolveConfigPaths = (config: TsxSlidesConfig, configDir: string): TsxSlidesConfig => {
+export const resolveConfigPaths = (config: PptsxConfig, configDir: string): PptsxConfig => {
   if (!config.fonts) return config;
   const fonts = config.fonts.map((face) => (isAbsolute(face.file) ? face : { ...face, file: resolve(configDir, face.file) }));
   return { ...config, fonts };
 };
 
-const isConfigObject = (value: unknown): value is TsxSlidesConfig =>
+const isConfigObject = (value: unknown): value is PptsxConfig =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** Carrega `pptsx.config.ts` de `cwd` (precisa rodar sob o loader do tsx); sem arquivo → {}. */
-export const loadConfig = async (cwd: string): Promise<TsxSlidesConfig> => {
-  const file = join(resolve(cwd), CONFIG_FILE_NAME);
+// A config é TS escrito à mão e pode chegar sem checagem de tipos (tsx só transpila).
+const validateConfig = (config: PptsxConfig, file: string): PptsxConfig => {
+  if (config.lineBreaks !== undefined && !isLineBreaks(config.lineBreaks)) {
+    throw new Error(lineBreaksErrorOf(`${file}: lineBreaks`, config.lineBreaks));
+  }
+  return config;
+};
+
+export const configPathOf = (cwd: string): string => join(resolve(cwd), CONFIG_FILE_NAME);
+
+// Sem tsx aqui: config.ts entra no grafo público (`defineConfig`) e não deve carregar o loader.
+// A CLI injeta o importador com suporte a `fresh` (src/cli/loader.ts).
+const plainImport: ImportModule = (file) => import(pathToFileURL(file).href) as Promise<UserModule>;
+
+export const ESM_REQUIRED_MESSAGE =
+  'O deck foi carregado como CommonJS, mas o pptsx usa top-level await e só roda como ESM: ' +
+  'adicione "type": "module" ao package.json do projeto (`pptsx init` já cria assim).';
+
+/** Erros do Node quando o deck foi transpilado para CJS e fez require() do pptsx (projeto sem "type": "module"). */
+export const isRequireAsyncError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  const code = (error as NodeJS.ErrnoException).code;
+  if (code === 'ERR_REQUIRE_ASYNC_MODULE' || error.message.includes('require() cannot be used on an ESM graph')) return true;
+  // require() de um pacote só-ESM (exports sem `require`/`default`): mesma causa, deck carregado como CJS.
+  return code === 'ERR_PACKAGE_PATH_NOT_EXPORTED' && /node_modules[\\/]pptsx/.test(error.message);
+};
+
+/** Carga do deck/config com o erro de CommonJS traduzido para a correção que o usuário precisa fazer. */
+export const importUserModule = async (
+  file: string,
+  options: ImportOptions = { fresh: false, cwd: process.cwd() },
+  importModule: ImportModule = plainImport,
+): Promise<UserModule> => {
+  try {
+    return await importModule(file, options);
+  } catch (error) {
+    if (!isRequireAsyncError(error)) throw error;
+    throw new Error(`${file}: ${ESM_REQUIRED_MESSAGE}`, { cause: error });
+  }
+};
+
+/** Carrega `pptsx.config.ts` de `cwd` (precisa rodar sob o loader do tsx); sem arquivo → {}. `fresh`: ver ImportOptions. */
+export const loadConfig = async (
+  cwd: string,
+  options: ImportOptions = { fresh: false, cwd: process.cwd() },
+  importModule: ImportModule = plainImport,
+): Promise<PptsxConfig> => {
+  const file = configPathOf(cwd);
   if (!existsSync(file)) return {};
-  const module = await import(pathToFileURL(file).href);
+  const module = await importUserModule(file, options, importModule);
   if (!isConfigObject(module.default)) throw new Error(`${file} precisa exportar default defineConfig({ ... })`);
-  return resolveConfigPaths(module.default, dirname(file));
+  return resolveConfigPaths(validateConfig(module.default, file), dirname(file));
 };

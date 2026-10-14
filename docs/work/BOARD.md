@@ -51,13 +51,13 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M6 | M6-G | validação visual (overflow, cause, broken-original) | ✅ |
 | M6 | M6-H | agente virgem: broken-original em ≤ 3 builds (exit 0 sem warning no 2º) | ✅ |
 | M7 | M7-0 | Nome do pacote (dono); `lineBreaks`, `includePositioned`, `core/dispatch.ts` | ✅ |
-| M7 | M7-A | build `dist/` + `exports` + bin compilado + fontes no pacote | 🔄 |
-| M7 | M7-B | CLI `init`, `--watch`, `--line-breaks`; config `lineBreaks` | 🔄 |
-| M7 | M7-C | emit `lineBreaks: 'auto'`; `render` devolve `positioned` | 🔄 |
-| M7 | M7-D | limpezas: `dispatch()`, vitest sem esbuild, sanitize com teste de propriedade | 🔄 |
-| M7 | M7-E | testes M7 + `test:package` (npm pack fora do repo) | 🔄 |
-| M7 | M7-F | README do pacote + AGENT_GUIDE §7 | ⬜ |
-| M7 | M7-G | validação: pacote fora do repo no Keynote; auto × forced | ⬜ |
+| M7 | M7-A | build `dist/` + `exports` + bin compilado + fontes no pacote | ✅ |
+| M7 | M7-B | CLI `init`, `--watch`, `--line-breaks`; config `lineBreaks` | ✅ |
+| M7 | M7-C | emit `lineBreaks: 'auto'`; `render` devolve `positioned` | ✅ |
+| M7 | M7-D | limpezas: `dispatch()`, vitest sem esbuild, sanitize com teste de propriedade | ✅ |
+| M7 | M7-E | testes M7 + `test:package` (npm pack fora do repo) | ✅ |
+| M7 | M7-F | README do pacote + AGENT_GUIDE §7 | 🔄 |
+| M7 | M7-G | validação: pacote fora do repo no Keynote; auto × forced | 🔄 |
 | M8 | M8-S | spike: embed de fontes (.fntdata) no PowerPoint/Keynote/Google | ⬜ |
 | M8 | M8-0 | Contrato: `Span/B/I`, `TextRun`, `lineRuns`, `nowrap`, `align="baseline"`, `FontFace` sem `file`, `embedFonts` | ⬜ |
 | M8 | M8-A | resolve: runs | ⬜ |

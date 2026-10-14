@@ -1,5 +1,6 @@
 import type { Node as YogaNode } from 'yoga-layout';
 import { textStyleOf } from '../core/defaults.ts';
+import { dispatch, type DispatchTable } from '../core/dispatch.ts';
 import type {
   LayoutEnv,
   PositionedNode,
@@ -23,20 +24,22 @@ export const frameOf = (yoga: YogaNode, origin: Origin): Rect => {
   return { x: origin.x + left, y: origin.y + top, width, height };
 };
 
+// O despacho é pelo `source` (que carrega o `kind`); o BuiltNode vem junto pelos filhos e pelo intrinsic.
 type Reader<N extends ResolvedNode> = (
-  built: BuiltNode & { readonly source: N },
+  source: N,
+  built: BuiltNode,
   frame: Rect,
   env: LayoutEnv,
 ) => Extract<PositionedNode, { kind: N['kind'] }>;
 
-const readBox: Reader<ResolvedBox> = (built, frame, env) => ({
-  ...built.source,
+const readBox: Reader<ResolvedBox> = (source, built, frame, env) => ({
+  ...source,
   frame,
   children: readChildren(built.children, frame, env),
 });
 
 // As linhas finais são medidas de novo com a largura definitiva do frame.
-const readText: Reader<ResolvedText> = ({ source }, frame, env) => ({
+const readText: Reader<ResolvedText> = (source, _built, frame, env) => ({
   ...source,
   frame,
   text: env.measureText({
@@ -47,26 +50,23 @@ const readText: Reader<ResolvedText> = ({ source }, frame, env) => ({
   }),
 });
 
-const readImage: Reader<ResolvedImage> = ({ source, intrinsic }, frame, env) => ({
+const readImage: Reader<ResolvedImage> = (source, { intrinsic }, frame, env) => ({
   ...source,
   frame,
   intrinsic: intrinsic ?? env.imageSize(source.props.src),
 });
 
-const readShape: Reader<ResolvedShape> = ({ source }, frame) => ({ ...source, frame });
+const readShape: Reader<ResolvedShape> = (source, _built, frame) => ({ ...source, frame });
 
-const READERS: { readonly [K in ResolvedNode['kind']]: Reader<Extract<ResolvedNode, { kind: K }>> } = {
+const READERS: DispatchTable<ResolvedNode, PositionedNode, [built: BuiltNode, frame: Rect, env: LayoutEnv]> = {
   box: readBox,
   text: readText,
   image: readImage,
   shape: readShape,
 };
 
-const readNode = (built: BuiltNode, origin: Origin, env: LayoutEnv): PositionedNode => {
-  // TS não correlaciona source.kind com a entrada da tabela; o tipo da tabela garante a coerência.
-  const reader = READERS[built.source.kind] as Reader<ResolvedNode>;
-  return reader(built, frameOf(built.yoga, origin), env);
-};
+const readNode = (built: BuiltNode, origin: Origin, env: LayoutEnv): PositionedNode =>
+  dispatch(READERS, built.source, built, frameOf(built.yoga, origin), env);
 
 export const readChildren = (
   children: readonly BuiltNode[],

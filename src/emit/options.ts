@@ -4,6 +4,7 @@ import { resolveAssetPath } from '../core/assets.ts';
 import { DEFAULTS, imageFitOf, strokeColorOf, textStyleOf } from '../core/defaults.ts';
 import type {
   Color,
+  LineBreaks,
   PositionedBox,
   PositionedImage,
   PositionedShape,
@@ -105,35 +106,97 @@ export const shapeOf = (node: PositionedShape): ShapeSpec =>
   shapeSpecOf(node.props.kind, { ...node.props, stroke: strokeColorOf(node.props) }, node.frame);
 
 /**
- * Quebra forçada (decisão do gate do M3): um run por linha calculada. Linhas do
- * mesmo parágrafo são unidas por quebra suave (softBreakBefore → <a:br/>) e o
- * último run de cada parágrafo, exceto o final, fecha o <a:p> (breakLine). Assim
- * o renderizador não requebra o texto com a própria métrica; com quebra
- * automática o Keynote punha mais palavras por linha que a engine (11/34 na
- * calibração). Runs separados também evitam passar '\n' ao pptxgenjs, que
- * ignora todas as quebras quando o texto termina em '\n'.
+ * Duas estratégias de quebra (Strategy por `LineBreaks`):
+ * - 'forced' (padrão, decisão do gate do M3): um run por linha calculada. Linhas
+ *   do mesmo parágrafo são unidas por quebra suave (softBreakBefore → <a:br/>) e
+ *   o último run de cada parágrafo, exceto o final, fecha o <a:p> (breakLine).
+ *   Assim o renderizador não requebra o texto com a própria métrica; com quebra
+ *   automática o Keynote punha mais palavras por linha que a engine (11/34 na
+ *   calibração; 34/34 com a quebra forçada).
+ * - 'auto': um run por parágrafo do autor; o renderizador quebra sozinho. O
+ *   texto fica editável como texto corrido (editar uma palavra não deixa linhas
+ *   órfãs), ao custo de poder divergir em 1 linha da engine. A caixa mantém o
+ *   frame calculado, então a divergência aparece como sobra/estouro de 1 linha.
+ * Runs separados (em vez de '\n') nas duas: o pptxgenjs ignora todas as
+ * quebras quando o texto termina em '\n'.
  */
 const lineRunOf = (text: string, softBreakBefore: boolean, breakLine: boolean): Pptx.TextProps => ({
   text,
   options: { ...(softBreakBefore ? { softBreakBefore } : {}), ...(breakLine ? { breakLine } : {}) },
 });
 
+// Parágrafo vazio vira um run vazio: o <a:p> continua ocupando uma linha.
+const linesOrEmpty = (lines: readonly string[]): readonly string[] => (lines.length === 0 ? [''] : lines);
+
 export const paragraphRunsOf = (paragraphs: readonly (readonly string[])[]): Pptx.TextProps[] =>
   paragraphs.flatMap((lines, paragraphIndex) => {
     const closesParagraph = paragraphIndex < paragraphs.length - 1;
-    // Parágrafo vazio vira um run vazio: o <a:p> continua ocupando uma linha.
-    const texts = lines.length === 0 ? [''] : lines;
+    const texts = linesOrEmpty(lines);
     return texts.map((text, lineIndex) => lineRunOf(text, lineIndex > 0, closesParagraph && lineIndex === texts.length - 1));
   });
+
+const BREAKS_WITHOUT_SPACE = ['-', '/'];
+
+// O quebrador corta em espaço (consumido) ou logo depois de '-'/'/' (mantido no
+// fim da linha); só no primeiro caso a junção precisa devolver o espaço.
+const separatorAfter = (line: string): string => (BREAKS_WITHOUT_SPACE.some((c) => line.endsWith(c)) ? '' : ' ');
+
+/** Linhas calculadas unidas em texto corrido; só para truncado, que precisa manter a reticência. */
+export const joinedLinesOf = (lines: readonly string[]): string =>
+  // O acumulado termina com a linha anterior, então decide o separador por ele.
+  lines.reduce((text, line, index) => (index === 0 ? line : text + separatorAfter(text) + line), '');
+
+// Mesma normalização de espaços do medidor (segmentsOf em text/lines.ts).
+const normalizeSpaces = (paragraph: string): string => paragraph.split(/\s+/).filter(Boolean).join(' ');
+
+/**
+ * Parágrafos do autor ('\n'), com espaços normalizados. Reconstruir a partir das
+ * linhas erra em palavra quebrada por caractere (espaço falso) e em "a - b"
+ * (o espaço antes do '-' some); o texto original não tem esse problema.
+ */
+export const authorParagraphsOf = (content: string): readonly string[] => content.split('\n').map(normalizeSpaces);
+
+/**
+ * Texto do run de um parágrafo em 'auto': o original do autor quando existe;
+ * sem ele (texto truncado), as linhas calculadas unidas, com a reticência.
+ */
+export const paragraphTextOf = (lines: readonly string[], original?: string): string =>
+  original ?? joinedLinesOf(lines);
+
+/** `authorParagraphs` ausente = truncado: cai nas linhas calculadas. */
+export const autoParagraphRunsOf = (
+  paragraphs: readonly (readonly string[])[],
+  authorParagraphs?: readonly string[],
+): Pptx.TextProps[] =>
+  paragraphs.map((lines, index) => lineRunOf(paragraphTextOf(lines, authorParagraphs?.[index]), false, index < paragraphs.length - 1));
+
+type RunStrategy = (paragraphs: readonly (readonly string[])[], authorParagraphs?: readonly string[]) => Pptx.TextProps[];
+
+const RUN_STRATEGIES: Readonly<Record<LineBreaks, RunStrategy>> = {
+  forced: (paragraphs) => paragraphRunsOf(paragraphs),
+  auto: autoParagraphRunsOf,
+};
+
+/** `authorParagraphs` só é lido em 'auto'; ver authorParagraphsOf. */
+export const runsOf = (
+  paragraphs: readonly (readonly string[])[],
+  lineBreaks: LineBreaks = DEFAULTS.lineBreaks,
+  authorParagraphs?: readonly string[],
+): Pptx.TextProps[] => RUN_STRATEGIES[lineBreaks](paragraphs, authorParagraphs);
+
+// Truncado não tem original confiável: os parágrafos depois do corte somem e o último ganha '…'.
+const authorParagraphsOfNode = (node: PositionedText): readonly string[] | undefined =>
+  node.text.truncated ? undefined : authorParagraphsOf(node.content);
 
 export const textOf = (
   node: PositionedText,
   lineSpacing: LineSpacingStrategy = ACTIVE_LINE_SPACING,
   lang: string = DEFAULTS.lang,
+  lineBreaks: LineBreaks = DEFAULTS.lineBreaks,
 ): TextSpec => {
   const style = textStyleOf(node.props);
   return {
-    runs: paragraphRunsOf(node.text.paragraphs),
+    runs: runsOf(node.text.paragraphs, lineBreaks, authorParagraphsOfNode(node)),
     options: {
       ...positionOf(node.frame),
       margin: 0,

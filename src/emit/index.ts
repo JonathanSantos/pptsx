@@ -1,5 +1,6 @@
 import { PptxGenJS, type Presentation } from './pptx.ts';
-import type { PositionedDeck, PositionedSlide } from '../core/types.ts';
+import { DEFAULTS } from '../core/defaults.ts';
+import type { LineBreaks, PositionedDeck, PositionedSlide } from '../core/types.ts';
 import { ptToInches } from '../sizes.ts';
 import type { LineSpacingStrategy } from './calibration.ts';
 import { emitDebugOutlines, emitNode, type EmitContext } from './emitters.ts';
@@ -13,11 +14,18 @@ export interface EmitOptions {
   readonly lineSpacing?: LineSpacingStrategy;
   /** Idioma dos textos; padrão DEFAULTS.lang. */
   readonly lang?: string;
+  /** 'forced' (padrão DEFAULTS.lineBreaks) ou 'auto'; ver runsOf em options.ts. */
+  readonly lineBreaks?: LineBreaks;
 }
 
 const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOptions): void => {
   const target = pptx.addSlide();
-  const ctx: EmitContext = { baseDir: options.baseDir, lineSpacing: options.lineSpacing, lang: options.lang };
+  const ctx: EmitContext = {
+    baseDir: options.baseDir,
+    lineSpacing: options.lineSpacing,
+    lang: options.lang,
+    lineBreaks: options.lineBreaks ?? DEFAULTS.lineBreaks,
+  };
   const background = backgroundOf(slide, options.baseDir);
   if (background) target.background = background;
   slide.children.forEach((node) => emitNode(target, node, ctx));

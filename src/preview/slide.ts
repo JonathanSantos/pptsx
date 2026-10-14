@@ -1,3 +1,4 @@
+import { dispatch, type DispatchTable } from '../core/dispatch.ts';
 import type { PositionedNode, PositionedSlide, Rect, SlideSize } from '../core/types.ts';
 import { loadImageUri } from './image.ts';
 import {
@@ -53,21 +54,14 @@ interface DrawContext {
   readonly loadImage: (src: string) => string;
 }
 
-type NodeKind = PositionedNode['kind'];
-type NodeOf<K extends NodeKind> = Extract<PositionedNode, { kind: K }>;
-type NodeDrawer<K extends NodeKind> = (node: NodeOf<K>, ctx: DrawContext, index: number) => string;
-
-const drawers: { readonly [K in NodeKind]: NodeDrawer<K> } = {
+const drawers: DispatchTable<PositionedNode, string, [ctx: DrawContext, index: number]> = {
   box: (node) => boxSvg(node),
   text: (node, ctx) => textSvg(node, { fontFamilyMap: ctx.fontFamilyMap }),
   image: (node, ctx, index) => imageSvg(node, ctx.loadImage(node.props.src), `clip-${index}`),
   shape: (node) => shapeSvg(node),
 };
 
-const drawItem = (item: DrawItem, ctx: DrawContext): string => {
-  const drawer = drawers[item.node.kind] as NodeDrawer<NodeKind>;
-  return drawer(item.node as never, ctx, item.index);
-};
+const drawItem = (item: DrawItem, ctx: DrawContext): string => dispatch(drawers, item.node, ctx, item.index);
 
 const BACKGROUND_CLIP_ID = 'clip-background';
 

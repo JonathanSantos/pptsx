@@ -8,6 +8,7 @@ import type {
   Dimensions,
   FontFace,
   LayoutEnv,
+  LineBreaks,
   PositionedDeck,
   PreviewOptions,
   RenderOptions,
@@ -28,6 +29,8 @@ interface RenderSettings {
   readonly baseDir: string;
   readonly debug: boolean;
   readonly lang: string;
+  readonly lineBreaks: LineBreaks;
+  readonly includePositioned: boolean;
   readonly fonts: readonly FontFace[];
   readonly preview: PreviewOptions | false;
   readonly env: LayoutEnv;
@@ -48,6 +51,8 @@ const settingsOf = (options: RenderOptions): RenderSettings => {
     baseDir,
     debug: options.debug ?? false,
     lang: options.lang ?? DEFAULTS.lang,
+    lineBreaks: options.lineBreaks ?? DEFAULTS.lineBreaks,
+    includePositioned: options.includePositioned ?? false,
     fonts,
     preview: options.preview ?? { mode: 'native', width: DEFAULTS.preview.width },
     env: { measureText, imageSize: readImageSize(baseDir) },
@@ -94,8 +99,13 @@ const fitDeck = (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) => {
 const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: RenderSettings): Promise<RenderResult> => {
   const resolved = resolveDeck(deck(createContext(size)));
   const { positioned, diagnostics } = fitDeck(resolved, size, settings.env);
-  const buffer = await emitPptx(positioned, { debug: settings.debug, baseDir: settings.baseDir, lang: settings.lang });
-  const result = { size: size.name, buffer, diagnostics };
+  const buffer = await emitPptx(positioned, {
+    debug: settings.debug,
+    baseDir: settings.baseDir,
+    lang: settings.lang,
+    lineBreaks: settings.lineBreaks,
+  });
+  const result: RenderResult = { size: size.name, buffer, diagnostics, ...(settings.includePositioned ? { positioned } : {}) };
   if (settings.preview === false) return result;
   return { ...result, preview: renderPreview(positioned, diagnostics, settings, settings.preview) };
 };

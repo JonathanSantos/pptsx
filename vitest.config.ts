@@ -11,6 +11,7 @@ export default defineConfig({
       { find: /^pptsx$/, replacement: src('index.ts') },
     ],
   },
-  esbuild: { jsx: 'automatic', jsxImportSource: 'pptsx' },
+  // Vite 8 transpila com oxc; o bloco `esbuild` antigo só gerava aviso de opções duplicadas.
+  oxc: { jsx: { runtime: 'automatic', importSource: 'pptsx' } },
   test: { include: ['tests/**/*.test.{ts,tsx}'] },
 });

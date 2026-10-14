@@ -2,15 +2,30 @@ import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { loadConfig, type TsxSlidesConfig } from './config.ts';
+import { INIT_USAGE, parseInitCli, runInit } from './cli/init.ts';
+import { defaultImportModule, type ImportModule, type ImportOptions } from './cli/loader.ts';
+import { createFsWatch, runWatchLoop, stampLine, watchPathsOf, type WatchFn } from './cli/watch.ts';
+import { configPathOf, importUserModule, isLineBreaks, lineBreaksErrorOf, loadConfig, type PptsxConfig } from './config.ts';
 import { DEFAULTS } from './core/defaults.ts';
-import type { DeckDefinition, Diagnostic, RenderOptions, RenderResult, Severity, SizeSpec } from './core/types.ts';
+import type { DeckDefinition, Diagnostic, LineBreaks, RenderOptions, RenderResult, Severity, SizeSpec } from './core/types.ts';
 import { render } from './render.ts';
 import { parseSizeList } from './sizes.ts';
 
-export const USAGE =
+export const USAGE = [
   'uso: pptsx build <deck.tsx> [--size 16x9,4x3,10x7.5in] [--out dist/] [--debug] [--json] ' +
-  '[--preview native|none] [--preview-width 1280] [--lang pt-BR]';
+    '[--preview native|none] [--preview-width 1280] [--lang pt-BR] [--line-breaks forced|auto] [--watch]',
+  `     ${INIT_USAGE.replace(/^uso: /, '')}`,
+].join('\n');
+
+/** Dependências de IO trocáveis (testes): observação de arquivos e o sinal que encerra o --watch. */
+export interface CliDeps {
+  /** Padrão: fs.watch recursivo, ignorando o diretório de saída. */
+  readonly watch?: WatchFn;
+  /** Padrão: aborta em SIGINT/SIGTERM (Ctrl-C sai com 0). */
+  readonly signal?: AbortSignal;
+  /** Carga do deck e da config. Padrão: import() normal; no --watch, namespace novo do tsx a cada build. */
+  readonly importModule?: ImportModule;
+}
 
 export interface CliArgs {
   readonly deckPath: string;
@@ -22,6 +37,9 @@ export interface CliArgs {
   readonly json: boolean;
   readonly preview: boolean;
   readonly previewWidth: number;
+  /** undefined = flag ausente, para a config poder preencher. */
+  readonly lineBreaks?: LineBreaks;
+  readonly watch: boolean;
 }
 
 /** Arquivos de um tamanho na árvore da spec. */
@@ -53,6 +71,11 @@ export const parsePreviewWidth = (raw: string): number => {
   return width;
 };
 
+export const parseLineBreaks = (raw: string): LineBreaks => {
+  if (!isLineBreaks(raw)) throw new Error(lineBreaksErrorOf('--line-breaks', raw));
+  return raw;
+};
+
 export const parseCli = (argv: readonly string[], cwd: string = process.cwd()): CliArgs => {
   const { values, positionals } = parseArgs({
     args: [...argv],
@@ -65,6 +88,8 @@ export const parseCli = (argv: readonly string[], cwd: string = process.cwd()): 
       preview: { type: 'string', default: 'native' },
       'preview-width': { type: 'string', default: String(DEFAULTS.preview.width) },
       lang: { type: 'string' },
+      'line-breaks': { type: 'string' },
+      watch: { type: 'boolean', default: false },
     },
   });
   const [command, deckPath] = positionals;
@@ -78,6 +103,8 @@ export const parseCli = (argv: readonly string[], cwd: string = process.cwd()): 
     json: values.json,
     preview: parsePreviewMode(values.preview),
     previewWidth: parsePreviewWidth(values['preview-width']),
+    lineBreaks: values['line-breaks'] === undefined ? undefined : parseLineBreaks(values['line-breaks']),
+    watch: values.watch,
   };
 };
 
@@ -87,11 +114,12 @@ export const wantsJson = (argv: readonly string[]): boolean => argv.includes('--
 // ---------- opções ----------
 
 /** Flags da CLI vencem a config; o que nenhum dos dois define fica com o padrão do render. */
-export const mergeOptions = (args: CliArgs, config: TsxSlidesConfig): RenderOptions => ({
+export const mergeOptions = (args: CliArgs, config: PptsxConfig): RenderOptions => ({
   sizes: args.sizes ?? config.sizes,
   fonts: config.fonts,
   lang: args.lang ?? config.lang,
   textSafety: config.textSafety,
+  lineBreaks: args.lineBreaks ?? config.lineBreaks,
   debug: args.debug,
   baseDir: dirname(args.deckPath),
   preview: args.preview ? { mode: 'native', width: args.previewWidth } : false,
@@ -209,17 +237,21 @@ export const exitCodeOf = (diagnostics: readonly Diagnostic[]): 0 | 1 =>
 export const jsonReportOf = (files: readonly string[], diagnostics: readonly Diagnostic[]): string =>
   JSON.stringify({ files, diagnostics } satisfies JsonReport, null, 2);
 
+/** Uma linha por build no --watch --json (NDJSON). */
+export const jsonLineOf = (files: readonly string[], diagnostics: readonly Diagnostic[]): string =>
+  JSON.stringify({ files, diagnostics } satisfies JsonReport);
+
 export const errorMessageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 export const jsonErrorOf = (error: unknown): string => JSON.stringify({ error: errorMessageOf(error) });
 
 // ---------- IO ----------
 
-const loadDeck = async (deckPath: string): Promise<DeckDefinition> => {
+const loadDeck = async (deckPath: string, options: ImportOptions, importModule: ImportModule): Promise<DeckDefinition> => {
   if (!existsSync(deckPath)) throw new Error(`deck não encontrado: ${deckPath}`);
-  const module = await import(pathToFileURL(deckPath).href);
+  const module = await importUserModule(deckPath, options, importModule);
   if (typeof module.default !== 'function') throw new Error(`${deckPath} precisa exportar default defineDeck(...)`);
-  return module.default;
+  return module.default as DeckDefinition;
 };
 
 const writeResult = (paths: OutputPaths, result: RenderResult): void => {
@@ -230,9 +262,19 @@ const writeResult = (paths: OutputPaths, result: RenderResult): void => {
   writeFileSync(paths.overview, result.preview.overview);
 };
 
-const build = async (args: CliArgs, cwd: string): Promise<number> => {
-  const config = await loadConfig(cwd);
-  const deck = await loadDeck(args.deckPath);
+interface BuildOutcome {
+  /** Lista completa (--json). */
+  readonly files: readonly string[];
+  /** Lista resumida (humanos). */
+  readonly listing: readonly string[];
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+/** Um build completo, gravando tudo em disco. `fresh` recarrega deck, config e o que eles importam. */
+const buildOnce = async (args: CliArgs, cwd: string, deps: CliDeps, fresh: boolean): Promise<BuildOutcome> => {
+  const importModule = deps.importModule ?? defaultImportModule;
+  const config = await loadConfig(cwd, { fresh, cwd }, importModule);
+  const deck = await loadDeck(args.deckPath, { fresh, cwd }, importModule);
   const results = await render(deck, mergeOptions(args, config));
   const deckName = deckNameOf(args.deckPath);
   const diagnostics = results.flatMap((result) => result.diagnostics);
@@ -243,19 +285,80 @@ const build = async (args: CliArgs, cwd: string): Promise<number> => {
   results.forEach((result, index) => writeResult(pathsPerSize[index]!, result));
   writeFileSync(diagnosticsFile, `${JSON.stringify(diagnostics, null, 2)}\n`);
 
+  return {
+    files: [...pathsPerSize.flatMap(filesOf), diagnosticsFile],
+    listing: [...pathsPerSize.flatMap(listingOf), diagnosticsFile],
+    diagnostics,
+  };
+};
+
+const build = async (args: CliArgs, cwd: string, deps: CliDeps): Promise<number> => {
+  const outcome = await buildOnce(args, cwd, deps, false);
   if (args.json) {
-    console.log(jsonReportOf([...pathsPerSize.flatMap(filesOf), diagnosticsFile], diagnostics));
-    return exitCodeOf(diagnostics);
+    console.log(jsonReportOf(outcome.files, outcome.diagnostics));
+    return exitCodeOf(outcome.diagnostics);
   }
-  [...pathsPerSize.flatMap(listingOf), diagnosticsFile].forEach((file) => console.log(file));
-  console.log(`\n${summaryOf(diagnostics)}`);
-  return exitCodeOf(diagnostics);
+  outcome.listing.forEach((file) => console.log(file));
+  console.log(`\n${summaryOf(outcome.diagnostics)}`);
+  return exitCodeOf(outcome.diagnostics);
+};
+
+const reportWatchBuild = (args: CliArgs, outcome: BuildOutcome, at: Date): void => {
+  if (args.json) return console.log(jsonLineOf(outcome.files, outcome.diagnostics));
+  outcome.listing.forEach((file) => console.log(file));
+  console.log(`${stampLine(at, summaryOf(outcome.diagnostics))}\n`);
+};
+
+// No --watch um erro (sintaxe, estrutura, deck ausente) é só mais um resultado: o watch continua.
+const reportWatchError = (args: CliArgs, error: unknown, at: Date): void => {
+  if (args.json) return console.log(jsonErrorOf(error));
+  console.error(stampLine(at, `erro: ${errorMessageOf(error)}\n`));
+};
+
+/** Sem sinal injetado, Ctrl-C (SIGINT) ou SIGTERM encerra o watch com código 0. */
+const withStopSignal = async (signal: AbortSignal | undefined, run: (signal: AbortSignal) => Promise<void>): Promise<void> => {
+  if (signal) return run(signal);
+  const controller = new AbortController();
+  const abort = (): void => controller.abort();
+  process.once('SIGINT', abort);
+  process.once('SIGTERM', abort);
+  try {
+    await run(controller.signal);
+  } finally {
+    process.off('SIGINT', abort);
+    process.off('SIGTERM', abort);
+  }
+};
+
+const watchBuild = async (args: CliArgs, cwd: string, deps: CliDeps): Promise<number> => {
+  const rebuild = async (): Promise<void> => {
+    try {
+      reportWatchBuild(args, await buildOnce(args, cwd, deps, true), new Date());
+    } catch (error) {
+      reportWatchError(args, error, new Date());
+    }
+  };
+  await rebuild();
+  const paths = watchPathsOf(args.deckPath, configPathOf(cwd));
+  if (!args.json) console.log(stampLine(new Date(), `observando ${paths.join(', ')} (Ctrl-C para sair)`));
+  const watch = deps.watch ?? createFsWatch([args.outDir]);
+  await withStopSignal(deps.signal, (signal) => runWatchLoop({ paths, watch, signal, rebuild }));
+  return 0;
+};
+
+/** Primeiro argumento que não é flag; os comandos vêm antes das flags (`pptsx build ...`). */
+export const commandOf = (argv: readonly string[]): string | undefined => argv.find((arg) => !arg.startsWith('-'));
+
+const dispatch = async (argv: readonly string[], cwd: string, deps: CliDeps): Promise<number> => {
+  if (commandOf(argv) === 'init') return runInit(parseInitCli(argv, cwd), cwd);
+  const args = parseCli(argv, cwd);
+  return args.watch ? watchBuild(args, cwd, deps) : build(args, cwd, deps);
 };
 
 /** Casca de IO: devolve o código de saída em vez de chamar process.exit. */
-export const runCli = async (argv: readonly string[], cwd: string = process.cwd()): Promise<number> => {
+export const runCli = async (argv: readonly string[], cwd: string = process.cwd(), deps: CliDeps = {}): Promise<number> => {
   try {
-    return await build(parseCli(argv, cwd), cwd);
+    return await dispatch(argv, cwd, deps);
   } catch (error) {
     if (wantsJson(argv)) console.log(jsonErrorOf(error));
     else console.error(errorMessageOf(error));
