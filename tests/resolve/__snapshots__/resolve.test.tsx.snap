@@ -59,6 +59,7 @@ exports[`resolveDeck — full tree > matches the stored snapshot 1`] = `
         "background": "#112233",
         "notes": "speaker notes",
       },
+      "sourceSlide": 1,
     },
     {
       "children": [
@@ -85,6 +86,7 @@ exports[`resolveDeck — full tree > matches the stored snapshot 1`] = `
       "kind": "slide",
       "path": "Slide",
       "props": {},
+      "sourceSlide": 2,
     },
   ],
 }

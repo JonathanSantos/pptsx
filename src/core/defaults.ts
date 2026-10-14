@@ -66,6 +66,10 @@ export const DEFAULTS = {
   fit: { epsilon: 0.5, shrinkStep: 1 },
   /** M8: debounce do --watch (ms). */
   watchDebounceMs: 150,
+  /** M9: 'tall' ⇔ aspect < tallAspect; 'wide' ⇔ scale > wideScale (ver core/responsive.ts). */
+  breakpoints: { tallAspect: 1.5, wideScale: 1.2 },
+  /** M9: máximo de partes em que um slide com Box paginate pode se dividir; passou → box-overflow. */
+  paginate: { maxParts: 10 },
   /** 16:9 de referência para ctx.scale */
   referenceSize: { width: 720, height: 405 },
   preview: { width: 1280, thumbWidth: 320, overviewColumns: 4 },

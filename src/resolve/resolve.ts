@@ -98,12 +98,18 @@ const resolveChildren = (children: Children, parentPath: string): readonly Resol
 };
 
 /** O slide é o primeiro segmento do path e não leva índice (o índice vai em Diagnostic.slide). */
-const resolveSlide = (item: ExpandedPrimitive): ResolvedSlide => {
+const resolveSlide = (item: ExpandedPrimitive, index: number): ResolvedSlide => {
   if (item.kind !== 'slide') {
     throw new ResolveError(`Filhos de <Deck> têm que ser <Slide>; encontrado <${nameOf(item)}>`, item.segment);
   }
   const path = item.segment;
-  return { kind: 'slide', path, props: propsOf<'slide'>(item.element), children: resolveChildren(item.element.props.children, path) };
+  return {
+    kind: 'slide',
+    path,
+    sourceSlide: index + 1,
+    props: propsOf<'slide'>(item.element),
+    children: resolveChildren(item.element.props.children, path),
+  };
 };
 
 const expandRoot = (root: SlideElement): ExpandedPrimitive => {
@@ -118,6 +124,6 @@ const expandRoot = (root: SlideElement): ExpandedPrimitive => {
 
 export const resolveDeck = (root: SlideElement): ResolvedDeck => {
   const deck = expandRoot(root);
-  const slides = onlyPrimitives(expandChild(deck.element.props.children), '').map(resolveSlide);
+  const slides = onlyPrimitives(expandChild(deck.element.props.children), '').map((item, index) => resolveSlide(item, index));
   return { slides };
 };

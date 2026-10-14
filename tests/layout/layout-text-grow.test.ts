@@ -9,7 +9,7 @@ import { child, expectFrame } from '../helpers/positioned.ts';
  * o próprio conteúdo); em row, Text com grow recebe basis 0 normalmente.
  * Medidor falso: 1 linha = 20 pt, largura medida = 100 pt.
  */
-const layout = (children: readonly ResolvedNode[]) => layoutSlide({ kind: 'slide', path: 'Slide', props: {}, children }, SIZE_16X9, createFakeEnv().env);
+const layout = (children: readonly ResolvedNode[]) => layoutSlide({ kind: 'slide', path: 'Slide', sourceSlide: 1, props: {}, children }, SIZE_16X9, createFakeEnv().env);
 
 describe('layout — Text with grow in a column (M5-F)', () => {
   it('keeps the measured height in a content-sized column with siblings (not 0)', () => {

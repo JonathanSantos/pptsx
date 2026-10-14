@@ -306,3 +306,68 @@ Tipos novos em `core/types.ts`: `SpanProps`, kind `'span'`, `TextRun`, `Resolved
 
 ### `src/cli.ts` (sem dono nesta onda; orquestrador na integração)
 - `--embed-fonts` (boolean) e `config.embedFonts`; `fontsMissing` do resultado aparece no resumo como linha `▲ fontes não encontradas no sistema: Inter bold` e no `--json` como campo `fontsMissing`.
+
+## M9 — props responsivas por breakpoint, `ctx.pick` e slide de continuação (regras por módulo)
+
+Tipos em `src/core/types.ts`: `Breakpoint`, `ResponsiveValue<T>`, `Responsive<T>`, `NonResponsiveKey`, `ResponsiveProps<P>`, `AuthorPropsMap`, `DeckContext.pick`, `BoxProps.paginate`, `ResolvedSlide.sourceSlide`, `DiagnosticCode 'slide-continued'`, `Diagnostic.data.sourceSlide/parts`. Padrões: `DEFAULTS.breakpoints = { tallAspect: 1.5, wideScale: 1.2 }`, `DEFAULTS.paginate = { maxParts: 10 }`.
+
+### `src/core/responsive.ts` (M9-0, orquestrador — regra única)
+
+```ts
+export type ResponsiveContext = Pick<DeckContext, 'name' | 'aspect' | 'scale'>;
+export const isBreakpointName: (key: string) => key is Breakpoint;          // 'tall' | 'wide' | preset | 'custom-*'
+export const isResponsive: <T>(value: Responsive<T>) => value is ResponsiveValue<T>;  // objeto com chave própria `base`
+export const responsiveProblemOf: (value: unknown) => string | undefined;  // malformado (ver abaixo) → mensagem
+export const activeBreakpointsOf: (ctx: ResponsiveContext) => readonly Breakpoint[];  // [ctx.name, 'wide'?, 'tall'?]
+export const pickResponsive: <T>(value: Responsive<T>, ctx: ResponsiveContext) => T;
+```
+
+- **Breakpoints ativos:** `ctx.name` sempre; `wide` quando `ctx.scale > wideScale`; `tall` quando `ctx.aspect < tallAspect`. O preset `wide` (960×540, scale 1,33) ativa `wide` pelos dois caminhos; `4x3` e `16x10` são `tall`; um custom `13.33x7.5in` é `wide` sem ser preset; um custom `10x7.5in` é `tall` e responde por `custom-10x7.5`.
+- **Precedência:** o primeiro breakpoint ativo, na ordem nome exato > `wide` > `tall`, cuja chave existe no objeto com valor ≠ `undefined`; senão `base`. (`wide` vence `tall` porque mexe em tipografia; `tall` em estrutura.)
+- **Responsivo sse** objeto (não array, não null) com chave própria `base`. `padding: { top: 10 }` e `background: { image }` não têm `base` e passam intactos.
+- **Malformado** (`responsiveProblemOf`): objeto **sem `base`** cujas chaves são todas nomes de breakpoint (`{ tall: 24 }`) → `'objeto responsivo sem a chave "base"'`; objeto **com `base`** e alguma chave que não é breakpoint (`{ base: 1, tal: 2 }`) → `'breakpoint desconhecido: "tal"'`. Objeto vazio ou com chaves não-breakpoint e sem `base` → `undefined` (não é responsivo).
+
+### `src/sizes.ts` (M9-0 já ligou)
+
+`createContext(size)` devolve `pick: (value) => pickResponsive(value, ctx)`. Testável direto: `createContext(PRESETS['4x3']).pick({ base: 3, tall: 4 }) === 4`.
+
+### `src/resolve/` (M9-A)
+
+```ts
+export const resolveDeck: (root: SlideElement, ctx: ResponsiveContext) => ResolvedDeck;
+```
+
+1. **Assinatura:** `resolveDeck(root, ctx)`. `render.ts` passa o mesmo `ctx` que deu ao deck. Chamadas sem `ctx` deixam de compilar (API pública: `resolveDeck` continua exportado de `src/index.ts`; quem usava passa `createContext(size)`).
+2. **Onde resolve:** em `propsOf` (as props do nó, sem `children`), para `slide`, `box`, `text`, `image`, `shape`: cada valor de prop cuja chave não está em `NonResponsiveKey` passa por `pickResponsive`. Chaves de `NonResponsiveKey` (`src`, `kind`, `notes`, `children`) nunca são tocadas. `Span` (weight/italic/color) **não** é responsivo nesta onda (o estilo inline segue o Text).
+3. **Validação:** para cada prop (fora de `NonResponsiveKey`), `responsiveProblemOf(valor)` ≠ `undefined` → `ResolveError` com a mensagem `Prop "<nome>" de <Primitiva>: <problema>` e o `path` do nó. Vale também para objetos vindos de JS sem tipos.
+4. **Árvore resolvida só tem valores concretos:** `ResolvedNode.props` mantém os tipos de `PrimitivePropsMap` (não responsivos); layout, fit, emit e preview não mudam. Props que resolvem para `undefined` (`{ base: undefined }`) são **omitidas** do objeto, como se o autor não tivesse escrito.
+5. **Componentes do usuário** repassam valores responsivos sem resolver: `<Bullets size={{ base: 20, wide: 24 }} />` → `<Text size={size}>`; a resolução acontece quando a primitiva é alcançada.
+6. **`sourceSlide`:** `ResolvedSlide.sourceSlide = índice no <Deck> do autor + 1` (M9-0 já ligou).
+7. **`paginate`:** mais de um `Box` com `paginate` (após resolver o valor, i.e. `true`) no mesmo slide → `ResolveError` `"Só um <Box paginate> por slide; encontrados N"` com o path do segundo. `paginate` num Box `position="absolute"` → `ResolveError` (decoração não pagina). O valor resolvido fica em `props.paginate` do `ResolvedBox` (o fit lê daí).
+8. **Path** não muda.
+
+### `src/fit/` + `src/render.ts` (M9-B)
+
+```ts
+export interface FitDeckInput { readonly deck: ResolvedDeck; readonly size: SlideSize; readonly env: LayoutEnv }
+export interface FitDeckResult { readonly positioned: PositionedDeck; readonly diagnostics: readonly Diagnostic[] }
+export const fitDeck: (input: FitDeckInput) => FitDeckResult;   // exportado de src/fit/index.ts; render.ts usa este
+```
+
+`fitSlide` continua existindo e inalterado para slides sem `Box paginate`. Novo `src/fit/paginate.ts` (puro).
+
+**Slide de continuação** — para cada `ResolvedSlide` com um `Box paginate` (`props.paginate === true`), chamado aqui de **P**, com `n` filhos **em fluxo** (`position !== 'absolute'`):
+1. **Sem shrink dentro de P:** enquanto o slide está sendo paginado, nenhum Text dentro de P entra em escopo de shrink nem dispara busca (eles ficam com o size do autor); os demais textos do slide encolhem normalmente. (Paginar existe para não encolher a lista.)
+2. **Primeiro passe:** `fitSlide` do slide inteiro com a regra 1. Se não há `text-overflow`/`text-word-broken` dentro de P nem `box-overflow` em P, nem `out-of-slide` de P ou de um descendente em fluxo de P, o resultado desse passe **é o final** (um só slide, sem `slide-continued`).
+3. **Bisseção em k:** senão, procura o **maior `k ∈ [1, n]`** tal que o slide com P contendo só os `k` primeiros filhos em fluxo (mais todos os filhos `absolute` de P) **não** tem nenhum dos estouros da regra 2. Cada tentativa é um `fitSlide` completo com a regra 1. `k = n` já foi testado no passe 2.
+4. **Partes:** a parte atual sai com os `k` filhos. Um clone do slide (mesmas `props`, mesmo `path`, mesmo `sourceSlide`, mesmos outros nós, mesmas `notes`) recebe em P os filhos `k+1..n` (e os `absolute`), e volta ao passo 2 com esse clone. Os paths dos filhos de P **não mudam** (o filho `Box[7]` continua `Box[7]` na parte 2: o autor acha o item pelo índice original).
+5. **Nada cabe (k seria 0):** se nem o 1º filho cabe sozinho, a parte fica **inteira** (todos os filhos restantes), a regra 1 deixa de valer para ela (shrink volta a funcionar em P) e saem os diagnósticos normais do `fitSlide`. Se isso acontece na 1ª parte, não há paginação nem `slide-continued`.
+6. **Limite:** ao chegar a `DEFAULTS.paginate.maxParts` partes com filhos ainda sobrando, a última parte fica com todos os restantes (regra 5) e recebe um `box-overflow` em P cuja mensagem termina com `" A paginação parou em 10 partes; divida o conteúdo em mais de um slide no deck."`.
+7. **Diagnóstico `slide-continued`** (info, `path` = path de P): **só na 1ª parte**, `data.parts` = total de partes, `data.sourceSlide`, mensagem `"Slide 2 do autor virou 3 slides (3 de 12 itens no 1º, 5 no 2º, 4 no 3º). Para caber em menos slides, reduza o size dos itens ou o conteúdo."`. Conta itens = filhos em fluxo de P.
+8. **Índices:** `Diagnostic.slide` é o índice (base 1) no **deck de saída**. `data.sourceSlide` é preenchido em **todo** diagnóstico de slide cujo índice de saída difere do `sourceSlide`, e em todo diagnóstico de qualquer parte de uma paginação; nos demais slides fica ausente (como hoje). `PositionedSlide.sourceSlide` sai em todas as partes (herdado de `ResolvedSlide`).
+9. **Agrupamento/causa** continuam por slide de saída, depois da paginação (cada parte é um `fitSlide`).
+10. **`render.ts`:** troca o `fitDeck` local pelo de `src/fit/`; `resolveDeck(deck(ctx), ctx)` com o mesmo `ctx`. Preview, overview e emissor numeram pelo deck de saída; `notes` saem em todas as partes.
+
+### `src/index.ts` (M9-0 já ligou)
+
+Exporta os tipos `Breakpoint`, `Responsive`, `ResponsiveValue`, `ResponsiveProps`, `AuthorPropsMap`. `resolveDeck` passa a exigir `ctx`.

@@ -68,7 +68,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M8 | M8-F | testes M8 | ✅ |
 | M8 | M8-G | exemplos: Bullets por baseline, `calibration-rich.tsx`, demo com negrito inline; AGENT_GUIDE | ✅ |
 | M8 | M8-H | calibração rich text nativo × Keynote: 29/30 quebras iguais, estilos no mesmo caractere, largura ±0,07 pt; baseline ±0,25 pt; Helvetica `.ttc` ok; embed EOT no zip (Keynote ignora) | ✅ |
-| M9 | M9-0 | Contrato: `Responsive<T>`, breakpoints, `resolveDeck(root, ctx)`, `paginate`, `slide-continued` | ⬜ |
+| M9 | M9-0 | Contrato: `Responsive<T>`, breakpoints, `resolveDeck(root, ctx)`, `paginate`, `slide-continued` | ✅ |
 | M9 | M9-A | resolve: valores responsivos; `ctx.pick` | ⬜ |
 | M9 | M9-B | fit: paginação no nível do deck | ⬜ |
 | M9 | M9-C | testes M9 | ⬜ |

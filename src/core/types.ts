@@ -59,7 +59,37 @@ export interface DeckContext {
   readonly aspect: number;
   /** min(width/720, height/405) — relativo ao 16:9 de referência. */
   readonly scale: number;
+  /**
+   * M9: resolve um valor responsivo em código (contagem de itens, textos alternativos).
+   * Mesma regra de precedência das props: nome do tamanho > wide > tall > base.
+   */
+  readonly pick: <T>(value: Responsive<T>) => T;
 }
+
+// ───────────────────────── Valores responsivos (M9) ─────────────────────────
+
+/**
+ * Breakpoints nomeados, derivados de ctx (ver core/responsive.ts):
+ *  - 'tall'  ⇔ ctx.aspect < DEFAULTS.breakpoints.tallAspect (4:3, 16:10 e customs "quadrados");
+ *  - 'wide'  ⇔ ctx.scale  > DEFAULTS.breakpoints.wideScale  (o preset 'wide' e customs maiores);
+ *  - nome exato do tamanho ('16x9', '4x3', 'custom-10x7.5') ⇔ ctx.name.
+ * Precedência: nome exato > wide > tall > base ('wide' mexe em tipografia, 'tall' em estrutura).
+ */
+export type Breakpoint = 'tall' | 'wide' | SizePresetName | `custom-${string}`;
+
+/** Objeto responsivo: `base` obrigatória; é o que o distingue de `padding: { top }` e `background: { image }`. */
+export type ResponsiveValue<T> = { readonly base: T } & { readonly [name in Breakpoint]?: T };
+
+/** Um valor concreto ou um objeto por breakpoint. Resolvido no resolve; a árvore resolvida só tem valores concretos. */
+export type Responsive<T> = T | ResponsiveValue<T>;
+
+/** Props que nunca são responsivas (estrutura e identidade do nó). */
+export type NonResponsiveKey = 'children' | 'src' | 'kind' | 'notes';
+
+/** Versão responsiva de uma interface de props: toda chave fora de NonResponsiveKey aceita Responsive<X>. */
+export type ResponsiveProps<P> = {
+  readonly [K in keyof P]: K extends NonResponsiveKey ? P[K] : Responsive<Exclude<P[K], undefined>>;
+};
 
 // ───────────────────────── Props das primitivas ─────────────────────────
 
@@ -124,6 +154,11 @@ export interface SlideProps extends ContainerProps {
 export interface BoxProps extends FlexItemProps, ContainerProps, StrokeProps {
   /** Raio dos cantos em pt; > 0 emite roundRect. */
   readonly radius?: Pt;
+  /**
+   * M9: Box cujos filhos em fluxo, quando não cabem, continuam num slide clonado
+   * (ver CONTRACTS §M9 "Slide de continuação"). Só um Box paginate por slide. Padrão false.
+   */
+  readonly paginate?: boolean;
   readonly children?: Children;
 }
 
@@ -188,6 +223,7 @@ export interface ShapeProps extends FlexItemProps, StrokeProps {
 
 export type PrimitiveKind = 'deck' | 'slide' | 'box' | 'text' | 'image' | 'shape' | 'span';
 
+/** Props concretas por primitiva (o que a árvore resolvida carrega). */
 export interface PrimitivePropsMap {
   readonly deck: DeckProps;
   readonly slide: SlideProps;
@@ -195,6 +231,17 @@ export interface PrimitivePropsMap {
   readonly text: TextProps;
   readonly image: ImageProps;
   readonly shape: ShapeProps;
+  readonly span: SpanProps;
+}
+
+/** M9: o que o AUTOR escreve no JSX — as mesmas props, aceitando Responsive<X> (Deck e Span não têm props responsivas). */
+export interface AuthorPropsMap {
+  readonly deck: DeckProps;
+  readonly slide: ResponsiveProps<SlideProps>;
+  readonly box: ResponsiveProps<BoxProps>;
+  readonly text: ResponsiveProps<TextProps>;
+  readonly image: ResponsiveProps<ImageProps>;
+  readonly shape: ResponsiveProps<ShapeProps>;
   readonly span: SpanProps;
 }
 
@@ -206,7 +253,7 @@ export const PRIMITIVE_KIND: unique symbol = Symbol.for('pptsx.primitive');
  * existe para dar tipagem ao JSX (<Box ...>) e ser reconhecida no resolve.
  */
 export interface Primitive<K extends PrimitiveKind> {
-  (props: PrimitivePropsMap[K]): SlideElement;
+  (props: AuthorPropsMap[K]): SlideElement;
   readonly [PRIMITIVE_KIND]: K;
 }
 
@@ -275,6 +322,8 @@ export type ResolvedShape = ResolvedBase<'shape', ShapeProps>;
 export type ResolvedNode = ResolvedBox | ResolvedText | ResolvedImage | ResolvedShape;
 
 export interface ResolvedSlide extends ResolvedBase<'slide', Omit<SlideProps, 'children'>> {
+  /** M9: índice do slide no <Deck> do autor, começando em 1 (clones de paginação repetem o do original). */
+  readonly sourceSlide: number;
   readonly children: readonly ResolvedNode[];
 }
 
@@ -413,7 +462,9 @@ export type DiagnosticCode =
   | 'image-upscaled'
   | 'font-missing'
   /** M8: fonte pedida em embedFonts com fsType restrito; não foi embutida (warning, slide 0, path ''). */
-  | 'font-not-embeddable';
+  | 'font-not-embeddable'
+  /** M9: slide do autor dividido em partes por um Box paginate (info, só na 1ª parte). */
+  | 'slide-continued';
 
 export interface Diagnostic {
   readonly severity: Severity;
@@ -438,6 +489,13 @@ export interface Diagnostic {
     readonly paths?: readonly string[];
     /** M8: eixo do estouro de texto; ausente = 'height'. 'width' só com nowrap. */
     readonly axis?: 'width' | 'height';
+    /**
+     * M9: índice (base 1) do slide no <Deck> do autor. Presente quando difere de `slide`
+     * (um slide anterior foi paginado) ou quando o slide é parte de uma paginação.
+     */
+    readonly sourceSlide?: number;
+    /** M9: em 'slide-continued', total de partes em que o slide do autor foi dividido. */
+    readonly parts?: number;
   };
 }
 

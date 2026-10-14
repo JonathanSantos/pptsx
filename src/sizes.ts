@@ -1,4 +1,5 @@
 import { DEFAULTS, PT_PER_INCH } from './core/defaults.ts';
+import { pickResponsive } from './core/responsive.ts';
 import type { DeckContext, Pt, SizePresetName, SizeSpec, SlideSize } from './core/types.ts';
 
 export const PRESETS: Readonly<Record<SizePresetName, SlideSize>> = Object.freeze({
@@ -31,13 +32,16 @@ export const resolveSize = (spec: SizeSpec): SlideSize => {
   return PRESETS[spec];
 };
 
-export const createContext = (size: SlideSize): DeckContext => ({
-  name: size.name,
-  width: size.width,
-  height: size.height,
-  aspect: size.width / size.height,
-  scale: Math.min(size.width / DEFAULTS.referenceSize.width, size.height / DEFAULTS.referenceSize.height),
-});
+export const createContext = (size: SlideSize): DeckContext => {
+  const base = {
+    name: size.name,
+    width: size.width,
+    height: size.height,
+    aspect: size.width / size.height,
+    scale: Math.min(size.width / DEFAULTS.referenceSize.width, size.height / DEFAULTS.referenceSize.height),
+  };
+  return { ...base, pick: (value) => pickResponsive(value, base) };
+};
 
 const CUSTOM_SIZE = /^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)in$/;
 

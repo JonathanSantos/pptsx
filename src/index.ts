@@ -12,7 +12,9 @@ export const defineDeck = (fn: DeckDefinition): DeckDefinition => fn;
 
 export type {
   Align,
+  AuthorPropsMap,
   BoxProps,
+  Breakpoint,
   Child,
   Children,
   Color,
@@ -37,6 +39,9 @@ export type {
   Pt,
   RenderOptions,
   RenderResult,
+  Responsive,
+  ResponsiveProps,
+  ResponsiveValue,
   Severity,
   ShapeKind,
   ShapeProps,

@@ -42,7 +42,7 @@ export const rSlide = (
   children: readonly ResolvedNode[] = [],
   props: Omit<SlideProps, 'children'> = {},
   path = 'Slide',
-): ResolvedSlide => ({ kind: 'slide', path, props, children });
+): ResolvedSlide => ({ kind: 'slide', path, sourceSlide: 1, props, children });
 
 export const rBox = (
   props: Omit<BoxProps, 'children'> = {},
@@ -140,6 +140,7 @@ export const pSlide = (
 ): PositionedSlide => ({
   kind: 'slide',
   path: 'Slide',
+  sourceSlide: 1,
   props,
   frame: rect(0, 0, size.width, size.height),
   children,

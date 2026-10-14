@@ -67,6 +67,7 @@ describe('resolveDeck — full tree', () => {
         {
           kind: 'slide',
           path: 'CoverLayout',
+          sourceSlide: 1,
           props: { background: '#112233', notes: 'speaker notes' },
           children: [
             {
@@ -95,6 +96,7 @@ describe('resolveDeck — full tree', () => {
         {
           kind: 'slide',
           path: 'Slide',
+          sourceSlide: 2,
           props: {},
           children: [
             {
