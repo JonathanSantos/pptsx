@@ -74,7 +74,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M9 | M9-C | testes M9 (+142; referência posicionada da demo em `tests/examples/__fixtures__`) | ✅ |
 | M9 | M9-D | exemplos sem ternário (demo pixel a pixel igual); `TwoColumn direction` responsivo; `Bullets paginate`; `long-list.tsx` (16x9: 4/4/4, 4x3: 6/6); AGENT_GUIDE | ✅ |
 | M9 | M9-E | validação visual (demo antes × depois ≤ 1 pt; long-list) | ⬜ |
-| M9 | M9-F | agente virgem: deck com breakpoints e paginate | ⬜ |
+| M9 | M9-F | agente virgem: deck de 4 slides com breakpoints, `ctx.pick` e `paginate` em 3 builds (1º já sem error/warning); 6 lacunas do guia aplicadas no gate | ✅ |
 | M10 | M10-S | spike: `addChart`/`addTable` no Keynote/PowerPoint | ⬜ |
 | M10 | M10-0 | Contrato: `Chart`, `Table`, `PositionedTable`, `table-overflow` | ⬜ |
 | M10 | M10-A | resolve + primitivas | ⬜ |

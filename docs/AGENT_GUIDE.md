@@ -151,6 +151,7 @@ Numa `row`, `align="baseline"` (ou `alignSelf="baseline"` no item) alinha os fil
 - Enquanto pagina, os `Text` dentro do Box **não encolhem** (ficam com o `size` do autor); o resto do slide encolhe normalmente. Coube tudo num slide → nada muda, sem diagnóstico.
 - Os paths dos itens **não mudam** nas partes: o 8º item é `Box[7]` na parte 2 também.
 - Cada parte é um slide no `.pptx`, no overview e nos diagnósticos; a 1ª recebe `slide-continued` (info) com `data.parts` (§8). Tamanhos diferentes viram números de partes diferentes (4:3 tem mais altura).
+- **Partes desequilibradas:** a divisão é gulosa (cada parte leva o máximo que cabe), então 12 itens podem virar 10 + 2. Para equilibrar, aumente `size`/`gap` dos itens no breakpoint em que sobrou espaço (`size={{ base: 20, tall: 22, wide: 26 }}`, `gap={{ base: 14, tall: 22, wide: 22 }}`) e confira a contagem na mensagem do `slide-continued` ("7 de 12 itens no 1º, 5 no 2º"). Caber tudo num slide em algum tamanho também é aceitável: só os tamanhos que precisam paginam.
 - **Nada cabe** (nem o 1º item sozinho): o slide fica inteiro, o shrink volta e saem os diagnósticos normais (`text-overflow`…). **Limite de 10 partes:** a 10ª leva o resto e recebe `box-overflow` "A paginação parou em 10 partes; divida o conteúdo em mais de um slide no deck."
 
 ### Regras de flex que mais importam
@@ -271,13 +272,15 @@ Componentes (`'../components/index.ts'`):
 
 Aceitam valor responsivo (§2): `Bullets.size`/`gap`, `TwoColumn.direction`, `KpiCard.size`/`KpiRow.size` (`size={{ base: 'md', tall: 'lg', wide: 'lg' }}`). Os componentes não recebem `ctx`: o que depende do valor (gap padrão e deslocamento do marcador no `Bullets`, padding e tipografia do `KpiCard`, gap e `grow` das colunas no `TwoColumn`) é derivado **chave a chave** com `mapResponsive` (exportado de `'../components/index.ts'`), que mantém as mesmas chaves e por isso escolhe o mesmo breakpoint que a prop original. Faça igual no seu componente: `mapResponsive(size, (s) => s * 0.7)`. Se o componente precisa do valor concreto para decidir **estrutura** (quantos filhos, qual elemento), receba `ctx` e use `ctx.pick`. `TwoColumn.ratio` é fixo: combinar dois valores responsivos numa prop não tem forma exata chave a chave.
 
+Os tipos das props são exportados de `'../components/index.ts'` (`KpiCardProps`, `KpiSize`, `KpiTrend`, `BulletsProps`…). Para declarar dados fora do JSX, anote o tipo: `const kpis: readonly KpiCardProps[] = [...]` (sem isso `trend: 'up'` vira `string` e não bate com `'up' | 'down'`).
+
 Tamanhos do `KpiCard` (pt):
 
 | `size` | padding | label e delta | valor (minSize) | quando usar |
 |---|---|---|---|---|
 | `'sm'` | 14 | 12 | 32 (22) | 4+ cartões numa linha, valores longos ("1.284.392"), cartões estreitos |
 | `'md'` (padrão) | 20 | 14 | 44 (28) | 2–3 cartões em 16:9/4:3 |
-| `'lg'` | 20 | 16 | 56 (36) | 3 cartões com área sobrando (wide, 4:3); valores curtos |
+| `'lg'` | 20 | 16 | 56 (36) | 3 cartões com área sobrando (wide, 4:3); valores curtos. Largura do corpo com `ContentLayout`: 640 pt em 16:9 e 4:3, 880 pt em wide (4 cartões `lg` cabem no wide) |
 
 Largura útil do cartão = largura do cartão − 2 × padding. Ex.: 3 cards `md` em 16:9 (corpo 640 pt, gaps 20) → cartão ≈ 200 pt, útil ≈ 160 pt. Se um valor ou label partir no meio da palavra (`text-word-broken`), use `size="sm"` (ou menos cartões por linha).
 
@@ -352,7 +355,7 @@ Os trechos abaixo são filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, 
 </ContentLayout>
 ```
 
-A imagem fica com a maior caixa na proporção dela que cabe na coluna, no canto de cima à esquerda: lado a lado a largura limita, empilhada a altura que sobra limita. Sem o componente: `<Box direction={{ base: 'row', tall: 'column' }} gap={20} grow={1}>` com dois filhos `grow={1}`.
+A imagem fica com a maior caixa na proporção dela que cabe na coluna, no canto de cima à esquerda: lado a lado a largura limita, empilhada a altura que sobra limita. Empilhada em 4:3 a imagem pode sair pequena (a altura que sobra é pouca): para ela crescer, mostre menos bullets em `tall` (`items.slice(0, ctx.pick({ base: 5, tall: 3 }))`) ou use `size` menor dos bullets em `tall`. Sem o componente: `<Box direction={{ base: 'row', tall: 'column' }} gap={20} grow={1}>` com dois filhos `grow={1}`.
 
 ### 6.3 Linha de cards
 
@@ -421,7 +424,7 @@ Decoração vem **antes** do conteúdo (fica por trás) e usa `position="absolut
 <ClosingLayout ctx={ctx} title="Obrigado" />
 ```
 
-Em 16:9 vira 3 slides com o mesmo título (4 itens cada), em 4:3 vira 2 (6 cada); o encerramento passa a ser o slide 4 (ou 3) da saída. Exemplo completo: `examples/long-list.tsx`. Prefira isso a baixar `minSize` até a lista caber.
+Com os 12 itens de `examples/long-list.tsx` (2 linhas cada em 16:9), 16:9 vira 3 slides com o mesmo título (4 itens cada) e 4:3 vira 2 (6 cada); itens de 1 linha cabem mais por parte. O encerramento passa a ser o slide 4 (ou 3) da saída. Leia `data.parts` e a mensagem do `slide-continued` para saber a divisão real; se a última parte ficar com poucos itens, veja "Partes desequilibradas" na §3. Prefira isso a baixar `minSize` até a lista caber.
 
 ## 7. CLI e fluxo de trabalho
 
@@ -430,8 +433,10 @@ Dois cenários; o fluxo (build → ler diagnósticos → corrigir) é o mesmo.
 **(a) Dentro deste repo** (como na §2): rode na raiz do projeto; o deck fica em `examples/agent-test/`, importa `pptsx` sem build e pode usar tokens, layouts e componentes de `examples/`.
 
 ```
-node bin/pptsx.mjs build examples/agent-test/meu-deck.tsx --size 16x9,4x3 --out dist/agent-test --json
+node bin/pptsx.mjs build examples/agent-test/meu-deck.tsx --size 16x9,4x3,wide --out dist/agent-test --json
 ```
+
+`npx tsx src/cli.ts build …` é equivalente (o `bin` roda `src/` dentro do repo).
 
 **(b) Projeto próprio:** `npm install pptsx` e `npx pptsx init` numa pasta (cria `deck.tsx`, `tsconfig.json`, `pptsx.config.ts`, `assets/`, `.gitignore` e põe `"type": "module"` no `package.json`; sem isso o deck não carrega). Imports `from 'pptsx'`; imagens com caminho relativo ao arquivo do deck (`'./assets/foto.png'`). Tokens, layouts e componentes da §5 são exemplos do repo e **não** vêm no pacote: use primitivas ou copie-os de `examples/`.
 
@@ -456,7 +461,7 @@ dist/agent-test/
 
 - Com `--json`, stdout tem **só** `{ "files": [...], "diagnostics": [...] }` (mais `"fontsMissing": ["Inter bold"]` se alguma fonte registrada sem `file` não foi achada no sistema). Se o deck nem rodar (erro de sintaxe, texto fora de `<Text>`…), stdout tem `{ "error": "mensagem" }`. No `--watch`, cada linha é um desses dois objetos, e um erro não derruba o watch.
 - **Exit code**: `1` se houver qualquer diagnóstico `error` ou falha; `0` caso contrário. `warning`/`info` não falham.
-- Sempre gere **os dois tamanhos** (`16x9,4x3`): o que cabe em um pode não caber no outro.
+- Sempre gere **os dois tamanhos** (`16x9,4x3`): o que cabe em um pode não caber no outro. Inclua `wide` se o deck usa o breakpoint `wide` (em props ou em `ctx.pick`): ele tem resultado próprio.
 - `files` lista o `.pptx`, cada PNG de slide, o overview e o `diagnostics.json` — leia os caminhos dali.
 - Config opcional `pptsx.config.ts` no diretório atual (`export default defineConfig({ fonts?, sizes?, lang?, textSafety?, lineBreaks?, embedFonts? })`, `import { defineConfig } from 'pptsx'`); flags vencem a config. Você normalmente **não** precisa dela; se definir `fonts` (com `file` ou, sem ele, fonte do sistema: §4 "Fontes"), elas substituem a Arial padrão.
 
@@ -503,7 +508,7 @@ Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou)
 | `text-truncated` | warning | `truncate`/`maxLines` cortou com `…` | se não era a intenção: encurte, aumente a área ou `maxLines` |
 | `box-overflow` | error | tamanhos fixos (com `shrink={0}`), gap e padding somam mais que o contêiner | reduza `width`/`height` fixos ou gap/padding; troque fixos por `grow`/`%`; tire `shrink={0}`; empilhe em 4:3 |
 | `out-of-slide` | error | nó **em fluxo** fora dos limites do slide | reduza o tamanho; use `%`/`grow`; se for decoração, `position="absolute"` |
-| `slide-continued` | info | um `Box paginate` não coube e virou `data.parts` slides; só na 1ª parte, no path do Box | nada; para menos partes, reduza o `size` dos itens ou o conteúdo |
+| `slide-continued` | info | um `Box paginate` não coube e virou `data.parts` slides; só na 1ª parte, no path do Box | nada; para menos partes, reduza o `size` dos itens ou o conteúdo; última parte com poucos itens → aumente `size`/`gap` (responsivo) para redistribuir (§3) |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi (pode borrar) | arquivo com mais resolução ou área menor |
 | `font-missing` | error | `font` com família não registrada, ou registrada sem `file` e não achada no sistema (aparece também em `fontsMissing`); é o **único** diagnóstico desse Text (estouro e redução dele não são reportados: a medição é estimada) | remova `font` (padrão Arial), registre a face (§4 "Fontes") ou instale a fonte |
 | `font-not-embeddable` | warning | com `--embed-fonts`: a face não pode ser embutida (`.ttc`, `.otf` CFF ou licença `fsType` restrita). Um por face e por tamanho, com `slide: 0` e `path: ""` | use um `.ttf` de uma face só com licença que permita embed, ou aceite que o PowerPoint troque a fonte |
@@ -579,7 +584,7 @@ Sem duplicatas: um texto estourado é reportado no `Text`, não na Box pai; algo
 
 ### Checklist de correção
 
-1. Rode o build com `--size 16x9,4x3 --json` e leia o exit code.
+1. Rode o build com `--size 16x9,4x3 --json` (mais `wide` se o deck usa esse breakpoint) e leia o exit code.
 2. Se houver `{ "error": … }`: é erro de estrutura/sintaxe; a mensagem traz o path entre parênteses. Corrija e rode de novo.
 3. Filtre `severity: "error"` e, entre eles, primeiro os **sem `causedBy`**: são as causas. Os derivados (com `causedBy`) somem quando você corrige a causa; não mexa neles antes de rodar de novo.
 4. Para cada causa: ache o slide (`data.sourceSlide` se houver, senão `slide`), siga o `path` no seu código segmento por segmento (contando `[i]` entre irmãos do mesmo tipo/nome). Agrupado (`count`, `[a..b]`): corrija uma vez, no `.map`/componente.
