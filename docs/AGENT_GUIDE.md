@@ -62,7 +62,7 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 | `direction` | `'row' \| 'column'` | `'column'` | |
 | `gap` | pt | 0 | espaço entre filhos |
 | `padding` | pt ou `{ top, right, bottom, left }` | 0 | |
-| `align` | `'start' \| 'center' \| 'end' \| 'stretch'` | `'stretch'` | eixo cruzado (align-items) |
+| `align` | `'start' \| 'center' \| 'end' \| 'stretch' \| 'baseline'` | `'stretch'` | eixo cruzado (align-items); `'baseline'` só em row (ver "Baseline" abaixo) |
 | `justify` | `'start' \| 'center' \| 'end' \| 'between' \| 'around' \| 'evenly'` | `'start'` | eixo principal |
 
 ### Item flex (`Box`, `Text`, `Image`, `Shape`)
@@ -84,7 +84,9 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 | `Deck` | — | só `Slide` |
 | `Slide` | contêiner + `background?: '#hex' \| { image: 'caminho.png' }`, `notes?: string` | primitivas/componentes |
 | `Box` | contêiner + `fill?`, `stroke?`, `strokeWidth?` (1 pt se `stroke`), `radius?` (pt) | primitivas/componentes |
-| `Text` | ver §4 | **só strings/números** |
+| `Text` | ver §4 | strings/números e `Span`/`B`/`I` (rich text, §4) |
+| `Span` | `weight?: 'regular' \| 'bold'`, `italic?: boolean`, `color?: '#hex'` (**sem** `size`/`font`/`lineHeight`: não compila) | strings/números e outros `Span`/`B`/`I`; **só dentro de `Text`** |
+| `B` / `I` | atalhos de `Span weight="bold"` / `Span italic` (aceitam as mesmas props) | como `Span` |
 | `Image` | `src: string` (obrigatório; relativo ao arquivo do deck), `fit?: 'contain' \| 'cover'` (padrão `'contain'`) | nenhum |
 | `Shape` | `kind: 'rect' \| 'roundRect' \| 'ellipse' \| 'line'` (obrigatório), `fill?`, `stroke?`, `strokeWidth?`, `radius?` (roundRect) | nenhum |
 
@@ -94,6 +96,21 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 - `line` vai do canto superior esquerdo ao inferior direito do frame; sem `stroke` é preta. Divisória horizontal: `<Shape kind="line" height={0} stroke="#CCCCCC" />` numa coluna.
 - `Image` com só `width` (ou só `height`) mantém a proporção. Com `grow={1}` e sem tamanho, ocupa a área toda e `fit` decide (`contain` mostra tudo, `cover` preenche e recorta). Sem tamanho nem grow: tamanho natural (px × 0.75 pt).
 - Ordem de desenho = ordem no código: decoração **antes** do conteúdo fica por trás.
+
+### Baseline (`align="baseline"`)
+
+Numa `row`, `align="baseline"` (ou `alignSelf="baseline"` no item) alinha os filhos pela **linha de base da 1ª linha de texto**, não pelo topo nem pelo centro. É o jeito certo de pôr um rótulo pequeno ao lado de um valor grande, sem calcular deslocamento (e continua certo se o fit encolher o valor):
+
+```tsx
+<Box direction="row" align="baseline" gap={10}>
+  <Text size={44} weight="bold" color="#1B2A4A">52,4</Text>
+  <Text size={14} weight="bold" color="#1E9E6A">▲ +14,2%</Text>
+</Box>
+```
+
+- Só vale em `row`; numa `column` é tratado como `start`.
+- Baseline de cada filho: `Text` = 1ª linha; `Box` = a do 1º filho em fluxo; `Image`/`Shape` = a **base** (borda de baixo). Por isso um marcador `Shape` numa row com baseline fica *assentado* na linha do texto (visualmente baixo para um círculo): para marcador de lista, use `align="start"` com deslocamento, como o `Bullets` (§5).
+- Numa row com baseline, `Text` com `grow`/`width` funciona normalmente (um texto longo que ocupa o resto da row e quebra em várias linhas alinha pela 1ª linha).
 
 ### Regras de flex que mais importam
 
@@ -111,21 +128,76 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 | `weight` | `'regular' \| 'bold'` | `'regular'` | |
 | `italic` | boolean | false | |
 | `color` | `'#hex'` | `'#000000'` | |
-| `font` | string | `'Arial'` | **só Arial** está registrada; outra família = erro `font-missing` |
+| `font` | string | `'Arial'` | família registrada em `fonts` (config ou `options`); de fábrica **só Arial**; família não registrada = erro `font-missing` (ver "Fontes" abaixo) |
 | `align` | `'left' \| 'center' \| 'right'` | `'left'` | alinhamento horizontal das linhas (não confundir com `align` de Box) |
 | `lineHeight` | número | 1 | multiplicador da altura natural da linha |
 | `fit` | `'shrink' \| 'truncate' \| 'error'` | `'shrink'` | o que fazer se não couber |
 | `minSize` | pt | `max(floor(size × 0.75), 10)` | piso do `shrink`; abaixo de 10 só se você passar explícito (gera `text-illegible`) |
 | `maxLines` | número | — | corta com `…` após N linhas |
+| `nowrap` | boolean | false | nunca quebra linha: cada parágrafo é uma linha só (valores, unidades, rótulos curtos) |
 
 - **Quebra de linha é automática**, pela largura do frame. Não use `\n` para quebrar linha; use `\n` só para separar **parágrafos**: `<Text>{'Primeiro parágrafo.\nSegundo.'}</Text>`.
 - Filhos são concatenados sem separador: `<Text>Gerado em {ctx.name}.</Text>` funciona; `{a}{b}` cola as strings.
-- Sem rich text: um `Text` tem um só estilo. Para trechos com estilos diferentes, use vários `Text` numa `Box direction="row"`.
 - Políticas de `fit`:
   - `shrink` (padrão): procura o **maior** size entre `size` e `minSize` em que o texto cabe (busca direta, sem limite de passos); se precisar, chega sempre ao `minSize`. Também reage a **palavra partida** (palavra ou número sem espaço mais largo que a linha): vai direto ao size em que a palavra cabe. Textos da mesma **instância** de componente (ex.: todos os itens de um `Bullets`, ou label/valor/delta de um mesmo `KpiCard`) encolhem **juntos**, mantendo a hierarquia; o título fora dele não muda e outra instância (o `KpiCard` ao lado) só encolhe se ela mesma não couber. Por isso cartões vizinhos podem terminar com tamanhos diferentes: um `text-shrunk` agrupado em `KpiCard[0,1,2,4]` quer dizer que o `KpiCard[3]` ficou maior. Palavra partida só leva o próprio Text ao size em que ela cabe; os vizinhos só descem o que a altura exigir. Coube → `text-shrunk` (info). Não coube no mínimo → `text-overflow` (error). Palavra ainda partida no mínimo → `text-word-broken` (warning).
   - Piso de legibilidade: sem `minSize`, o mínimo é `max(floor(0.75 × size), 10)` (um caption de 11 pt para em 10). Com `minSize` abaixo de 10 o texto pode descer até ele; se ficar abaixo de 10, vem `text-illegible` (warning).
   - `truncate`: corta a última linha visível com `…` → `text-truncated` (warning).
   - `error`: não ajusta; se estourar → `text-overflow` (error).
+
+### Rich text (`Span`, `B`, `I`)
+
+```tsx
+import { B, I, Span, Text } from 'pptsx';
+
+<Text size={20} color="#1B2A4A">
+  Receita <B>subiu 14%</B> em <Span color="#2F6FED" italic>todas</Span> as regiões, <I>exceto</I> no Norte.
+</Text>
+```
+
+- `Span`/`B`/`I` só existem **dentro de `Text`** (ou de outro `Span`). Fora dele → erro de estrutura `<Span> só pode aparecer dentro de <Text>`.
+- Por trecho mudam só `weight`, `italic` e `color`. `size`, `font` e `lineHeight` são do `Text` inteiro (a linha tem altura única); `<B size={30}>` não compila. Número grande ao lado de texto pequeno = dois `Text` numa row com `align="baseline"` (§3).
+- Herança: o trecho herda o estilo do `Text`, e o `Span` mais interno vence: `<Text weight="bold">Total: <Span weight="regular">acima da meta</Span></Text>`.
+- O `Text` encolhe inteiro (todos os trechos no mesmo size); a quebra de linha pode cair no meio de um trecho em negrito.
+- `{'\n'}` dentro de um `Span` cria parágrafo novo como em qualquer lugar do `Text`.
+- **Espaços em JSX:** no meio da linha o espaço fica (`Receita <B>subiu</B>`). Uma quebra de linha **no código** encostada num elemento some: `Receita` numa linha e `<B>subiu</B>` na seguinte vira "Receitasubiu". Mantenha o espaço na mesma linha do texto (`Receita <B>…`) ou use `{' '}`.
+- `Bullets` (§5) aceita itens com rich text: `items={[<>Receita <B>+14%</B></>, 'Churn estável']}`.
+
+### NBSP e `nowrap`
+
+**NBSP** (espaço não separável, U+00A0) cola duas palavras: a linha nunca quebra nele (ele ocupa a largura de um espaço). Use entre número e unidade: "R$ 52,4 mi", "99,95 %", "10 km". Duas formas, ambas compilam:
+
+```tsx
+<Text>Receita de R$&nbsp;52,4&nbsp;mi no trimestre.</Text>       {/* entidade, só em texto JSX */}
+<Text>{'Receita de R$\u00A052,4\u00A0mi no trimestre.'}</Text>  {/* escape, em strings JS */}
+```
+
+`&nbsp;` só funciona **no texto JSX**; dentro de uma string JS (`'R$&nbsp;52'`, props como `items` ou `value`) ele sai literal. Em strings, use `\u00A0` (ex.: `label: 'Receita (R$\u00A0mi)'`).
+
+**`nowrap`** (`<Text nowrap>`): o texto nunca quebra; cada parágrafo é uma linha. Use para valores e rótulos curtos que não podem partir ("R$ 52,4 mi", "Q3 2026"). Para colar só algumas palavras dentro de um texto longo, prefira NBSP.
+
+- Se a linha não couber na largura, `fit="shrink"` reduz o size até `minSize`. Se ainda não couber (ou com `fit="error"`), vem `text-overflow` com `data.axis: "width"` e a mensagem "Texto com nowrap tem 238.2 pt de largura numa área de 130 pt mesmo em 14 pt (mínimo); encurte o texto, alargue a área ou remova nowrap."
+- Numa row, o `Text` com `nowrap` não encolhe abaixo da largura da linha: os irmãos é que encolhem. Se a row estourar, os estouros dos irmãos vêm com `causedBy` apontando para ele.
+
+### Fontes
+
+De fábrica só existe **Arial** (medida com a Liberation Sans incluída no pacote, mesmas métricas; o arquivo sai com `Arial`). Outras famílias são registradas em `fonts` na config (`pptsx.config.ts`) ou em `RenderOptions.fonts`, **uma entrada por face** (`weight` `'regular'`/`'bold'`, `italic: true` para itálico):
+
+```ts
+export default defineConfig({
+  fonts: [
+    { family: 'Helvetica', weight: 'regular' },              // sem file: procura nas pastas de fontes do sistema
+    { family: 'Helvetica', weight: 'bold' },
+    { family: 'Inter', weight: 'regular', file: './fonts/Inter-Regular.ttf' }, // com file: relativo à config
+    { family: 'Arial', weight: 'regular' },                  // fonts SUBSTITUI o padrão: registre Arial se o deck ainda a usa
+    { family: 'Arial', weight: 'bold' },
+  ],
+});
+```
+
+- Sem `file`, a engine procura a família nas pastas de fontes do sistema (macOS, Linux e Windows; `.ttf`, `.otf` e `.ttc`). Não achou: a CLI imprime `▲ fontes não encontradas no sistema: Inter bold` (no `--json`, campo `fontsMissing`) e todo `Text` que usa a face recebe `font-missing` (error). Não há substituição silenciosa.
+- `fonts` **substitui** a Arial padrão: se algum `Text` continua sem `font`, registre Arial também (do sistema ou por arquivo).
+- Itálico usado sem face `italic: true` registrada é medido com a face reta.
+- Quem abre o `.pptx` precisa ter a fonte instalada, ou o aplicativo troca por outra (e a quebra muda). `--embed-fonts` (§7) embute as faces no arquivo, mas **só o PowerPoint usa**: o Keynote ignora a fonte embutida (e o Google Slides provavelmente também). Embute só TrueType de uma face (`.ttf`) com licença que permite embed; `.ttc` (como a Helvetica do macOS) e `.otf` CFF geram `font-not-embeddable` (warning). A Arial padrão nunca é embutida.
 
 ## 5. Tokens, layouts e componentes prontos
 
@@ -151,9 +223,9 @@ Componentes (`'../components/index.ts'`):
 
 | componente | props | o que faz |
 |---|---|---|
-| `Bullets` | `items: readonly string[]; size?: number` (padrão `font.body`); `gap?: number` (pt entre itens, padrão `0.7 × size`) | coluna de itens: marcador elipse 8×8 + Text grow (shrink, minSize 14) |
+| `Bullets` | `items: readonly TextChildren[]` (string ou rich text, ex.: `<>Receita <B>+14%</B></>`); `size?: number` (padrão `font.body`); `gap?: number` (pt entre itens, padrão `0.7 × size`) | coluna de itens: marcador elipse 8×8 + Text grow (shrink, minSize 14) |
 | `TwoColumn` | `left; right` (qualquer elemento); `stacked?: boolean`; `ratio?: number` (fração da largura da esquerda, padrão 0.5; só vale lado a lado) | row com gap, colunas por `grow`, **ambas alinhadas ao topo**; `stacked` vira coluna: `left` com a altura do conteúdo em cima, `right` ocupa o resto (bom para imagem com `grow` ou `height="100%"`) |
-| `KpiCard` | `label: string; value: string; delta?: string; trend?: 'up' \| 'down'; sentiment?: 'positive' \| 'negative' \| 'neutral'; size?: 'sm' \| 'md' \| 'lg'` | cartão `surface` arredondado, `grow={1}`: label muted, valor bold grande, delta. **`trend` só define a seta** (▲ `up` / ▼ `down`); **`sentiment` define a cor** (verde `positive` / vermelho `negative` / cinza `neutral`). Sem `sentiment`: `up` → positive, `down` → negative, sem trend → neutral |
+| `KpiCard` | `label: string; value: string; delta?: string; trend?: 'up' \| 'down'; sentiment?: 'positive' \| 'negative' \| 'neutral'; size?: 'sm' \| 'md' \| 'lg'; inlineDelta?: boolean` | cartão `surface` arredondado, `grow={1}`: label muted, valor bold grande, delta. **`trend` só define a seta** (▲ `up` / ▼ `down`); **`sentiment` define a cor** (verde `positive` / vermelho `negative` / cinza `neutral`). Sem `sentiment`: `up` → positive, `down` → negative, sem trend → neutral. `inlineDelta` (padrão false): delta **ao lado** do valor, alinhado pela baseline; só com delta curto ("+14%"), senão os textos encolhem para caber |
 | `KpiRow` | `items: readonly KpiCardProps[]; size?: 'sm' \| 'md' \| 'lg'` | row com gap; cada card `grow={1}` (larguras iguais); `size` vale para todos (o `size` de um item vence) |
 
 Tamanhos do `KpiCard` (pt):
@@ -192,6 +264,7 @@ Largura útil do cartão = largura do cartão − 2 × padding. Ex.: 3 cards `md
 
 ```tsx
 <KpiCard label="Clientes ativos" value="12.430" delta="+6%" trend="up" size="sm" />
+<KpiCard label="NPS" value="62" delta="−4" trend="down" inlineDelta />  {/* "62 ▼ −4" na mesma linha */}
 ```
 
 ```tsx
@@ -298,7 +371,7 @@ node bin/pptsx.mjs build examples/agent-test/meu-deck.tsx --size 16x9,4x3 --out 
 npx pptsx build deck.tsx --size 16x9,4x3 --json
 ```
 
-Flags: `--size` (lista: `16x9`, `16x10`, `4x3`, `wide`, ou `10x7.5in`; padrão `16x9`), `--out` (padrão `dist/`), `--debug` (contornos vermelhos tracejados em toda Box/Text/Image e estouro de texto em vermelho no PNG), `--json`, `--preview native|none`, `--preview-width 1280`, `--lang pt-BR`, `--line-breaks forced|auto` (padrão `forced`: cada linha medida vira quebra manual, igual ao PNG; `auto` deixa o PowerPoint requebrar, mais editável, pode divergir 1 linha), `--watch` (build inicial e rebuild a cada mudança salva na pasta do deck ou na config; componentes e tokens importados recarregam; com `--json`, **um JSON por linha** por build; Ctrl-C sai com 0).
+Flags: `--size` (lista: `16x9`, `16x10`, `4x3`, `wide`, ou `10x7.5in`; padrão `16x9`), `--out` (padrão `dist/`), `--debug` (contornos vermelhos tracejados em toda Box/Text/Image e estouro de texto em vermelho no PNG), `--json`, `--preview native|none`, `--preview-width 1280`, `--lang pt-BR`, `--line-breaks forced|auto` (padrão `forced`: cada linha medida vira quebra manual, igual ao PNG; `auto` deixa o PowerPoint requebrar, mais editável, pode divergir 1 linha), `--watch` (build inicial e rebuild a cada mudança salva na pasta do deck ou na config; componentes e tokens importados recarregam; com `--json`, **um JSON por linha** por build; Ctrl-C sai com 0), `--embed-fonts` (embute no `.pptx` as fontes registradas que o deck usa; só o PowerPoint respeita, o Keynote ignora; ver §4 "Fontes").
 
 `pptsx init [dir] [--force] [--json]`: recusa se `deck.tsx` já existe (salvo `--force`); com `--json`, stdout é `{ "files": [...] }`.
 
@@ -313,11 +386,11 @@ dist/agent-test/
 └── meu-deck.diagnostics.json      ← todos os diagnósticos, todos os tamanhos
 ```
 
-- Com `--json`, stdout tem **só** `{ "files": [...], "diagnostics": [...] }`. Se o deck nem rodar (erro de sintaxe, texto fora de `<Text>`…), stdout tem `{ "error": "mensagem" }`. No `--watch`, cada linha é um desses dois objetos, e um erro não derruba o watch.
+- Com `--json`, stdout tem **só** `{ "files": [...], "diagnostics": [...] }` (mais `"fontsMissing": ["Inter bold"]` se alguma fonte registrada sem `file` não foi achada no sistema). Se o deck nem rodar (erro de sintaxe, texto fora de `<Text>`…), stdout tem `{ "error": "mensagem" }`. No `--watch`, cada linha é um desses dois objetos, e um erro não derruba o watch.
 - **Exit code**: `1` se houver qualquer diagnóstico `error` ou falha; `0` caso contrário. `warning`/`info` não falham.
 - Sempre gere **os dois tamanhos** (`16x9,4x3`): o que cabe em um pode não caber no outro.
 - `files` lista o `.pptx`, cada PNG de slide, o overview e o `diagnostics.json` — leia os caminhos dali.
-- Config opcional `pptsx.config.ts` no diretório atual (`export default defineConfig({ fonts?, sizes?, lang?, textSafety?, lineBreaks? })`, `import { defineConfig } from 'pptsx'`); flags vencem a config. Você normalmente **não** precisa dela; se definir `fonts`, elas substituem a Arial padrão.
+- Config opcional `pptsx.config.ts` no diretório atual (`export default defineConfig({ fonts?, sizes?, lang?, textSafety?, lineBreaks?, embedFonts? })`, `import { defineConfig } from 'pptsx'`); flags vencem a config. Você normalmente **não** precisa dela; se definir `fonts` (com `file` ou, sem ele, fonte do sistema: §4 "Fontes"), elas substituem a Arial padrão.
 
 ## 8. Diagnósticos
 
@@ -337,7 +410,7 @@ Formato (cada item de `diagnostics.json` / `diagnostics` do `--json`):
 
 `slide` começa em 1 (ordem no `<Deck>`). `severity`: `error` (precisa corrigir), `warning` (aceitável se intencional), `info` (só aviso).
 
-Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou), `fromSize`/`toSize` (size do autor → size final) e:
+Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou), `fromSize`/`toSize` (size do autor → size final), `axis` (`"width"` no `text-overflow` de um `Text` com `nowrap` que não cabe na largura; ausente = altura) e:
 
 - `causedBy`: path do nó que **provocou** este estouro (um irmão que pede mais espaço do que há e espreme os outros). Este diagnóstico é **consequência**: corrija a causa primeiro; os derivados costumam sumir sozinhos. A causa em si não tem `causedBy`. Só `text-overflow` e `box-overflow` recebem.
 - `count` e `paths`: diagnóstico **agrupado**. Irmãos homônimos com o mesmo problema (mesmo `code`, `severity` e `causedBy`) viram um item só: o segmento repetido junta os índices no `path` (`Box[0..7]` contíguos, `Box[0,2,5]` não contíguos), `count` diz quantos são e `paths` lista cada path individual. `message` e números são os do pior. Corrija uma vez, no `.map` ou componente que gera os irmãos.
@@ -355,14 +428,15 @@ Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou)
 | code | severity | causa | correção típica |
 |---|---|---|---|
 | `text-shrunk` | info | o texto foi reduzido e coube | nada; se a fonte ficou pequena, encurte o texto ou dê mais área |
-| `text-overflow` | error | `shrink` chegou em `minSize` e ainda não cabe, `fit="error"` estourou, ou a área do texto é 0 pt | com `causedBy`: corrija a causa primeiro. Senão: encurte o texto; dê área (`grow={1}` no contêiner, menos padding/gap, menos irmãos); baixe `minSize`; divida em dois slides; ou use `fit="truncate"`. Área 0 pt: tire `grow` do Text em coluna (§9) |
+| `text-overflow` | error | `shrink` chegou em `minSize` e ainda não cabe, `fit="error"` estourou, ou a área do texto é 0 pt. Com `data.axis: "width"`: um `nowrap` mais largo que a área | com `causedBy`: corrija a causa primeiro. Senão: encurte o texto; dê área (`grow={1}` no contêiner, menos padding/gap, menos irmãos); baixe `minSize`; divida em dois slides; ou use `fit="truncate"`. Área 0 pt: tire `grow` do Text em coluna (§9). Largura (`nowrap`): encurte, alargue a área ou tire `nowrap` (NBSP cola só as palavras que importam) |
 | `text-word-broken` | warning | palavra ou número sem espaço mais largo que a linha, partido por caractere (mesmo no mínimo, no `shrink`) | abrevie ("R$ 52,4 mi"); dê largura (menos colunas, `grow`); `size="sm"` no `KpiCard`; ou size menor |
 | `text-illegible` | warning | o `shrink` reduziu o texto abaixo de 10 pt (só com `minSize` explícito < 10) | encurte o texto ou dê mais área; se a fonte pequena é intencional, ignore |
 | `text-truncated` | warning | `truncate`/`maxLines` cortou com `…` | se não era a intenção: encurte, aumente a área ou `maxLines` |
 | `box-overflow` | error | tamanhos fixos (com `shrink={0}`), gap e padding somam mais que o contêiner | reduza `width`/`height` fixos ou gap/padding; troque fixos por `grow`/`%`; tire `shrink={0}`; empilhe em 4:3 |
 | `out-of-slide` | error | nó **em fluxo** fora dos limites do slide | reduza o tamanho; use `%`/`grow`; se for decoração, `position="absolute"` |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi (pode borrar) | arquivo com mais resolução ou área menor |
-| `font-missing` | error | `font` com família não registrada; é o **único** diagnóstico desse Text (estouro e redução dele não são reportados: a medição é estimada) | remova `font` (padrão Arial) |
+| `font-missing` | error | `font` com família não registrada, ou registrada sem `file` e não achada no sistema (aparece também em `fontsMissing`); é o **único** diagnóstico desse Text (estouro e redução dele não são reportados: a medição é estimada) | remova `font` (padrão Arial), registre a face (§4 "Fontes") ou instale a fonte |
+| `font-not-embeddable` | warning | com `--embed-fonts`: a face não pode ser embutida (`.ttc`, `.otf` CFF ou licença `fsType` restrita). Um por face e por tamanho, com `slide: 0` e `path: ""` | use um `.ttf` de uma face só com licença que permita embed, ou aceite que o PowerPoint troque a fonte |
 
 Mensagens reais:
 
@@ -393,6 +467,10 @@ Mensagens reais:
   Imagem desenhada com 700 pt de largura, acima do natural (800 px = 600 pt a 96 dpi); pode sair borrada. Use um arquivo com mais resolução ou reduza a área da imagem.
 ✖ font-missing em Slide > Text
   Fonte "Helvetica Neue regular" não está registrada; o texto foi medido por estimativa e a quebra de linha pode não bater com o PowerPoint. Registre a fonte em options.fonts ou use uma família registrada.
+✖ text-overflow em Slide > Box > Text
+  Texto com nowrap tem 238.2 pt de largura numa área de 130 pt mesmo em 14 pt (mínimo); encurte o texto, alargue a área ou remova nowrap.
+▲ font-not-embeddable em 
+  A fonte "Helvetica regular" não é um TrueType de uma face só (.otf CFF ou coleção .ttc) e não foi embutida.
 ```
 
 Sem `--json`, a CLI imprime um resumo em que os derivados (com `causedBy`) aparecem **sob a causa**, com `↳`, e não contam no cabeçalho (`+N derivados`); o exit code conta todos:
@@ -415,7 +493,8 @@ Erros de estrutura (o deck não chega a ser medido; exit 1, sem `diagnostics.jso
 
 ```
 Texto "Olá" fora de <Text>; envolva o conteúdo em <Text> (em Slide > Box)
-<Text> só aceita strings e números como filhos; elementos não são permitidos (em Slide > Text)
+<Text> só aceita strings, números e <Span>/<B>/<I> como filhos (em Slide > Text)
+<Span> só pode aparecer dentro de <Text> (em Slide > Box)
 ```
 
 Também: `Filhos de <Deck> têm que ser <Slide>…`, `<Image> não aceita filhos`.
@@ -441,11 +520,17 @@ Sem duplicatas: um texto estourado é reportado no `Text`, não na Box pai; algo
 ```jsx
 // ERRADO: texto solto fora de <Text>  → erro "fora de <Text>"
 <Box>Olá</Box>
-// ERRADO: elemento dentro de <Text>   → erro "só aceita strings e números"
+// ERRADO: Text dentro de <Text>      → erro "só aceita strings, números e <Span>/<B>/<I>"
 <Text>Receita <Text weight="bold">subiu</Text></Text>
+// CERTO:
+<Text>Receita <B>subiu</B></Text>
+// ERRADO: <B> fora de <Text>          → erro "<Span> só pode aparecer dentro de <Text>"
+<Box><B>Atenção</B></Box>
 ```
 
-- **Texto sempre dentro de `<Text>`**, e `<Text>` só com strings/números. (o TypeScript já acusa elemento dentro de `<Text>`.) Negrito parcial = dois `Text` numa row.
+- **Texto sempre dentro de `<Text>`**, e dentro de `<Text>` só strings/números e `Span`/`B`/`I` (negrito parcial = `<B>`). O TypeScript **não** acusa outro elemento dentro de `<Text>`: o erro só aparece no build (erro de estrutura, exit 1).
+- **Espaço sumido em rich text**: quebra de linha no código encostada em `<B>`/`<I>`/`<Span>` some ("Receitasubiu"). Deixe o espaço na mesma linha ou use `{' '}` (§4).
+- **`&nbsp;` dentro de string JS** sai literal: use `\u00A0` em strings e props; `&nbsp;` só em texto JSX.
 - **Shape/Box com tamanho fixo encolhe** (`shrink` padrão é 1, como no CSS): um marcador `width={8}` numa row apertada vira uma elipse achatada; uma barra some. Use `shrink={0}` em tudo que tem tamanho que deve ser respeitado. Mas `shrink={0}` em itens grandes gera `box-overflow` se não couberem.
 - **`grow={1}` em Text dentro de coluna** de altura pelo conteúdo colapsa o texto (área 0 pt → `text-overflow` "A área disponível para o texto é 0 pt"): `grow={1}` tem base 0 e, sem altura sobrando na coluna, o Text fica com 0. Use `grow` em Text só dentro de `row`; numa coluna, deixe o Text sem `grow` (dê `grow` ao Box, se quiser ocupar a altura).
 - **`grow={1}` num filho anula o `justify`** do contêiner: o filho ocupa a sobra, então não há o que centralizar. `ContentLayout justify="center"` com um Box `grow={1}` dentro fica no topo; tire o `grow` do que deve ser centralizado.
@@ -456,7 +541,7 @@ Sem duplicatas: um texto estourado é reportado no `Text`, não na Box pai; algo
 - **Padding grande**: `padding={80}` tira 160 pt de cada eixo; em 16:9 sobram só 245 pt de altura. Use `tokens.space.page` (40).
 - **Duas colunas de texto longo** ficam apertadas; em 4:3 há altura sobrando: empilhe com `stacked={ctx.aspect < 1.5}` (ou `direction` condicional). Nunca escreva um arquivo por tamanho.
 - **`\n` para quebrar linha**: não precisa (a quebra é automática); `\n` cria parágrafo novo.
-- **Fonte diferente de Arial** → `font-missing` (error), e nenhum outro diagnóstico desse Text. Omita `font`.
+- **Fonte diferente de Arial sem registrar** → `font-missing` (error), e nenhum outro diagnóstico desse Text. Omita `font` ou registre a família em `fonts` (§4 "Fontes").
 - **`position="absolute"` para posicionar conteúdo**: não faça; absoluto é só decoração (não participa do layout nem dos diagnósticos de caixa). Conteúdo vai em fluxo.
 - **`fit="error"`** só se você quer ser avisado em vez de ajuste; o padrão `shrink` é o mais seguro.
 - **Caminhos de imagem** são relativos ao arquivo do deck: de `examples/agent-test/`, use `'../assets/chart.png'`.

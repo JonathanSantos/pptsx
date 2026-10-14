@@ -15,6 +15,11 @@ export interface KpiCardProps {
   readonly sentiment?: KpiSentiment;
   /** Escala do cartão; padrão 'md'. Use 'sm' para 4+ cartões ou valores longos, 'lg' com largura/altura sobrando. */
   readonly size?: KpiSize;
+  /**
+   * Variação na mesma linha do valor, alinhada pela baseline ("52,4  ▲ +14,2%").
+   * Padrão false (variação embaixo). Use com variações curtas: a linha precisa caber valor + variação.
+   */
+  readonly inlineDelta?: boolean;
 }
 
 const { color, font, space } = tokens;
@@ -44,16 +49,22 @@ const trendMark = (trend: KpiTrend | undefined): string =>
  * "Chamados ▲ +22%" vermelho.
  * grow={1}: numa KpiRow os cartões dividem a largura igualmente e esticam na altura.
  */
-export function KpiCard({ label, value, delta, trend, sentiment, size = 'md' }: KpiCardProps) {
+export function KpiCard({ label, value, delta, trend, sentiment, size = 'md', inlineDelta = false }: KpiCardProps) {
   const s = SIZES[size];
   const deltaColor = SENTIMENT_COLOR[sentiment ?? defaultSentiment(trend)];
+  const valueText = <Text size={s.value} weight="bold" color={color.ink} minSize={s.minValue}>{value}</Text>;
+  const deltaText = delta ? (
+    <Text size={s.label} weight="bold" color={deltaColor}>{trendMark(trend) + delta}</Text>
+  ) : null;
+  // baseline: a 1ª linha da variação pequena senta na mesma linha de base do valor grande,
+  // sem calcular deslocamento a partir dos tamanhos (que mudam quando o fit encolhe o valor).
+  const body = inlineDelta && deltaText ? (
+    <Box direction="row" align="baseline" gap={s.gap}>{valueText}{deltaText}</Box>
+  ) : [valueText, deltaText];
   return (
     <Box grow={1} fill={color.surface} radius={8} padding={s.padding} gap={s.gap}>
       <Text size={s.label} color={color.muted}>{label}</Text>
-      <Text size={s.value} weight="bold" color={color.ink} minSize={s.minValue}>{value}</Text>
-      {delta ? (
-        <Text size={s.label} weight="bold" color={deltaColor}>{trendMark(trend) + delta}</Text>
-      ) : null}
+      {body}
     </Box>
   );
 }

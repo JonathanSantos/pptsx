@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PositionedNode, PositionedSlide, PositionedText, SlideElement } from '../../src/core/types.ts';
 import { Box, Image, Shape, Slide, Text } from '../../src/primitives/index.ts';
-import { layoutOnly } from '../helpers/fit-env.tsx';
+import { fit, layoutOnly } from '../helpers/fit-env.tsx';
 import { child } from '../helpers/positioned.ts';
 
 /**
@@ -156,5 +156,91 @@ describe('layout — align="baseline" in a column behaves as start', () => {
     const text = asText(child(slide, 0, 0));
     expect(text.frame.x).toBeCloseTo(40, 3);
     expect(text.frame.width).toBeLessThan(640 - 1);
+  });
+});
+
+describe('layout — baseline row keeps the wrapped Text height (M8)', () => {
+  const PHRASE = 'Receita líquida do trimestre subiu muito';
+  const GAP = 6;
+
+  /** Altura preservada, baselines coincidentes e nenhum diagnóstico no fit. */
+  const expectPreserved = (slide: SlideElement, texts: readonly (readonly number[])[]) => {
+    const positioned = layoutOnly(slide);
+    const shape = child(positioned, 0, 0);
+    const row = child(positioned, 0);
+    texts.forEach((indices) => {
+      const text = asText(child(positioned, ...indices));
+      expect(text.text.lines, `lines of ${text.path}`).toHaveLength(2);
+      expect(Math.abs(text.frame.height - 2 * text.text.lineHeight), `height of ${text.path}`).toBeLessThanOrEqual(TOL);
+      expect(Math.abs(bottom(shape) - textBaseline(text)), `baseline of ${text.path}`).toBeLessThanOrEqual(TOL);
+      expect(row.frame.height).toBeGreaterThanOrEqual(text.frame.height - TOL);
+    });
+    expect(fit(slide).diagnostics).toEqual([]);
+    return positioned;
+  };
+
+  it('Shape shrink 0 + Text grow 1: Text takes the rest of the row with 2 lines of height', () => {
+    const slide = (
+      <Slide padding={40}>
+        <Box direction="row" align="baseline" gap={GAP} width={300}>
+          <Shape kind="ellipse" width={8} height={8} shrink={0} />
+          <Text size={20} grow={1}>
+            {PHRASE}
+          </Text>
+        </Box>
+      </Slide>
+    );
+    const positioned = expectPreserved(slide, [[0, 1]]);
+    const text = asText(child(positioned, 0, 1));
+    expect(text.frame.width).toBeCloseTo(300 - 8 - GAP, 2);
+    expect(Math.abs(child(positioned, 0).frame.height - text.frame.height)).toBeLessThanOrEqual(TOL);
+  });
+
+  it('variant: Text with width={300}', () => {
+    expectPreserved(
+      <Slide padding={40}>
+        <Box direction="row" align="baseline" gap={GAP} width={500}>
+          <Shape kind="ellipse" width={8} height={8} shrink={0} />
+          <Text size={20} width={300}>
+            {PHRASE}
+          </Text>
+        </Box>
+      </Slide>,
+      [[0, 1]],
+    );
+  });
+
+  it('variant: two Texts with grow={1}', () => {
+    expectPreserved(
+      <Slide padding={40}>
+        <Box direction="row" align="baseline" gap={GAP} width={500}>
+          <Shape kind="ellipse" width={8} height={8} shrink={0} />
+          <Text size={20} grow={1}>
+            {PHRASE}
+          </Text>
+          <Text size={20} grow={1}>
+            {PHRASE}
+          </Text>
+        </Box>
+      </Slide>,
+      [
+        [0, 1],
+        [0, 2],
+      ],
+    );
+  });
+
+  it('variant: <Box grow={1}><Text/></Box>', () => {
+    expectPreserved(
+      <Slide padding={40}>
+        <Box direction="row" align="baseline" gap={GAP} width={300}>
+          <Shape kind="ellipse" width={8} height={8} shrink={0} />
+          <Box grow={1}>
+            <Text size={20}>{PHRASE}</Text>
+          </Box>
+        </Box>
+      </Slide>,
+      [[0, 1, 0]],
+    );
   });
 });

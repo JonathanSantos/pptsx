@@ -177,20 +177,36 @@ export const textOverflowRectOf = (node: PositionedText): Rect | undefined => {
   return { x: frame.x, y: frame.y + frame.height, width: frame.width, height: text.height - frame.height };
 };
 
+/**
+ * nowrap: parte da linha que passa da largura disponível (o frame cortado pela área de
+ * conteúdo do pai, como no fit). Numa row o minWidth alarga o frame até a linha, então
+ * comparar só com o frame esconderia o estouro.
+ */
+export const textWidthOverflowRectOf = (node: PositionedText, available: Pt = node.frame.width): Rect | undefined => {
+  const { frame, text } = node;
+  if (node.props.nowrap !== true || text.fontMissing) return undefined;
+  const excess = text.width - available;
+  if (excess <= DEFAULTS.fit.epsilon) return undefined;
+  return { x: frame.x + available, y: frame.y, width: excess, height: text.height };
+};
+
 const solidOutlineAttrs: Attrs = {
   fill: 'none',
   stroke: DEBUG_TEXT_OVERFLOW.color,
   'stroke-width': DEBUG_TEXT_OVERFLOW.width,
 };
 
-/** Faixa estourada (translúcida, contorno sólido) + caixa do texto em contorno sólido. */
-export const textOverflowSvg = (frame: Rect, band: Rect): string =>
+const overflowBandSvg = (band: Rect): string =>
   element('rect', {
     ...rectAttrs(band),
     ...solidOutlineAttrs,
     fill: DEBUG_OVERFLOW.color,
     'fill-opacity': DEBUG_OVERFLOW.opacity,
-  }) + element('rect', { ...rectAttrs(frame), ...solidOutlineAttrs });
+  });
+
+/** Faixas estouradas (translúcidas, contorno sólido) + caixa do texto em contorno sólido. */
+export const textOverflowSvg = (frame: Rect, bands: Rect | readonly Rect[]): string =>
+  [bands].flat().map(overflowBandSvg).join('') + element('rect', { ...rectAttrs(frame), ...solidOutlineAttrs });
 
 export const debugOutlineSvg = (frame: Rect): string =>
   element('rect', {

@@ -1,3 +1,4 @@
+import { DEFAULTS } from '../core/defaults.ts';
 import { existsSync, statSync, watch as fsWatch, type FSWatcher } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
@@ -5,7 +6,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 export type WatchFn = (paths: readonly string[], onChange: () => void) => () => void;
 
 // Editores costumam gravar em rajadas (temp + rename + chmod); 150 ms junta a rajada num build só.
-export const WATCH_DEBOUNCE_MS = 150;
+export const WATCH_DEBOUNCE_MS = DEFAULTS.watchDebounceMs;
 
 /** Pastas cujas mudanças nunca disparam build: a saída (senão o build se realimenta) e ruído comum. */
 const IGNORED_SEGMENTS: readonly string[] = ['node_modules', '.git'];

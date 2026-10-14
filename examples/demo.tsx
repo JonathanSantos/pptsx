@@ -1,4 +1,4 @@
-import { Box, Deck, Image, Shape, Text, defineDeck } from 'pptsx';
+import { B, Box, Deck, Image, Shape, Text, defineDeck } from 'pptsx';
 import { tokens } from './tokens.ts';
 import { ClosingLayout, ContentLayout, CoverLayout } from './layouts/index.ts';
 import { Bullets, KpiRow, TwoColumn } from './components/index.ts';
@@ -66,7 +66,8 @@ export default defineDeck((ctx) => {
           <KpiRow
             size={wide || tall ? 'lg' : 'md'}
             items={[
-              { label: 'Receita (R$ mi)', value: '52,4', delta: '+14,2% vs Q2', trend: 'up' },
+              // NBSP entre "R$" e "mi": a unidade nunca fica sozinha no começo de uma linha.
+              { label: 'Receita (R$\u00A0mi)', value: '52,4', delta: '+14,2% vs Q2', trend: 'up' },
               { label: 'Custo por consulta', value: '−22%', delta: 'menor do ano', trend: 'down', sentiment: 'positive' },
               { label: 'NPS interno', value: '62', delta: '−4 pts vs Q2', trend: 'down' },
             ]}
@@ -74,7 +75,8 @@ export default defineDeck((ctx) => {
           <Box direction="row" gap={space.tight + 4} maxWidth="80%">
             <Shape kind="rect" width={4} fill={color.accent} shrink={0} />
             <Text size={wide || tall ? font.body - 2 : font.small + 2} color={color.ink} grow={1}>
-              O NPS caiu na migração dos pipelines; um time de suporte dedicado às áreas usuárias começa em novembro.
+              O NPS caiu na migração dos pipelines; um time de suporte dedicado às áreas usuárias começa
+              em <B>novembro</B>.
             </Text>
           </Box>
         </Box>

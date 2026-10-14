@@ -1,5 +1,6 @@
+import { containerOf } from '../core/defaults.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
-import type { PositionedNode, PositionedSlide, Rect, SlideSize } from '../core/types.ts';
+import type { PositionedBox, PositionedNode, PositionedSlide, PositionedText, Rect, SlideSize } from '../core/types.ts';
 import { loadImageUri } from './image.ts';
 import {
   backgroundColorSvg,
@@ -13,6 +14,7 @@ import {
   textOverflowRectOf,
   textOverflowSvg,
   textSvg,
+  textWidthOverflowRectOf,
 } from './svg.ts';
 import { attrs } from './xml.ts';
 
@@ -30,24 +32,38 @@ export interface SvgOptions {
 interface DrawItem {
   readonly node: PositionedNode;
   readonly parent: Rect;
+  /** Área de conteúdo do pai (frame menos padding): limite da largura de um nowrap. */
+  readonly parentContent: Rect;
   readonly index: number;
   /** position="absolute" (ou dentro de um): decoração intencional, pode sair do pai. */
   readonly absolute: boolean;
 }
 
+/** Mesma conta do fit (contentOf em fit/geometry.ts). */
+const contentOf = (container: PositionedSlide | PositionedBox): Rect => {
+  const { padding } = containerOf(container.props);
+  const { x, y, width, height } = container.frame;
+  return {
+    x: x + padding.left,
+    y: y + padding.top,
+    width: Math.max(0, width - padding.left - padding.right),
+    height: Math.max(0, height - padding.top - padding.bottom),
+  };
+};
+
 const flatten = (
   nodes: readonly PositionedNode[],
-  parent: Rect,
+  parent: PositionedSlide | PositionedBox,
   insideAbsolute: boolean,
 ): readonly Omit<DrawItem, 'index'>[] =>
   nodes.flatMap((node) => {
     const absolute = insideAbsolute || node.props.position === 'absolute';
-    const children = node.kind === 'box' ? flatten(node.children, node.frame, absolute) : [];
-    return [{ node, parent, absolute }, ...children];
+    const children = node.kind === 'box' ? flatten(node.children, node, absolute) : [];
+    return [{ node, parent: parent.frame, parentContent: contentOf(parent), absolute }, ...children];
   });
 
 const drawItemsOf = (slide: PositionedSlide): readonly DrawItem[] =>
-  flatten(slide.children, slide.frame, false).map((item, index) => ({ ...item, index }));
+  flatten(slide.children, slide, false).map((item, index) => ({ ...item, index }));
 
 interface DrawContext {
   readonly fontFamilyMap?: Readonly<Record<string, string>>;
@@ -78,16 +94,29 @@ const backgroundSvg = (slide: PositionedSlide, area: Rect, ctx: DrawContext): st
 const outsideParentSvg = (item: DrawItem): string =>
   item.absolute ? '' : overflowRectsOf(item.node.frame, item.parent).map(overflowSvg).join('');
 
-/** Texto que estoura a caixa ganha destaque sólido; os demais, o contorno tracejado padrão. */
-const outlineSvg = (node: PositionedNode): string => {
+/** Largura disponível como no fit: em fluxo, o frame cortado pela área de conteúdo do pai. */
+const availableWidthOf = (node: PositionedText, content: Rect): number => {
+  if (node.props.position === 'absolute') return node.frame.width;
+  const right = Math.min(node.frame.x + node.frame.width, content.x + content.width);
+  return Math.max(0, right - node.frame.x);
+};
+
+const textBandsOf = (node: PositionedText, content: Rect): readonly Rect[] =>
+  [textOverflowRectOf(node), textWidthOverflowRectOf(node, availableWidthOf(node, content))].filter(
+    (band): band is Rect => band !== undefined,
+  );
+
+/** Texto que estoura a caixa (altura ou, com nowrap, largura) ganha destaque sólido; os demais, o tracejado padrão. */
+const outlineSvg = (item: DrawItem): string => {
+  const { node } = item;
   if (node.kind === 'shape') return '';
-  const band = node.kind === 'text' ? textOverflowRectOf(node) : undefined;
-  return band === undefined ? debugOutlineSvg(node.frame) : textOverflowSvg(node.frame, band);
+  const bands = node.kind === 'text' ? textBandsOf(node, item.parentContent) : [];
+  return bands.length === 0 ? debugOutlineSvg(node.frame) : textOverflowSvg(node.frame, bands);
 };
 
 /** Debug fica por cima de tudo para não ser escondido por fills. */
 const debugSvg = (items: readonly DrawItem[]): string =>
-  [...items.map(outsideParentSvg), ...items.map((item) => outlineSvg(item.node))].join('');
+  [...items.map(outsideParentSvg), ...items.map(outlineSvg)].join('');
 
 export const slideToSvg = (slide: PositionedSlide, size: SlideSize, options: SvgOptions): string => {
   const ctx: DrawContext = {

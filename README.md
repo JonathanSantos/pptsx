@@ -69,6 +69,21 @@ export default defineDeck((ctx) => (
 - O texto é medido com a fonte real e quebrado em linhas; se não couber, a fonte encolhe até um mínimo, corta com reticências ou vira erro, conforme `fit`.
 - A função recebe um `ctx` por tamanho renderizado (`ctx.name`, `ctx.width`, `ctx.height`, `ctx.aspect`, `ctx.scale`): o mesmo arquivo decide a estrutura por proporção, como o `Box` acima que empilha em 4:3.
 
+## Rich text
+
+```tsx
+import { B, I, Span, Text } from 'pptsx';
+
+<Text size={20}>
+  Receita <B>subiu 14%</B> em <Span color="#2F6FED" italic>todas</Span> as regiões, <I>exceto</I> no Norte.
+</Text>
+```
+
+- `Span` muda `weight`, `italic` e `color` de um trecho; `B` e `I` são atalhos. Só valem dentro de `Text`. Tamanho, fonte e entrelinha são do `Text` inteiro.
+- A medição soma a largura de cada trecho com a face certa (regular, negrito, itálico), e o `.pptx` sai com um run por trecho.
+- `align="baseline"` numa row alinha textos de tamanhos diferentes pela linha de base (valor grande + variação pequena).
+- Para a linha não quebrar entre número e unidade, use NBSP (`R$&nbsp;52,4&nbsp;mi` no texto JSX, `'\u00A0'` em strings); para um texto inteiro numa linha só, `<Text nowrap>` (se não couber, encolhe até `minSize` e depois vira `text-overflow`).
+
 ## CLI
 
 ```
@@ -88,13 +103,14 @@ pptsx init [dir] [--force] [--json]
 | `--lang <tag>` | `pt-BR` | idioma do texto no `.pptx` (corretor ortográfico) |
 | `--line-breaks forced\|auto` | `forced` | como as linhas saem no `.pptx` (ver [Limitações](#limitações-atuais)) |
 | `--watch` | desligado | build inicial e rebuild a cada mudança na pasta do deck ou na config |
+| `--embed-fonts` | desligado | embute no `.pptx` (EOT) as fontes registradas que o deck usa; só o PowerPoint respeita (o Keynote ignora) |
 | `init [dir]` | `.` | cria o projeto (ver [Início rápido](#início-rápido)) |
 | `init --force` | desligado | sobrescreve um `deck.tsx` existente e os demais arquivos gerados |
 | `init --json` | desligado | stdout `{ "files": [...] }` com os arquivos gravados; avisos vão para stderr |
 
 **Exit codes:** `build` sai com `1` se houver qualquer diagnóstico `error`, erro de sintaxe/estrutura do deck ou flag inválida, e `0` caso contrário (`warning` e `info` não falham). `init` sai com `1` se `deck.tsx` já existe sem `--force`. `--watch` só termina com Ctrl-C, e sai com `0`.
 
-**`--json`:** stdout tem só `{ "files": [...], "diagnostics": [...] }`, com o caminho de cada `.pptx`, PNG, overview e do `diagnostics.json`. Se o deck nem roda (erro de sintaxe, texto fora de `<Text>`…), stdout tem `{ "error": "mensagem" }`.
+**`--json`:** stdout tem só `{ "files": [...], "diagnostics": [...] }`, com o caminho de cada `.pptx`, PNG, overview e do `diagnostics.json` (mais `fontsMissing`, se alguma fonte do sistema pedida em `fonts` não foi achada). Se o deck nem roda (erro de sintaxe, texto fora de `<Text>`…), stdout tem `{ "error": "mensagem" }`.
 
 **`--watch --json`:** um JSON por build, um por linha (NDJSON), no mesmo formato (`{ files, diagnostics }` ou `{ error }`). Um erro no deck não derruba o watch. Cada build recarrega o deck, a config e os componentes e tokens que eles importam. A pasta de saída, `node_modules` e `.git` são ignorados.
 
@@ -110,9 +126,12 @@ export default defineConfig({
   lang: 'pt-BR',
   textSafety: 0.97,
   lineBreaks: 'forced',
+  embedFonts: false,
   fonts: [
     { family: 'Inter', weight: 'regular', file: './fonts/Inter-Regular.ttf' },
     { family: 'Inter', weight: 'bold', file: './fonts/Inter-Bold.ttf' },
+    { family: 'Helvetica', weight: 'regular' }, // sem file: fonte instalada no sistema
+    { family: 'Helvetica', weight: 'bold' },
   ],
 });
 ```
@@ -123,7 +142,8 @@ export default defineConfig({
 | `lang` | como `--lang` |
 | `textSafety` | fração da largura usada na quebra de linha (padrão `0.97`); a caixa sai com a largura cheia |
 | `lineBreaks` | como `--line-breaks` |
-| `fonts` | `{ family, weight: 'regular' \| 'bold', italic?, file }`; caminhos relativos ao arquivo de config. **Substitui** as fontes padrão: se o deck ainda usa Arial, registre também um arquivo para ela |
+| `fonts` | `{ family, weight: 'regular' \| 'bold', italic?, file? }`, uma entrada por face; caminhos relativos ao arquivo de config. Sem `file`, a face é procurada nas pastas de fontes do sistema (macOS, Linux, Windows); se não existir, sai em `fontsMissing` e cada `Text` que a usa ganha `font-missing`. **Substitui** as fontes padrão: se o deck ainda usa Arial, registre também a Arial (do sistema ou por arquivo) |
+| `embedFonts` | como `--embed-fonts` |
 
 Precedência: flag da CLI > config > padrão.
 
@@ -139,7 +159,7 @@ render(deck: DeckDefinition, options?: RenderOptions): Promise<RenderResult[]>  
 | `RenderOptions` | padrão | |
 |---|---|---|
 | `sizes` | `['16x9']` | presets ou `{ width, height }` em polegadas |
-| `fonts` | Liberation Sans como Arial | `FontFace[]`, como na config |
+| `fonts` | Liberation Sans como Arial | `FontFace[]`, como na config (`file` opcional: sem ele, fonte do sistema) |
 | `preview` | `{ mode: 'native', width: 1280 }` | `false` desliga os PNGs |
 | `debug` | `false` | contornos de debug no `.pptx` e no PNG |
 | `baseDir` | `process.cwd()` | base para `src` relativos de imagens (a CLI usa a pasta do deck) |
@@ -147,6 +167,7 @@ render(deck: DeckDefinition, options?: RenderOptions): Promise<RenderResult[]>  
 | `textSafety` | `0.97` | |
 | `lineBreaks` | `'forced'` | `'forced'` ou `'auto'` |
 | `includePositioned` | `false` | devolve a árvore posicionada (pós-fit) em `positioned` |
+| `embedFonts` | `false` | embute as faces usadas (`.ttf` de uma face, licença que permita embed; nunca a Arial padrão); as que não podem geram `font-not-embeddable` |
 
 | `RenderResult` | |
 |---|---|
@@ -155,6 +176,7 @@ render(deck: DeckDefinition, options?: RenderOptions): Promise<RenderResult[]>  
 | `diagnostics` | `Diagnostic[]` deste tamanho |
 | `preview` | `{ slides: Buffer[], overview: Buffer }` (PNGs), se o preview estiver ligado |
 | `positioned` | árvore com frames em pt, só com `includePositioned` |
+| `fontsMissing` | faces pedidas em `fonts` sem `file` que não foram achadas no sistema (`['Inter bold']`); ausente se nenhuma |
 
 O `render` não grava arquivos nem imprime. Exemplo (`build.ts`, rodado com `npx tsx build.ts` num projeto criado pelo `init`):
 
@@ -193,10 +215,11 @@ Para checar tipos desse script com `tsc`, instale `@types/node`.
 
 ## Limitações atuais
 
-- **Só Arial por padrão.** A engine mede com Liberation Sans (métricas compatíveis, incluída no pacote) e o arquivo sai com `Arial`. Outras famílias exigem um `.ttf`/`.otf` em `fonts`; uma família não registrada gera `font-missing`. Fontes não são embutidas no `.pptx`.
+- **Só Arial por padrão.** A engine mede com Liberation Sans (métricas compatíveis, incluída no pacote) e o arquivo sai com `Arial`. Outras famílias entram em `fonts`, por arquivo ou instaladas no sistema (sem `file`); uma família não registrada ou não achada gera `font-missing`.
+- **Fonte embutida só no PowerPoint.** `--embed-fonts` grava as faces em EOT dentro do `.pptx`. O PowerPoint usa a fonte embutida; o Keynote ignora e troca pela dele (o Google Slides não foi testado). Só entram `.ttf` de uma face com licença que permite embed (`.ttc` e `.otf` CFF geram `font-not-embeddable`).
 - **Quebra de linha forçada por padrão.** Com `lineBreaks: 'forced'`, cada linha calculada vira uma quebra manual no `.pptx`: o resultado bate com o preview, mas quem editar o texto no PowerPoint herda essas quebras. `lineBreaks: 'auto'` emite só os parágrafos e deixa o aplicativo requebrar: fica mais editável, mas pode divergir da medição (no Keynote, 10 de 34 amostras quebram em outra palavra e 2 perdem uma linha; nenhuma vaza do frame, porque a engine mede com 3 % de folga). O preview PNG mostra sempre as quebras da engine, não as do aplicativo.
-- **Sem rich text** (um estilo por `Text`; trechos em negrito exigem vários `Text` numa row). Previsto no M8.
-- **Sem gráficos e tabelas nativos** (gráfico entra como imagem). Previsto no M10.
+- **Rich text limitado ao estilo do trecho.** `Span`/`B`/`I` mudam peso, itálico e cor; tamanho, fonte e entrelinha valem para o `Text` inteiro.
+- **Sem gráficos e tabelas nativos** (gráfico entra como imagem; tabela, como `Box`/`Text`). Previsto no M10.
 - **Validado no Keynote.** A calibração da medição de texto foi feita exportando pelo Keynote; PowerPoint e Google Slides ainda não foram validados.
 
 ## Desenvolvimento
@@ -210,7 +233,7 @@ node bin/pptsx.mjs build examples/demo.tsx --size 16x9,4x3,wide --out dist/
 scripts/keynote-export.sh dist/demo.16x9.pptx dist/keynote/   # exporta os slides pelo Keynote (macOS)
 ```
 
-Dentro do repo, `bin/pptsx.mjs` roda direto de `src/` (sem build) e os decks importam `pptsx` pelo `paths` do `tsconfig.json`. Exemplos em `examples/`: `demo.tsx` (deck completo com layouts e componentes), `hello.tsx`, `overflow.tsx`, `layout-test.tsx`, além de `layouts/`, `components/` e `tokens.ts`. Spec em [`docs/spec.md`](docs/spec.md); guia para agentes em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
+Dentro do repo, `bin/pptsx.mjs` roda direto de `src/` (sem build) e os decks importam `pptsx` pelo `paths` do `tsconfig.json`. Exemplos em `examples/`: `demo.tsx` (deck completo com layouts e componentes), `hello.tsx`, `overflow.tsx`, `layout-test.tsx`, os decks de calibração `calibration.tsx` (medição de texto) e `calibration-rich.tsx` (rich text, NBSP, nowrap e baseline), além de `layouts/`, `components/` e `tokens.ts`. Spec em [`docs/spec.md`](docs/spec.md); guia para agentes em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
 
 ## Licença
 

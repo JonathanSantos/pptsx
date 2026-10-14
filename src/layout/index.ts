@@ -10,6 +10,7 @@ import type {
   SlideSize,
 } from '../core/types.ts';
 import { applyStyle } from './apply.ts';
+import { settleBaselineRows } from './baseline.ts';
 import { readChildren } from './read.ts';
 import { toContainerStyle } from './style.ts';
 import { buildChildren } from './tree.ts';
@@ -34,6 +35,7 @@ export const layoutSlide = (slide: ResolvedSlide, size: SlideSize, env: LayoutEn
       parent: { direction: container.direction, align: container.align, baseline: false },
     });
     root.calculateLayout(size.width, size.height, Direction.LTR);
+    settleBaselineRows(root, children, container.direction, size);
     const frame: Rect = { x: 0, y: 0, width: size.width, height: size.height };
     return { ...slide, frame, children: readChildren(children, frame, env) };
   } finally {

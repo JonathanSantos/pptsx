@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { slideToSvg, type SvgOptions } from '../../src/preview/index.ts';
 import type { PositionedNode, Rect, TextLayout } from '../../src/core/types.ts';
 import { SIZE_16X9, pBox, pShape, pSlide, pText, rect, singleRunLines } from '../helpers/nodes.ts';
-import { findElements, isRed, num, styleOf, type SvgElement } from '../helpers/svg.ts';
+import { findElements, isDashed, isRed, num, styleOf, type SvgElement } from '../helpers/svg.ts';
 
 /**
  * M4-B: no debug, o texto cujo text.height passa do frame (além de
@@ -121,5 +121,44 @@ describe('preview debug — outside parent', () => {
       pShape(rect(-80, -80, 300, 300), { kind: 'rect' }),
     ]);
     expect(redFills(svgOf([deco], true))).toHaveLength(0);
+  });
+});
+
+describe('preview debug — nowrap width overflow band (M8)', () => {
+  // Uma linha de 300 pt numa caixa de 200 pt: estoura 100 pt pela direita.
+  const wide = (width: number, nowrap = true) =>
+    pText(rect(50, 50, 200, 30), 'x', nowrap ? { nowrap: true } : {}, { ...layout(1), width });
+  const band: Rect = { x: 250, y: 50, width: 100, height: 20 };
+
+  it('draws a translucent red band over the excess width', () => {
+    const hit = redFills(svgOf([wide(300)], true)).find((r) => covers(r, band));
+    expect(hit).toBeDefined();
+    const opacity = styleOf(hit!, 'fill-opacity') ?? styleOf(hit!, 'opacity');
+    expect(Number(opacity)).toBeLessThan(1);
+  });
+
+  it('the band starts at the frame right edge (does not cover the text box)', () => {
+    const hit = redFills(svgOf([wide(300)], true)).find((r) => covers(r, band))!;
+    expect(num(hit.attrs.x)).toBeGreaterThanOrEqual(250 - 0.01);
+  });
+
+  it('outlines the text box with a solid red stroke', () => {
+    const solid = findElements(svgOf([wide(300)], true), 'rect').filter(
+      (r) => isRed(styleOf(r, 'stroke')) && !isDashed(r) && covers(r, { x: 50, y: 50, width: 200, height: 30 }),
+    );
+    expect(solid.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('nowrap that fits (or within 0.5 pt) draws nothing', () => {
+    expect(redFills(svgOf([wide(200)], true))).toHaveLength(0);
+    expect(redFills(svgOf([wide(200.4)], true))).toHaveLength(0);
+  });
+
+  it('without nowrap and without overflow draws nothing', () => {
+    expect(redFills(svgOf([wide(150, false)], true))).toHaveLength(0);
+  });
+
+  it('without debug draws nothing', () => {
+    expect(redFills(svgOf([wide(300)], false))).toHaveLength(0);
   });
 });
