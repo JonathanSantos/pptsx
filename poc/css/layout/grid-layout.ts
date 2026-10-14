@@ -206,7 +206,7 @@ const placeInArea = (item: ResolvedNode, area: Rect, container: CssStyle, env: L
     { ...ROW_PARENT, alignItems: align === 'baseline' ? 'flex-start' : align },
     { width: area.width, height: area.height },
     env,
-    (built) => readChildren([built], area, env)[0]!,
+    (built) => ({ ...readChildren([built], area, env)[0]!, cell: area }),
     (built) => applyStyle(built.yoga, stretch ? { flexGrow: 1, flexShrink: 1, flexBasis: 0 } : { flexGrow: 0, flexShrink: 0, flexBasis: 'auto' }),
   );
 };

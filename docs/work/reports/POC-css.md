@@ -89,3 +89,41 @@ Spec: `docs/work/poc/browser-layout.md`. Código: `poc/css/` (guia em `poc/css/R
 
 - `justifyContent/alignContent` no contêiner grid (grade menor que o contêiner fica no início), `grid-auto-flow: dense`, áreas nomeadas, `auto-fill/auto-fit`, subgrid e baseline em grid: fora do subconjunto (spec §3).
 - Custo de medição: cada contribuição de item é um Yoga isolado (sem cache entre chamadas da measure function); medir em P3 no tempo de build.
+
+---
+
+## P2 — fit e diagnósticos
+
+**Entregue** (adaptações em `poc/css/fit/`, marcadas com `PoC:` nos arquivos copiados de `src/fit`)
+
+- **Área de conteúdo = frame − borda − padding**, lida das métricas que o layout resolveu (`box`, inclusive `%`), em todo lugar onde a engine usava `frame − padding`: detecção de `box-overflow`, causa, mensagens. A área de um Text/Table também é a de conteúdo **do próprio nó** (um Text com padding/borda quebra e estoura dentro dela).
+- **Margens dos filhos** entram na detecção (o filho ocupa a caixa de margem) e na causa (demanda = altura + margens verticais + o que pede a mais).
+- **Grid:** item de grid tem `cell` (a área que o grid deu) e ela é a área disponível no fit. Text/Table na célula estoura contra a célula; um item que passa da célula (track fixo/fr que não cresceu) vira `box-overflow` **no item**, com mensagem própria ("o item ocupa … mas a célula do grid tem …"; sugere track `auto`/`minmax(auto, …)`). O grid não aponta causa entre células (tracks fixos/fr não cedem altura entre si): simplificação permitida pela spec, documentada.
+- **Wrap:** cada linha é uma row e as linhas se empilham como uma column; a causa olha as linhas (soma do maior de cada linha + `rowGap`) e a mensagem fala "as linhas do wrap ocupam N pt". Grid: "os tracks do grid ocupam N pt".
+- **`css-not-emitted`**: tudo que chega por prop/`style` sem de/para (propriedade desconhecida, valor fora do subconjunto, `skew/scale/matrix`, sombra `inset`/`spread`/múltipla, `overflow: hidden` em caixa, sombra sem fundo, raio por canto, raio com bordas por lado, `fontWeight` fora de 400/700, track de grid fora do subconjunto, gráfico/tabela girados). Warning com propriedade, valor, motivo e path; irmãos com a mesma mensagem agrupam (`Box[0..3]`).
+- **Table com colunas `auto` pelo conteúdo** (`poc/css/layout/table.ts`, cópia de `src/layout/table.ts`): min-content (maior trecho indivisível) e max-content (linha sem quebrar) por coluna, como o `table-layout: auto` do CSS 2.1 §17.5.2.2: com espaço, cada coluna fica com o max-content e a sobra vai na proporção dele; entre min e max, interpola; abaixo do min, escala. Colunas em pt/% continuam fixas. Na demo, a coluna "Δ" fica estreita e "Área" (40 %) não muda.
+- `poc/css/examples/probe-css.tsx`: sondagem dos estouros novos (célula de grid com texto que encolhe, `fit="error"` em célula, cartão alinhado no topo maior que a linha fixa, wrap sem altura para as linhas, margens que somam além da caixa, borda que reduz a área do texto).
+- **Calibração** (`poc/css/calibration/`): `h2.ts` gera o .pptx (PoC ou `--engine`), exporta PDF pelo Keynote (`keynote-pdf.sh`, 3 tentativas com 30 s de espera para AppleEvent ocupado) e lê as linhas pelo PDFKit (`pdflines.swift`). Diferente do M3/M8, que usava `selectionsByLine` (junta rótulos vizinhos e embaralha parágrafo vazio), a extração pega cada caractere da página, filtra por centro horizontal no retângulo, sobreposição vertical e **tamanho de fonte da amostra**, e agrupa pela caixa de linha; a linha é comparada sem espaços (o PDF não guarda espaço como glifo).
+
+**Números**
+
+| Hipótese | Medida | Resultado |
+|---|---|---|
+| H5 | `overflow.tsx`, `probe/cause.tsx`, `probe/table.tsx` × 16x9/4x3/wide, PoC × engine | **9/9 iguais**: mesmos códigos, severidades, slides, paths, `causedBy` e **mensagens** |
+| H5 (novo) | `probe-css.tsx` | 7 diagnósticos, cada um no nó e na área esperados (teste com a lista exata) |
+| H2 | `calibration.tsx` pela PoC → Keynote → PDF | **34/34** (33 pelo PDFKit; C05, parágrafo com linha vazia, conferido por imagem, como no M3) |
+| H2 | `calibration-rich.tsx` pela PoC → Keynote → PDF | **30/30** (R20, o `nowrap` que estoura de propósito, sai numa linha só: o bug 1 do M8 já estava corrigido na engine) |
+| H2 (controle) | a mesma ferramenta na saída da engine | 33/34 (mesmo C05) e 30/30 |
+| H2 (guarda) | XML de cada slide, PoC × engine, nos dois decks | **byte a byte igual** (13/13 slides); vira teste do `poc:test` |
+| Testes da PoC | | 176 |
+| `npm test` da raiz | | 1412 passados, 5 pulados |
+
+**Achados**
+
+- Como os decks de calibração não usam CSS novo, a PoC emite o mesmo XML da engine: a calibração (H2) se mantém por construção, e a medição no Keynote confirma. Para texto com CSS novo (`letterSpacing`, padding no Text) a calibração não foi medida; o `charSpacing` do pptxgenjs desliga o kerning (`kern="0"`), então texto espaçado pode ficar até ~1 % mais largo no renderizador do que na medição (a folga de 3 % do `textSafety` cobre).
+- Na demo, além da Table, os slides 1 e 6 mudam só a **ordem** das formas (a elipse decorativa absoluta passa para depois do fluxo; mesmas formas). É a decisão de ordem de pintura em aberto desde a P0.
+
+**Aberto**
+
+- `causedBy` dentro de grid: nenhum (cada célula é dona do próprio estouro). Se o dono quiser causa entre linhas `auto` do grid, dá para tratar o grid como o wrap (linhas como rows).
+- Colunas auto da Table: o algoritmo é o do CSS 2.1 sem `min-width` por coluna nem `colspan`.

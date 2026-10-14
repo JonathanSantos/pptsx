@@ -178,6 +178,8 @@ interface Positioned {
   /** Border-box ABSOLUTO no slide, em pt, antes de girar (como o browser: o layout ignora a rotação). */
   readonly frame: Core.Rect;
   readonly box: BoxMetrics;
+  /** Item de grid: a área (célula) que o grid deu a ele, absoluta. É a área disponível do item no fit. */
+  readonly cell?: Core.Rect;
 }
 
 export type PositionedBox = Omit<ResolvedBox, 'children'> & Positioned & { readonly children: readonly PositionedNode[] };

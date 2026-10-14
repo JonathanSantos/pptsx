@@ -4,7 +4,7 @@ import type { Diagnostic, DiagnosticCode, PositionedNode, PositionedSlide, Pt } 
 import { isWidthOverflow } from './detect.ts';
 import type { Overflow } from './detect.ts';
 import { withCause, withWidthCause } from './diagnostics.ts';
-import { contentOf, isBox, isInFlow } from './geometry.ts';
+import { contentOf, isBox, isInFlow, verticalMarginOf } from './geometry.ts';
 import type { Container } from './geometry.ts';
 import { ancestorsOf, isWithin } from './scope.ts';
 import { isTableFontMissing } from './shrinkable.ts';
@@ -21,15 +21,43 @@ export interface Cause {
 
 const sum = (values: readonly number[]): number => values.reduce((total, value) => total + value, 0);
 
-const childDemands = (container: Container): readonly number[] =>
-  container.children.filter(isInFlow).map(demandOf);
+/**
+ * PoC: como o contêiner reparte a altura entre os filhos.
+ * - column (e block): os filhos disputam a altura (soma);
+ * - row sem wrap: lado a lado (o maior; não aponta causa);
+ * - wrap: cada linha é uma row e as linhas se empilham como uma column;
+ * - grid: cada linha do grid é uma row; tracks fixos/fr não cedem altura entre células, então o
+ *   grid não aponta causa (simplificação documentada: o estouro fica na célula).
+ */
+type Flow = 'column' | 'row' | 'wrap' | 'grid';
 
-const isRow = (container: Container): boolean => containerOf(container.props).direction === 'row';
+const flowOf = (container: Container): Flow => {
+  if (container.css.display === 'grid') return 'grid';
+  if (containerOf(container.props).direction !== 'row') return 'column';
+  return container.css.flexWrap === 'nowrap' ? 'row' : 'wrap';
+};
 
-/** Em coluna os filhos disputam a mesma altura (soma); numa row ficam lado a lado (o maior). */
+const isRow = (container: Container): boolean => flowOf(container) === 'row' || flowOf(container) === 'grid';
+
+/** Linhas de um wrap (pelo topo da caixa de margem) ou de um grid (pelo topo da célula). */
+const linesOf = (container: Container): readonly (readonly PositionedNode[])[] => {
+  const lines = new Map<number, PositionedNode[]>();
+  container.children.filter(isInFlow).forEach((child) => {
+    const top = Math.round((child.cell?.y ?? child.frame.y - child.box.margin.top) * 10) / 10;
+    lines.set(top, [...(lines.get(top) ?? []), child]);
+  });
+  return [...lines.values()];
+};
+
+/** O que o filho ocupa na altura: caixa de margem mais o que ele pede além do frame. */
+const wantedOf = (child: PositionedNode): Pt => child.frame.height + verticalMarginOf(child) + demandOf(child);
+
 const boxDemandOf = (container: Container): Pt => {
-  const demands = childDemands(container);
-  return isRow(container) ? Math.max(0, ...demands) : sum(demands);
+  const flow = flowOf(container);
+  const children = container.children.filter(isInFlow);
+  if (flow === 'column') return sum(children.map(demandOf));
+  if (flow === 'row') return Math.max(0, ...children.map(demandOf));
+  return sum(linesOf(container).map((line) => Math.max(0, ...line.map(demandOf))));
 };
 
 /**
@@ -51,8 +79,13 @@ const demandOf = (node: PositionedNode): Pt => {
  * na área de conteúdo. Senão cada estouro é interno ao filho e ninguém é causa de ninguém.
  */
 const isOverloaded = (container: Container): boolean => {
+  if (flowOf(container) === 'wrap') {
+    const lines = linesOf(container);
+    const wanted = sum(lines.map((line) => Math.max(0, ...line.map(wantedOf))));
+    return wanted + container.css.rowGap * Math.max(0, lines.length - 1) > contentOf(container).height + DEFAULTS.fit.epsilon;
+  }
   const children = container.children.filter(isInFlow);
-  const wanted = sum(children.map((child) => child.frame.height + demandOf(child)));
+  const wanted = sum(children.map(wantedOf));
   const gaps = containerOf(container.props).gap * Math.max(0, children.length - 1);
   return wanted + gaps > contentOf(container).height + DEFAULTS.fit.epsilon;
 };
@@ -139,7 +172,8 @@ export const widthCausesOf = (slide: PositionedSlide, overflows: readonly Overfl
   if (widths.size === 0) return new Map();
   return new Map(
     flowContainersOf(slide).flatMap((container) => {
-      if (!isRow(container)) return [];
+      // PoC: só row de flex sem wrap; no grid a célula não espreme as vizinhas.
+      if (flowOf(container) !== 'row') return [];
       const cause = widthCauseOf(container, widths);
       return cause === undefined ? [] : [[container.path, cause] as const];
     }),

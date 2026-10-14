@@ -16,7 +16,7 @@ import { measureInputOf } from '../layout/index.ts';
 import { brokenWordsOf } from '../../../src/text/index.ts';
 import { attributeCauses } from './cause.ts';
 import type { Overflow } from './detect.ts';
-import { boxOverflow, fontMissing, imageUpscaled, outOfSlide, textTruncated, textWordBroken } from './diagnostics.ts';
+import { boxOverflow, cellOverflow, fontMissing, imageUpscaled, outOfSlide, textTruncated, textWordBroken } from './diagnostics.ts';
 import type { DiagnosticContext } from './diagnostics.ts';
 import { containerExcessOf, sidesOutside } from './geometry.ts';
 import type { Container } from './geometry.ts';
@@ -148,6 +148,8 @@ const diagnosticsOf = (pass: Pass, plans: Plans, input: FitInput): readonly Diag
   ]);
   const boxes = pass.overflows.filter((overflow) => overflow.kind === 'box').flatMap((overflow) => {
     const container = byPath.get(overflow.path);
+    // PoC: item de grid que passa da célula tem mensagem própria (a área é a célula, não o conteúdo dele).
+    if (overflow.cell === true && container !== undefined && container.kind !== 'slide') return [cellOverflow(ctx, overflow, container)];
     return container === undefined || !isContainer(container) ? [] : [boxOverflow(ctx, overflow, containerExcessOf(container, explained))];
   });
   const outside = pass.overflows.filter((overflow) => overflow.kind === 'slide').flatMap((overflow) => {

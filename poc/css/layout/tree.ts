@@ -10,7 +10,7 @@ import Yoga, {
 import { DEFAULTS } from '../../../src/core/defaults.ts';
 import { dispatch, type DispatchTable } from '../../../src/core/dispatch.ts';
 import type { Dimensions } from '../../../src/core/types.ts';
-import { measureTable } from '../../../src/layout/table.ts';
+import { measureTable } from './table.ts';
 import type {
   CssStyle,
   LayoutEnv,

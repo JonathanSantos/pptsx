@@ -2,7 +2,7 @@ import type { Node as YogaNode } from 'yoga-layout';
 import { tableStyleOf } from '../../../src/core/defaults.ts';
 import { dispatch, type DispatchTable } from '../../../src/core/dispatch.ts';
 import type { Rect } from '../../../src/core/types.ts';
-import { measureTable } from '../../../src/layout/table.ts';
+import { measureTable } from './table.ts';
 import type {
   BoxMetrics,
   CssStyle,

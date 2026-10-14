@@ -1,7 +1,7 @@
 // PoC CSS: cópia de src/fit/detect.ts com os tipos da PoC (nós com css); adaptações marcadas com 'PoC:'.
 import { DEFAULTS } from '../../../src/core/defaults.ts';
 import type { PositionedNode, PositionedSlide, PositionedTable, PositionedText, Rect } from '../types.ts';
-import { containerExcessOf, contentOf, excessOf, isBox, isInFlow } from './geometry.ts';
+import { containerExcessOf, contentOf, excessOf, isBox, isInFlow, marginBoxOf } from './geometry.ts';
 import type { Container } from './geometry.ts';
 import { isWithin } from './scope.ts';
 
@@ -12,6 +12,8 @@ export interface Overflow {
   readonly overflowPct: number;
   /** M8: só Text com nowrap estoura em 'width'; ausente = altura. */
   readonly axis?: 'width' | 'height';
+  /** PoC: box-overflow de um item de grid que passa da própria célula (a área é a célula). */
+  readonly cell?: boolean;
 }
 
 const EPSILON = DEFAULTS.fit.epsilon;
@@ -28,11 +30,16 @@ const isTable = (node: PositionedNode): node is PositionedTable => node.kind ===
  * conteúdo do pai quando está em fluxo. Numa row espremida pela coluna de fora, o Text
  * fica no eixo cruzado com a altura medida e quem encolhe é a row — o estouro é do texto.
  */
+// PoC: a área do texto é a de conteúdo do próprio nó (frame − borda − padding), cortada pela
+// célula quando é item de grid, senão pela área de conteúdo do pai.
+const clipOf = (node: PositionedNode, parent: Container): Rect => node.cell ?? contentOf(parent);
+
 const availableHeightOf = (node: PositionedText | PositionedTable, parent: Container): number => {
-  if (!isInFlow(node)) return node.frame.height;
-  const content = contentOf(parent);
-  const bottom = Math.min(node.frame.y + node.frame.height, content.y + content.height);
-  return Math.max(0, bottom - node.frame.y);
+  const area = contentOf(node);
+  if (!isInFlow(node)) return area.height;
+  const clip = clipOf(node, parent);
+  const bottom = Math.min(area.y + area.height, clip.y + clip.height);
+  return Math.max(0, bottom - area.y);
 };
 
 // text: com shrink 1 o Yoga espreme a caixa e o estouro aparece no próprio Text.
@@ -55,10 +62,11 @@ const tableOverflow = (node: PositionedTable, parent: Container): Overflow | und
 
 /** Largura disponível: o frame cortado pela área de conteúdo do pai (em fluxo), como na altura. */
 const availableWidthOf = (node: PositionedText, parent: Container): number => {
-  if (!isInFlow(node)) return node.frame.width;
-  const content = contentOf(parent);
-  const right = Math.min(node.frame.x + node.frame.width, content.x + content.width);
-  return Math.max(0, right - node.frame.x);
+  const area = contentOf(node);
+  if (!isInFlow(node)) return area.width;
+  const clip = clipOf(node, parent);
+  const right = Math.min(area.x + area.width, clip.x + clip.width);
+  return Math.max(0, right - area.x);
 };
 
 // nowrap: a linha não quebra, então o que não cabe sai pela lateral. Numa row o minWidth
@@ -95,6 +103,21 @@ const boxOverflow = (container: Container, explained: ReadonlySet<string>): Over
   return { kind: 'box', path: container.path, overflowPt: excess.pt, overflowPct: percentOf(excess.pt, excess.available) };
 };
 
+/**
+ * PoC: item de grid (que não é Text/Table) cuja caixa de margem passa da célula: o track é
+ * fixo/fr e não cresceu com ele. Vira box-overflow no item, com a célula como área. Se o item
+ * já estourou por dentro, o estouro de dentro é o que vale (não duplica no mesmo path).
+ */
+const cellOverflows = (container: Container, already: ReadonlySet<string>): readonly Overflow[] =>
+  container.children.filter(isInFlow).flatMap((child): readonly Overflow[] => {
+    const nested = isBox(child) ? cellOverflows(child, already) : [];
+    if (child.cell === undefined || isText(child) || isTable(child) || already.has(child.path)) return nested;
+    const excess = excessOf(marginBoxOf(child), child.cell);
+    if (excess.pt <= EPSILON) return nested;
+    const overflow: Overflow = { kind: 'box', cell: true, path: child.path, overflowPt: excess.pt, overflowPct: percentOf(excess.pt, child.cell[excess.axis]) };
+    return [overflow, ...nested];
+  });
+
 const isInsideAny = (path: string, ancestors: readonly string[]): boolean =>
   ancestors.some((ancestor) => ancestor !== path && isWithin(path, ancestor));
 
@@ -127,9 +150,12 @@ const slideOverflows = (
  */
 export const detectOverflow = (slide: PositionedSlide): readonly Overflow[] => {
   const leaves = leafOverflows(slide);
-  const explained = new Set(leaves.map((overflow) => overflow.path));
   const [, ...boxContainers] = flowContainersOf(slide);
-  const boxes = boxContainers.map((container) => boxOverflow(container, explained)).filter(isDefined);
+  // PoC: estouro de célula conta como explicado para o grid (a causa é o item, como no Text).
+  const inner = boxContainers.map((container) => boxOverflow(container, new Set(leaves.map((overflow) => overflow.path)))).filter(isDefined);
+  const cells = cellOverflows(slide, new Set(inner.map((overflow) => overflow.path)));
+  const explained = new Set([...leaves, ...cells].map((overflow) => overflow.path));
+  const boxes = [...boxContainers.map((container) => boxOverflow(container, explained)).filter(isDefined), ...cells];
   const wide = new Set(leaves.filter(isWidthOverflow).map((overflow) => overflow.path));
   const outside = slideOverflows(slide.children, slide.frame, boxes.map((overflow) => overflow.path), wide);
   const slideBox = boxOverflow(slide, new Set([...explained, ...outside.map((overflow) => overflow.path)]));
