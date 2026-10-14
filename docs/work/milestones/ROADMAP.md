@@ -14,6 +14,12 @@ Origem: `docs/work/reports/REVIEW-2026-10-13.md`. Cada marco segue o fluxo de `d
 M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10
 ```
 
+## Exploração proposta
+
+| Item | Onde | Estado |
+|---|---|---|
+| PoC: motor de layout "como um browser" em memória (box model, display, flex completo, grid, z-index, herança) com de/para para PPTX | [`../poc/browser-layout.md`](../poc/browser-layout.md) | aguardando aprovação do dono |
+
 ## Pendências do dono (não bloqueiam os marcos, mas valem antes de publicar)
 
 | Item | Onde | Marco que depende |
