@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { slideToSvg, type SvgOptions } from '../../src/preview/index.ts';
 import type { PositionedNode, Rect, TextLayout } from '../../src/core/types.ts';
-import { SIZE_16X9, pBox, pShape, pSlide, pText, rect } from '../helpers/nodes.ts';
+import { SIZE_16X9, pBox, pShape, pSlide, pText, rect, singleRunLines } from '../helpers/nodes.ts';
 import { findElements, isRed, num, styleOf, type SvgElement } from '../helpers/svg.ts';
 
 /**
@@ -24,6 +24,7 @@ const layout = (lineCount: number, lineHeight = 20): TextLayout => {
   return {
     lines,
     paragraphs: [lines],
+    lineRuns: singleRunLines(lines),
     fontSize: 18,
     lineHeight,
     ascent: 16,

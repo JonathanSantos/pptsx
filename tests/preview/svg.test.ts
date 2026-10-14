@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { slideToSvg, type SvgOptions } from '../../src/preview/index.ts';
 import type { PositionedNode, PositionedSlide, SlideProps, TextLayout } from '../../src/core/types.ts';
-import { SIZE_16X9, SIZE_4X3, pBox, pImage, pShape, pSlide, pText, rect } from '../helpers/nodes.ts';
+import { SIZE_16X9, SIZE_4X3, pBox, pImage, pShape, pSlide, pText, rect, singleRunLines } from '../helpers/nodes.ts';
 import { makePng } from '../helpers/png.ts';
 import { findElements, isDashed, isRed, num, rootSvg, styleOf, textOf } from '../helpers/svg.ts';
 
@@ -24,6 +24,7 @@ const svgOf = (children: readonly PositionedNode[], props: Omit<SlideProps, 'chi
 const textLayout = (lines: readonly string[], over: Partial<TextLayout> = {}): TextLayout => ({
   lines,
   paragraphs: [lines],
+  lineRuns: singleRunLines(lines),
   fontSize: 18,
   lineHeight: 24,
   ascent: 17,

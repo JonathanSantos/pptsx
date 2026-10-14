@@ -1,7 +1,9 @@
 import { DEFAULTS, imageFitOf, strokeColorOf, textStyleOf } from '../core/defaults.ts';
 import type {
   Color,
+  FontWeight,
   ImageFit,
+  LineRun,
   PositionedBox,
   PositionedImage,
   PositionedShape,
@@ -11,6 +13,8 @@ import type {
   ShapeKind,
   StrokeProps,
   TextAlign,
+  TextLayout,
+  TextRun,
 } from '../core/types.ts';
 import { element, escapeXml, type Attrs } from './xml.ts';
 
@@ -94,23 +98,52 @@ export interface TextSvgOptions {
   readonly fontFamilyMap?: Readonly<Record<string, string>>;
 }
 
+// Árvores de antes do M8 (ou montadas à mão) podem não ter runs/lineRuns:
+// aí cada linha vira um tspan só, com o estilo do Text.
+const textRunsOf = (node: PositionedText): readonly TextRun[] => (Array.isArray(node.runs) ? node.runs : []);
+
+const lineRunsOf = (layout: TextLayout): readonly (readonly LineRun[])[] | undefined =>
+  Array.isArray(layout.lineRuns) && layout.lineRuns.length === layout.lines.length ? layout.lineRuns : undefined;
+
+interface SvgRunStyle {
+  readonly weight: FontWeight;
+  readonly italic: boolean;
+  readonly color: Color;
+}
+
+const runStyleAttrs = (style: SvgRunStyle): Attrs => ({
+  'font-weight': style.weight === 'bold' ? 'bold' : 'normal',
+  'font-style': style.italic ? 'italic' : 'normal',
+  fill: style.color,
+});
+
+const tspanOf = (text: string, style: SvgRunStyle): string =>
+  element('tspan', { ...runStyleAttrs(style), 'xml:space': 'preserve' }, escapeXml(text));
+
+/** Um tspan por LineRun; sem lineRuns, a linha inteira num tspan com o estilo do Text. */
+const lineTspansOf = (node: PositionedText, base: SvgRunStyle): readonly string[] => {
+  const lineRuns = lineRunsOf(node.text);
+  if (lineRuns === undefined) return node.text.lines.map((line) => tspanOf(line, base));
+  const runs = textRunsOf(node);
+  return lineRuns.map((pieces) => pieces.map((piece) => tspanOf(piece.text, runs[piece.run] ?? base)).join(''));
+};
+
 /** Um <text> por linha já quebrada: o SVG nunca decide quebra sozinho. */
 export const textSvg = (node: PositionedText, options: TextSvgOptions = {}): string => {
   const style = textStyleOf(node.props);
+  const base: SvgRunStyle = { weight: style.weight, italic: style.italic, color: node.props.color ?? DEFAULTS.text.color };
   const { anchor, offset } = ANCHORS[node.props.align ?? DEFAULTS.text.align];
-  const { lines, lineHeight, ascent, fontSize } = node.text;
+  const { lineHeight, ascent, fontSize } = node.text;
   const common: Attrs = {
     x: node.frame.x + node.frame.width * offset,
     'text-anchor': anchor,
     'font-family': options.fontFamilyMap?.[style.family] ?? style.family,
     'font-size': fontSize,
-    'font-weight': style.weight === 'bold' ? 'bold' : 'normal',
-    'font-style': style.italic ? 'italic' : 'normal',
-    fill: node.props.color ?? DEFAULTS.text.color,
+    ...runStyleAttrs(base),
     'xml:space': 'preserve',
   };
-  return lines
-    .map((line, i) => element('text', { ...common, y: node.frame.y + i * lineHeight + ascent }, escapeXml(line)))
+  return lineTspansOf(node, base)
+    .map((tspans, i) => element('text', { ...common, y: node.frame.y + i * lineHeight + ascent }, tspans))
     .join('');
 };
 
@@ -133,9 +166,13 @@ export const imageSvg = (node: PositionedImage, href: string, clipId: string): s
 export const backgroundColorSvg = (frame: Rect, color: Color): string =>
   element('rect', { ...rectAttrs(frame), fill: color });
 
-/** Faixa do texto abaixo do frame quando a altura medida passa da caixa (mesma tolerância do fit). */
+/**
+ * Faixa do texto abaixo do frame quando a altura medida passa da caixa (mesma tolerância do fit).
+ * Com fonte ausente a medição é estimada: o realce seria ruído (o JSON também suprime o estouro).
+ */
 export const textOverflowRectOf = (node: PositionedText): Rect | undefined => {
   const { frame, text } = node;
+  if (text.fontMissing) return undefined;
   if (text.height <= frame.height + DEFAULTS.fit.epsilon) return undefined;
   return { x: frame.x, y: frame.y + frame.height, width: frame.width, height: text.height - frame.height };
 };

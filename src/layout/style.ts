@@ -24,6 +24,7 @@ export interface YogaStyle {
   readonly flexDirection?: YogaFlexDirection;
   readonly gap?: number;
   readonly padding?: Edges;
+  readonly margin?: Partial<Edges>;
   readonly alignItems?: YogaAlign;
   readonly justifyContent?: YogaJustify;
   readonly flexGrow?: number;
@@ -51,7 +52,21 @@ const ALIGNS: Readonly<Record<Align, YogaAlign>> = {
   center: YogaAlign.Center,
   end: YogaAlign.FlexEnd,
   stretch: YogaAlign.Stretch,
+  baseline: YogaAlign.Baseline,
 };
+
+/** Baseline só tem sentido entre itens lado a lado; numa column vira start (contrato M8). */
+const alignOf = (align: Align, direction: FlexDirection): YogaAlign =>
+  align === 'baseline' && direction === 'column' ? YogaAlign.FlexStart : ALIGNS[align];
+
+/**
+ * O pai lê a baseline deste item: alinhado por baseline numa row, ou dentro de um
+ * Box cuja baseline já é lida (a baseline do Box é a do 1º filho, recursivamente).
+ */
+export const readsBaseline = (
+  props: FlexItemProps,
+  parent: { readonly direction: FlexDirection; readonly align: Align; readonly baseline: boolean },
+): boolean => parent.baseline || (parent.direction === 'row' && (props.alignSelf ?? parent.align) === 'baseline');
 
 const JUSTIFIES: Readonly<Record<Justify, YogaJustify>> = {
   start: YogaJustify.FlexStart,
@@ -85,7 +100,7 @@ export const toContainerStyle = (props: ContainerProps): YogaStyle => {
     flexDirection: DIRECTIONS[container.direction],
     gap: container.gap,
     padding: container.padding,
-    alignItems: ALIGNS[container.align],
+    alignItems: alignOf(container.align, container.direction),
     justifyContent: JUSTIFIES[container.justify],
   };
 };
@@ -114,7 +129,7 @@ export const toItemStyle = (props: FlexItemProps, parentDirection: FlexDirection
     maxWidth: props.maxWidth,
     minHeight: props.minHeight,
     maxHeight: props.maxHeight,
-    alignSelf: props.alignSelf === undefined ? undefined : ALIGNS[props.alignSelf],
+    alignSelf: props.alignSelf === undefined ? undefined : alignOf(props.alignSelf, parentDirection),
     positionType: props.position === undefined ? undefined : POSITION_TYPES[props.position],
     position: positionOf(props),
   });
@@ -128,6 +143,16 @@ export const toTextStyle = (props: FlexItemProps, parentDirection: FlexDirection
   if (parentDirection === 'row') return item;
   const { flexBasis: _ignored, ...auto } = item;
   return auto;
+};
+
+/**
+ * nowrap numa row: a linha não quebra, então o Yoga não pode espremer a caixa abaixo
+ * dela (o estouro de largura fica visível ao fit em vez de sumir num frame estreito).
+ * minWidth numérico do autor maior que a linha continua valendo.
+ */
+export const withLineMinWidth = (style: YogaStyle, lineWidth: number): YogaStyle => {
+  const author = style.minWidth;
+  return { ...style, minWidth: typeof author === 'number' ? Math.max(author, lineWidth) : lineWidth };
 };
 
 /** Box: item flex e contêiner ao mesmo tempo. */

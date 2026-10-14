@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createEstimateMeasurer, createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
 import { textStyleOf } from '../../src/core/defaults.ts';
 import type { TextMeasureInput, TextMeasurer, TextStyle } from '../../src/core/types.ts';
-import { DEFAULT_FONTS } from '../../src/fonts.ts';
+import { DEFAULT_FONTS } from '../../src/fonts/index.ts';
 import { fileURLToPath } from 'node:url';
 import * as fontkitLib from 'fontkit';
 

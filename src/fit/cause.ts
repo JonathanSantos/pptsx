@@ -1,7 +1,8 @@
 import { DEFAULTS, containerOf } from '../core/defaults.ts';
 import type { Diagnostic, DiagnosticCode, PositionedNode, PositionedSlide, Pt } from '../core/types.ts';
+import { isWidthOverflow } from './detect.ts';
 import type { Overflow } from './detect.ts';
-import { withCause } from './diagnostics.ts';
+import { withCause, withWidthCause } from './diagnostics.ts';
 import { contentOf, isBox, isInFlow } from './geometry.ts';
 import type { Container } from './geometry.ts';
 import { ancestorsOf, isWithin } from './scope.ts';
@@ -74,7 +75,10 @@ const isStrictlyWithin = (path: string, ancestor: string): boolean => path !== a
  * culpariam o primeiro cartão pelo estouro dos outros.
  */
 export const causesOf = (slide: PositionedSlide, overflows: readonly Overflow[]): ReadonlyMap<string, Cause> => {
-  const overflowing = overflows.filter((overflow) => overflow.kind !== 'slide').map((overflow) => overflow.path);
+  // A demanda é só de altura: estouro de largura (nowrap) não disputa espaço com os irmãos.
+  const overflowing = overflows
+    .filter((overflow) => overflow.kind !== 'slide' && !isWidthOverflow(overflow))
+    .map((overflow) => overflow.path);
   return new Map(
     flowContainersOf(slide).flatMap((container) => {
       if (isRow(container) || !overflowing.some((path) => isStrictlyWithin(path, container.path))) return [];
@@ -95,15 +99,76 @@ const ATTRIBUTABLE: ReadonlySet<DiagnosticCode> = new Set(['text-overflow', 'box
 const attribute =
   (causes: ReadonlyMap<string, Cause>) =>
   (diagnostic: Diagnostic): Diagnostic => {
-    if (!ATTRIBUTABLE.has(diagnostic.code)) return diagnostic;
+    if (!ATTRIBUTABLE.has(diagnostic.code) || diagnostic.data?.axis === 'width') return diagnostic;
     const nearest = ancestorsOf(diagnostic.path)
       .map((ancestor) => causes.get(ancestor))
       .find((cause) => cause !== undefined && !isWithin(diagnostic.path, cause.path));
     return nearest === undefined ? diagnostic : withCause(diagnostic, nearest);
   };
 
+/**
+ * Causa por largura: numa row, um Text nowrap que passa da largura toma o espaço dos
+ * irmãos (o minWidth dele espreme os outros até 0 pt e os empurra para fora). Os estouros
+ * dos irmãos e o box-overflow da row são consequência; vence o nowrap de maior estouro.
+ */
+export interface WidthCause {
+  readonly path: string;
+  readonly overflowPt: Pt;
+  /** Irmãos em fluxo (sem a causa): os estouros dentro deles são consequência. */
+  readonly siblings: readonly string[];
+}
+
+const widthCauseOf = (row: Container, widths: ReadonlyMap<string, Overflow>): WidthCause | undefined => {
+  const inFlow = row.children.filter(isInFlow);
+  const worst = inFlow.reduce<Overflow | undefined>((best, child) => {
+    const overflow = widths.get(child.path);
+    if (overflow === undefined || (best !== undefined && overflow.overflowPt <= best.overflowPt)) return best;
+    return overflow;
+  }, undefined);
+  if (worst === undefined) return undefined;
+  const siblings = inFlow.map((child) => child.path).filter((path) => path !== worst.path);
+  return { path: worst.path, overflowPt: worst.overflowPt, siblings };
+};
+
+export const widthCausesOf = (slide: PositionedSlide, overflows: readonly Overflow[]): ReadonlyMap<string, WidthCause> => {
+  const widths = new Map(overflows.filter(isWidthOverflow).map((overflow) => [overflow.path, overflow]));
+  if (widths.size === 0) return new Map();
+  return new Map(
+    flowContainersOf(slide).flatMap((container) => {
+      if (!isRow(container)) return [];
+      const cause = widthCauseOf(container, widths);
+      return cause === undefined ? [] : [[container.path, cause] as const];
+    }),
+  );
+};
+
+// Só nesta passada: palavra partida e nó fora do slide também são sintomas de irmão espremido.
+const WIDTH_ATTRIBUTABLE: ReadonlySet<DiagnosticCode> = new Set([
+  'text-overflow',
+  'text-word-broken',
+  'box-overflow',
+  'out-of-slide',
+]);
+
+/** A própria row (box-overflow dela) ou algo dentro de um irmão em fluxo do nowrap. */
+const isConsequenceOf = (path: string, row: string, cause: WidthCause): boolean =>
+  path === row || cause.siblings.some((sibling) => isWithin(path, sibling));
+
+/** Depois da altura: quem já tem causedBy por altura mantém o que tem. */
+const attributeWidth =
+  (causes: ReadonlyMap<string, WidthCause>) =>
+  (diagnostic: Diagnostic): Diagnostic => {
+    if (!WIDTH_ATTRIBUTABLE.has(diagnostic.code) || diagnostic.data?.causedBy !== undefined) return diagnostic;
+    const nearest = [diagnostic.path, ...ancestorsOf(diagnostic.path)].flatMap((row) => {
+      const cause = causes.get(row);
+      return cause !== undefined && isConsequenceOf(diagnostic.path, row, cause) ? [cause] : [];
+    })[0];
+    return nearest === undefined ? diagnostic : withWidthCause(diagnostic, nearest);
+  };
+
 export const attributeCauses = (
   diagnostics: readonly Diagnostic[],
   slide: PositionedSlide,
   overflows: readonly Overflow[],
-): readonly Diagnostic[] => diagnostics.map(attribute(causesOf(slide, overflows)));
+): readonly Diagnostic[] =>
+  diagnostics.map(attribute(causesOf(slide, overflows))).map(attributeWidth(widthCausesOf(slide, overflows)));

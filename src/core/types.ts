@@ -288,8 +288,13 @@ export interface FontFace {
   readonly family: string;
   readonly weight: FontWeight;
   readonly italic?: boolean;
-  /** Caminho para .ttf/.otf. Ausente (M8) → procurar nas pastas de fontes do sistema. */
+  /** Caminho para .ttf/.otf/.ttc. Ausente (M8) → procurar nas pastas de fontes do sistema. */
   readonly file?: string;
+  /**
+   * M8: nome PostScript da face dentro de uma coleção (.ttc); o resolver do sistema preenche e o
+   * registro abre essa face (`fontkit.openSync(file, postscriptName)`). Ausente → 1ª face do arquivo.
+   */
+  readonly postscriptName?: string;
 }
 
 export interface TextStyle {

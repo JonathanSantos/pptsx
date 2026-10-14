@@ -1,4 +1,6 @@
-import type { Pt } from '../core/types.ts';
+import type { LineRun, Pt, TextMeasureInput } from '../core/types.ts';
+import { charsOf, concat, dropLastChar, type MeasureRun, type Pieces, textOf, trimEnd, widthOf } from './pieces.ts';
+import { runsOfInput, type Segment, type Source, segmentsOf, sourcesOf } from './source.ts';
 
 /**
  * O Yoga devolve larguras em float32: a caixa de um texto medido com largura W
@@ -6,7 +8,7 @@ import type { Pt } from '../core/types.ts';
  */
 const FIT_TOLERANCE = 0.01;
 
-/** Largura de um trecho de texto em pt; o medidor decide como (estimativa, fontkit...). */
+/** Largura de um trecho de texto em pt (um run só). */
 export type MeasureWidth = (text: string) => Pt;
 
 /** Linhas de cada parágrafo do autor; `flat()` dá todas as linhas. */
@@ -15,133 +17,144 @@ export type Paragraphs = readonly (readonly string[])[];
 export const ELLIPSIS = '…';
 
 /**
- * Trecho indivisível na quebra gulosa. `glue` é o que o separa do trecho
- * anterior quando os dois ficam na mesma linha: ' ' entre palavras, '' depois
- * de '-' ou '/' (o caractere já está no fim do trecho anterior).
+ * Parágrafo já quebrado. As linhas são `Pieces` (texto por run): `lines`,
+ * `paragraphs` e `lineRuns` saem todos daqui, então ficam coerentes também
+ * depois da quebra por caractere e do truncamento.
  */
-interface Segment {
-  readonly text: string;
-  readonly glue: string;
+interface Wrapped {
+  readonly lines: readonly Pieces[];
+  /** Run da reticência quando a linha cortada não tem caracteres. */
+  readonly run: number;
 }
 
-// Corta DEPOIS de '-'/'/', mantendo-os no trecho. Hífen/barra no início ficam
-// grudados no que vem depois ("-5" não quebra), e sequências ("//") não se separam.
-const BREAK_AFTER = /[-/]*[^-/]+[-/]*|[-/]+/g;
+const fits = (width: Pt, maxWidth: Pt): boolean => width <= maxWidth + FIT_TOLERANCE;
 
 const lastOf = <T>(items: readonly T[]): T | undefined => items[items.length - 1];
 
 const replaceLast = <T>(items: readonly T[], item: T): readonly T[] => [...items.slice(0, -1), item];
 
-const segmentsOfWord = (word: string): readonly Segment[] =>
-  (word.match(BREAK_AFTER) ?? [word]).map((text, index) => ({ text, glue: index === 0 ? ' ' : '' }));
-
-/** Palavras separadas por espaço, cada uma dividida depois de '-' e '/'. */
-export const segmentsOf = (paragraph: string): readonly Segment[] =>
-  paragraph
-    .split(/\s+/)
-    .filter((word) => word.length > 0)
-    .flatMap(segmentsOfWord);
-
-/**
- * Largura do maior trecho indivisível do conteúdo inteiro, antes de qualquer quebra por
- * caractere ou corte: o fit usa para saber direto em que size a palavra caberia.
- */
-export const widestSegmentOf = (content: string, measureWidth: MeasureWidth): Pt =>
-  content
-    .split('\n')
-    .flatMap(segmentsOf)
-    .reduce((widest, { text }) => Math.max(widest, measureWidth(text)), 0);
-
 /** Quebra um trecho que não cabe na linha, caractere a caractere (mínimo de 1 por linha). */
-export const breakWord = (word: string, maxWidth: Pt, measureWidth: MeasureWidth): readonly string[] =>
-  [...word].reduce<readonly string[]>((pieces, char) => {
-    const current = lastOf(pieces);
-    if (current === undefined) return [char];
-    const candidate = current + char;
-    return measureWidth(candidate) <= maxWidth + FIT_TOLERANCE ? replaceLast(pieces, candidate) : [...pieces, char];
+const breakWord = (pieces: Pieces, maxWidth: Pt, measure: MeasureRun): readonly Pieces[] =>
+  charsOf(pieces).reduce<readonly Pieces[]>((lines, char) => {
+    const current = lastOf(lines);
+    if (current === undefined) return [[char]];
+    const candidate = concat(current, [char]);
+    return fits(widthOf(candidate, measure), maxWidth) ? replaceLast(lines, candidate) : [...lines, [char]];
   }, []);
 
 const appendSegment =
-  (maxWidth: Pt, measureWidth: MeasureWidth) =>
-  (lines: readonly string[], { text, glue }: Segment): readonly string[] => {
+  (maxWidth: Pt, measure: MeasureRun) =>
+  (lines: readonly Pieces[], { pieces, glue }: Segment): readonly Pieces[] => {
     const current = lastOf(lines);
     if (current !== undefined) {
-      const candidate = current + glue + text;
-      if (measureWidth(candidate) <= maxWidth + FIT_TOLERANCE) return replaceLast(lines, candidate);
+      const candidate = concat(concat(current, glue), pieces);
+      if (fits(widthOf(candidate, measure), maxWidth)) return replaceLast(lines, candidate);
     }
-    if (measureWidth(text) <= maxWidth + FIT_TOLERANCE) return [...lines, text];
+    if (fits(widthOf(pieces, measure), maxWidth)) return [...lines, pieces];
     // O último pedaço vira a linha corrente para que o próximo trecho possa continuar nela.
-    return [...lines, ...breakWord(text, maxWidth, measureWidth)];
+    return [...lines, ...breakWord(pieces, maxWidth, measure)];
   };
 
-/** Quebra gulosa de um único parágrafo (sem '\n'). Parágrafo vazio = uma linha vazia. */
-export const breakLines = (paragraph: string, maxWidth: Pt, measureWidth: MeasureWidth): readonly string[] => {
-  const segments = segmentsOf(paragraph);
-  if (segments.length === 0) return [''];
-  return segments.reduce(appendSegment(maxWidth, measureWidth), []);
+/** Todos os segmentos numa linha só (nowrap, e a "palavra" indivisível do nowrap). */
+const joinSegments = (segments: readonly Segment[]): Pieces =>
+  segments.reduce<Pieces>(
+    (line, { pieces, glue }, index) => (index === 0 ? pieces : concat(concat(line, glue), pieces)),
+    [],
+  );
+
+/** Quebra gulosa de um parágrafo; vazio = uma linha vazia; nowrap = uma linha. */
+const wrapSegments = (segments: readonly Segment[], maxWidth: Pt, measure: MeasureRun, nowrap: boolean): readonly Pieces[] => {
+  if (segments.length === 0) return [[]];
+  if (nowrap) return [joinSegments(segments)];
+  return segments.reduce(appendSegment(maxWidth, measure), []);
 };
 
-/** Parágrafos separados por '\n', cada um quebrado de forma gulosa. */
-export const wrapParagraphs = (content: string, maxWidth: Pt, measureWidth: MeasureWidth): Paragraphs =>
-  content.split('\n').map((paragraph) => breakLines(paragraph, maxWidth, measureWidth));
+// Remove caracteres do fim até `linha + '…'` caber; linha vazia aceita o '…' sozinho.
+// A reticência pertence ao último run da linha (ou ao do parágrafo, se a linha esvaziou).
+const withEllipsis = (line: Pieces, run: number, maxWidth: Pt, measure: MeasureRun): Pieces => {
+  const trimmed = trimEnd(line);
+  const candidate = concat(trimmed, [{ text: ELLIPSIS, run: lastOf(trimmed)?.run ?? run }]);
+  if (trimmed.length === 0 || fits(widthOf(candidate, measure), maxWidth)) return candidate;
+  return withEllipsis(dropLastChar(trimmed), run, maxWidth, measure);
+};
 
-export interface WrappedText {
-  readonly paragraphs: Paragraphs;
-  readonly lines: readonly string[];
+const countLines = (paragraphs: readonly Wrapped[]): number =>
+  paragraphs.reduce((sum, { lines }) => sum + lines.length, 0);
+
+/** Mantém as primeiras `limit` linhas: parágrafos inteiros depois do corte somem. */
+const takeLines = (paragraphs: readonly Wrapped[], limit: number): readonly Wrapped[] =>
+  paragraphs.reduce<readonly Wrapped[]>((kept, paragraph) => {
+    const remaining = limit - countLines(kept);
+    if (remaining <= 0) return kept;
+    return [...kept, { ...paragraph, lines: paragraph.lines.slice(0, remaining) }];
+  }, []);
+
+interface Truncated {
+  readonly paragraphs: readonly Wrapped[];
   readonly truncated: boolean;
 }
 
-const wrappedOf = (paragraphs: Paragraphs, truncated: boolean): WrappedText => ({
-  paragraphs,
-  lines: paragraphs.flat(),
-  truncated,
-});
-
-// Remove caracteres do fim até `linha + '…'` caber; linha vazia aceita o '…' sozinho.
-const withEllipsis = (line: string, maxWidth: Pt, measureWidth: MeasureWidth): string => {
-  const trimmed = line.trimEnd();
-  const candidate = trimmed + ELLIPSIS;
-  if (trimmed.length === 0 || measureWidth(candidate) <= maxWidth + FIT_TOLERANCE) return candidate;
-  return withEllipsis(trimmed.slice(0, -1), maxWidth, measureWidth);
-};
-
-const countLines = (paragraphs: Paragraphs): number => paragraphs.reduce((sum, lines) => sum + lines.length, 0);
-
-/** Mantém as primeiras `limit` linhas: parágrafos inteiros depois do corte somem. */
-export const takeLines = (paragraphs: Paragraphs, limit: number): Paragraphs =>
-  paragraphs.reduce<Paragraphs>((kept, lines) => {
-    const remaining = limit - countLines(kept);
-    if (remaining <= 0) return kept;
-    return [...kept, lines.slice(0, remaining)];
-  }, []);
-
-/** Corta em `maxLines` e termina a última linha com '…'. */
-export const truncateParagraphs = (
-  paragraphs: Paragraphs,
-  maxLines: number,
-  maxWidth: Pt,
-  measureWidth: MeasureWidth,
-): WrappedText => {
-  const limit = Math.max(1, Math.floor(maxLines));
-  if (countLines(paragraphs) <= limit) return wrappedOf(paragraphs, false);
-  const kept = takeLines(paragraphs, limit);
-  const lastParagraph = lastOf(kept) ?? [''];
-  const ellipsized = replaceLast(lastParagraph, withEllipsis(lastOf(lastParagraph) ?? '', maxWidth, measureWidth));
-  return wrappedOf(replaceLast(kept, ellipsized), true);
-};
-
-/** Largura da linha mais longa, sem espaço final. */
-export const widestLine = (lines: readonly string[], measureWidth: MeasureWidth): Pt =>
-  lines.reduce((widest, line) => Math.max(widest, measureWidth(line.trimEnd())), 0);
-
-/** Quebra o conteúdo em `maxWidth` e, se houver `maxLines`, corta com reticências. */
-export const layoutLines = (
-  content: string,
-  maxWidth: Pt,
+/** Corta em `maxLines` e termina a última linha com '…' que caiba em `maxWidth`. */
+const truncate = (
+  paragraphs: readonly Wrapped[],
   maxLines: number | undefined,
-  measureWidth: MeasureWidth,
-): WrappedText => {
-  const paragraphs = wrapParagraphs(content, maxWidth, measureWidth);
-  if (maxLines === undefined) return wrappedOf(paragraphs, false);
-  return truncateParagraphs(paragraphs, maxLines, maxWidth, measureWidth);
+  maxWidth: Pt,
+  measure: MeasureRun,
+): Truncated => {
+  if (maxLines === undefined) return { paragraphs, truncated: false };
+  const limit = Math.max(1, Math.floor(maxLines));
+  if (countLines(paragraphs) <= limit) return { paragraphs, truncated: false };
+  const kept = takeLines(paragraphs, limit);
+  const last = lastOf(kept);
+  if (last === undefined) return { paragraphs: kept, truncated: true };
+  const ellipsized = replaceLast(last.lines, withEllipsis(lastOf(last.lines) ?? [], last.run, maxWidth, measure));
+  return { paragraphs: replaceLast(kept, { ...last, lines: ellipsized }), truncated: true };
+};
+
+const widestOf = (lines: readonly Pieces[], measure: MeasureRun): Pt =>
+  lines.reduce((widest, line) => Math.max(widest, widthOf(line, measure)), 0);
+
+export interface LaidOutText {
+  readonly paragraphs: Paragraphs;
+  readonly lines: readonly string[];
+  readonly lineRuns: readonly (readonly LineRun[])[];
+  readonly truncated: boolean;
+  /** Largura natural da linha mais longa, sem espaço final (sem folga de safety). */
+  readonly widestLine: Pt;
+  /** Maior trecho indivisível antes de quebra por caractere e corte; com nowrap, o parágrafo inteiro. */
+  readonly widestSegment: Pt;
+}
+
+/**
+ * Quebra (ou não, com nowrap) o conteúdo em `breakWidth` e corta em `maxLines`.
+ * `measure` mede um texto de um run; a largura de um trecho é a soma dos seus runs.
+ */
+export const layoutText = (input: TextMeasureInput, breakWidth: Pt, measure: MeasureRun): LaidOutText => {
+  const nowrap = input.nowrap === true;
+  const sources = sourcesOf(input.content, runsOfInput(input));
+  const segmented = sources.map((source: Source) => ({ source, segments: segmentsOf(source) }));
+  const wrapped = segmented.map(({ source, segments }) => ({
+    lines: wrapSegments(segments, breakWidth, measure, nowrap),
+    run: source.run,
+  }));
+  // Com nowrap a linha nunca é cortada por largura: a reticência só marca parágrafos que sumiram.
+  const { paragraphs, truncated } = truncate(wrapped, input.maxLines, nowrap ? Infinity : breakWidth, measure);
+  const lineRuns = paragraphs.flatMap(({ lines }) => lines);
+  const indivisible = segmented.flatMap(({ segments }) =>
+    nowrap ? [joinSegments(segments)] : segments.map((segment) => segment.pieces),
+  );
+  return {
+    paragraphs: paragraphs.map(({ lines }) => lines.map(textOf)),
+    lines: lineRuns.map(textOf),
+    lineRuns,
+    truncated,
+    widestLine: widestOf(lineRuns.map(trimEnd), measure),
+    widestSegment: widestOf(indivisible, measure),
+  };
+};
+
+/** Quebra gulosa de um único parágrafo (sem '\n') num run só. Parágrafo vazio = uma linha vazia. */
+export const breakLines = (paragraph: string, maxWidth: Pt, measureWidth: MeasureWidth): readonly string[] => {
+  const source: Source = { text: paragraph, spans: [{ start: 0, end: paragraph.length, run: 0 }], run: 0 };
+  return wrapSegments(segmentsOf(source), maxWidth, (text) => measureWidth(text), false).map(textOf);
 };

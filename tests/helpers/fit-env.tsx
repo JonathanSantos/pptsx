@@ -20,7 +20,7 @@ import { Deck } from '../../src/primitives/index.ts';
 import { layoutSlide } from '../../src/layout/index.ts';
 import { resolveDeck } from '../../src/resolve/index.ts';
 import { createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
-import { DEFAULT_FONTS } from '../../src/fonts.ts';
+import { DEFAULT_FONTS } from '../../src/fonts/index.ts';
 import { SIZE_16X9 } from './nodes.ts';
 
 export const realMeasurer: TextMeasurer = createFontkitMeasurer(createFontRegistry(DEFAULT_FONTS));

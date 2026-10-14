@@ -5,6 +5,7 @@ import { ptToInches } from '../sizes.ts';
 import type { LineSpacingStrategy } from './calibration.ts';
 import { emitDebugOutlines, emitNode, type EmitContext } from './emitters.ts';
 import { backgroundOf } from './options.ts';
+import { embedFonts, type EmbeddedFont } from './embed.ts';
 import { sanitizePptx } from './sanitize.ts';
 
 export interface EmitOptions {
@@ -16,6 +17,8 @@ export interface EmitOptions {
   readonly lang?: string;
   /** 'forced' (padrão DEFAULTS.lineBreaks) ou 'auto'; ver runsOf em options.ts. */
   readonly lineBreaks?: LineBreaks;
+  /** M8: faces a embutir (EOT pronto, ver src/emit/embed.ts); ausente ou vazio = sem embed. */
+  readonly embedFonts?: readonly EmbeddedFont[];
 }
 
 const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOptions): void => {
@@ -34,6 +37,7 @@ const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOpti
   if (slide.props.notes) target.addNotes(slide.props.notes);
 };
 
+export type { EmbeddedFont } from './embed.ts';
 export { ACTIVE_LINE_SPACING, LINE_SPACING_CALIBRATION, type LineSpacingStrategy } from './calibration.ts';
 
 export const emitPptx = async (deck: PositionedDeck, options: EmitOptions): Promise<Buffer> => {
@@ -42,5 +46,6 @@ export const emitPptx = async (deck: PositionedDeck, options: EmitOptions): Prom
   pptx.layout = deck.size.name;
   deck.slides.forEach((slide) => emitSlide(pptx, slide, options));
   const output = await pptx.write({ outputType: 'nodebuffer' });
-  return sanitizePptx(output as Buffer);
+  const sanitized = await sanitizePptx(output as Buffer);
+  return embedFonts(sanitized, options.embedFonts ?? []);
 };

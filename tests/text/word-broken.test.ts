@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { brokenWordsOf, createEstimateMeasurer, createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
-import { DEFAULT_FONTS } from '../../src/fonts.ts';
+import { DEFAULT_FONTS } from '../../src/fonts/index.ts';
 import type { TextMeasurer, TextStyle } from '../../src/core/types.ts';
 
 /**

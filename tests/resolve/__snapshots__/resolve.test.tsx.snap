@@ -15,6 +15,14 @@ exports[`resolveDeck — full tree > matches the stored snapshot 1`] = `
                 "size": 40,
                 "weight": "bold",
               },
+              "runs": [
+                {
+                  "color": "#000000",
+                  "italic": false,
+                  "text": "Hello",
+                  "weight": "bold",
+                },
+              ],
             },
             {
               "content": "World",
@@ -23,6 +31,14 @@ exports[`resolveDeck — full tree > matches the stored snapshot 1`] = `
               "props": {
                 "size": 20,
               },
+              "runs": [
+                {
+                  "color": "#000000",
+                  "italic": false,
+                  "text": "World",
+                  "weight": "regular",
+                },
+              ],
             },
           ],
           "kind": "box",

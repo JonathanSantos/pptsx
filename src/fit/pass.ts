@@ -11,7 +11,7 @@ import type {
   SlideSize,
 } from '../core/types.ts';
 import { layoutSlide } from '../layout/index.ts';
-import { detectOverflow } from './detect.ts';
+import { detectOverflow, isWidthOverflow } from './detect.ts';
 import type { Overflow } from './detect.ts';
 import { POLICIES } from './policies.ts';
 import type { OverflowPolicy } from './policies.ts';
@@ -68,5 +68,19 @@ export const passOf = (resolved: ResolvedSlide, input: LayoutInput): Pass => {
   return { resolved, positioned, overflows: detectOverflow(positioned) };
 };
 
+const isText = (overflow: Overflow): boolean => overflow.kind === 'text';
+
+const byPath = (overflows: readonly Overflow[]): ReadonlyMap<string, Overflow> =>
+  new Map(overflows.map((overflow) => [overflow.path, overflow]));
+
+/** Estouros de altura dos Text (um Text pode ter também um de largura: mapas separados). */
 export const textOverflowsOf = (pass: Pass): ReadonlyMap<string, Overflow> =>
-  new Map(pass.overflows.filter((overflow) => overflow.kind === 'text').map((overflow) => [overflow.path, overflow]));
+  byPath(pass.overflows.filter((overflow) => isText(overflow) && !isWidthOverflow(overflow)));
+
+/** Estouros de largura (Text com nowrap). */
+export const widthOverflowsOf = (pass: Pass): ReadonlyMap<string, Overflow> =>
+  byPath(pass.overflows.filter((overflow) => isText(overflow) && isWidthOverflow(overflow)));
+
+/** Text com qualquer estouro: não contam para o box do pai (mesma regra da detecção). */
+export const overflowingTextPaths = (pass: Pass): ReadonlySet<string> =>
+  new Set(pass.overflows.filter(isText).map((overflow) => overflow.path));

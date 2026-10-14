@@ -1,6 +1,7 @@
 import { DEFAULTS } from '../core/defaults.ts';
 import type { PositionedText, Pt } from '../core/types.ts';
-import { passOf, positionedTexts, resolvedTexts, sizeOf, textOverflowsOf } from './pass.ts';
+import type { Overflow } from './detect.ts';
+import { passOf, positionedTexts, resolvedTexts, sizeOf, textOverflowsOf, widthOverflowsOf } from './pass.ts';
 import type { LayoutInput, Pass, Plans, TextPlan } from './pass.ts';
 import { patchTexts } from './rewrite.ts';
 import type { TextPatch } from './rewrite.ts';
@@ -22,20 +23,27 @@ interface Participant {
   readonly current: Pt;
 }
 
+type WidthOverflows = ReadonlyMap<string, Overflow>;
+
 /**
- * Palavra partida só conta enquanto o próprio Text pode encolher: encolher os vizinhos
- * não alarga a linha dele. Estouro de altura conta mesmo no mínimo (vizinhos liberam altura).
+ * Falta de largura (palavra partida ou linha nowrap que não cabe) só conta enquanto o
+ * próprio Text pode encolher: encolher os vizinhos não alarga a linha dele. Estouro de
+ * altura conta mesmo no mínimo (vizinhos liberam altura).
  */
-const isWordTrigger = (text: PositionedText, plan: TextPlan): boolean =>
-  text.text.wordBroken && text.text.fontSize > plan.min;
+const isWidthTrigger = (text: PositionedText, plan: TextPlan, widths: WidthOverflows): boolean =>
+  (text.text.wordBroken || widths.has(text.path)) && text.text.fontSize > plan.min;
+
+const canTrigger = (text: PositionedText, plan: TextPlan | undefined): plan is TextPlan =>
+  plan !== undefined && plan.policy.triggersShrink && !text.text.fontMissing;
 
 // Fonte ausente não dispara: a medição é estimada e o diagnóstico é só font-missing.
 const triggersOf = (pass: Pass, plans: Plans): readonly PositionedText[] => {
   const overflows = textOverflowsOf(pass);
+  const widths = widthOverflowsOf(pass);
   return positionedTexts(pass).filter((text) => {
     const plan = plans.get(text.path);
-    if (plan === undefined || !plan.policy.triggersShrink || text.text.fontMissing) return false;
-    return overflows.has(text.path) || isWordTrigger(text, plan);
+    if (!canTrigger(text, plan)) return false;
+    return overflows.has(text.path) || isWidthTrigger(text, plan, widths);
   });
 };
 
@@ -64,41 +72,63 @@ const maxDeltaOf = (participants: readonly Participant[]): number =>
 const untouchedDeltaOf = (participants: readonly Participant[]): number =>
   Math.min(...participants.map(({ plan, current }) => Math.floor((plan.from - current) / STEP)));
 
+/** Passos a partir do size do autor até o size em que a largura `fitting` cabe. */
+const deltaTo = (plan: TextPlan, fitting: Pt): number => Math.ceil((plan.from - fitting) / STEP - RATIO_NOISE);
+
 /**
  * Piso pela palavra partida: a largura escala com o size, então o size em que o maior
  * segmento cabe na largura de quebra sai de uma regra de três. Qualquer delta menor
  * ainda parte a palavra; a busca começa direto ali.
  */
-const wordDeltaOf = (text: PositionedText, plan: TextPlan): number => {
+const segmentDeltaOf = (text: PositionedText, plan: TextPlan): number => {
   if (!text.text.wordBroken || text.text.widestSegment <= 0) return 0;
   const breakWidth = text.frame.width * DEFAULTS.textSafety;
-  const fitting = (text.text.fontSize * breakWidth) / text.text.widestSegment;
-  return Math.ceil((plan.from - fitting) / STEP - RATIO_NOISE);
+  return deltaTo(plan, (text.text.fontSize * breakWidth) / text.text.widestSegment);
 };
 
-const wordTriggersIn = (pass: Pass, plans: Plans, scope: string): readonly (readonly [PositionedText, TextPlan])[] =>
-  positionedTexts(pass).flatMap((text) => {
-    const plan = plans.get(text.path);
-    if (plan === undefined || !isWithin(text.path, scope) || !plan.policy.triggersShrink || text.text.fontMissing) return [];
-    return isWordTrigger(text, plan) ? [[text, plan] as const] : [];
-  });
+/**
+ * nowrap: o segmento indivisível é a linha inteira e ela não quebra, então a regra de
+ * três é sobre a largura da linha contra a área (sem textSafety: não há quebra a proteger;
+ * a tolerância da detecção entra na área).
+ */
+const lineDeltaOf = (text: PositionedText, plan: TextPlan, overflow: Overflow | undefined): number => {
+  if (overflow === undefined || text.text.width <= 0) return 0;
+  const area = text.text.width - overflow.overflowPt + DEFAULTS.fit.epsilon;
+  return deltaTo(plan, (text.text.fontSize * area) / text.text.width);
+};
 
-const wordFloorOf = (pass: Pass, plans: Plans, scope: string): number =>
-  Math.max(0, ...wordTriggersIn(pass, plans, scope).map(([text, plan]) => wordDeltaOf(text, plan)));
+const wordDeltaOf = (text: PositionedText, plan: TextPlan, widths: WidthOverflows): number =>
+  Math.max(segmentDeltaOf(text, plan), lineDeltaOf(text, plan, widths.get(text.path)));
+
+const wordTriggersIn = (pass: Pass, plans: Plans, scope: string): readonly (readonly [PositionedText, TextPlan])[] => {
+  const widths = widthOverflowsOf(pass);
+  return positionedTexts(pass).flatMap((text) => {
+    const plan = plans.get(text.path);
+    if (!isWithin(text.path, scope) || !canTrigger(text, plan)) return [];
+    return isWidthTrigger(text, plan, widths) ? [[text, plan] as const] : [];
+  });
+};
+
+const wordFloorOf = (pass: Pass, plans: Plans, scope: string): number => {
+  const widths = widthOverflowsOf(pass);
+  return Math.max(0, ...wordTriggersIn(pass, plans, scope).map(([text, plan]) => wordDeltaOf(text, plan, widths)));
+};
 
 /**
- * Cada Text com palavra partida vai sozinho ao size em que ela cabe (ou ao seu mínimo).
- * Só ele: os vizinhos não alargam a linha dele, e um delta comum arrastaria rótulos
- * pequenos ao mínimo por causa de um valor grande que não cabe.
+ * Cada Text sem largura (palavra partida ou linha nowrap) vai sozinho ao size em que ela
+ * cabe (ou ao seu mínimo). Só ele: os vizinhos não alargam a linha dele, e um delta comum
+ * arrastaria rótulos pequenos ao mínimo por causa de um valor grande que não cabe.
  */
-const wordPatchesOf = (pass: Pass, plans: Plans, scope: string): ReadonlyMap<string, TextPatch> =>
-  new Map(
+const wordPatchesOf = (pass: Pass, plans: Plans, scope: string): ReadonlyMap<string, TextPatch> => {
+  const widths = widthOverflowsOf(pass);
+  return new Map(
     wordTriggersIn(pass, plans, scope).flatMap(([text, plan]) => {
       const current = text.text.fontSize;
-      const size = Math.min(current, plan.policy.resize(plan.from, plan.min, wordDeltaOf(text, plan)) ?? current);
+      const size = Math.min(current, plan.policy.resize(plan.from, plan.min, wordDeltaOf(text, plan, widths)) ?? current);
       return size < current ? [[text.path, { size }] as const] : [];
     }),
   );
+};
 
 // Nunca aumenta: escopos internos já resolvidos nesta rodada ficam como estão se o delta de fora for menor.
 const patchesAt = (participants: readonly Participant[], delta: number): ReadonlyMap<string, TextPatch> =>

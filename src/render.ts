@@ -1,23 +1,37 @@
 import { readFileSync } from 'node:fs';
 import { imageSize } from 'image-size';
 import { resolveAssetPath } from './core/assets.ts';
-import { DEFAULTS } from './core/defaults.ts';
+import { DEFAULTS, textStyleOf } from './core/defaults.ts';
 import type {
   DeckDefinition,
   Diagnostic,
   Dimensions,
   FontFace,
+  FontWeight,
   LayoutEnv,
   LineBreaks,
   PositionedDeck,
+  PositionedNode,
+  PositionedText,
   PreviewOptions,
   RenderOptions,
   RenderResult,
   ResolvedDeck,
   SlideSize,
 } from './core/types.ts';
-import { emitPptx } from './emit/index.ts';
-import { DEFAULT_FONTS, fontFamilyMapOf } from './fonts.ts';
+import { emitPptx, type EmitOptions } from './emit/index.ts';
+import {
+  DEFAULT_FONTS,
+  eotOf,
+  fontFamilyMapOf,
+  fontLabelOf,
+  fsTypeOf,
+  isEmbeddable,
+  isTrueTypeFont,
+  normalizeFamily,
+  resolveFontFaces,
+  type FileFontFace,
+} from './fonts/index.ts';
 import { fitSlide } from './fit/index.ts';
 import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
 import { resolveDeck } from './resolve/index.ts';
@@ -31,7 +45,11 @@ interface RenderSettings {
   readonly lang: string;
   readonly lineBreaks: LineBreaks;
   readonly includePositioned: boolean;
-  readonly fonts: readonly FontFace[];
+  /** Faces já resolvidas (todas com arquivo). */
+  readonly fonts: readonly FileFontFace[];
+  /** Faces pedidas sem arquivo que não estão no sistema ("Inter bold"). */
+  readonly fontsMissing: readonly string[];
+  readonly embedFonts: boolean;
   readonly preview: PreviewOptions | false;
   readonly env: LayoutEnv;
 }
@@ -45,7 +63,7 @@ const readImageSize =
 
 const settingsOf = (options: RenderOptions): RenderSettings => {
   const baseDir = options.baseDir ?? process.cwd();
-  const fonts = options.fonts ?? DEFAULT_FONTS;
+  const { faces: fonts, missing: fontsMissing } = resolveFontFaces(options.fonts ?? DEFAULT_FONTS);
   const measureText = createFontkitMeasurer(createFontRegistry(fonts), { safety: options.textSafety ?? DEFAULTS.textSafety });
   return {
     baseDir,
@@ -54,6 +72,8 @@ const settingsOf = (options: RenderOptions): RenderSettings => {
     lineBreaks: options.lineBreaks ?? DEFAULTS.lineBreaks,
     includePositioned: options.includePositioned ?? false,
     fonts,
+    fontsMissing,
+    embedFonts: options.embedFonts ?? DEFAULTS.embedFonts,
     preview: options.preview ?? { mode: 'native', width: DEFAULTS.preview.width },
     env: { measureText, imageSize: readImageSize(baseDir) },
   };
@@ -89,6 +109,97 @@ const renderPreview = (
   return { slides, overview };
 };
 
+// ───────────────────────── Embed de fontes ─────────────────────────
+
+/** Face como o emissor embute: EOT pronto, o emissor não lê arquivo. */
+type EmbeddedFont = NonNullable<EmitOptions['embedFonts']>[number];
+
+interface EmbedPlan {
+  readonly fonts: readonly EmbeddedFont[];
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+interface FaceUse {
+  readonly family: string;
+  readonly weight: FontWeight;
+  readonly italic: boolean;
+}
+
+const textNodesOf = (nodes: readonly PositionedNode[]): readonly PositionedText[] =>
+  nodes.flatMap((node) => {
+    if (node.kind === 'text') return [node];
+    if (node.kind === 'box') return textNodesOf(node.children);
+    return [];
+  });
+
+// `runs` pode faltar em árvores de antes do M8-A: vale um run com o estilo do próprio Text.
+const faceUsesOf = (node: PositionedText): readonly FaceUse[] => {
+  const style = textStyleOf(node.props);
+  const runs: readonly Pick<FaceUse, 'weight' | 'italic'>[] = node.runs ?? [{ weight: style.weight, italic: style.italic }];
+  return runs.map((run) => ({ family: style.family, weight: run.weight, italic: run.italic }));
+};
+
+const isFaceOf = (face: FontFace, use: FaceUse): boolean =>
+  normalizeFamily(face.family) === normalizeFamily(use.family) &&
+  face.weight === use.weight &&
+  (face.italic ?? false) === use.italic;
+
+// Mesma regra do registro de medição: itálico ausente cai para a face reta do mesmo peso.
+const registeredFaceOf = (fonts: readonly FileFontFace[], use: FaceUse): FileFontFace | undefined =>
+  fonts.find((face) => isFaceOf(face, use)) ??
+  (use.italic ? fonts.find((face) => isFaceOf(face, { ...use, italic: false })) : undefined);
+
+const DEFAULT_FONT_FILES: ReadonlySet<string> = new Set(DEFAULT_FONTS.map((face) => face.file));
+
+// A Liberation é emitida como "Arial": embuti-la trocaria a Arial de verdade do leitor pela substituta.
+const isDefaultArial = (face: FileFontFace): boolean =>
+  DEFAULT_FONT_FILES.has(face.file) && normalizeFamily(face.family) === normalizeFamily(DEFAULTS.text.font);
+
+/** Faces registradas que algum trecho do deck usa, na ordem de registro. */
+const usedFacesOf = (deck: PositionedDeck, fonts: readonly FileFontFace[]): readonly FileFontFace[] => {
+  const used = new Set(
+    deck.slides
+      .flatMap((slide) => textNodesOf(slide.children))
+      .flatMap(faceUsesOf)
+      .map((use) => registeredFaceOf(fonts, use)),
+  );
+  return fonts.filter((face) => used.has(face) && !isDefaultArial(face));
+};
+
+type EmbedCheck = { readonly font: EmbeddedFont } | { readonly problem: string };
+
+// O PowerPoint recusa o arquivo inteiro se não conseguir instalar uma fonte embutida,
+// então só sai EOT de TrueType de uma face só e com licença que permite embed. IO de borda.
+const embedCheckOf = (face: FileFontFace): EmbedCheck => {
+  const data = readFileSync(face.file);
+  const label = fontLabelOf(face);
+  if (!isTrueTypeFont(data)) {
+    return { problem: `A fonte "${label}" não é um TrueType de uma face só (.otf CFF ou coleção .ttc) e não foi embutida.` };
+  }
+  if (!isEmbeddable(fsTypeOf(data))) {
+    return { problem: `A fonte "${label}" não permite embed (fsType restrito) e não foi embutida.` };
+  }
+  return { font: { family: face.family, weight: face.weight, italic: face.italic ?? false, eot: eotOf(data, face.family) } };
+};
+
+const notEmbeddable = (size: string, message: string): Diagnostic => ({
+  severity: 'warning',
+  code: 'font-not-embeddable',
+  size,
+  slide: 0,
+  path: '',
+  message,
+});
+
+const embedPlanOf = (deck: PositionedDeck, settings: RenderSettings): EmbedPlan => {
+  if (!settings.embedFonts) return { fonts: [], diagnostics: [] };
+  const checks = usedFacesOf(deck, settings.fonts).map(embedCheckOf);
+  return {
+    fonts: checks.flatMap((check) => ('font' in check ? [check.font] : [])),
+    diagnostics: checks.flatMap((check) => ('problem' in check ? [notEmbeddable(deck.size.name, check.problem)] : [])),
+  };
+};
+
 /** Layout + ajuste (loop de fit) de cada slide, já com os diagnósticos. */
 const fitDeck = (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) => {
   const fitted = deck.slides.map((slide, slideIndex) => fitSlide({ slide, slideIndex, size, env }));
@@ -98,14 +209,24 @@ const fitDeck = (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv) => {
 
 const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: RenderSettings): Promise<RenderResult> => {
   const resolved = resolveDeck(deck(createContext(size)));
-  const { positioned, diagnostics } = fitDeck(resolved, size, settings.env);
+  const fitted = fitDeck(resolved, size, settings.env);
+  const { positioned } = fitted;
+  const embed = embedPlanOf(positioned, settings);
   const buffer = await emitPptx(positioned, {
     debug: settings.debug,
     baseDir: settings.baseDir,
     lang: settings.lang,
     lineBreaks: settings.lineBreaks,
+    embedFonts: embed.fonts,
   });
-  const result: RenderResult = { size: size.name, buffer, diagnostics, ...(settings.includePositioned ? { positioned } : {}) };
+  const diagnostics = [...fitted.diagnostics, ...embed.diagnostics];
+  const result: RenderResult = {
+    size: size.name,
+    buffer,
+    diagnostics,
+    ...(settings.includePositioned ? { positioned } : {}),
+    ...(settings.fontsMissing.length > 0 ? { fontsMissing: settings.fontsMissing } : {}),
+  };
   if (settings.preview === false) return result;
   return { ...result, preview: renderPreview(positioned, diagnostics, settings, settings.preview) };
 };

@@ -27,10 +27,11 @@ export const layoutSlide = (slide: ResolvedSlide, size: SlideSize, env: LayoutEn
   const root = Yoga.Node.create(config);
   try {
     applyStyle(root, { ...toContainerStyle(slide.props), width: size.width, height: size.height });
+    const container = containerOf(slide.props);
     const children = buildChildren(slide.children, root, {
       config,
       env,
-      parentDirection: containerOf(slide.props).direction,
+      parent: { direction: container.direction, align: container.align, baseline: false },
     });
     root.calculateLayout(size.width, size.height, Direction.LTR);
     const frame: Rect = { x: 0, y: 0, width: size.width, height: size.height };
@@ -40,6 +41,8 @@ export const layoutSlide = (slide: ResolvedSlide, size: SlideSize, env: LayoutEn
     config.free();
   }
 };
+
+export { measureInputOf } from './measure.ts';
 
 export const layoutDeck = (deck: ResolvedDeck, size: SlideSize, env: LayoutEnv): PositionedDeck => ({
   size,

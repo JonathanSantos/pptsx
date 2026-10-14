@@ -1,10 +1,12 @@
 import type { Font } from 'fontkit';
 import { DEFAULTS } from '../core/defaults.ts';
-import type { Pt, TextLayout, TextMeasureInput, TextMeasurer, TextStyle } from '../core/types.ts';
+import type { Pt, TextLayout, TextMeasureInput, TextMeasurer } from '../core/types.ts';
 import { brokenWordsOf } from './broken.ts';
 import { createEstimateMeasurer } from './estimate.ts';
-import { layoutLines, type MeasureWidth, widestLine, widestSegmentOf } from './lines.ts';
+import { layoutText } from './lines.ts';
+import type { MeasureRun } from './pieces.ts';
 import type { FontRegistry } from './registry.ts';
+import { runsOfInput } from './source.ts';
 
 export interface FontkitMeasurerOptions {
   /** Fator sobre maxWidth na quebra; padrão DEFAULTS.textSafety. */
@@ -40,10 +42,13 @@ const cachedUnitWidth = (font: Font): UnitWidth => {
   };
 };
 
+// NBSP é medido como espaço (CONTRACTS M8): algumas fontes nem têm o glifo, e o renderizador o desenha como espaço.
+const NBSP = /\u00A0/g;
+
 const measureWidthOf =
-  (unitWidth: UnitWidth, unitsPerEm: number, size: Pt): MeasureWidth =>
+  (unitWidth: UnitWidth, unitsPerEm: number, size: Pt): ((text: string) => Pt) =>
   (text) =>
-    text.length === 0 ? 0 : (unitWidth(text) * size) / unitsPerEm;
+    text.length === 0 ? 0 : (unitWidth(text.replace(NBSP, ' ')) * size) / unitsPerEm;
 
 const naturalLineHeight = ({ unitsPerEm, ascent, descent, lineGap }: VerticalMetrics, size: Pt): Pt =>
   ((ascent - descent + lineGap) / unitsPerEm) * size;
@@ -69,41 +74,40 @@ const metricsOf = (font: Font): VerticalMetrics => ({
  * Largura da caixa que acomoda as linhas: inclui a folga do safety. Sem isso,
  * um texto dimensionado pelo conteúdo (align center/start) recebe a largura
  * exata, é remedido com largura × safety e quebra no meio da palavra.
+ * Com nowrap não há limite: a largura pode passar de maxWidth (o fit acusa o estouro).
  */
-const boxWidthOf = (widest: Pt, maxWidth: Pt, safety: number): Pt => Math.min(widest / safety, maxWidth);
+const boxWidthOf = (widest: Pt, maxWidth: Pt, safety: number, nowrap: boolean): Pt =>
+  nowrap ? widest / safety : Math.min(widest / safety, maxWidth);
 
-const measureWithFont = (
-  font: Font,
-  unitWidth: UnitWidth,
+const measureWithFonts = (
+  metricsFont: Font,
+  measure: MeasureRun,
   input: TextMeasureInput,
   safety: number,
 ): TextLayout => {
   const { size, lineHeight: multiplier } = input.style;
-  const metrics = metricsOf(font);
-  const measureWidth = measureWidthOf(unitWidth, metrics.unitsPerEm, size);
+  const metrics = metricsOf(metricsFont);
+  const nowrap = input.nowrap === true;
   // Infinity × safety continua Infinity: texto sem limite nunca quebra.
-  const breakWidth = input.maxWidth * safety;
-  const { paragraphs, lines, truncated } = layoutLines(input.content, breakWidth, input.maxLines, measureWidth);
+  const laid = layoutText(input, input.maxWidth * safety, measure);
   const lineHeight = naturalLineHeight(metrics, size) * multiplier;
   return {
-    lines,
-    paragraphs,
+    lines: laid.lines,
+    paragraphs: laid.paragraphs,
+    lineRuns: laid.lineRuns,
     fontSize: size,
     lineHeight,
     ascent: baselineOffset(metrics, size, multiplier),
-    width: boxWidthOf(widestLine(lines, measureWidth), input.maxWidth, safety),
-    height: lines.length * lineHeight,
-    widestSegment: widestSegmentOf(input.content, measureWidth),
-    wordBroken: brokenWordsOf(input.content, paragraphs).length > 0,
-    truncated,
+    width: boxWidthOf(laid.widestLine, input.maxWidth, safety, nowrap),
+    height: laid.lines.length * lineHeight,
+    widestSegment: laid.widestSegment,
+    wordBroken: !nowrap && brokenWordsOf(input.content, laid.paragraphs).length > 0,
+    truncated: laid.truncated,
     fontMissing: false,
   };
 };
 
-const fontOf = (registry: FontRegistry, style: TextStyle): Font | undefined =>
-  registry.get(style.family, style.weight, style.italic);
-
-/** Medidor com métricas reais (fontkit). Fonte não registrada → estimativa com fontMissing. */
+/** Medidor com métricas reais (fontkit). Alguma face dos runs não registrada → estimativa com fontMissing. */
 export const createFontkitMeasurer = (registry: FontRegistry, options: FontkitMeasurerOptions = {}): TextMeasurer => {
   const safety = options.safety ?? DEFAULTS.textSafety;
   const estimate = createEstimateMeasurer();
@@ -118,8 +122,17 @@ export const createFontkitMeasurer = (registry: FontRegistry, options: FontkitMe
   };
 
   return (input) => {
-    const font = fontOf(registry, input.style);
-    if (font === undefined) return { ...estimate(input), fontMissing: true };
-    return measureWithFont(font, unitWidthOf(font), input, safety);
+    const { family, size, weight, italic } = input.style;
+    const found = runsOfInput(input).map((run) => registry.get(family, run.weight, run.italic));
+    const fonts = found.filter((font): font is Font => font !== undefined);
+    if (fonts.length !== found.length) return { ...estimate(input), fontMissing: true };
+    const [firstFont] = fonts;
+    // A altura da linha é única e vem da face do estilo; se só as faces dos runs existem
+    // (ex.: <Text font="X"><B>…</B></Text> com X só em bold), usa-se a do primeiro run.
+    const metricsFont = registry.get(family, weight, italic) ?? firstFont;
+    if (metricsFont === undefined) return { ...estimate(input), fontMissing: true };
+    const widths = fonts.map((font) => measureWidthOf(unitWidthOf(font), font.unitsPerEm, size));
+    const measure: MeasureRun = (text, run) => widths[run]?.(text) ?? 0;
+    return measureWithFonts(metricsFont, measure, input, safety);
   };
 };

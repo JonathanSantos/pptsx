@@ -6,6 +6,8 @@ import {
   textOverflowKept,
   textOverflowShrunk,
   textOverflowTruncated,
+  textOverflowWidthKept,
+  textOverflowWidthShrunk,
   textShrunk,
   withZeroArea,
 } from './diagnostics.ts';
@@ -15,7 +17,10 @@ import type { TextPatch } from './rewrite.ts';
 /** Estado final de um Text, visto pela política que o governa. */
 export interface TextOutcome {
   readonly text: PositionedText;
+  /** Estouro de altura. */
   readonly overflow: Overflow | undefined;
+  /** Estouro de largura (só Text com nowrap); pode coexistir com o de altura. */
+  readonly widthOverflow: Overflow | undefined;
   /** size original do autor */
   readonly from: Pt;
   /** size final */
@@ -40,12 +45,27 @@ const never = () => undefined;
 /** Altura que o Text tinha de fato: a medida menos o que passou. */
 const availableOf = (outcome: TextOutcome, overflow: Overflow): Pt => outcome.text.text.height - overflow.overflowPt;
 
+const heightOverflowShrunk = (outcome: TextOutcome, ctx: DiagnosticContext): readonly Diagnostic[] =>
+  outcome.overflow === undefined
+    ? []
+    : [withZeroArea(textOverflowShrunk(ctx, outcome.overflow, outcome), availableOf(outcome, outcome.overflow))];
+
+const widthOverflowShrunk = (outcome: TextOutcome, ctx: DiagnosticContext): readonly Diagnostic[] =>
+  outcome.widthOverflow === undefined
+    ? []
+    : [textOverflowWidthShrunk(ctx, outcome.widthOverflow, outcome.text.text.width, outcome)];
+
+// text-shrunk diz que coube: com estouro em qualquer eixo, não coube.
 const overflowOrShrunk = (outcome: TextOutcome, ctx: DiagnosticContext): readonly Diagnostic[] => {
-  if (outcome.overflow !== undefined) {
-    return [withZeroArea(textOverflowShrunk(ctx, outcome.overflow, outcome), availableOf(outcome, outcome.overflow))];
-  }
+  const overflows = [...heightOverflowShrunk(outcome, ctx), ...widthOverflowShrunk(outcome, ctx)];
+  if (overflows.length > 0) return overflows;
   return outcome.to < outcome.from ? [textShrunk(ctx, outcome.text.path, outcome.from, outcome.to)] : [];
 };
+
+const widthKept = (outcome: TextOutcome, ctx: DiagnosticContext, policy: 'error' | 'truncate'): readonly Diagnostic[] =>
+  outcome.widthOverflow === undefined
+    ? []
+    : [textOverflowWidthKept(ctx, outcome.widthOverflow, outcome.text.text.width, outcome.to, policy)];
 
 // Só o que o ajuste reduziu: size do autor já abaixo do piso é escolha dele.
 const isIllegible = (outcome: TextOutcome): boolean =>
@@ -75,20 +95,24 @@ const truncate: OverflowPolicy = {
   triggersShrink: false,
   resize: never,
   settle: (text, overflow) => (overflow === undefined ? undefined : { maxLines: linesThatFit(text, overflow) }),
-  diagnose: (outcome, ctx) =>
-    outcome.overflow === undefined
+  diagnose: (outcome, ctx) => [
+    ...(outcome.overflow === undefined
       ? []
-      : [withZeroArea(textOverflowTruncated(ctx, outcome.overflow), availableOf(outcome, outcome.overflow))],
+      : [withZeroArea(textOverflowTruncated(ctx, outcome.overflow), availableOf(outcome, outcome.overflow))]),
+    ...widthKept(outcome, ctx, 'truncate'),
+  ],
 };
 
 const error: OverflowPolicy = {
   triggersShrink: false,
   resize: never,
   settle: never,
-  diagnose: (outcome, ctx) =>
-    outcome.overflow === undefined
+  diagnose: (outcome, ctx) => [
+    ...(outcome.overflow === undefined
       ? []
-      : [withZeroArea(textOverflowKept(ctx, outcome.overflow, outcome.to), availableOf(outcome, outcome.overflow))],
+      : [withZeroArea(textOverflowKept(ctx, outcome.overflow, outcome.to), availableOf(outcome, outcome.overflow))]),
+    ...widthKept(outcome, ctx, 'error'),
+  ],
 };
 
 export const POLICIES: Readonly<Record<FitPolicy, OverflowPolicy>> = { shrink, truncate, error };

@@ -9,6 +9,8 @@ export interface Overflow {
   readonly path: string;
   readonly overflowPt: number;
   readonly overflowPct: number;
+  /** M8: só Text com nowrap estoura em 'width'; ausente = altura. */
+  readonly axis?: 'width' | 'height';
 }
 
 const EPSILON = DEFAULTS.fit.epsilon;
@@ -40,11 +42,31 @@ const textOverflow = (node: PositionedText, parent: Container): Overflow | undef
   return { kind: 'text', path: node.path, overflowPt: excess, overflowPct: percentOf(excess, available) };
 };
 
+/** Largura disponível: o frame cortado pela área de conteúdo do pai (em fluxo), como na altura. */
+const availableWidthOf = (node: PositionedText, parent: Container): number => {
+  if (!isInFlow(node)) return node.frame.width;
+  const content = contentOf(parent);
+  const right = Math.min(node.frame.x + node.frame.width, content.x + content.width);
+  return Math.max(0, right - node.frame.x);
+};
+
+// nowrap: a linha não quebra, então o que não cabe sai pela lateral. Numa row o minWidth
+// alarga o frame até a linha; o corte pela área do pai é o que revela o estouro ali.
+const widthOverflow = (node: PositionedText, parent: Container): Overflow | undefined => {
+  if (node.props.nowrap !== true) return undefined;
+  const available = availableWidthOf(node, parent);
+  const excess = node.text.width - available;
+  if (excess <= EPSILON) return undefined;
+  return { kind: 'text', axis: 'width', path: node.path, overflowPt: excess, overflowPct: percentOf(excess, available) };
+};
+
 const textOverflows = (container: Container): readonly Overflow[] =>
   container.children.flatMap((child) => {
     if (isBox(child)) return textOverflows(child);
-    return isText(child) ? [textOverflow(child, container)].filter(isDefined) : [];
+    return isText(child) ? [textOverflow(child, container), widthOverflow(child, container)].filter(isDefined) : [];
   });
+
+export const isWidthOverflow = (overflow: Overflow): boolean => overflow.axis === 'width';
 
 const flowContainersOf = (container: Container): readonly Container[] => [
   container,
@@ -69,11 +91,16 @@ const isInsideAny = (path: string, ancestors: readonly string[]): boolean =>
  * ancestral já reportou box-overflow — aí a causa é o contêiner e um segundo erro
  * só duplica.
  */
-const slideOverflows = (children: readonly PositionedNode[], bounds: Rect, boxes: readonly string[]): readonly Overflow[] =>
+const slideOverflows = (
+  children: readonly PositionedNode[],
+  bounds: Rect,
+  boxes: readonly string[],
+  wide: ReadonlySet<string>,
+): readonly Overflow[] =>
   children.filter(isInFlow).flatMap((child) => {
     const excess = excessOf(child.frame, bounds);
-    if (excess.pt <= EPSILON) return isBox(child) ? slideOverflows(child.children, bounds, boxes) : [];
-    if (isInsideAny(child.path, boxes)) return [];
+    if (excess.pt <= EPSILON) return isBox(child) ? slideOverflows(child.children, bounds, boxes, wide) : [];
+    if (isInsideAny(child.path, boxes) || wide.has(child.path)) return [];
     return [{ kind: 'slide' as const, path: child.path, overflowPt: excess.pt, overflowPct: percentOf(excess.pt, child.frame[excess.axis]) }];
   });
 
@@ -82,7 +109,8 @@ const slideOverflows = (children: readonly PositionedNode[], bounds: Rect, boxes
  * Regras contra duplicata, nesta ordem:
  *  1. text estourado não conta para o box do pai;
  *  2. nó fora do slide dentro de um Box com box-overflow não gera slide (a causa é o Box);
- *  3. no próprio Slide, o que já saiu da página é reportado como slide, não como box do Slide
+ *  3. Text nowrap com estouro de largura não gera slide (o frame alargado é o próprio estouro);
+ *  4. no próprio Slide, o que já saiu da página é reportado como slide, não como box do Slide
  *     (out-of-slide diz o lado; o box do Slide fica para o que só invade o padding).
  */
 export const detectOverflow = (slide: PositionedSlide): readonly Overflow[] => {
@@ -90,7 +118,8 @@ export const detectOverflow = (slide: PositionedSlide): readonly Overflow[] => {
   const explained = new Set(texts.map((overflow) => overflow.path));
   const [, ...boxContainers] = flowContainersOf(slide);
   const boxes = boxContainers.map((container) => boxOverflow(container, explained)).filter(isDefined);
-  const outside = slideOverflows(slide.children, slide.frame, boxes.map((overflow) => overflow.path));
+  const wide = new Set(texts.filter(isWidthOverflow).map((overflow) => overflow.path));
+  const outside = slideOverflows(slide.children, slide.frame, boxes.map((overflow) => overflow.path), wide);
   const slideBox = boxOverflow(slide, new Set([...explained, ...outside.map((overflow) => overflow.path)]));
   return [...texts, ...(slideBox === undefined ? [] : [slideBox]), ...boxes, ...outside];
 };

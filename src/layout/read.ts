@@ -1,5 +1,4 @@
 import type { Node as YogaNode } from 'yoga-layout';
-import { textStyleOf } from '../core/defaults.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
 import type {
   LayoutEnv,
@@ -11,6 +10,7 @@ import type {
   ResolvedShape,
   ResolvedText,
 } from '../core/types.ts';
+import { measureInputOf } from './measure.ts';
 import type { BuiltNode } from './tree.ts';
 
 interface Origin {
@@ -42,12 +42,7 @@ const readBox: Reader<ResolvedBox> = (source, built, frame, env) => ({
 const readText: Reader<ResolvedText> = (source, _built, frame, env) => ({
   ...source,
   frame,
-  text: env.measureText({
-    content: source.content,
-    style: textStyleOf(source.props),
-    maxWidth: frame.width,
-    maxLines: source.props.maxLines,
-  }),
+  text: env.measureText(measureInputOf(source, frame.width)),
 });
 
 const readImage: Reader<ResolvedImage> = (source, { intrinsic }, frame, env) => ({

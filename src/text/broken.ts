@@ -3,10 +3,13 @@ import { ELLIPSIS, type Paragraphs } from './lines.ts';
 // Pontos de quebra legítimos que não consomem caractere (ver segmentsOf em lines.ts).
 const BREAKS_AFTER = new Set(['-', '/']);
 
-/** Mesma normalização da quebra: palavras separadas por um único espaço. */
+/**
+ * Mesma normalização da quebra: palavras separadas por um único espaço. NBSP não
+ * separa palavras (é cola): fica como está, e uma fronteira de linha nele é quebra por caractere.
+ */
 const normalize = (paragraph: string): string =>
   paragraph
-    .split(/\s+/)
+    .split(/[^\S\u00A0]+/)
     .filter((word) => word.length > 0)
     .join(' ');
 

@@ -14,7 +14,7 @@ import { DEFAULTS, minSizeOf, textStyleOf } from '../../src/core/defaults.ts';
 import { Box, Deck, Image, Shape, Slide, Text } from '../../src/primitives/index.ts';
 import { resolveDeck } from '../../src/resolve/index.ts';
 import { createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
-import { DEFAULT_FONTS } from '../../src/fonts.ts';
+import { DEFAULT_FONTS } from '../../src/fonts/index.ts';
 import { SIZE_16X9, SIZE_4X3 } from '../helpers/nodes.ts';
 import { allMemberPaths } from '../helpers/diagnostics.ts';
 

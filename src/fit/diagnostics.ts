@@ -70,6 +70,13 @@ export const withCause = (diagnostic: Diagnostic, cause: { readonly path: string
   data: { ...diagnostic.data, causedBy: cause.path },
 });
 
+/** Irmão de uma linha nowrap que tomou a largura da row: o autor corrige o nowrap primeiro. */
+export const withWidthCause = (diagnostic: Diagnostic, cause: { readonly path: string; readonly overflowPt: Pt }): Diagnostic => ({
+  ...diagnostic,
+  message: `${diagnostic.message} Esse estouro é consequência: ${cause.path} tem ${round(cause.overflowPt)} pt a mais de largura do que a área tem; corrija ${cause.path} primeiro.`,
+  data: { ...diagnostic.data, causedBy: cause.path },
+});
+
 export const textIllegible = (ctx: DiagnosticContext, path: string, fromSize: Pt, toSize: Pt): Diagnostic =>
   make(ctx, {
     severity: 'warning',
@@ -86,6 +93,53 @@ export const textOverflowKept = (ctx: DiagnosticContext, overflow: Overflow, siz
     path: overflow.path,
     message: `Texto estourou ${amount(overflow)} da altura disponível em ${round(size)} pt (fit="error" não ajusta); reduza o conteúdo, aumente a área ou troque para fit="shrink" ou fit="truncate".`,
     data: overflowData(overflow),
+  });
+
+// nowrap: a linha não quebra, então nem encurtar a altura nem truncar resolvem; a ação é na largura.
+const WIDTH_ADVICE = 'encurte o texto, alargue a área ou remova nowrap.';
+
+/** A área é a largura da linha menos o que passou (o mesmo corte usado na detecção). */
+const widthMessage = (overflow: Overflow, lineWidth: Pt, where: string): string =>
+  `Texto com nowrap tem ${round(lineWidth)} pt de largura numa área de ${round(lineWidth - overflow.overflowPt)} pt ${where}; ${WIDTH_ADVICE}`;
+
+const widthData = (overflow: Overflow) => ({ ...overflowData(overflow), axis: 'width' as const });
+
+/** shrink com nowrap que ainda passa da largura (normalmente já no mínimo). */
+export const textOverflowWidthShrunk = (
+  ctx: DiagnosticContext,
+  overflow: Overflow,
+  lineWidth: Pt,
+  sizes: { readonly from: Pt; readonly to: Pt; readonly min: Pt },
+): Diagnostic => {
+  const where = sizes.to <= sizes.min ? `mesmo em ${round(sizes.to)} pt (mínimo)` : `em ${round(sizes.to)} pt`;
+  return make(ctx, {
+    severity: 'error',
+    code: 'text-overflow',
+    path: overflow.path,
+    message: widthMessage(overflow, lineWidth, where),
+    data: { ...widthData(overflow), fromSize: round(sizes.from), toSize: round(sizes.to) },
+  });
+};
+
+const KEPT_REASON = {
+  error: 'fit="error" não ajusta',
+  truncate: 'fit="truncate" só corta linhas, não largura',
+} as const;
+
+/** Políticas que não encolhem: a largura fica como o autor escreveu. */
+export const textOverflowWidthKept = (
+  ctx: DiagnosticContext,
+  overflow: Overflow,
+  lineWidth: Pt,
+  size: Pt,
+  policy: keyof typeof KEPT_REASON,
+): Diagnostic =>
+  make(ctx, {
+    severity: 'error',
+    code: 'text-overflow',
+    path: overflow.path,
+    message: widthMessage(overflow, lineWidth, `em ${round(size)} pt (${KEPT_REASON[policy]})`),
+    data: widthData(overflow),
   });
 
 /** Sobra depois de truncar: nem uma linha cabe na caixa. */

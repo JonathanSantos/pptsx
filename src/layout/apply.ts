@@ -21,6 +21,7 @@ const APPLIERS: { readonly [K in keyof YogaStyle]-?: Applier<K> } = {
   flexDirection: (node, value) => node.setFlexDirection(value),
   gap: (node, value) => node.setGap(Gutter.All, value),
   padding: (node, value) => edgeEntries(value).forEach(([edge, v]) => node.setPadding(edge, v)),
+  margin: (node, value) => edgeEntries(value).forEach(([edge, v]) => node.setMargin(edge, v)),
   alignItems: (node, value) => node.setAlignItems(value),
   justifyContent: (node, value) => node.setJustifyContent(value),
   flexGrow: (node, value) => node.setFlexGrow(value),

@@ -14,7 +14,7 @@ import { parseSizeList } from './sizes.ts';
 
 export const USAGE = [
   'uso: pptsx build <deck.tsx> [--size 16x9,4x3,10x7.5in] [--out dist/] [--debug] [--json] ' +
-    '[--preview native|none] [--preview-width 1280] [--lang pt-BR] [--line-breaks forced|auto] [--watch]',
+    '[--preview native|none] [--preview-width 1280] [--lang pt-BR] [--line-breaks forced|auto] [--embed-fonts] [--watch]',
   `     ${INIT_USAGE.replace(/^uso: /, '')}`,
 ].join('\n');
 
@@ -40,6 +40,8 @@ export interface CliArgs {
   readonly previewWidth: number;
   /** undefined = flag ausente, para a config poder preencher. */
   readonly lineBreaks?: LineBreaks;
+  /** undefined = flag ausente, para a config poder preencher. */
+  readonly embedFonts?: boolean;
   readonly watch: boolean;
 }
 
@@ -54,6 +56,8 @@ export interface OutputPaths {
 export interface JsonReport {
   readonly files: readonly string[];
   readonly diagnostics: readonly Diagnostic[];
+  /** M8: faces pedidas sem arquivo e não achadas no sistema; ausente quando vazio. */
+  readonly fontsMissing?: readonly string[];
 }
 
 // ---------- parsing ----------
@@ -91,6 +95,7 @@ export const parseCli = (argv: readonly string[], cwd: string = process.cwd()): 
       lang: { type: 'string' },
       'line-breaks': { type: 'string' },
       watch: { type: 'boolean', default: false },
+      'embed-fonts': { type: 'boolean', default: false },
     },
   });
   const [command, deckPath] = positionals;
@@ -105,6 +110,7 @@ export const parseCli = (argv: readonly string[], cwd: string = process.cwd()): 
     preview: parsePreviewMode(values.preview),
     previewWidth: parsePreviewWidth(values['preview-width']),
     lineBreaks: values['line-breaks'] === undefined ? undefined : parseLineBreaks(values['line-breaks']),
+    embedFonts: values['embed-fonts'] ? true : undefined,
     watch: values.watch,
   };
 };
@@ -121,6 +127,7 @@ export const mergeOptions = (args: CliArgs, config: PptsxConfig): RenderOptions 
   lang: args.lang ?? config.lang,
   textSafety: config.textSafety,
   lineBreaks: args.lineBreaks ?? config.lineBreaks,
+  embedFonts: args.embedFonts ?? config.embedFonts,
   debug: args.debug,
   baseDir: dirname(args.deckPath),
   preview: args.preview ? { mode: 'native', width: args.previewWidth } : false,
@@ -235,12 +242,19 @@ export const summaryOf = (diagnostics: readonly Diagnostic[]): string => {
 export const exitCodeOf = (diagnostics: readonly Diagnostic[]): 0 | 1 =>
   diagnostics.some((d) => d.severity === 'error') ? 1 : 0;
 
-export const jsonReportOf = (files: readonly string[], diagnostics: readonly Diagnostic[]): string =>
-  JSON.stringify({ files, diagnostics } satisfies JsonReport, null, 2);
+const reportOf = (files: readonly string[], diagnostics: readonly Diagnostic[], fontsMissing?: readonly string[]): JsonReport =>
+  fontsMissing && fontsMissing.length > 0 ? { files, diagnostics, fontsMissing } : { files, diagnostics };
+
+export const jsonReportOf = (files: readonly string[], diagnostics: readonly Diagnostic[], fontsMissing?: readonly string[]): string =>
+  JSON.stringify(reportOf(files, diagnostics, fontsMissing), null, 2);
 
 /** Uma linha por build no --watch --json (NDJSON). */
-export const jsonLineOf = (files: readonly string[], diagnostics: readonly Diagnostic[]): string =>
-  JSON.stringify({ files, diagnostics } satisfies JsonReport);
+export const jsonLineOf = (files: readonly string[], diagnostics: readonly Diagnostic[], fontsMissing?: readonly string[]): string =>
+  JSON.stringify(reportOf(files, diagnostics, fontsMissing));
+
+/** Linha do resumo humano para fontes pedidas sem arquivo e não achadas no sistema. */
+export const fontsMissingLineOf = (fontsMissing: readonly string[] | undefined): string | undefined =>
+  fontsMissing && fontsMissing.length > 0 ? `▲ fontes não encontradas no sistema: ${fontsMissing.join(', ')}` : undefined;
 
 export const errorMessageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
@@ -270,6 +284,7 @@ interface BuildOutcome {
   /** Lista resumida (humanos). */
   readonly listing: readonly string[];
   readonly diagnostics: readonly Diagnostic[];
+  readonly fontsMissing?: readonly string[];
 }
 
 /** Um build completo, gravando tudo em disco. `fresh` recarrega deck, config e o que eles importam. */
@@ -287,26 +302,30 @@ const buildOnce = async (args: CliArgs, cwd: string, deps: CliDeps, fresh: boole
   results.forEach((result, index) => writeResult(pathsPerSize[index]!, result));
   writeFileSync(diagnosticsFile, `${JSON.stringify(diagnostics, null, 2)}\n`);
 
+  // A lista é a mesma em todos os tamanhos: basta a do primeiro resultado.
+  const fontsMissing = results[0]?.fontsMissing;
   return {
     files: [...pathsPerSize.flatMap(filesOf), diagnosticsFile],
     listing: [...pathsPerSize.flatMap(listingOf), diagnosticsFile],
     diagnostics,
+    ...(fontsMissing && fontsMissing.length > 0 ? { fontsMissing } : {}),
   };
 };
 
 const build = async (args: CliArgs, cwd: string, deps: CliDeps): Promise<number> => {
   const outcome = await buildOnce(args, cwd, deps, false);
   if (args.json) {
-    console.log(jsonReportOf(outcome.files, outcome.diagnostics));
+    console.log(jsonReportOf(outcome.files, outcome.diagnostics, outcome.fontsMissing));
     return exitCodeOf(outcome.diagnostics);
   }
   outcome.listing.forEach((file) => console.log(file));
-  console.log(`\n${summaryOf(outcome.diagnostics)}`);
+  const fontsLine = fontsMissingLineOf(outcome.fontsMissing);
+  console.log(`\n${summaryOf(outcome.diagnostics)}${fontsLine ? `\n${fontsLine}` : ''}`);
   return exitCodeOf(outcome.diagnostics);
 };
 
 const reportWatchBuild = (args: CliArgs, outcome: BuildOutcome, at: Date): void => {
-  if (args.json) return console.log(jsonLineOf(outcome.files, outcome.diagnostics));
+  if (args.json) return console.log(jsonLineOf(outcome.files, outcome.diagnostics, outcome.fontsMissing));
   outcome.listing.forEach((file) => console.log(file));
   console.log(`${stampLine(at, summaryOf(outcome.diagnostics))}\n`);
 };

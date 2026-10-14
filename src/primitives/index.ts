@@ -1,5 +1,5 @@
 import { PRIMITIVE_KIND } from '../core/types.ts';
-import type { Primitive, PrimitiveKind, PrimitivePropsMap } from '../core/types.ts';
+import type { Primitive, PrimitiveKind, PrimitivePropsMap, SlideElement, SpanProps } from '../core/types.ts';
 import { jsx } from '../jsx/jsx-runtime.ts';
 
 const capitalize = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
@@ -23,3 +23,13 @@ export const Box = definePrimitive('box');
 export const Text = definePrimitive('text');
 export const Image = definePrimitive('image');
 export const Shape = definePrimitive('shape');
+export const Span = definePrimitive('span');
+
+// Componentes (não primitivas): props do autor vêm depois, então vencem o padrão.
+export function B(props: SpanProps): SlideElement {
+  return jsx(Span, { weight: 'bold', ...props });
+}
+
+export function I(props: SpanProps): SlideElement {
+  return jsx(Span, { italic: true, ...props });
+}

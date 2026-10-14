@@ -11,6 +11,7 @@ import type {
 import { primitiveName } from '../primitives/index.ts';
 import { ResolveError } from './errors.ts';
 import { expandChild } from './expand.ts';
+import { runsOf } from './runs.ts';
 import type { Expanded, ExpandedPrimitive } from './expand.ts';
 
 const SEPARATOR = ' > ';
@@ -30,9 +31,15 @@ const nameOf = (item: ExpandedPrimitive): string => primitiveName(item.kind);
 
 const describeText = (value: string | number): string => JSON.stringify(String(value));
 
-/** Texto solto fora de Text é erro: a engine não inventa uma caixa para ele. */
+const SPAN_OUTSIDE_TEXT = '<Span> só pode aparecer dentro de <Text>';
+
+/**
+ * Texto solto fora de Text é erro: a engine não inventa uma caixa para ele.
+ * Span idem: estilo inline sem Text não tem onde morar; o erro aponta para o pai.
+ */
 const onlyPrimitives = (items: readonly Expanded[], parentPath: string): readonly ExpandedPrimitive[] =>
   items.map((item) => {
+    if (item.type === 'primitive' && item.kind === 'span') throw new ResolveError(SPAN_OUTSIDE_TEXT, parentPath);
     if (item.type === 'primitive') return item;
     throw new ResolveError(
       `Texto ${describeText(item.value)} fora de <Text>; envolva o conteúdo em <Text>`,
@@ -53,11 +60,10 @@ const siblingSegments = (segments: readonly string[]): readonly string[] => {
   });
 };
 
-const flattenText = (children: TextChildren, path: string): string => {
-  if (children === null || children === undefined || typeof children === 'boolean') return '';
-  if (typeof children === 'string' || typeof children === 'number') return String(children);
-  if (Array.isArray(children)) return children.map((child: TextChildren) => flattenText(child, path)).join('');
-  throw new ResolveError('<Text> só aceita strings e números como filhos; elementos não são permitidos', path);
+const resolveText = (item: ExpandedPrimitive, path: string): ResolvedNode => {
+  const props = propsOf<'text'>(item.element);
+  const runs = runsOf(item.element.props.children as TextChildren, props, path);
+  return { kind: 'text', path, props, content: runs.map((run) => run.text).join(''), runs };
 };
 
 const assertNoChildren = (item: ExpandedPrimitive, path: string): void => {
@@ -70,13 +76,15 @@ const resolveNode = (item: ExpandedPrimitive, path: string): ResolvedNode => {
     case 'box':
       return { kind: 'box', path, props: propsOf<'box'>(item.element), children: resolveChildren(item.element.props.children, path) };
     case 'text':
-      return { kind: 'text', path, props: propsOf<'text'>(item.element), content: flattenText(item.element.props.children as TextChildren, path) };
+      return resolveText(item, path);
     case 'image':
       assertNoChildren(item, path);
       return { kind: 'image', path, props: propsOf<'image'>(item.element) };
     case 'shape':
       assertNoChildren(item, path);
       return { kind: 'shape', path, props: propsOf<'shape'>(item.element) };
+    case 'span':
+      throw new ResolveError(SPAN_OUTSIDE_TEXT, path);
     case 'slide':
     case 'deck':
       throw new ResolveError(`<${nameOf(item)}> só pode aparecer ${item.kind === 'slide' ? 'como filho de <Deck>' : 'na raiz'}`, path);

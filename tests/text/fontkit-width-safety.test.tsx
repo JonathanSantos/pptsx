@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULTS, textStyleOf } from '../../src/core/defaults.ts';
 import type { PositionedNode, PositionedText, TextMeasureInput } from '../../src/core/types.ts';
-import { DEFAULT_FONTS } from '../../src/fonts.ts';
+import { DEFAULT_FONTS } from '../../src/fonts/index.ts';
 import { fitSlide } from '../../src/fit/index.ts';
 import { Deck, Slide, Text } from '../../src/primitives/index.ts';
 import { render } from '../../src/render.ts';

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEstimateMeasurer, createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
 import { breakLines } from '../../src/text/lines.ts';
-import { DEFAULT_FONTS } from '../../src/fonts.ts';
+import { DEFAULT_FONTS } from '../../src/fonts/index.ts';
 import { DEFAULTS } from '../../src/core/defaults.ts';
 import type { TextMeasurer, TextStyle } from '../../src/core/types.ts';
 

@@ -25,10 +25,13 @@ import type {
   ShapeProps,
   SlideProps,
   SlideSize,
+  LineRun,
   TextLayout,
   TextMeasureInput,
   TextProps,
+  TextRun,
 } from '../../src/core/types.ts';
+import { DEFAULTS } from '../../src/core/defaults.ts';
 
 export const SIZE_16X9: SlideSize = { name: '16x9', width: 720, height: 405 };
 export const SIZE_4X3: SlideSize = { name: '4x3', width: 720, height: 540 };
@@ -47,11 +50,29 @@ export const rBox = (
   path = 'Box',
 ): ResolvedBox => ({ kind: 'box', path, props, children });
 
+/** M8: runs como o resolve gera sem Span — um run com o estilo do Text; conteúdo vazio → nenhum. */
+export const runsOf = (content: string, props: Omit<TextProps, 'children'> = {}): readonly TextRun[] =>
+  content === ''
+    ? []
+    : [
+        {
+          text: content,
+          weight: props.weight ?? DEFAULTS.text.weight,
+          italic: props.italic ?? DEFAULTS.text.italic,
+          color: props.color ?? DEFAULTS.text.color,
+        },
+      ];
+
+/** M8: lineRuns de um layout com um run só (índice 0); linha vazia → []. */
+export const singleRunLines = (lines: readonly string[]): readonly (readonly LineRun[])[] =>
+  lines.map((line) => (line === '' ? [] : [{ text: line, run: 0 }]));
+
 export const rText = (
   content: string,
   props: Omit<TextProps, 'children'> = {},
   path = 'Text',
-): ResolvedText => ({ kind: 'text', path, props, content });
+  runs: readonly TextRun[] = runsOf(content, props),
+): ResolvedText => ({ kind: 'text', path, props, content, runs });
 
 export const rImage = (props: ImageProps, path = 'Image'): ResolvedImage => ({ kind: 'image', path, props });
 
@@ -78,6 +99,7 @@ export const fakeParagraphLayout = (
   return {
     lines,
     paragraphs,
+    lineRuns: singleRunLines(lines),
     fontSize,
     lineHeight: FAKE_LINE_HEIGHT,
     ascent: 16,
@@ -134,7 +156,8 @@ export const pText = (
   content: string,
   props: Omit<TextProps, 'children'> = {},
   text: TextLayout = fakeTextLayout(content, props.size ?? 18),
-): PositionedText => ({ kind: 'text', path: 'Slide > Text', props, content, frame, text });
+  runs: readonly TextRun[] = runsOf(content, props),
+): PositionedText => ({ kind: 'text', path: 'Slide > Text', props, content, runs, frame, text });
 
 export const pImage = (frame: Rect, props: ImageProps, intrinsic: Dimensions = FAKE_IMAGE): PositionedImage => ({
   kind: 'image',

@@ -1,6 +1,6 @@
 import type { DeckDefinition } from './core/types.ts';
 
-export { Deck, Slide, Box, Text, Image, Shape } from './primitives/index.ts';
+export { Deck, Slide, Box, Text, Image, Shape, Span, B, I } from './primitives/index.ts';
 export { Fragment } from './jsx/jsx-runtime.ts';
 export { resolveDeck, ResolveError } from './resolve/index.ts';
 export { render } from './render.ts';
@@ -30,6 +30,7 @@ export type {
   FontWeight,
   ImageFit,
   ImageProps,
+  LineRun,
   Justify,
   Length,
   PreviewOptions,
@@ -45,9 +46,11 @@ export type {
   SlideProps,
   SlideSize,
   Spacing,
+  SpanProps,
   StrokeProps,
   TextAlign,
   TextChildren,
   TextProps,
+  TextRun,
   TextStyleProps,
 } from './core/types.ts';

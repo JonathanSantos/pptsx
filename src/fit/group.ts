@@ -31,6 +31,8 @@ const identityOf = (diagnostic: Diagnostic): string =>
     diagnostic.data?.causedBy ?? '',
     diagnostic.data?.fromSize ?? '',
     diagnostic.data?.toSize ?? '',
+    // Altura e largura do mesmo Text são problemas diferentes (ações diferentes).
+    diagnostic.data?.axis ?? '',
   ].join('\u0000');
 
 interface Variation {

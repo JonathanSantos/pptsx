@@ -30,12 +30,41 @@ export const sanitizeParagraph = (paragraph: ParagraphXml): ParagraphXml => para
  */
 export const keepFirstParagraphProps = (xml: string): string => xml.replace(PARAGRAPH, sanitizeBody);
 
-/** Pós-processa os slides do .pptx gerado. */
+const NOTES_MASTER_LIST = /<p:notesMasterIdLst\b[^>]*?(?:\/>|>[\s\S]*?<\/p:notesMasterIdLst>)/;
+const SLIDE_LIST_START = /<p:sldIdLst\b/;
+
+/**
+ * O pptxgenjs grava <p:sldIdLst> antes de <p:notesMasterIdLst>; o CT_Presentation
+ * pede o contrário (sldMasterIdLst, notesMasterIdLst, handoutMasterIdLst, sldIdLst).
+ * O Keynote ignora, mas o PowerPoint pode pedir "reparar". Já na ordem → intacto.
+ */
+export const reorderPresentationLists = (xml: string): string => {
+  const notes = NOTES_MASTER_LIST.exec(xml);
+  const slides = SLIDE_LIST_START.exec(xml);
+  if (!notes || !slides || notes.index < slides.index) return xml;
+  const without = xml.slice(0, notes.index) + xml.slice(notes.index + notes[0].length);
+  return without.slice(0, slides.index) + notes[0] + without.slice(slides.index);
+};
+
+const PRESENTATION_XML = 'ppt/presentation.xml';
+
+type XmlFix = (xml: string) => string;
+
+/** Parte do pacote → correção a aplicar. */
+const fixOf = (name: string): XmlFix | undefined => {
+  if (SLIDE_XML.test(name)) return keepFirstParagraphProps;
+  if (name === PRESENTATION_XML) return reorderPresentationLists;
+  return undefined;
+};
+
+/** Pós-processa slides e presentation.xml do .pptx gerado. */
 export const sanitizePptx = async (buffer: Buffer): Promise<Buffer> => {
   const zip = await JSZip.loadAsync(buffer);
-  const slides = Object.keys(zip.files).filter((name) => SLIDE_XML.test(name));
   await Promise.all(
-    slides.map(async (name) => zip.file(name, keepFirstParagraphProps(await zip.file(name)!.async('string')))),
+    Object.keys(zip.files).map(async (name) => {
+      const fix = fixOf(name);
+      if (fix) zip.file(name, fix(await zip.file(name)!.async('string')));
+    }),
   );
   return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
 };

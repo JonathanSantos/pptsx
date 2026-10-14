@@ -16,6 +16,8 @@ export interface PptsxConfig {
   readonly textSafety?: number;
   /** Como em RenderOptions.lineBreaks; a flag --line-breaks vence. */
   readonly lineBreaks?: LineBreaks;
+  /** Como em RenderOptions.embedFonts; a flag --embed-fonts vence. */
+  readonly embedFonts?: boolean;
 }
 
 /** @deprecated Use PptsxConfig (nome antigo, de antes do pacote se chamar pptsx). */
@@ -32,7 +34,10 @@ export const lineBreaksErrorOf = (source: string, value: unknown): string =>
 /** Caminhos de fonte na config são relativos ao arquivo de config, não ao cwd de quem roda a CLI. */
 export const resolveConfigPaths = (config: PptsxConfig, configDir: string): PptsxConfig => {
   if (!config.fonts) return config;
-  const fonts = config.fonts.map((face) => (isAbsolute(face.file) ? face : { ...face, file: resolve(configDir, face.file) }));
+  // Face sem `file` (M8) é resolvida no sistema pelo render; só caminhos relativos são ancorados aqui.
+  const fonts = config.fonts.map((face) =>
+    face.file === undefined || isAbsolute(face.file) ? face : { ...face, file: resolve(configDir, face.file) },
+  );
   return { ...config, fonts };
 };
 

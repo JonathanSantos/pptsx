@@ -1,33 +1,35 @@
 import type { TextLayout, TextMeasureInput, TextMeasurer } from '../core/types.ts';
 import { brokenWordsOf } from './broken.ts';
-import { layoutLines, type MeasureWidth, widestLine, widestSegmentOf } from './lines.ts';
+import { layoutText } from './lines.ts';
+import type { MeasureRun } from './pieces.ts';
 
 // Proporções da estimativa (CONTRACTS §text): sem fonte real, tudo é fração do corpo.
 const CHAR_WIDTH_RATIO = 0.5;
 const LINE_HEIGHT_RATIO = 1.2;
 const ASCENT_RATIO = 0.9;
 
+// Sem métricas não há diferença entre faces: bold e itálico medem como a regular, NBSP como espaço.
 const estimateWidth =
-  (size: number): MeasureWidth =>
+  (size: number): MeasureRun =>
   (text) =>
     [...text].length * CHAR_WIDTH_RATIO * size;
 
 const measureEstimate = (input: TextMeasureInput): TextLayout => {
   const { size, lineHeight: multiplier } = input.style;
-  const measureWidth = estimateWidth(size);
-  const { paragraphs, lines, truncated } = layoutLines(input.content, input.maxWidth, input.maxLines, measureWidth);
+  const laid = layoutText(input, input.maxWidth, estimateWidth(size));
   const lineHeight = LINE_HEIGHT_RATIO * size * multiplier;
   return {
-    lines,
-    paragraphs,
+    lines: laid.lines,
+    paragraphs: laid.paragraphs,
+    lineRuns: laid.lineRuns,
     fontSize: size,
     lineHeight,
     ascent: ASCENT_RATIO * size * multiplier,
-    width: widestLine(lines, measureWidth),
-    height: lines.length * lineHeight,
-    widestSegment: widestSegmentOf(input.content, measureWidth),
-    wordBroken: brokenWordsOf(input.content, paragraphs).length > 0,
-    truncated,
+    width: laid.widestLine,
+    height: laid.lines.length * lineHeight,
+    widestSegment: laid.widestSegment,
+    wordBroken: input.nowrap !== true && brokenWordsOf(input.content, laid.paragraphs).length > 0,
+    truncated: laid.truncated,
     fontMissing: false,
   };
 };

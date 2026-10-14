@@ -74,8 +74,20 @@ describe('resolveDeck — full tree', () => {
               path: 'CoverLayout > Box',
               props: { position: 'absolute', left: 10, top: 20, width: 300, height: 100, fill: '#ffffff' },
               children: [
-                { kind: 'text', path: 'CoverLayout > Box > Title', props: { size: 40, weight: 'bold' }, content: 'Hello' },
-                { kind: 'text', path: 'CoverLayout > Box > Text', props: { size: 20 }, content: 'World' },
+                {
+                  kind: 'text',
+                  path: 'CoverLayout > Box > Title',
+                  props: { size: 40, weight: 'bold' },
+                  content: 'Hello',
+                  runs: [{ text: 'Hello', weight: 'bold', italic: false, color: '#000000' }],
+                },
+                {
+                  kind: 'text',
+                  path: 'CoverLayout > Box > Text',
+                  props: { size: 20 },
+                  content: 'World',
+                  runs: [{ text: 'World', weight: 'regular', italic: false, color: '#000000' }],
+                },
               ],
             },
           ],
@@ -160,7 +172,15 @@ describe('resolveDeck — expansion', () => {
         kind: 'box',
         path: 'Slide > Outer',
         props: {},
-        children: [{ kind: 'text', path: 'Slide > Outer > Middle', props: {}, content: 'deep' }],
+        children: [
+          {
+            kind: 'text',
+            path: 'Slide > Outer > Middle',
+            props: {},
+            content: 'deep',
+            runs: [{ text: 'deep', weight: 'regular', italic: false, color: '#000000' }],
+          },
+        ],
       },
     ]);
   });
