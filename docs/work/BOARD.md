@@ -75,14 +75,14 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M9 | M9-D | exemplos sem ternário (demo pixel a pixel igual); `TwoColumn direction` responsivo; `Bullets paginate`; `long-list.tsx` (16x9: 4/4/4, 4x3: 6/6); AGENT_GUIDE | ✅ |
 | M9 | M9-E | visual: demo antes × depois byte a byte igual (15 PNGs, 3 tamanhos; Keynote idêntico ao M8); long-list 3 partes (4/4/4) em 16x9 e 2 (6/6) em 4x3 no Keynote; breakpoints corretos | ✅ |
 | M9 | M9-F | agente virgem: deck de 4 slides com breakpoints, `ctx.pick` e `paginate` em 3 builds (1º já sem error/warning); 6 lacunas do guia aplicadas no gate | ✅ |
-| M10 | M10-S | spike: `addChart`/`addTable` no Keynote/PowerPoint | ⬜ |
-| M10 | M10-0 | Contrato: `Chart`, `Table`, `PositionedTable`, `table-overflow` | ⬜ |
-| M10 | M10-A | resolve + primitivas | ⬜ |
-| M10 | M10-B | layout: Chart folha, Table com measure func | ⬜ |
-| M10 | M10-C | fit: Table no shrink; `table-overflow` | ⬜ |
-| M10 | M10-D | emit: addChart, addTable | ⬜ |
-| M10 | M10-E | preview: SVG de gráfico e tabela | ⬜ |
-| M10 | M10-F | testes M10 | ⬜ |
+| M10 | M10-S | spike: Keynote respeita colW/rowH (±0,25 pt), margem em pol. como array, quebras por linha; **bug do `ref` no xlsx embutido deixa o slide vazio** → corrigido no sanitize | ✅ |
+| M10 | M10-0 | Contrato: `ChartProps`, `TableProps`, `PositionedTable`, `table-overflow` | ✅ |
+| M10 | M10-A | resolve + primitivas `Chart`/`Table` | ✅ |
+| M10 | M10-B | layout: Chart folha flex; Table com measure (colunas → altura por célula) | ✅ |
+| M10 | M10-C | fit: Table encolhe como unidade (Shrinkable); `table-overflow` | ✅ |
+| M10 | M10-D | emit: addChart/addTable, correção do ref no xlsx, renumeração dos gráficos | ✅ |
+| M10 | M10-E | preview: SVG de bar/line/pie e tabela | ✅ |
+| M10 | M10-F | testes M10 (+158) | ✅ |
 | M10 | M10-G | demo com Chart e Table; `charts.tsx`; AGENT_GUIDE | ⬜ |
 | M10 | M10-H | validação visual + PowerPoint pelo dono | ⬜ |
 

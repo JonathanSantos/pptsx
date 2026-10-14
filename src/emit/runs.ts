@@ -97,6 +97,9 @@ export const computedParagraphsOf = (node: PositionedText, base: RunStyle = base
 // Mesma normalização de espaços do medidor: \s colapsa, exceto NBSP (U+00A0), que é glue (M8).
 const SPACES = /[^\S ]+/g;
 
+/** Espaços colapsados e aparados nas pontas, preservando NBSP (texto puro de célula de tabela). */
+export const collapseSpaces = (text: string): string => text.replace(SPACES, ' ').replace(/^ +| +$/g, '');
+
 const BREAKS_WITHOUT_SPACE = ['-', '/'];
 
 // O quebrador corta em espaço (consumido) ou logo depois de '-'/'/' (mantido no

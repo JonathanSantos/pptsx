@@ -2,7 +2,9 @@ import type * as Pptx from './pptx.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
 import type { LineBreaks, PositionedNode, Rect } from '../core/types.ts';
 import type { LineSpacingStrategy } from './calibration.ts';
+import { chartOf } from './chart.ts';
 import { boxShapeOf, debugOutlineOf, imageOf, shapeOf, textOf, type ShapeSpec } from './options.ts';
+import { tableOf } from './table.ts';
 
 export interface EmitContext {
   readonly baseDir: string;
@@ -33,6 +35,15 @@ const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: Emi
   shape: (node, slide) => {
     addShape(slide, shapeOf(node));
   },
+  // addChart/addTable mutam dados e opções em profundidade (labels, bordas, unidades): cópia funda.
+  chart: (node, slide) => {
+    const { type, data, options } = structuredClone(chartOf(node));
+    slide.addChart(type, data, options);
+  },
+  table: (node, slide, ctx) => {
+    const { rows, options } = structuredClone(tableOf(node, ctx));
+    slide.addTable(rows, options);
+  },
 };
 
 /** Ordem de desenho = ordem da árvore: pai antes dos filhos. */
@@ -43,7 +54,7 @@ const hasDebugFrame = (node: PositionedNode): boolean => node.kind !== 'shape';
 
 const childrenOf = (node: PositionedNode): readonly PositionedNode[] => (node.kind === 'box' ? node.children : []);
 
-/** Frames de Box/Text/Image em ordem de árvore, para o contorno de debug. */
+/** Frames de Box/Text/Image/Chart/Table em ordem de árvore, para o contorno de debug. */
 export const debugFramesOf = (nodes: readonly PositionedNode[]): readonly Rect[] =>
   nodes.flatMap((node) => [...(hasDebugFrame(node) ? [node.frame] : []), ...debugFramesOf(childrenOf(node))]);
 

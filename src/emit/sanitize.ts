@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { renumberCharts } from './renumber.ts';
 
 const SLIDE_XML = /^ppt\/slides\/slide\d+\.xml$/;
 const PARAGRAPH = /<a:p>([\s\S]*?)<\/a:p>/g;
@@ -57,14 +58,44 @@ const fixOf = (name: string): XmlFix | undefined => {
   return undefined;
 };
 
-/** Pós-processa slides e presentation.xml do .pptx gerado. */
+// ───────────── xlsx embutido dos gráficos (M10) ─────────────
+
+const EMBEDDED_WORKBOOK = /^ppt\/embeddings\/[^/]+\.xlsx$/;
+const WORKBOOK_TABLE = /^xl\/tables\/[^/]+\.xml$/;
+const REF_WITH_TRAILING_QUOTE = /\bref="([^"]*?)'"/g;
+
+/**
+ * O pptxgenjs 4.0.1 grava `ref="A1:B4'"` (apóstrofo sobrando) na tabela do xlsx de
+ * bar/line/pie; com isso o Keynote descarta o gráfico e o slide fica vazio (M10-spike).
+ */
+export const fixTableRef = (xml: string): string => xml.replace(REF_WITH_TRAILING_QUOTE, 'ref="$1"');
+
+/** Aplica `fixTableRef` a cada xl/tables/*.xml de um xlsx (zip dentro do zip). */
+export const fixEmbeddedWorkbook = async (workbook: Uint8Array): Promise<Uint8Array> => {
+  const zip = await JSZip.loadAsync(workbook);
+  await Promise.all(
+    Object.keys(zip.files)
+      .filter((name) => WORKBOOK_TABLE.test(name))
+      .map(async (name) => zip.file(name, fixTableRef(await zip.file(name)!.async('string')))),
+  );
+  return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+};
+
+const fixPart = async (zip: JSZip, name: string): Promise<void> => {
+  const file = zip.file(name);
+  if (!file) return;
+  if (EMBEDDED_WORKBOOK.test(name)) {
+    zip.file(name, await fixEmbeddedWorkbook(await file.async('uint8array')));
+    return;
+  }
+  const fix = fixOf(name);
+  if (fix) zip.file(name, fix(await file.async('string')));
+};
+
+/** Pós-processa slides, presentation.xml, numeração dos gráficos e os xlsx embutidos do .pptx gerado. */
 export const sanitizePptx = async (buffer: Buffer): Promise<Buffer> => {
   const zip = await JSZip.loadAsync(buffer);
-  await Promise.all(
-    Object.keys(zip.files).map(async (name) => {
-      const fix = fixOf(name);
-      if (fix) zip.file(name, fix(await zip.file(name)!.async('string')));
-    }),
-  );
+  await renumberCharts(zip);
+  await Promise.all(Object.keys(zip.files).map((name) => fixPart(zip, name)));
   return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
 };
