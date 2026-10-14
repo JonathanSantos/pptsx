@@ -56,12 +56,16 @@ export const DEFAULTS = {
   lang: 'pt-BR',
   /** Quebra forçada por padrão: o renderizador desenha exatamente as linhas calculadas. */
   lineBreaks: 'forced' as LineBreaks,
+  /** M8: fontes embutidas desligadas por padrão (tamanho do arquivo e licença da fonte). */
+  embedFonts: false,
   /** Largura de quebra = disponível * textSafety; a caixa sai com a largura cheia. */
   textSafety: 0.97,
   /** Limite de RODADAS do loop de ajuste (uma rodada = uma busca binária por escopo disparado). */
   maxFitIterations: 12,
   /** epsilon: tolerância (pt) na detecção de overflow. shrinkStep: granularidade (pt) do size na busca. */
   fit: { epsilon: 0.5, shrinkStep: 1 },
+  /** M8: debounce do --watch (ms). */
+  watchDebounceMs: 150,
   /** 16:9 de referência para ctx.scale */
   referenceSize: { width: 720, height: 405 },
   preview: { width: 1280, thumbWidth: 320, overviewColumns: 4 },

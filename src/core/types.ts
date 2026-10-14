@@ -68,7 +68,8 @@ export type Spacing =
   | { readonly top?: Pt; readonly right?: Pt; readonly bottom?: Pt; readonly left?: Pt };
 
 export type FlexDirection = 'row' | 'column';
-export type Align = 'start' | 'center' | 'end' | 'stretch';
+/** 'baseline' (M8) só vale em row: alinha pela baseline da 1ª linha de texto; em column vira 'start'. */
+export type Align = 'start' | 'center' | 'end' | 'stretch' | 'baseline';
 export type Justify = 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
 
 /** Props de item flex aceitas por Box, Text, Image e Shape. */
@@ -147,10 +148,23 @@ export interface TextStyleProps {
 export interface TextProps extends FlexItemProps, TextStyleProps {
   /** padrão 'shrink' */
   readonly fit?: FitPolicy;
+  /** M8: nunca quebra linha (um parágrafo = uma linha); estouro de largura vira diagnóstico. */
+  readonly nowrap?: boolean;
   /** padrão: 75% de size (arredondado para baixo) */
   readonly minSize?: Pt;
   readonly maxLines?: number;
-  /** Conteúdo: strings/números; concatenados na resolução. */
+  /** Conteúdo: strings/números e Span/B/I (M8); concatenados na resolução. */
+  readonly children?: TextChildren;
+}
+
+/**
+ * M8 — trecho inline dentro de Text. `B` e `I` são Span com weight/italic fixos.
+ * size, font e lineHeight NÃO são por run: a linha tem altura única.
+ */
+export interface SpanProps {
+  readonly weight?: FontWeight;
+  readonly italic?: boolean;
+  readonly color?: Color;
   readonly children?: TextChildren;
 }
 
@@ -172,7 +186,7 @@ export interface ShapeProps extends FlexItemProps, StrokeProps {
 
 // ───────────────────────── JSX / árvore não resolvida ─────────────────────────
 
-export type PrimitiveKind = 'deck' | 'slide' | 'box' | 'text' | 'image' | 'shape';
+export type PrimitiveKind = 'deck' | 'slide' | 'box' | 'text' | 'image' | 'shape' | 'span';
 
 export interface PrimitivePropsMap {
   readonly deck: DeckProps;
@@ -181,6 +195,7 @@ export interface PrimitivePropsMap {
   readonly text: TextProps;
   readonly image: ImageProps;
   readonly shape: ShapeProps;
+  readonly span: SpanProps;
 }
 
 /** Marca que identifica uma primitiva (vs componente do usuário). */
@@ -212,7 +227,8 @@ export interface SlideElement {
 
 export type Child = SlideElement | string | number | boolean | null | undefined | readonly Child[];
 export type Children = Child;
-export type TextChildren = string | number | null | undefined | boolean | readonly TextChildren[];
+/** Elementos aqui têm que ser Span/B/I (o resolve valida; o TS não distingue elementos). */
+export type TextChildren = string | number | null | undefined | boolean | SlideElement | readonly TextChildren[];
 
 /** O arquivo do deck exporta default defineDeck(fn). */
 export type DeckDefinition = (ctx: DeckContext) => SlideElement;
@@ -238,9 +254,19 @@ export interface ResolvedBox extends ResolvedBase<'box', Omit<BoxProps, 'childre
   readonly children: readonly ResolvedNode[];
 }
 
+/** M8: estilo efetivo de um trecho (herda do Text, sobrescrito pelos Span aninhados). */
+export interface TextRun {
+  readonly text: string;
+  readonly weight: FontWeight;
+  readonly italic: boolean;
+  readonly color: Color;
+}
+
 export interface ResolvedText extends ResolvedBase<'text', Omit<TextProps, 'children'>> {
   /** Conteúdo já concatenado; '\n' separa parágrafos. */
   readonly content: string;
+  /** M8: runs em ordem; a concatenação de `text` é igual a `content`. Sem Span: um run só. */
+  readonly runs: readonly TextRun[];
 }
 
 export type ResolvedImage = ResolvedBase<'image', ImageProps>;
@@ -262,8 +288,8 @@ export interface FontFace {
   readonly family: string;
   readonly weight: FontWeight;
   readonly italic?: boolean;
-  /** Caminho para .ttf/.otf */
-  readonly file: string;
+  /** Caminho para .ttf/.otf. Ausente (M8) → procurar nas pastas de fontes do sistema. */
+  readonly file?: string;
 }
 
 export interface TextStyle {
@@ -276,10 +302,22 @@ export interface TextStyle {
 
 export interface TextMeasureInput {
   readonly content: string;
+  /** Estilo base: family, size, lineHeight; weight/italic são o padrão dos runs. */
   readonly style: TextStyle;
+  /** M8: runs com estilo; ausente = um run com o estilo base. A concatenação tem que ser igual a `content`. */
+  readonly runs?: readonly TextRun[];
   /** Largura disponível em pt; Infinity = sem limite. */
   readonly maxWidth: Pt;
   readonly maxLines?: number;
+  /** M8: um parágrafo = uma linha; `width` pode passar de maxWidth. */
+  readonly nowrap?: boolean;
+}
+
+/** M8: pedaço de uma linha já quebrada que pertence a um run. */
+export interface LineRun {
+  readonly text: string;
+  /** Índice em TextMeasureInput.runs / ResolvedText.runs. */
+  readonly run: number;
 }
 
 /** Resultado da medição: as linhas JÁ quebradas são usadas por todos os emissores. */
@@ -291,6 +329,8 @@ export interface TextLayout {
    * separar parágrafo (<a:p>) de quebra suave (<a:br/>). paragraphs.flat() === lines.
    */
   readonly paragraphs: readonly (readonly string[])[];
+  /** M8: cada linha de `lines` dividida por run; lineRuns[i].map(r => r.text).join('') === lines[i]. */
+  readonly lineRuns: readonly (readonly LineRun[])[];
   readonly fontSize: Pt;
   /** Altura de uma linha em pt. */
   readonly lineHeight: Pt;
@@ -389,6 +429,8 @@ export interface Diagnostic {
     readonly count?: number;
     /** Paths individuais quando agrupado, na ordem dos índices. */
     readonly paths?: readonly string[];
+    /** M8: eixo do estouro de texto; ausente = 'height'. 'width' só com nowrap. */
+    readonly axis?: 'width' | 'height';
   };
 }
 
@@ -420,6 +462,11 @@ export interface RenderOptions {
   readonly lineBreaks?: LineBreaks;
   /** Inclui a árvore posicionada (pós-fit) no resultado, para ferramentas e previews externos. Padrão false. */
   readonly includePositioned?: boolean;
+  /**
+   * M8: embute no .pptx (EOT em ppt/fonts/) as faces registradas que o deck usa, exceto a Arial
+   * padrão (Liberation não pode sair sob o nome Arial) e fontes com fsType restrito. Padrão false.
+   */
+  readonly embedFonts?: boolean;
 }
 
 export type LineBreaks = 'forced' | 'auto';
@@ -431,4 +478,6 @@ export interface RenderResult {
   readonly preview?: { readonly slides: readonly Buffer[]; readonly overview: Buffer };
   /** Só com RenderOptions.includePositioned. */
   readonly positioned?: PositionedDeck;
+  /** M8: faces pedidas em `fonts` sem `file` que não foram achadas no sistema ("Inter bold"). */
+  readonly fontsMissing?: readonly string[];
 }

@@ -59,13 +59,13 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M7 | M7-F | README do pacote + AGENT_GUIDE §7 | ✅ |
 | M7 | M7-G | validação: pacote fora do repo no Keynote; auto × forced (10/34 divergem, 0 vazam) | ✅ |
 | M8 | M8-S | spike: embed de fontes — Keynote ignora todas as variantes; PowerPoint/Google com o dono (kit em reports/m8-spike-fonts) | ✅ (dono pendente) |
-| M8 | M8-0 | Contrato: `Span/B/I`, `TextRun`, `lineRuns`, `nowrap`, `align="baseline"`, `FontFace` sem `file`, `embedFonts` | ⬜ |
-| M8 | M8-A | resolve: runs | ⬜ |
-| M8 | M8-B | text: quebra com runs, NBSP como glue, `nowrap` | ⬜ |
-| M8 | M8-C | layout: baseline, `nowrap` min width | ⬜ |
-| M8 | M8-D | fontes do sistema + embed | ⬜ |
-| M8 | M8-E | emit/preview: run por linha, tspan, embed no zip | ⬜ |
-| M8 | M8-F | testes M8 | ⬜ |
+| M8 | M8-0 | Contrato: `Span/B/I`, `TextRun`, `lineRuns`, `nowrap`, `align="baseline"`, `FontFace` sem `file`, `embedFonts` | ✅ |
+| M8 | M8-A | resolve: runs | 🔄 |
+| M8 | M8-B | text: quebra com runs, NBSP como glue, `nowrap` | 🔄 |
+| M8 | M8-C | layout: baseline, `nowrap` min width | 🔄 |
+| M8 | M8-D | fontes do sistema + embed | 🔄 |
+| M8 | M8-E | emit/preview: run por linha, tspan, embed no zip | 🔄 |
+| M8 | M8-F | testes M8 | 🔄 |
 | M8 | M8-G | exemplos: Bullets por baseline, `calibration-rich.tsx`, demo com negrito inline; AGENT_GUIDE | ⬜ |
 | M8 | M8-H | calibração rich text nativo × Keynote (+ PowerPoint pelo dono) | ⬜ |
 | M9 | M9-0 | Contrato: `Responsive<T>`, breakpoints, `resolveDeck(root, ctx)`, `paginate`, `slide-continued` | ⬜ |

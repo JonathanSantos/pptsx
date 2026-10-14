@@ -258,3 +258,47 @@ pptsx init [dir] [--force] [--json]
 - Carrega o deck com `import()` (rodando sob `tsx`), lê `pptsx.config.ts` opcional (`{ fonts }`), chama `render`, grava a árvore de arquivos da spec, imprime resumo ou JSON, `exit 1` se houver `error`.
 - **Resumo (M6):** diagnósticos com `data.causedBy` são impressos logo abaixo da sua causa (a causa é o primeiro diagnóstico não derivado com `path === causedBy` ou, se não houver, o primeiro não derivado cujo path está **dentro** de `causedBy` — a causa costuma ser um Box sem diagnóstico próprio, e o estouro real está num Text dentro dele; só um não derivado ancora, então há um nível só de `↳`; derivado cuja única âncora possível também é derivada sai no lugar normal) com prefixo `↳` e indentação extra, e não contam no cabeçalho: `Diagnósticos: 2 error (+5 derivados), 1 warning, 0 info` (`+1 derivado` no singular). Sem derivados, o cabeçalho fica como hoje. Derivado cuja causa não está na lista (ex.: causa suprimida) é impresso no lugar normal, mas ainda conta como derivado. O exit code considera **todos** os `error`. `--json` imprime a lista completa, inalterada em forma.
 - Sem config: registra Liberation Sans de `fonts/` como `Arial` (regular, bold, italic, bold italic).
+
+---
+
+## M8 — rich text, NBSP/nowrap, baseline, fontes do sistema e embed (regras por módulo)
+
+Tipos novos em `core/types.ts`: `SpanProps`, kind `'span'`, `TextRun`, `ResolvedText.runs`, `TextMeasureInput.runs/nowrap`, `LineRun`, `TextLayout.lineRuns`, `Align 'baseline'`, `TextProps.nowrap`, `FontFace.file?`, `RenderOptions.embedFonts`, `RenderResult.fontsMissing`, `Diagnostic.data.axis`. Padrões: `DEFAULTS.embedFonts = false`, `DEFAULTS.watchDebounceMs = 150` (M7-B move `WATCH_DEBOUNCE_MS` para cá).
+
+### `src/primitives/` + `src/index.ts` (M8-A)
+- `Span = definePrimitive('span')`; `B` e `I` são **componentes** (não primitivas) definidos em `primitives/`: `B = (props) => <Span weight="bold" {...props} />`, `I = (props) => <Span italic {...props} />` (nome de função `B`/`I` para o path, embora nunca apareçam no path: Span não vira nó). Exportados de `src/index.ts`: `Span`, `B`, `I`, tipo `SpanProps`, `TextRun`, `LineRun`.
+
+### `src/resolve/` (M8-A)
+- Dentro de `Text`, filhos podem ser string/number/boolean/null/undefined/arrays **e elementos cujo tipo expandido é a primitiva `span`** (via componente `B`/`I` ou Span direto, inclusive aninhados). Qualquer outro elemento → `ResolveError('<Text> só aceita strings, números e <Span>/<B>/<I> como filhos (em <path>)')`.
+- `Span` fora de `Text` (em Box/Slide/raiz) → `ResolveError('<Span> só pode aparecer dentro de <Text>')` com o path do pai.
+- `ResolvedText.runs`: percorre os filhos em ordem; cada trecho de texto vira um `TextRun` com o estilo efetivo = Text (`weight`, `italic`, `color` com padrões de `DEFAULTS.text`) sobrescrito pelos Span do caminho até ele (mais interno vence). Runs adjacentes com o **mesmo estilo** são fundidos. `content` = concatenação de `runs[].text`. Text sem Span → um run (quando `content` não é vazio; `content` vazio → `runs: []`).
+- Span não entra no `path` nem gera nó.
+
+### `src/text/` (M8-B)
+- `TextMeasureInput.runs` ausente ⇒ um run com `weight`/`italic` do `style`.
+- **Medição por run:** a largura de um segmento é a soma das larguras de suas partes, cada parte medida com a face do run (`registry.get(family, run.weight, run.italic)`); kerning não cruza fronteira de run. `widestSegment` idem.
+- **NBSP (U+00A0) é glue:** não é ponto de quebra; fica dentro do segmento e é medido como espaço com a face do run. Pontos de quebra continuam sendo `\s` **exceto U+00A0**, e depois de `-`/`/`. `brokenWordsOf` usa a mesma regra (o `normalize` não pode converter NBSP em espaço).
+- **`nowrap`:** cada parágrafo é uma linha só (sem quebra, sem quebra por caractere); `wordBroken = false`; `width` = linha mais larga mesmo que passe de `maxWidth`; `maxLines`/truncamento continuam valendo por parágrafo.
+- `lineHeight`/`ascent` vêm da face do `style` (regular ou bold conforme `style.weight`); runs em outra face não mudam a altura. `fontMissing = true` se **qualquer** face usada por algum run faltar (aí toda a medição é estimada).
+- `lineRuns`: para cada linha, a lista de `{ text, run }` na ordem, com `join('') === lines[i]`; a reticência do truncamento pertence ao último run da linha; linha vazia → `[]`.
+- Estimador (`createEstimateMeasurer`) segue as mesmas regras com largura por caractere (bold = regular).
+
+### `src/layout/` + `src/fit/` (M8-C)
+- `align="baseline"` / `alignSelf="baseline"` em `row` → `Align.Baseline` do Yoga; em `column` → tratado como `start`. Baseline de cada nó: Text → `text.ascent` da 1ª linha (`setBaselineFunc` com a medição na largura dada); Box → baseline do 1º filho em fluxo (padrão do Yoga; se não houver filho com baseline, o Yoga usa a altura); Image/Shape → `frame.height`.
+- `nowrap` num Text em `row`: `minWidth` = `width` medido sem limite (a linha mais larga), para o Yoga não espremer abaixo disso. Em `column`, nada muda (a largura vem do pai).
+- `fit`: Text com `nowrap` cujo `text.width > frame.width + epsilon` é um estouro de **largura**: entra em `detectOverflow` como `kind: 'text'` com `axis: 'width'` (campo novo em `Overflow`), dispara a busca no escopo como o estouro de altura (o `dMin` por `widestSegment` vale aqui também, já que `widestSegment` = linha inteira), e no fim gera `text-overflow` com `data.axis: 'width'` e mensagem própria: `"Texto com nowrap tem 212 pt de largura numa área de 180 pt mesmo em 14 pt (mínimo); encurte o texto, alargue a área ou remova nowrap."`. Estouro de altura continua sem `axis` (ou `'height'`).
+
+### `src/fonts/` (M8-D; substitui `src/fonts.ts`)
+- `src/fonts/index.ts` exporta `DEFAULT_FONTS`, `fontFamilyMapOf`, `resolveFontFaces`, `createSystemFontIndex`, `eotOf`.
+- **Resolver do sistema:** `resolveFontFaces(faces, index?)` → `{ faces: FontFace[] (todas com file), missing: string[] }`. Face sem `file`: procura no índice por `family` (minúsculas, espaços colapsados), `weight` (`OS/2.usWeightClass ≥ 600` = bold) e `italic` (`OS/2.fsSelection` bit 0 ou `head.macStyle` bit 1). Não achou → vai para `missing` como `"Inter bold italic"` e NÃO entra em `faces` (o `font-missing` por nó continua saindo do fit). `createSystemFontIndex(dirs?)` varre uma vez (cache por processo) os diretórios: macOS `/System/Library/Fonts`, `/System/Library/Fonts/Supplemental`, `/Library/Fonts`, `~/Library/Fonts`; Linux `/usr/share/fonts`, `/usr/local/share/fonts`, `~/.fonts`, `~/.local/share/fonts`; Windows `%WINDIR%\Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`; `.ttf`/`.otf`/`.ttc` (cada face da coleção). Diretórios injetáveis para teste.
+- **EOT:** `eotOf(ttf: Buffer, familyName: string): Buffer` gera EOT v2.1 sem compressão e sem XOR (o formato que o PowerPoint aceitou no spike M8-S; ver `docs/work/reports/m8-spike-fonts/build.mts`). `fsTypeOf(ttf): number` lê `OS/2.fsType`; `isEmbeddable(fsType)` = bit 1 (0x0002, restricted) desligado.
+- `render.ts`: resolve as faces antes de criar o registro; `RenderResult.fontsMissing` lista as faltantes (ausente quando vazio); `embedFonts` vai ao `emitPptx` como lista de `{ family, weight, italic, file }` **usadas no deck** (faces de `DEFAULT_FONTS` sob o nome Arial nunca entram; faces não embutíveis entram em um diagnóstico `font-not-embeddable` warning por deck — código novo, slide 0, path '').
+
+### `src/emit/` (M8-E)
+- Texto: para cada linha, um `<a:r>` por `LineRun`, com `bold`/`italic`/`color` do run; `softBreakBefore` só no 1º run da linha; `breakLine` só no último run da última linha do parágrafo. `lineBreaks: 'auto'`: um run por `TextRun` por parágrafo (texto original do autor dividido pelos runs; runs que cruzam `\n` são divididos).
+- **Embed** (`src/emit/embed.ts`, pós-processamento do zip depois do `sanitizePptx`): para cada face da lista, `ppt/fonts/fontN.fntdata` (EOT), `[Content_Types].xml` com `<Default Extension="fntdata" ContentType="application/x-fontdata"/>`, relacionamento `…/relationships/font` em `ppt/_rels/presentation.xml.rels`, e `<p:embeddedFontLst>` em `ppt/presentation.xml` na posição do schema (depois de `notesSz`, antes de `defaultTextStyle`), um `<p:embeddedFont>` por família com `regular`/`bold`/`italic`/`boldItalic`; `embedTrueTypeFonts="1"` no `<p:presentation>`. Método exato no spike.
+- **Sanitize:** além do `<a:pPr>`, reordena `<p:notesMasterIdLst>` para antes de `<p:sldIdLst>` em `presentation.xml` (pptxgenjs grava fora da ordem do schema).
+- **Preview:** `<text>` por linha com um `<tspan>` por run (`font-weight`, `font-style`, `fill`, `xml:space="preserve"`); família via `fontFamilyMap`. Text com `fontMissing` não recebe o realce de estouro no `--debug` (o JSON suprime).
+
+### `src/cli.ts` (sem dono nesta onda; orquestrador na integração)
+- `--embed-fonts` (boolean) e `config.embedFonts`; `fontsMissing` do resultado aparece no resumo como linha `▲ fontes não encontradas no sistema: Inter bold` e no `--json` como campo `fontsMissing`.
