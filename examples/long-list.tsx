@@ -10,7 +10,7 @@ const { font } = tokens;
 // para mostrar que os índices de saída andam (o diagnóstico traz data.sourceSlide).
 export default defineDeck((ctx) => (
   <Deck>
-    <ContentLayout title="Doze pontos de atenção para o Q4">
+    <ContentLayout title="Doze pontos de atenção para o Q4" notes="Lista paginada: as notas repetem em todas as partes.">
       <Bullets
         paginate
         size={font.body}

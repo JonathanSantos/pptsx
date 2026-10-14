@@ -73,7 +73,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M9 | M9-B | fit: paginação no nível do deck (`fitDeck`, bisseção em k, clones, `slide-continued`) | ✅ |
 | M9 | M9-C | testes M9 (+142; referência posicionada da demo em `tests/examples/__fixtures__`) | ✅ |
 | M9 | M9-D | exemplos sem ternário (demo pixel a pixel igual); `TwoColumn direction` responsivo; `Bullets paginate`; `long-list.tsx` (16x9: 4/4/4, 4x3: 6/6); AGENT_GUIDE | ✅ |
-| M9 | M9-E | validação visual (demo antes × depois ≤ 1 pt; long-list) | ⬜ |
+| M9 | M9-E | visual: demo antes × depois byte a byte igual (15 PNGs, 3 tamanhos; Keynote idêntico ao M8); long-list 3 partes (4/4/4) em 16x9 e 2 (6/6) em 4x3 no Keynote; breakpoints corretos | ✅ |
 | M9 | M9-F | agente virgem: deck de 4 slides com breakpoints, `ctx.pick` e `paginate` em 3 builds (1º já sem error/warning); 6 lacunas do guia aplicadas no gate | ✅ |
 | M10 | M10-S | spike: `addChart`/`addTable` no Keynote/PowerPoint | ⬜ |
 | M10 | M10-0 | Contrato: `Chart`, `Table`, `PositionedTable`, `table-overflow` | ⬜ |
@@ -128,3 +128,6 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M9-D | Não dá para "desligar" uma prop num breakpoint (`{ base: '100%', tall: undefined }` cai para base; `base: undefined` não compila) | aceito; guia documenta; candidato a M9+ (`null` = ausente) |
 | M9-D | `paginate` numa row divide os itens em colunas (não é erro) | documentado como armadilha no guia |
 | M9-D | Combinar dois valores responsivos numa prop (ex.: `ratio` + `direction`) não tem forma exata; `TwoColumn.ratio` ficou `number` | aceito |
+| M9-E | `long-list.tsx` sem `notes` → `ContentLayout.notes` repassada ao Slide (gate) | ✅ gate M9 |
+| M9-E | Linha da CLI não mostrava o slide do autor após paginação → `slide 5 (3 no deck)` (gate) | ✅ gate M9 |
+| M9-E | Deck fora do cwd com tsconfig próprio falha com "React is not defined": `assertDeckTsconfig` valida o tsconfig da pasta do deck, mas `src/cli/loader.ts` compila com o do cwd | backlog: usar o tsconfig da pasta do deck (M10-0 ou correção isolada) |

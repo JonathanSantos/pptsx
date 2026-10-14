@@ -26,7 +26,7 @@ M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10
 
 - [x] Um deck fora do repo, num projeto com `npm install pptsx`, gera .pptx com `npx pptsx build`. → M7-G: tarball instalado do zero, `init` + `build` exit 0, PNGs idênticos aos do repo.
 - [x] O `broken.tsx` original do LOG (restaurado em M6-E) é corrigido por um agente virgem em **≤ 3 builds** (hoje: 7). → M6-H: exit 0 sem warning no 2º build.
-- [ ] `demo.tsx` reescrito com props responsivas não tem nenhum ternário sobre `ctx` fora de `defineDeck`.
-- [ ] Um slide com 12 bullets longos vira dois slides automaticamente, sem diagnóstico `error`.
+- [x] `demo.tsx` reescrito com props responsivas não tem nenhum ternário sobre `ctx` fora de `defineDeck`. → M9-D/E: nenhum `ctx.` na demo; 15 PNGs byte a byte iguais aos de antes.
+- [x] Um slide com 12 bullets longos vira dois slides automaticamente, sem diagnóstico `error`. → M9-E: `long-list.tsx` vira 2 slides em 4x3 (6/6) e 3 em 16x9 (4/4/4), só `slide-continued` (info).
 - [ ] O gráfico da demo é um gráfico nativo editável no PowerPoint.
 - [ ] `npm test` continua verde em cada gate; nenhum marco reduz a cobertura dos contratos.

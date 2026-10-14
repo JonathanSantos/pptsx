@@ -171,8 +171,14 @@ const pathsOfResult = (outDir: string, deckName: string, result: RenderResult): 
 
 const SEVERITY_ICON: Readonly<Record<Severity, string>> = { error: '✖', warning: '▲', info: '•' };
 
+// M9: depois de uma paginação o índice de saída difere do slide do autor; mostramos os dois.
+const slideLabelOf = (d: Diagnostic): string =>
+  d.data?.sourceSlide !== undefined && d.data.sourceSlide !== d.slide
+    ? `slide ${d.slide} (${d.data.sourceSlide} no deck)`
+    : `slide ${d.slide}`;
+
 const formatDiagnostic = (d: Diagnostic, indent: string = '  ', marker: string = ''): string =>
-  `${indent}${marker}${SEVERITY_ICON[d.severity]} [${d.size} · slide ${d.slide}] ${d.code} em ${d.path}\n${indent}  ${d.message}`;
+  `${indent}${marker}${SEVERITY_ICON[d.severity]} [${d.size} · ${slideLabelOf(d)}] ${d.code} em ${d.path}\n${indent}  ${d.message}`;
 
 const formatDerived = (d: Diagnostic): string => formatDiagnostic(d, '    ', '↳ ');
 

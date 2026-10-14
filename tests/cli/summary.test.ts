@@ -157,3 +157,15 @@ describe('summaryOf — the cause is a Box without its own diagnostic', () => {
     expect(lines.slice(exactLine + 1, t).every((line) => !/[✖▲•] \[/.test(line))).toBe(true);
   });
 });
+
+describe('summaryOf — author slide after pagination (M9)', () => {
+  it('shows the author slide when it differs from the output index', () => {
+    const summary = summaryOf([diag('error', 'Slide > Text', { slide: 5, data: { sourceSlide: 3 } })]);
+    expect(summary).toContain('slide 5 (3 no deck)');
+  });
+
+  it('shows only the output index when they coincide or sourceSlide is absent', () => {
+    expect(summaryOf([diag('error', 'Slide > Text', { slide: 2, data: { sourceSlide: 2 } })])).toContain('slide 2]');
+    expect(summaryOf([diag('error', 'Slide > Text')])).toContain('slide 1]');
+  });
+});

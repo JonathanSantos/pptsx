@@ -5,6 +5,8 @@ export interface ContentLayoutProps {
   readonly title: string;
   /** Posição vertical do conteúdo no corpo; padrão 'start' (logo abaixo do título). */
   readonly justify?: 'start' | 'center';
+  /** Notas do apresentador; numa paginação vão para todas as partes. */
+  readonly notes?: string;
   readonly children?: Children;
 }
 
@@ -15,9 +17,9 @@ const { color, font, space } = tokens;
  * justify="center" centraliza conteúdo curto (ex.: uma lista) na altura que sobra,
  * em vez de deixar a metade de baixo vazia em slides mais altos (4:3).
  */
-export function ContentLayout({ title, justify = 'start', children }: ContentLayoutProps) {
+export function ContentLayout({ title, justify = 'start', notes, children }: ContentLayoutProps) {
   return (
-    <Slide background={color.white} padding={space.page} gap={space.gap * 1.5}>
+    <Slide background={color.white} padding={space.page} gap={space.gap * 1.5} {...(notes ? { notes } : {})}>
       <Box direction="row" align="center" gap={14}>
         <Shape kind="rect" width={6} height={36} fill={color.accent} shrink={0} />
         <Text size={font.h1} weight="bold" color={color.ink} grow={1} minSize={24}>{title}</Text>
