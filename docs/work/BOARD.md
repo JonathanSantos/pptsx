@@ -72,7 +72,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M9 | M9-A | resolve: valores responsivos; `ctx.pick` | ✅ |
 | M9 | M9-B | fit: paginação no nível do deck (`fitDeck`, bisseção em k, clones, `slide-continued`) | ✅ |
 | M9 | M9-C | testes M9 (+142; referência posicionada da demo em `tests/examples/__fixtures__`) | ✅ |
-| M9 | M9-D | exemplos sem ternário; `TwoColumn` sem `stacked`; `long-list.tsx`; AGENT_GUIDE | ⬜ |
+| M9 | M9-D | exemplos sem ternário (demo pixel a pixel igual); `TwoColumn direction` responsivo; `Bullets paginate`; `long-list.tsx` (16x9: 4/4/4, 4x3: 6/6); AGENT_GUIDE | ✅ |
 | M9 | M9-E | validação visual (demo antes × depois ≤ 1 pt; long-list) | ⬜ |
 | M9 | M9-F | agente virgem: deck com breakpoints e paginate | ⬜ |
 | M10 | M10-S | spike: `addChart`/`addTable` no Keynote/PowerPoint | ⬜ |
@@ -125,3 +125,6 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M8-H | `text-truncated` agrupado (R24/R25) mostra só os números do pior caso | aceito (regra do contrato: mensagem do pior + ×N) |
 | M8-H | Baseline entre Text 40 pt e Text 12 pt desvia ~1,25 pt no Keynote (deslocamento da 1ª linha varia com o size, M3) | aceito; anotar no guia se virar queixa |
 | M8-H | Scripts de Keynote: outra sessão (skill-ppt) travou o app; `scripts/keynote-export.sh` não tem retry nem trava de máquina | backlog: retry em -1712/-609 |
+| M9-D | Não dá para "desligar" uma prop num breakpoint (`{ base: '100%', tall: undefined }` cai para base; `base: undefined` não compila) | aceito; guia documenta; candidato a M9+ (`null` = ausente) |
+| M9-D | `paginate` numa row divide os itens em colunas (não é erro) | documentado como armadilha no guia |
+| M9-D | Combinar dois valores responsivos numa prop (ex.: `ratio` + `direction`) não tem forma exata; `TwoColumn.ratio` ficou `number` | aceito |

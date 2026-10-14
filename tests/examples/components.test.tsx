@@ -78,9 +78,9 @@ describe('TwoColumn', () => {
   const left = <Text>Esquerda</Text>;
   const right = <Text>Direita</Text>;
 
-  it('row by default; stacked → column', () => {
+  it('row by default; direction="column" stacks', () => {
     const [row] = resolveOne(<TwoColumn left={left} right={right} />) as [ResolvedBox];
-    const [column] = resolveOne(<TwoColumn left={left} right={right} stacked />) as [ResolvedBox];
+    const [column] = resolveOne(<TwoColumn left={left} right={right} direction="column" />) as [ResolvedBox];
     expect(row.props.direction ?? 'column').toBe('row');
     expect(column.props.direction ?? 'column').toBe('column');
     expect(row.props.gap).toBeGreaterThan(0);

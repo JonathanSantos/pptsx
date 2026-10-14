@@ -55,7 +55,7 @@ export default defineDeck((ctx) => (
     <Slide padding={40} gap={20} background="#FFFFFF">
       <Shape kind="rect" height={6} fill="#2F6FED" />
       <Text size={36} weight="bold">Resultados do trimestre</Text>
-      <Box direction={ctx.aspect < 1.5 ? 'column' : 'row'} gap={20} grow={1}>
+      <Box direction={{ base: 'row', tall: 'column' }} gap={20} grow={1}>
         <Box grow={1} fill="#F4F6FA" radius={8} padding={20}><Text>Receita cresceu 18%.</Text></Box>
         <Box grow={1} fill="#F4F6FA" radius={8} padding={20}><Text>Churn caiu para 2,1%.</Text></Box>
       </Box>
@@ -67,7 +67,9 @@ export default defineDeck((ctx) => (
 - `Slide` e `Box` são contêineres flexbox; a direção padrão é **coluna** (filhos empilhados), e `grow`, `gap`, `padding`, `align` e `justify` funcionam como no CSS.
 - Não existem coordenadas: posição e tamanho de tudo saem do layout, em pt (1 pol = 72 pt).
 - O texto é medido com a fonte real e quebrado em linhas; se não couber, a fonte encolhe até um mínimo, corta com reticências ou vira erro, conforme `fit`.
-- A função recebe um `ctx` por tamanho renderizado (`ctx.name`, `ctx.width`, `ctx.height`, `ctx.aspect`, `ctx.scale`): o mesmo arquivo decide a estrutura por proporção, como o `Box` acima que empilha em 4:3.
+- Qualquer prop aceita um valor por breakpoint: `{ base, tall?, wide?, '4x3'?, … }`. `tall` vale quando a proporção é menor que 1,5 (4:3, 16:10); `wide` quando o slide é maior que o 16:9 de referência; o nome exato do tamanho vence os dois. O `Box` acima empilha em 4:3 sem nenhum `if` no deck.
+- A função ainda recebe um `ctx` por tamanho (`name`, `width`, `height`, `aspect`, `scale`) e `ctx.pick(valor)` resolve um valor responsivo em código, para contagens ou textos alternativos.
+- Um `<Box paginate>` com itens demais continua num slide clonado (mesmo título, mesmas decorações) em vez de encolher a fonte: a lista de 12 bullets vira dois slides e o diagnóstico `slide-continued` conta as partes.
 
 ## Rich text
 
@@ -233,7 +235,7 @@ node bin/pptsx.mjs build examples/demo.tsx --size 16x9,4x3,wide --out dist/
 scripts/keynote-export.sh dist/demo.16x9.pptx dist/keynote/   # exporta os slides pelo Keynote (macOS)
 ```
 
-Dentro do repo, `bin/pptsx.mjs` roda direto de `src/` (sem build) e os decks importam `pptsx` pelo `paths` do `tsconfig.json`. Exemplos em `examples/`: `demo.tsx` (deck completo com layouts e componentes), `hello.tsx`, `overflow.tsx`, `layout-test.tsx`, os decks de calibração `calibration.tsx` (medição de texto) e `calibration-rich.tsx` (rich text, NBSP, nowrap e baseline), além de `layouts/`, `components/` e `tokens.ts`. Spec em [`docs/spec.md`](docs/spec.md); guia para agentes em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
+Dentro do repo, `bin/pptsx.mjs` roda direto de `src/` (sem build) e os decks importam `pptsx` pelo `paths` do `tsconfig.json`. Exemplos em `examples/`: `demo.tsx` (deck completo com layouts e componentes, sem nenhum `if` sobre o tamanho), `long-list.tsx` (lista paginada em slides de continuação), `hello.tsx`, `overflow.tsx`, `layout-test.tsx`, os decks de calibração `calibration.tsx` (medição de texto) e `calibration-rich.tsx` (rich text, NBSP, nowrap e baseline), além de `layouts/`, `components/` e `tokens.ts`. Spec em [`docs/spec.md`](docs/spec.md); guia para agentes em [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
 
 ## Licença
 

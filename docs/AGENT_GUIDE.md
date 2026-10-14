@@ -7,7 +7,7 @@ Este é o único documento de que você precisa para (1) escrever slides novos e
 1. Você descreve **estrutura**, não posição: não existem coordenadas x/y. A engine calcula tudo.
 2. O layout é **flexbox**, como em CSS, com uma diferença: a direção padrão é **`column`** (filhos empilhados).
 3. A engine **mede o texto** com a fonte real, quebra as linhas e, se não couber, **reduz a fonte** (até um mínimo), corta com reticências ou reporta erro.
-4. O mesmo arquivo gera vários tamanhos (16:9, 4:3…). Use `ctx` para decidir a estrutura por proporção.
+4. O mesmo arquivo gera vários tamanhos (16:9, 4:3…). Props que mudam por tamanho recebem um **valor responsivo** (`{ base: 20, wide: 24 }`), sem `if`/ternário sobre `ctx` (§2 "Breakpoints").
 5. Todo problema vira um **diagnóstico** com `path` até o nó e uma `message` que diz o que fazer. Exit code 0 = sem `error`.
 
 ## 2. Esqueleto de um deck
@@ -49,7 +49,30 @@ Regras: `export default defineDeck((ctx) => <Deck>…</Deck>)`; filhos do `Deck`
 | `ctx.aspect` (w/h) | 1.78 | 1.6 | 1.33 | 1.78 |
 | `ctx.scale` = min(w/720, h/405) | 1 | 1 | 1 | 1.33 |
 
-Note: 16:9 e 4:3 têm a **mesma largura**; o 4:3 é **mais alto**. Por isso em 4:3 vale empilhar (`ctx.aspect < 1.5`) e usar a altura extra. Tamanho custom: `--size 10x7.5in` (nome `custom-10x7.5`).
+Note: 16:9 e 4:3 têm a **mesma largura**; o 4:3 é **mais alto**. Por isso em 4:3 vale empilhar (breakpoint `tall`) e usar a altura extra. Tamanho custom: `--size 10x7.5in` (nome `custom-10x7.5`).
+
+### Breakpoints (props responsivas)
+
+Toda prop de `Slide`, `Box`, `Text`, `Image` e `Shape` aceita um valor fixo **ou** um objeto por breakpoint com `base` obrigatória:
+
+```tsx
+<Text size={{ base: 24, tall: 28, wide: 30 }}>…</Text>
+<Box direction={{ base: 'row', tall: 'column' }} gap={{ base: 16, tall: 25 }}>…</Box>
+<Box padding={{ base: { top: 6 }, wide: { top: 9 } }}>…</Box>   {/* objeto inteiro por breakpoint */}
+```
+
+| chave | ativa quando | 16x9 | 16x10 | 4x3 | wide |
+|---|---|---|---|---|---|
+| `tall` | `ctx.aspect < 1.5` (mais "quadrado": muda a **estrutura**) | | ✓ | ✓ | |
+| `wide` | `ctx.scale > 1.2` (maior nos dois eixos: muda a **tipografia**) | | | | ✓ |
+| nome exato (`'16x9'`, `'4x3'`, `'custom-10x7.5'`) | `ctx.name` igual | ✓ | ✓ | ✓ | ✓ |
+
+- **Precedência:** nome exato > `wide` > `tall` > `base`. Vale a primeira chave ativa presente no objeto; nenhuma → `base`. Um custom grande e quadrado (`13.33x10in`) é `wide` e `tall`: `wide` vence.
+- **`base` é obrigatória**: `{ tall: 24 }` não compila e, vindo de JS, é erro de estrutura `Prop "size" de <Text>: objeto responsivo sem a chave "base"`. Chave errada (`{ base: 20, tal: 24 }`) → `breakpoint desconhecido: "tal"`.
+- Não há como "desligar" uma prop num breakpoint (`{ base: '100%', tall: undefined }` resolve para `'100%'` no `tall`): escolha props que valem nos dois casos ou mude o valor, não a presença.
+- **Não são responsivos:** `src`, `kind`, `notes`, `children`, e o estilo de `Span`/`B`/`I`. `padding: { top: 10 }` e `background: { image }` (sem `base`) continuam valores comuns.
+- **`ctx.pick(valor)`** resolve com a mesma regra no seu código, para o que não é prop de primitiva: quantos itens mostrar, texto alternativo. `items.slice(0, ctx.pick({ base: 4, tall: 6 }))`, `title={ctx.pick({ base: 'Receita', wide: 'Receita recorrente mensal' })}`.
+- Componentes repassam o valor responsivo **sem resolver** (`<Text size={size}>`); a engine resolve ao chegar na primitiva (§5).
 
 ## 3. Primitivas
 
@@ -83,7 +106,7 @@ Unidades: número = **pt**; string `'50%'` = percentual do pai (só em width/hei
 |---|---|---|
 | `Deck` | — | só `Slide` |
 | `Slide` | contêiner + `background?: '#hex' \| { image: 'caminho.png' }`, `notes?: string` | primitivas/componentes |
-| `Box` | contêiner + `fill?`, `stroke?`, `strokeWidth?` (1 pt se `stroke`), `radius?` (pt) | primitivas/componentes |
+| `Box` | contêiner + `fill?`, `stroke?`, `strokeWidth?` (1 pt se `stroke`), `radius?` (pt), `paginate?: boolean` (ver "Paginação") | primitivas/componentes |
 | `Text` | ver §4 | strings/números e `Span`/`B`/`I` (rich text, §4) |
 | `Span` | `weight?: 'regular' \| 'bold'`, `italic?: boolean`, `color?: '#hex'` (**sem** `size`/`font`/`lineHeight`: não compila) | strings/números e outros `Span`/`B`/`I`; **só dentro de `Text`** |
 | `B` / `I` | atalhos de `Span weight="bold"` / `Span italic` (aceitam as mesmas props) | como `Span` |
@@ -111,6 +134,24 @@ Numa `row`, `align="baseline"` (ou `alignSelf="baseline"` no item) alinha os fil
 - Só vale em `row`; numa `column` é tratado como `start`.
 - Baseline de cada filho: `Text` = 1ª linha; `Box` = a do 1º filho em fluxo; `Image`/`Shape` = a **base** (borda de baixo). Por isso um marcador `Shape` numa row com baseline fica *assentado* na linha do texto (visualmente baixo para um círculo): para marcador de lista, use `align="start"` com deslocamento, como o `Bullets` (§5).
 - Numa row com baseline, `Text` com `grow`/`width` funciona normalmente (um texto longo que ocupa o resto da row e quebra em várias linhas alinha pela 1ª linha).
+
+### Paginação (`Box paginate`)
+
+`<Box paginate>` divide os **filhos em fluxo** do Box entre slides quando não cabem: a 1ª parte leva os primeiros itens que cabem, e o resto continua num **clone do slide** (mesmo título, fundo, decoração e `notes`). É a saída para lista longa sem encolher a fonte.
+
+```tsx
+<ContentLayout title="Doze pontos de atenção">
+  <Box paginate gap={14}>
+    {items.map((item) => <Text size={20}>{item}</Text>)}
+  </Box>
+</ContentLayout>
+```
+
+- **Um por slide** (dois → erro de estrutura `Só um <Box paginate> por slide; encontrados 2`), e **não** em `position="absolute"` (erro: decoração não pagina). Use numa coluna: numa `row` a divisão é por colunas estreitas (§9).
+- Enquanto pagina, os `Text` dentro do Box **não encolhem** (ficam com o `size` do autor); o resto do slide encolhe normalmente. Coube tudo num slide → nada muda, sem diagnóstico.
+- Os paths dos itens **não mudam** nas partes: o 8º item é `Box[7]` na parte 2 também.
+- Cada parte é um slide no `.pptx`, no overview e nos diagnósticos; a 1ª recebe `slide-continued` (info) com `data.parts` (§8). Tamanhos diferentes viram números de partes diferentes (4:3 tem mais altura).
+- **Nada cabe** (nem o 1º item sozinho): o slide fica inteiro, o shrink volta e saem os diagnósticos normais (`text-overflow`…). **Limite de 10 partes:** a 10ª leva o resto e recebe `box-overflow` "A paginação parou em 10 partes; divida o conteúdo em mais de um slide no deck."
 
 ### Regras de flex que mais importam
 
@@ -223,10 +264,12 @@ Componentes (`'../components/index.ts'`):
 
 | componente | props | o que faz |
 |---|---|---|
-| `Bullets` | `items: readonly TextChildren[]` (string ou rich text, ex.: `<>Receita <B>+14%</B></>`); `size?: number` (padrão `font.body`); `gap?: number` (pt entre itens, padrão `0.7 × size`) | coluna de itens: marcador elipse 8×8 + Text grow (shrink, minSize 14) |
-| `TwoColumn` | `left; right` (qualquer elemento); `stacked?: boolean`; `ratio?: number` (fração da largura da esquerda, padrão 0.5; só vale lado a lado) | row com gap, colunas por `grow`, **ambas alinhadas ao topo**; `stacked` vira coluna: `left` com a altura do conteúdo em cima, `right` ocupa o resto (bom para imagem com `grow` ou `height="100%"`) |
+| `Bullets` | `items: readonly TextChildren[]` (string ou rich text, ex.: `<>Receita <B>+14%</B></>`); `size?` (padrão `font.body`); `gap?` (pt entre itens, padrão `0.7 × size`); `paginate?: boolean` (padrão false) | coluna de itens: marcador elipse 8×8 + Text grow (shrink, minSize 14). `paginate`: itens que não cabem continuam no slide seguinte (§3 "Paginação") |
+| `TwoColumn` | `left; right` (qualquer elemento); `direction?: 'row' \| 'column'` (padrão `'row'`); `ratio?: number` (fração da largura da esquerda, padrão 0.5; só vale lado a lado) | `row`: colunas por `grow`, **ambas alinhadas ao topo**; `column`: `left` com a altura do conteúdo em cima, `right` ocupa o resto. Empilhe em 4:3 com `direction={{ base: 'row', tall: 'column' }}` |
 | `KpiCard` | `label: string; value: string; delta?: string; trend?: 'up' \| 'down'; sentiment?: 'positive' \| 'negative' \| 'neutral'; size?: 'sm' \| 'md' \| 'lg'; inlineDelta?: boolean` | cartão `surface` arredondado, `grow={1}`: label muted, valor bold grande, delta. **`trend` só define a seta** (▲ `up` / ▼ `down`); **`sentiment` define a cor** (verde `positive` / vermelho `negative` / cinza `neutral`). Sem `sentiment`: `up` → positive, `down` → negative, sem trend → neutral. `inlineDelta` (padrão false): delta **ao lado** do valor, alinhado pela baseline; só com delta curto ("+14%"), senão os textos encolhem para caber |
 | `KpiRow` | `items: readonly KpiCardProps[]; size?: 'sm' \| 'md' \| 'lg'` | row com gap; cada card `grow={1}` (larguras iguais); `size` vale para todos (o `size` de um item vence) |
+
+Aceitam valor responsivo (§2): `Bullets.size`/`gap`, `TwoColumn.direction`, `KpiCard.size`/`KpiRow.size` (`size={{ base: 'md', tall: 'lg', wide: 'lg' }}`). Os componentes não recebem `ctx`: o que depende do valor (gap padrão e deslocamento do marcador no `Bullets`, padding e tipografia do `KpiCard`, gap e `grow` das colunas no `TwoColumn`) é derivado **chave a chave** com `mapResponsive` (exportado de `'../components/index.ts'`), que mantém as mesmas chaves e por isso escolhe o mesmo breakpoint que a prop original. Faça igual no seu componente: `mapResponsive(size, (s) => s * 0.7)`. Se o componente precisa do valor concreto para decidir **estrutura** (quantos filhos, qual elemento), receba `ctx` e use `ctx.pick`. `TwoColumn.ratio` é fixo: combinar dois valores responsivos numa prop não tem forma exata chave a chave.
 
 Tamanhos do `KpiCard` (pt):
 
@@ -301,15 +344,15 @@ Os trechos abaixo são filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, 
 ```tsx
 <ContentLayout title="Receita por região">
   <TwoColumn
-    stacked={ctx.aspect < 1.5}
+    direction={{ base: 'row', tall: 'column' }}
     ratio={0.45}
-    left={<Bullets items={['Sudeste lidera com 52%', 'Sul cresceu 31%', 'Nordeste estável']} />}
-    right={<Image src="../assets/chart.png" grow={1} />}
+    left={<Bullets size={{ base: 18, wide: 22 }} items={['Sudeste lidera com 52%', 'Sul cresceu 31%', 'Nordeste estável']} />}
+    right={<Image src="../assets/chart.png" width="100%" maxHeight="100%" alignSelf="start" />}
   />
 </ContentLayout>
 ```
 
-Sem o componente, a mesma ideia: `<Box direction={ctx.aspect < 1.5 ? 'column' : 'row'} gap={20} grow={1}>` com dois filhos `grow={1}`.
+A imagem fica com a maior caixa na proporção dela que cabe na coluna, no canto de cima à esquerda: lado a lado a largura limita, empilhada a altura que sobra limita. Sem o componente: `<Box direction={{ base: 'row', tall: 'column' }} gap={20} grow={1}>` com dois filhos `grow={1}`.
 
 ### 6.3 Linha de cards
 
@@ -354,6 +397,31 @@ Sem o componente, a mesma ideia: `<Box direction={ctx.aspect < 1.5 ? 'column' : 
 ```
 
 Decoração vem **antes** do conteúdo (fica por trás) e usa `position="absolute"`; pode sair do slide sem gerar erro.
+
+### 6.6 Tipografia e espaçamento por tamanho
+
+```tsx
+<ContentLayout title="Destaques" justify="center">
+  <Bullets
+    size={{ base: font.h2, tall: font.h2 + 4, wide: font.h2 + 6 }}
+    gap={{ base: space.gap * 0.8, tall: space.gap * 1.25, wide: space.gap * 1.25 }}
+    items={['Receita +14%', 'Custo por consulta −22%', 'Disponibilidade 99,95%']}
+  />
+</ContentLayout>
+```
+
+`tall` usa a altura extra do 4:3 com itens maiores e mais espaçados; `wide` aumenta a fonte porque há área nos dois eixos.
+
+### 6.7 Lista longa → `paginate`
+
+```tsx
+<ContentLayout title="Doze pontos de atenção para o Q4">
+  <Bullets paginate size={font.body} items={dozeItens} />
+</ContentLayout>
+<ClosingLayout ctx={ctx} title="Obrigado" />
+```
+
+Em 16:9 vira 3 slides com o mesmo título (4 itens cada), em 4:3 vira 2 (6 cada); o encerramento passa a ser o slide 4 (ou 3) da saída. Exemplo completo: `examples/long-list.tsx`. Prefira isso a baixar `minSize` até a lista caber.
 
 ## 7. CLI e fluxo de trabalho
 
@@ -408,11 +476,12 @@ Formato (cada item de `diagnostics.json` / `diagnostics` do `--json`):
 }
 ```
 
-`slide` começa em 1 (ordem no `<Deck>`). `severity`: `error` (precisa corrigir), `warning` (aceitável se intencional), `info` (só aviso).
+`slide` começa em 1 e é o índice no **arquivo gerado** (deck de saída). Sem `paginate` coincide com a ordem no `<Deck>`; com paginação, os slides depois de um slide paginado andam, e o diagnóstico traz `data.sourceSlide` = índice no `<Deck>` do autor (presente em toda parte de uma paginação e sempre que os dois índices diferem). `severity`: `error` (precisa corrigir), `warning` (aceitável se intencional), `info` (só aviso).
 
 Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou), `fromSize`/`toSize` (size do autor → size final), `axis` (`"width"` no `text-overflow` de um `Text` com `nowrap` que não cabe na largura; ausente = altura) e:
 
 - `causedBy`: path do nó que **provocou** este estouro (um irmão que pede mais espaço do que há e espreme os outros). Este diagnóstico é **consequência**: corrija a causa primeiro; os derivados costumam sumir sozinhos. A causa em si não tem `causedBy`. Só `text-overflow` e `box-overflow` recebem.
+- `sourceSlide` e `parts`: ver `slide` acima e `slide-continued` abaixo. Para achar o slide no seu código, use `sourceSlide` quando existir.
 - `count` e `paths`: diagnóstico **agrupado**. Irmãos homônimos com o mesmo problema (mesmo `code`, `severity` e `causedBy`) viram um item só: o segmento repetido junta os índices no `path` (`Box[0..7]` contíguos, `Box[0,2,5]` não contíguos), `count` diz quantos são e `paths` lista cada path individual. `message` e números são os do pior. Corrija uma vez, no `.map` ou componente que gera os irmãos.
 
 ### Como ler o `path`
@@ -434,6 +503,7 @@ Campos de `data` (todos opcionais): `overflowPt`/`overflowPct` (quanto estourou)
 | `text-truncated` | warning | `truncate`/`maxLines` cortou com `…` | se não era a intenção: encurte, aumente a área ou `maxLines` |
 | `box-overflow` | error | tamanhos fixos (com `shrink={0}`), gap e padding somam mais que o contêiner | reduza `width`/`height` fixos ou gap/padding; troque fixos por `grow`/`%`; tire `shrink={0}`; empilhe em 4:3 |
 | `out-of-slide` | error | nó **em fluxo** fora dos limites do slide | reduza o tamanho; use `%`/`grow`; se for decoração, `position="absolute"` |
+| `slide-continued` | info | um `Box paginate` não coube e virou `data.parts` slides; só na 1ª parte, no path do Box | nada; para menos partes, reduza o `size` dos itens ou o conteúdo |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi (pode borrar) | arquivo com mais resolução ou área menor |
 | `font-missing` | error | `font` com família não registrada, ou registrada sem `file` e não achada no sistema (aparece também em `fontsMissing`); é o **único** diagnóstico desse Text (estouro e redução dele não são reportados: a medição é estimada) | remova `font` (padrão Arial), registre a face (§4 "Fontes") ou instale a fonte |
 | `font-not-embeddable` | warning | com `--embed-fonts`: a face não pode ser embutida (`.ttc`, `.otf` CFF ou licença `fsType` restrita). Um por face e por tamanho, com `slide: 0` e `path: ""` | use um `.ttf` de uma face só com licença que permita embed, ou aceite que o PowerPoint troque a fonte |
@@ -451,6 +521,8 @@ Mensagens reais:
   Texto estourou 94.7% (67.1 pt) da altura disponível em 24 pt (fit="error" não ajusta); reduza o conteúdo, aumente a área ou troque para fit="shrink" ou fit="truncate". Esse estouro é consequência: Slide > Text[1] pede 131.9 pt a mais do que a área tem; corrija Slide > Text[1] primeiro. (×8: mesmo problema em Box[0..7])
 ✖ text-overflow em Slide > Box > Box[1] > Text
   Texto estourou 16.8% (21.2 pt) da altura disponível em 16 pt (fit="error" não ajusta); reduza o conteúdo, aumente a área ou troque para fit="shrink" ou fit="truncate".
+• slide-continued em ContentLayout > Box[1] > Bullets
+  Slide 1 do autor virou 3 slides (4 de 12 itens no 1º, 4 no 2º, 4 no 3º). Para caber em menos slides, reduza o size dos itens ou o conteúdo.
 • text-shrunk em Slide > Bullets > Box[0..3] > Text
   Texto reduzido de 20 pt para 19 pt para caber na área. Se a redução incomodar, encurte o conteúdo ou aumente a área. (×4: mesmo problema em Box[0..3])
 ▲ text-word-broken em ContentLayout > Box[1] > KpiRow > KpiCard[0,1,2,4] > Text[1]
@@ -510,8 +582,8 @@ Sem duplicatas: um texto estourado é reportado no `Text`, não na Box pai; algo
 1. Rode o build com `--size 16x9,4x3 --json` e leia o exit code.
 2. Se houver `{ "error": … }`: é erro de estrutura/sintaxe; a mensagem traz o path entre parênteses. Corrija e rode de novo.
 3. Filtre `severity: "error"` e, entre eles, primeiro os **sem `causedBy`**: são as causas. Os derivados (com `causedBy`) somem quando você corrige a causa; não mexa neles antes de rodar de novo.
-4. Para cada causa: ache o slide (`slide`), siga o `path` no seu código segmento por segmento (contando `[i]` entre irmãos do mesmo tipo/nome). Agrupado (`count`, `[a..b]`): corrija uma vez, no `.map`/componente.
-5. Aplique a correção que a `message` sugere (tabela acima). Prefira mudar estrutura (`grow`, menos texto, empilhar com `ctx.aspect`) a mexer em números mágicos.
+4. Para cada causa: ache o slide (`data.sourceSlide` se houver, senão `slide`), siga o `path` no seu código segmento por segmento (contando `[i]` entre irmãos do mesmo tipo/nome). Agrupado (`count`, `[a..b]`): corrija uma vez, no `.map`/componente.
+5. Aplique a correção que a `message` sugere (tabela acima). Prefira mudar estrutura (`grow`, menos texto, empilhar com `direction={{ base: 'row', tall: 'column' }}`, `paginate` em lista longa) a mexer em números mágicos.
 6. Veja o overview do tamanho afetado para confirmar que ficou bom.
 7. Repita até **exit 0**. Depois revise `warning` (palavra partida, fonte ilegível, truncamento intencional?) e `info` (fonte reduzida demais?).
 
@@ -539,7 +611,10 @@ Sem duplicatas: um texto estourado é reportado no `Text`, não na Box pai; algo
 - **`width="50%"` + `gap`** numa row soma mais que 100%: use `grow={1}`.
 - **Larguras fixas somadas**: três itens `width={260}` + gaps passam dos 640 pt úteis de um slide 720 com `padding={40}`. Prefira `grow`.
 - **Padding grande**: `padding={80}` tira 160 pt de cada eixo; em 16:9 sobram só 245 pt de altura. Use `tokens.space.page` (40).
-- **Duas colunas de texto longo** ficam apertadas; em 4:3 há altura sobrando: empilhe com `stacked={ctx.aspect < 1.5}` (ou `direction` condicional). Nunca escreva um arquivo por tamanho.
+- **Duas colunas de texto longo** ficam apertadas; em 4:3 há altura sobrando: empilhe com `direction={{ base: 'row', tall: 'column' }}`. Nunca escreva um arquivo por tamanho, nem ternário sobre `ctx.aspect`/`ctx.scale`: use valor responsivo (§2).
+- **`{ tall: 24 }` sem `base`** é erro (não compila; de JS, erro de estrutura). Sempre `{ base: 20, tall: 24 }`.
+- **`wide` vence `tall`**: num tamanho que é os dois, `{ base: 20, tall: 24, wide: 26 }` dá 26. O preset `wide` (960×540) **não** é `tall`; 16x10 **é**.
+- **`paginate` em row ou absoluto**: absoluto é erro de estrutura. Numa row a divisão é **por colunas**: os itens encolhem na largura e a parte fica com quantos cabem sem partir palavra ou estourar a altura (8 textos numa row viram 2 slides de 4 colunas estreitas). Para lista, pagine uma coluna; um Box paginate por slide.
 - **`\n` para quebrar linha**: não precisa (a quebra é automática); `\n` cria parágrafo novo.
 - **Fonte diferente de Arial sem registrar** → `font-missing` (error), e nenhum outro diagnóstico desse Text. Omita `font` ou registre a família em `fonts` (§4 "Fontes").
 - **`position="absolute"` para posicionar conteúdo**: não faça; absoluto é só decoração (não participa do layout nem dos diagnósticos de caixa). Conteúdo vai em fluxo.

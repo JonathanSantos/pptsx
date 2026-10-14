@@ -1,5 +1,6 @@
-import { Box, Text } from 'pptsx';
+import { Box, Text, type Responsive } from 'pptsx';
 import { tokens } from '../tokens.ts';
+import { mapResponsive } from './responsive.ts';
 
 export type KpiSize = 'sm' | 'md' | 'lg';
 export type KpiTrend = 'up' | 'down';
@@ -13,8 +14,11 @@ export interface KpiCardProps {
   readonly trend?: KpiTrend;
   /** Se a variação é boa ou ruim: define a cor. Padrão: up → positive, down → negative, sem trend → neutral. */
   readonly sentiment?: KpiSentiment;
-  /** Escala do cartão; padrão 'md'. Use 'sm' para 4+ cartões ou valores longos, 'lg' com largura/altura sobrando. */
-  readonly size?: KpiSize;
+  /**
+   * Escala do cartão; padrão 'md'. Use 'sm' para 4+ cartões ou valores longos, 'lg' com largura/altura sobrando.
+   * Aceita `{ base: 'md', tall: 'lg' }`.
+   */
+  readonly size?: Responsive<KpiSize>;
   /**
    * Variação na mesma linha do valor, alinhada pela baseline ("52,4  ▲ +14,2%").
    * Padrão false (variação embaixo). Use com variações curtas: a linha precisa caber valor + variação.
@@ -25,7 +29,8 @@ export interface KpiCardProps {
 const { color, font, space } = tokens;
 
 /** Medidas por tamanho (pt). md é o cartão original; sm e lg escalam padding e tipografia juntos. */
-const SIZES: Readonly<Record<KpiSize, { padding: number; gap: number; label: number; value: number; minValue: number }>> = {
+type KpiMetrics = { padding: number; gap: number; label: number; value: number; minValue: number };
+const SIZES: Readonly<Record<KpiSize, KpiMetrics>> = {
   sm: { padding: space.tight + 4, gap: space.tight * 0.6, label: font.caption + 1, value: font.h1, minValue: 22 },
   md: { padding: space.gap, gap: space.tight, label: font.small, value: font.display, minValue: 28 },
   lg: { padding: space.gap, gap: space.tight * 1.2, label: font.small + 2, value: font.display + 12, minValue: 36 },
@@ -50,7 +55,9 @@ const trendMark = (trend: KpiTrend | undefined): string =>
  * grow={1}: numa KpiRow os cartões dividem a largura igualmente e esticam na altura.
  */
 export function KpiCard({ label, value, delta, trend, sentiment, size = 'md', inlineDelta = false }: KpiCardProps) {
-  const s = SIZES[size];
+  // Cada medida deriva de size chave a chave: um size responsivo continua responsivo até a primitiva.
+  const metric = (key: keyof KpiMetrics): Responsive<number> => mapResponsive(size, (k) => SIZES[k][key]);
+  const s = { padding: metric('padding'), gap: metric('gap'), label: metric('label'), value: metric('value'), minValue: metric('minValue') };
   const deltaColor = SENTIMENT_COLOR[sentiment ?? defaultSentiment(trend)];
   const valueText = <Text size={s.value} weight="bold" color={color.ink} minSize={s.minValue}>{value}</Text>;
   const deltaText = delta ? (
