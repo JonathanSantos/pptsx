@@ -108,6 +108,9 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M13 | M13-6 | Deck footer + SlideNumber (campo slidenum; duas caixas em n / total por causa do Keynote) | ✅ |
 | M13 | M13-7 | fontSize/fontFamily por Span — **go**: 10/10 no Keynote, calibração rica 43/43 | ✅ |
 | M13 | M13-8 | guia, README "Texto", receitas, agente virgem (exit 0 sem error/warning no 1º build); versão 0.3.0 | ✅ |
+| M14 | M14-1…5 | gráficos novos (barH, empilhados, área, doughnut, scatter, combo), eixos/legenda/rótulos; células com merge, estilo e rich text; `Table paginate`; guia e validação (plano em M14.md) | ⬜ |
+| M15 | M15-1…5 | tema de cores/fontes (pós-processamento), seções, slide oculto, notas formatadas, propriedades, masters com placeholders opt-in; guia e validação (plano em M15.md) | ⬜ |
+| M16 | M16-1…6 | dívidas (baseline, rotação herdada, loader, keynote-export, audit, watch), visão única do nó, `pptsx-mcp`, `preview --serve`, `lint --fix`, CI e changelog (plano em M16.md) | ⬜ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
 
