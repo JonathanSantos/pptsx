@@ -15,7 +15,7 @@ import { measureInputOf } from '../layout/index.ts';
 import { brokenWordsOf } from '../text/index.ts';
 import { attributeCauses } from './cause.ts';
 import type { Overflow } from './detect.ts';
-import { boxOverflow, cellOverflow, fontMissing, imageUpscaled, outOfSlide, textTruncated, textWordBroken } from './diagnostics.ts';
+import { boxOverflow, cellOverflow, fontMissing, fontWeightFallback, imageUpscaled, outOfSlide, textTruncated, textWordBroken } from './diagnostics.ts';
 import type { DiagnosticContext } from './diagnostics.ts';
 import { containerExcessOf, sidesOutside } from './geometry.ts';
 import type { Container } from './geometry.ts';
@@ -81,6 +81,15 @@ const wordBrokenDiagnostics = (text: PositionedText, plan: ShrinkPlan, ctx: Diag
   return [textWordBroken(ctx, text.path, { words, from: plan.from, to, width: text.frame.width })];
 };
 
+/** M13: um aviso por par (pedido, usado) no Text: dois Spans com o mesmo problema não repetem. */
+const weightFallbacksOf = (text: PositionedText, ctx: DiagnosticContext): readonly Diagnostic[] => {
+  const pairs = (text.text.faces ?? []).flatMap((face) => (face.requested === undefined ? [] : [`${face.requested}:${face.weight}`]));
+  return [...new Set(pairs)].map((pair) => {
+    const [requested, used] = pair.split(':').map(Number) as [number, number];
+    return fontWeightFallback(ctx, text.path, textStyleOf(text.props).family, { requested, used });
+  });
+};
+
 interface TextOverflows {
   readonly height: Overflow | undefined;
   readonly width: Overflow | undefined;
@@ -105,6 +114,7 @@ const textDiagnostics = (
   };
   return [
     ...plan.policy.diagnose(outcome, ctx),
+    ...weightFallbacksOf(text, ctx),
     ...(text.text.truncated ? [textTruncated(ctx, text.path, truncationOf(text, env))] : []),
     ...wordBrokenDiagnostics(text, plan, ctx),
   ];

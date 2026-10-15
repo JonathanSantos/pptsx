@@ -1,4 +1,4 @@
-import { DEFAULTS, imageFitOf, strokeColorOf, textStyleOf } from '../core/defaults.ts';
+import { DEFAULTS, imageFitOf, strokeColorOf, textStyleOf, weightValueOf } from '../core/defaults.ts';
 import type {
   Color,
   FontWeight,
@@ -9,6 +9,7 @@ import type {
   PositionedText,
   Pt,
   Rect,
+  RunFace,
   ShapeKind,
   ShapeProps,
   StrokeProps,
@@ -205,6 +206,8 @@ interface SvgRunStyle {
   /** M11: `textDecoration` do Text ou do Span, como no run do PPTX. */
   readonly underline?: boolean;
   readonly lineThrough?: boolean;
+  /** M13: família da face escolhida (resvg), quando difere da do Text. */
+  readonly family?: string;
 }
 
 const textDecorationOf = (style: SvgRunStyle): string | undefined => {
@@ -212,8 +215,17 @@ const textDecorationOf = (style: SvgRunStyle): string | undefined => {
   return parts.length === 0 ? undefined : parts.join(' ');
 };
 
+/** 400/700 com os nomes de sempre; os outros pesos numéricos (o resvg escolhe a face por eles). */
+const fontWeightAttr = (weight: FontWeight): string | number => {
+  const value = weightValueOf(weight);
+  if (value === DEFAULTS.text.weights.bold) return 'bold';
+  if (value === DEFAULTS.text.weights.regular) return 'normal';
+  return value;
+};
+
 const runStyleAttrs = (style: SvgRunStyle): Attrs => ({
-  'font-weight': style.weight === 'bold' ? 'bold' : 'normal',
+  'font-family': style.family,
+  'font-weight': fontWeightAttr(style.weight),
   'font-style': style.italic ? 'italic' : 'normal',
   fill: style.color,
   'text-decoration': textDecorationOf(style),
@@ -222,12 +234,22 @@ const runStyleAttrs = (style: SvgRunStyle): Attrs => ({
 const tspanOf = (text: string, style: SvgRunStyle): string =>
   element('tspan', { ...runStyleAttrs(style), 'xml:space': 'preserve' }, escapeXml(text));
 
+/** M13: a face que o medidor usou decide o peso e, fora de 400/700, a família do tspan. */
+const withFace = (style: SvgRunStyle, face: RunFace | undefined, baseFamily: string): SvgRunStyle => {
+  if (face === undefined) return style;
+  const family = face.previewFamily === baseFamily ? undefined : face.previewFamily;
+  return { ...style, weight: face.weight, ...(family === undefined ? {} : { family }) };
+};
+
 /** Um tspan por LineRun; sem lineRuns, a linha inteira num tspan com o estilo do Text. */
-const lineTspansOf = (node: PositionedText, base: SvgRunStyle): readonly string[] => {
+const lineTspansOf = (node: PositionedText, base: SvgRunStyle, baseFamily: string): readonly string[] => {
   const lineRuns = lineRunsOf(node.text);
-  if (lineRuns === undefined) return node.text.lines.map((line) => tspanOf(line, base));
+  const faces = node.text.faces;
+  if (lineRuns === undefined) return node.text.lines.map((line) => tspanOf(line, withFace(base, faces?.[0], baseFamily)));
   const runs = textRunsOf(node);
-  return lineRuns.map((pieces) => pieces.map((piece) => tspanOf(piece.text, runs[piece.run] ?? base)).join(''));
+  return lineRuns.map((pieces) =>
+    pieces.map((piece) => tspanOf(piece.text, withFace(runs[piece.run] ?? base, faces?.[piece.run], baseFamily))).join(''),
+  );
 };
 
 /**
@@ -241,16 +263,16 @@ export const textSvg = (node: PositionedText, options: TextSvgOptions = {}): str
   const base: SvgRunStyle = { weight: style.weight, italic: style.italic, color: node.props.color ?? DEFAULTS.text.color, underline, lineThrough };
   const { anchor, offset } = ANCHORS[node.props.align ?? DEFAULTS.text.align];
   const { lineHeight, ascent, fontSize } = node.text;
+  const baseFamily = options.fontFamilyMap?.[style.family] ?? style.family;
   const common: Attrs = {
     x: node.frame.x + node.frame.width * offset,
     'text-anchor': anchor,
-    'font-family': options.fontFamilyMap?.[style.family] ?? style.family,
     'font-size': fontSize,
     'letter-spacing': node.css.letterSpacing === 0 ? undefined : node.css.letterSpacing,
-    ...runStyleAttrs({ ...base, underline: false, lineThrough: false }),
+    ...runStyleAttrs({ ...base, underline: false, lineThrough: false, family: baseFamily }),
     'xml:space': 'preserve',
   };
-  return lineTspansOf(node, base)
+  return lineTspansOf(node, base, baseFamily)
     .map((tspans, i) => element('text', { ...common, y: node.frame.y + i * lineHeight + ascent }, tspans))
     .join('');
 };

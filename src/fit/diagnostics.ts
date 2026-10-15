@@ -192,6 +192,16 @@ export const fontMissing = (ctx: DiagnosticContext, path: string, style: TextSty
   });
 };
 
+/** M13: peso pedido sem face próxima; o texto sai com a face de `used`. */
+export const fontWeightFallback = (ctx: DiagnosticContext, path: string, family: string, weights: { readonly requested: number; readonly used: number }): Diagnostic =>
+  make(ctx, {
+    severity: 'warning',
+    code: 'font-weight-fallback',
+    path,
+    message: `Peso ${weights.requested} de "${family}" não tem face registrada; o texto sai com a face de peso ${weights.used}. Registre a face desse peso em options.fonts (ex.: { family: "${family}", weight: ${weights.requested}, file: "…" }) ou use um peso disponível.`,
+    data: { requestedWeight: weights.requested, usedWeight: weights.used },
+  });
+
 // ───────── Table (M10): mesmos códigos do Text, mensagens próprias (o autor age em linhas/colunas/células).
 
 const TABLE_ADVICE = 'Reduza linhas/colunas, encurte o texto das células, aumente a área';

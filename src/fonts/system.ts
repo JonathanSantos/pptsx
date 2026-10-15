@@ -35,6 +35,8 @@ export interface ResolvedFontFaces {
 const FONT_EXTENSIONS: ReadonlySet<string> = new Set(['.ttf', '.otf', '.ttc']);
 const BOLD_WEIGHT_CLASS = 600;
 const TARGET_WEIGHT_CLASS = { regular: 400, bold: 700 } as const;
+/** Meio passo de peso: 'Inter Medium' (500) não responde por 600. */
+const NUMERIC_WEIGHT_SLACK = 50;
 
 export const normalizeFamily = (family: string): string => family.trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -150,9 +152,10 @@ export const findSystemFont = (
 ): SystemFontEntry | undefined => {
   const wanted = normalizeFamily(family);
   const bold = weight === 'bold';
-  const candidates = index.entries.filter(
-    (entry) => entry.family === wanted && entry.bold === bold && entry.italic === italic,
-  );
+  // M13: peso numérico = a face daquele peso (usWeightClass a até meio passo); 'regular'/'bold' como antes.
+  const sameWeight = (entry: SystemFontEntry): boolean =>
+    typeof weight === 'number' ? Math.abs(entry.weightClass - weight) <= NUMERIC_WEIGHT_SLACK : entry.bold === bold;
+  const candidates = index.entries.filter((entry) => entry.family === wanted && sameWeight(entry) && entry.italic === italic);
   return [...candidates].sort((a, b) => rankOf(a, weight) - rankOf(b, weight))[0];
 };
 

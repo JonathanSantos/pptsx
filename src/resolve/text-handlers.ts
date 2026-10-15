@@ -15,9 +15,8 @@ const parseFontFamily = (value: unknown): string | undefined => {
 
 export const fontWeight: Handler = (draft, value, key) => {
   const weight = parseFontWeight(value);
-  if (weight === undefined) return reject(draft, key, value, INVALID);
-  const next = { ...draft, text: { ...draft.text, weight: weight.weight } };
-  return weight.exact ? next : reject(next, key, value, `a engine só tem regular e bold; sai como ${weight.weight}`);
+  if (weight === undefined) return reject(draft, key, value, 'use bold, normal ou um número de 1 a 1000');
+  return { ...draft, text: { ...draft.text, weight } };
 };
 
 const fontStyle: Handler = (draft, value, key) => {

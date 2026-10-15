@@ -67,9 +67,12 @@ describe('createFontRegistry — italic fallback', () => {
     expect(psName(registry.get('Arial', 'bold', true))).toBe('LiberationSans-Bold');
   });
 
-  it('a missing weight is not filled by another weight', () => {
+  // M13 (CSS Fonts §5.2): peso ausente usa a face mais próxima; só família ausente dá undefined.
+  it('a missing weight falls back to the nearest registered weight', () => {
     const onlyRegular = createFontRegistry([ALL_FACES[0]!]);
-    expect(onlyRegular.get('Arial', 'bold', false)).toBeUndefined();
+    expect(psName(onlyRegular.get('Arial', 'bold', false))).toBe('LiberationSans');
+    expect(onlyRegular.match('Arial', 'bold', false)?.weight).toBe(400);
+    expect(onlyRegular.get('Helvetica', 'regular', false)).toBeUndefined();
   });
 });
 

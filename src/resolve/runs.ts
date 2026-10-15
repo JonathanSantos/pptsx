@@ -17,8 +17,10 @@ export type RunStyle = Omit<TextRun, 'text'>;
 
 const TEXT_CHILD_ERROR = '<Text> só aceita strings, números e <Span>/<B>/<I> como filhos';
 
-const spanWeightOf = (span: CssSpanProps): FontWeight | undefined =>
-  span.weight ?? (span.fontWeight === undefined ? undefined : parseFontWeight(span.fontWeight)?.weight);
+const spanWeightOf = (span: CssSpanProps): FontWeight | undefined => {
+  const raw = span.weight ?? span.fontWeight;
+  return raw === undefined ? undefined : parseFontWeight(raw);
+};
 
 const spanItalicOf = (span: CssSpanProps): boolean | undefined =>
   span.italic ?? (span.fontStyle === undefined ? undefined : span.fontStyle === 'italic');

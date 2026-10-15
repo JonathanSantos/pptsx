@@ -303,14 +303,16 @@ describe('createFontkitMeasurer — fontMissing', () => {
     expect(r.fontSize).toBe(20);
   });
 
-  it('unregistered weight → fontMissing true', () => {
+  // M13: peso sem face usa a mais próxima e marca o pedido (font-weight-fallback no fit).
+  it('unregistered weight → nearest face, requested weight recorded, no fontMissing', () => {
     const onlyRegular = createFontRegistry([FACES[0]!]);
     const r = createFontkitMeasurer(onlyRegular, { safety: 1 })({
       content: 'x',
       style: style({ weight: 'bold' }),
       maxWidth: Infinity,
     });
-    expect(r.fontMissing).toBe(true);
+    expect(r.fontMissing).toBe(false);
+    expect(r.faces?.[0]).toMatchObject({ weight: 400, requested: 700, bold: false });
   });
 
   it('italic without an italic face falls back to upright, without fontMissing', () => {

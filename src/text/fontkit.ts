@@ -1,12 +1,12 @@
 import type { Font } from 'fontkit';
-import { DEFAULTS } from '../core/defaults.ts';
-import type { Pt, TextLayout, TextMeasureInput, TextMeasurer } from '../core/types.ts';
+import { DEFAULTS, weightValueOf } from '../core/defaults.ts';
+import type { FontWeight, Pt, RunFace, TextLayout, TextMeasureInput, TextMeasurer } from '../core/types.ts';
 import { brokenWordsOf } from './broken.ts';
 import { createEstimateMeasurer } from './estimate.ts';
 import { lineBoxOf, spacingOf, type LineBox } from './leading.ts';
 import { layoutText } from './lines.ts';
 import type { MeasureRun } from './pieces.ts';
-import type { FontRegistry } from './registry.ts';
+import type { FaceMatch, FontRegistry } from './registry.ts';
 import { runsOfInput } from './source.ts';
 
 export interface FontkitMeasurerOptions {
@@ -78,6 +78,26 @@ const metricsOf = (font: Font): VerticalMetrics => ({
 const boxWidthOf = (widest: Pt, maxWidth: Pt, safety: number, nowrap: boolean): Pt =>
   nowrap ? widest / safety : Math.min(widest / safety, maxWidth);
 
+const { regular: NORMAL, bold: BOLD } = DEFAULTS.text.weights;
+
+/**
+ * M13: o que o PPTX recebe para a face escolhida. 400/700 = família do autor + flag negrito;
+ * outro peso = nome de família da própria face (name ID 1, ex.: "Inter SemiBold") sem negrito,
+ * que é como PowerPoint/Keynote acham a face instalada ou embutida.
+ */
+export const runFaceOf = (family: string, match: FaceMatch, wanted: FontWeight): RunFace => {
+  const canonical = match.weight === NORMAL || match.weight === BOLD;
+  const requested = weightValueOf(wanted);
+  const previewFamily = match.font.getName('preferredFamily', 'en') ?? match.font.familyName;
+  return {
+    typeface: canonical ? family : match.font.familyName,
+    bold: match.weight === BOLD,
+    weight: match.weight,
+    previewFamily,
+    ...(Math.abs(requested - match.weight) > DEFAULTS.text.weightTolerance ? { requested } : {}),
+  };
+};
+
 const measureWithFonts = (
   metricsFont: Font,
   measure: MeasureRun,
@@ -121,9 +141,12 @@ export const createFontkitMeasurer = (registry: FontRegistry, options: FontkitMe
 
   return (input) => {
     const { family, size, weight, italic } = input.style;
-    const found = runsOfInput(input).map((run) => registry.get(family, run.weight, run.italic));
+    const runs = runsOfInput(input);
+    const matches = runs.map((run) => registry.match(family, run.weight, run.italic));
+    const found = matches.map((match) => match?.font);
     const fonts = found.filter((font): font is Font => font !== undefined);
     if (fonts.length !== found.length) return { ...estimate(input), fontMissing: true };
+    const faces = matches.map((match, index) => runFaceOf(family, match!, runs[index]!.weight));
     const [firstFont] = fonts;
     // A altura da linha é única e vem da face do estilo; se só as faces dos runs existem
     // (ex.: <Text font="X"><B>…</B></Text> com X só em bold), usa-se a do primeiro run.
@@ -132,6 +155,6 @@ export const createFontkitMeasurer = (registry: FontRegistry, options: FontkitMe
     const spacing = input.letterSpacing ?? 0;
     const widths = fonts.map((font) => measureWidthOf(unitWidthOf(font), font.unitsPerEm, size, spacing));
     const measure: MeasureRun = (text, run) => widths[run]?.(text) ?? 0;
-    return measureWithFonts(metricsFont, measure, input, safety);
+    return { ...measureWithFonts(metricsFont, measure, input, safety), faces };
   };
 };

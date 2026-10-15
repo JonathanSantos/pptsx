@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { imageSize } from 'image-size';
 import { resolveAssetPath } from './core/assets.ts';
-import { DEFAULTS, textStyleOf } from './core/defaults.ts';
+import * as fontkit from 'fontkit';
+import { canonicalWeightOf, DEFAULTS, textStyleOf, weightValueOf } from './core/defaults.ts';
 import type {
   DeckDefinition,
   Diagnostic,
@@ -137,15 +138,16 @@ const textNodesOf = (nodes: readonly PositionedNode[]): readonly PositionedText[
   });
 
 // `runs` pode faltar em árvores de antes do M8-A: vale um run com o estilo do próprio Text.
+// M13: o peso é o da face que o medidor usou (um 500 sem face embute a de 400 ou 600 escolhida).
 const faceUsesOf = (node: PositionedText): readonly FaceUse[] => {
   const style = textStyleOf(node.props);
   const runs: readonly Pick<FaceUse, 'weight' | 'italic'>[] = node.runs ?? [{ weight: style.weight, italic: style.italic }];
-  return runs.map((run) => ({ family: style.family, weight: run.weight, italic: run.italic }));
+  return runs.map((run, index) => ({ family: style.family, weight: node.text.faces?.[index]?.weight ?? run.weight, italic: run.italic }));
 };
 
 const isFaceOf = (face: FontFace, use: FaceUse): boolean =>
   normalizeFamily(face.family) === normalizeFamily(use.family) &&
-  face.weight === use.weight &&
+  weightValueOf(face.weight) === weightValueOf(use.weight) &&
   (face.italic ?? false) === use.italic;
 
 // Mesma regra do registro de medição: itálico ausente cai para a face reta do mesmo peso.
@@ -183,7 +185,20 @@ const embedCheckOf = (face: FileFontFace): EmbedCheck => {
   if (!isEmbeddable(fsTypeOf(data))) {
     return { problem: `A fonte "${label}" não permite embed (fsType restrito) e não foi embutida.` };
   }
-  return { font: { family: face.family, weight: face.weight, italic: face.italic ?? false, eot: eotOf(data, face.family) } };
+  // M13: face fora de 400/700 vai sob o nome da própria face ("Inter SemiBold"), como regular: é esse o typeface dos runs.
+  const canonical = canonicalWeightOf(face.weight);
+  if (typeof canonical === 'number') {
+    const family = faceFamilyNameOf(face);
+    return { font: { family, weight: 'regular', italic: face.italic ?? false, eot: eotOf(data, family) } };
+  }
+  return { font: { family: face.family, weight: canonical, italic: face.italic ?? false, eot: eotOf(data, face.family) } };
+};
+
+/** Nome de família (name ID 1) da face no arquivo. */
+const faceFamilyNameOf = (face: FileFontFace): string => {
+  const loaded = face.postscriptName ? fontkit.openSync(face.file, face.postscriptName) : fontkit.openSync(face.file);
+  const font = 'fonts' in loaded ? loaded.fonts[0] : loaded;
+  return font?.familyName ?? face.family;
 };
 
 const notEmbeddable = (size: string, message: string): Diagnostic => ({

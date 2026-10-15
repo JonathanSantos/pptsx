@@ -36,6 +36,8 @@ const identityOf = (diagnostic: Diagnostic): string =>
     diagnostic.data?.toSize ?? '',
     // Altura e largura do mesmo Text são problemas diferentes (ações diferentes).
     diagnostic.data?.axis ?? '',
+    diagnostic.data?.requestedWeight ?? '',
+    diagnostic.data?.usedWeight ?? '',
     MESSAGE_IDENTITY.has(diagnostic.code) ? diagnostic.message : '',
   ].join('\u0000');
 

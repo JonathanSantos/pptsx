@@ -152,9 +152,10 @@ describe('css-not-emitted', () => {
     expect(messages).toContain('Slide > Box[1]: A propriedade CSS boxShadow');
   });
 
-  it('fontWeight other than 400/700 warns it becomes regular/bold', () => {
+  // M13: pesos numéricos escolhem a face mais próxima; sem face exata o aviso é font-weight-fallback.
+  it('fontWeight other than 400/700 is not css-not-emitted', () => {
     const { diagnostics } = cssFit(deckOf(<Slide><Text fontWeight={500}>x</Text></Slide>), '16x9');
-    expect(diagnostics.map((d) => d.message).join()).toContain('sai como regular');
+    expect(diagnostics.filter((d) => d.code === 'css-not-emitted')).toEqual([]);
   });
 });
 

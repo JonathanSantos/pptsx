@@ -138,10 +138,12 @@ describe('fontkit measurer — runs change the measured width', () => {
     expect(r.width).toBeCloseTo(widthIn(BOLD, 'um', SIZE) + widthIn(BOLD, ' ', SIZE) + widthIn(BOLD, 'dois', SIZE), 1);
   });
 
-  it('fontMissing when any face used by a run is not registered', () => {
+  // M13: só família ausente é fontMissing; peso ausente usa a face mais próxima.
+  it('a run whose weight has no face uses the nearest one (faces[] records the request)', () => {
     const regularOnly = createFontkitMeasurer(createFontRegistry(DEFAULT_FONTS.filter((f) => f.weight === 'regular')));
-    expect(measureRuns(regularOnly, [run('a ')], Infinity).fontMissing).toBe(false);
-    expect(measureRuns(regularOnly, [run('a '), run('b', 'bold')], Infinity).fontMissing).toBe(true);
+    const r = measureRuns(regularOnly, [run('a '), run('b', 'bold')], Infinity);
+    expect(r.fontMissing).toBe(false);
+    expect(r.faces?.map((face) => face.requested)).toEqual([undefined, 700]);
   });
 
   it('an empty line has lineRuns []', () => {

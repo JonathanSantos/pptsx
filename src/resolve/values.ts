@@ -1,5 +1,5 @@
-import { DEFAULTS } from '../core/defaults.ts';
-import type { BorderStyle, GridLine, GridPlacement, Len, MarginLen, Shadow, Sides } from '../core/types.ts';
+import { canonicalWeightOf, DEFAULTS } from '../core/defaults.ts';
+import type { BorderStyle, FontWeight, GridLine, GridPlacement, Len, MarginLen, Shadow, Sides } from '../core/types.ts';
 
 /**
  * Parsers puros de valores CSS (strings como o autor escreve) para valores normalizados.
@@ -303,12 +303,17 @@ export const parseGridPlacement = (value: unknown): GridPlacement | undefined =>
 
 // ───────────── texto ─────────────
 
-/** `bold`, `normal`, número; a engine só tem regular/bold, `exact` diz se não perdeu nada. */
-export const parseFontWeight = (value: unknown): { readonly weight: 'regular' | 'bold'; readonly exact: boolean } | undefined => {
-  if (value === 'bold') return { weight: 'bold', exact: true };
-  if (value === 'normal' || value === 'regular') return { weight: 'regular', exact: true };
+const MIN_WEIGHT = 1;
+const MAX_WEIGHT = 1000;
+
+/**
+ * M13: `bold`, `normal`/`regular` ou número de 1 a 1000 (CSS Fonts 4), já na forma canônica
+ * (400 → 'regular', 700 → 'bold'). A face usada é escolhida na medição.
+ */
+export const parseFontWeight = (value: unknown): FontWeight | undefined => {
+  if (value === 'bold') return 'bold';
+  if (value === 'normal' || value === 'regular') return 'regular';
   const numeric = typeof value === 'number' ? value : typeof value === 'string' && isNumberToken(value) ? Number(value) : undefined;
-  if (numeric === undefined) return undefined;
-  const weight = numeric >= DEFAULTS.css.boldWeightFrom ? 'bold' : 'regular';
-  return { weight, exact: numeric === DEFAULTS.css.regularWeight || numeric === DEFAULTS.css.boldWeight };
+  if (numeric === undefined || !Number.isFinite(numeric) || numeric < MIN_WEIGHT || numeric > MAX_WEIGHT) return undefined;
+  return canonicalWeightOf(numeric);
 };

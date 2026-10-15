@@ -1,6 +1,6 @@
 import type * as Pptx from './pptx.ts';
 import { DEFAULTS, textStyleOf } from '../core/defaults.ts';
-import type { Color, LineBreaks, LineRun, PositionedText, TextLayout, TextRun } from '../core/types.ts';
+import type { Color, FontWeight, LineBreaks, LineRun, PositionedText, RunFace, TextLayout, TextRun } from '../core/types.ts';
 
 /**
  * Texto → runs do pptxgenjs (M8: rich text). Funções puras.
@@ -28,6 +28,8 @@ export interface RunStyle {
   /** M11: `textDecoration` do Text ou do Span. */
   readonly underline: boolean;
   readonly lineThrough: boolean;
+  /** M13: `<a:latin typeface>` do run quando difere da caixa (face de peso não 400/700). */
+  readonly typeface?: string;
 }
 
 /** Pedaço de texto com estilo: vira um <a:r>. */
@@ -42,14 +44,29 @@ export type StyledParagraph = readonly StyledLine[];
 /** pptxgenjs espera hex sem '#'. */
 export const hexOf = (color: Color): string => color.replace(/^#/, '').toUpperCase();
 
+/**
+ * M13: a face que o medidor escolheu decide o negrito e o nome no PPTX; sem ela (árvore montada à
+ * mão, estimativa), vale o peso pedido, como antes.
+ */
+const faceStyleOf = (face: RunFace | undefined, weight: FontWeight, family: string): Pick<RunStyle, 'bold' | 'typeface'> => {
+  if (face === undefined) return { bold: weight === 'bold' };
+  return face.typeface === family ? { bold: face.bold } : { bold: face.bold, typeface: face.typeface };
+};
+
 export const baseStyleOf = (node: PositionedText): RunStyle => {
   const style = textStyleOf(node.props);
   const { underline, lineThrough } = node.css.textDecoration;
-  return { bold: style.weight === 'bold', italic: style.italic, color: hexOf(node.props.color ?? DEFAULTS.text.color), underline, lineThrough };
+  return {
+    ...faceStyleOf(node.text.faces?.[0], style.weight, style.family),
+    italic: style.italic,
+    color: hexOf(node.props.color ?? DEFAULTS.text.color),
+    underline,
+    lineThrough,
+  };
 };
 
-const runStyleOf = (run: TextRun): RunStyle => ({
-  bold: run.weight === 'bold',
+const runStyleOf = (run: TextRun, face: RunFace | undefined, family: string): RunStyle => ({
+  ...faceStyleOf(face, run.weight, family),
   italic: run.italic,
   color: hexOf(run.color),
   underline: run.underline ?? false,
@@ -63,9 +80,17 @@ const textRunsOf = (node: PositionedText): readonly TextRun[] => (Array.isArray(
 export const lineRunsOf = (layout: TextLayout): readonly (readonly LineRun[])[] | undefined =>
   Array.isArray(layout.lineRuns) && layout.lineRuns.length === layout.lines.length ? layout.lineRuns : undefined;
 
-const styleAt = (runs: readonly TextRun[], index: number, base: RunStyle): RunStyle => {
-  const run = runs[index];
-  return run === undefined ? base : runStyleOf(run);
+interface RunContext {
+  readonly runs: readonly TextRun[];
+  readonly faces: readonly RunFace[] | undefined;
+  readonly family: string;
+}
+
+const contextOf = (node: PositionedText): RunContext => ({ runs: textRunsOf(node), faces: node.text.faces, family: textStyleOf(node.props).family });
+
+const styleAt = (ctx: RunContext, index: number, base: RunStyle): RunStyle => {
+  const run = ctx.runs[index];
+  return run === undefined ? base : runStyleOf(run, ctx.faces?.[index], ctx.family);
 };
 
 const lastOf = <T>(items: readonly T[]): T | undefined => items[items.length - 1];
@@ -73,7 +98,12 @@ const lastOf = <T>(items: readonly T[]): T | undefined => items[items.length - 1
 const replaceLast = <T>(items: readonly T[], item: T): readonly T[] => [...items.slice(0, -1), item];
 
 const sameStyle = (a: RunStyle, b: RunStyle): boolean =>
-  a.bold === b.bold && a.italic === b.italic && a.color === b.color && a.underline === b.underline && a.lineThrough === b.lineThrough;
+  a.bold === b.bold &&
+  a.italic === b.italic &&
+  a.color === b.color &&
+  a.underline === b.underline &&
+  a.lineThrough === b.lineThrough &&
+  a.typeface === b.typeface;
 
 /** Funde pedaços vizinhos com o mesmo estilo (ex.: um run que atravessou linhas). */
 export const mergeAdjacent = (line: StyledLine): StyledLine =>
@@ -91,16 +121,16 @@ const groupByParagraph = <T>(items: readonly T[], paragraphs: readonly (readonly
   return paragraphs.map((lines, index) => items.slice(starts[index], (starts[index] ?? 0) + lines.length));
 };
 
-const styledLineOf = (lineRuns: readonly LineRun[], runs: readonly TextRun[], base: RunStyle): StyledLine =>
-  lineRuns.map((lineRun) => ({ text: lineRun.text, style: styleAt(runs, lineRun.run, base) }));
+const styledLineOf = (lineRuns: readonly LineRun[], ctx: RunContext, base: RunStyle): StyledLine =>
+  lineRuns.map((lineRun) => ({ text: lineRun.text, style: styleAt(ctx, lineRun.run, base) }));
 
 /** Linhas calculadas por parágrafo, cada uma dividida pelos runs. */
 export const computedParagraphsOf = (node: PositionedText, base: RunStyle = baseStyleOf(node)): readonly StyledParagraph[] => {
   const { paragraphs } = node.text;
   const lineRuns = lineRunsOf(node.text);
   if (lineRuns === undefined) return paragraphs.map((lines) => lines.map((text) => [{ text, style: base }]));
-  const runs = textRunsOf(node);
-  return groupByParagraph(lineRuns, paragraphs).map((lines) => lines.map((line) => styledLineOf(line, runs, base)));
+  const ctx = contextOf(node);
+  return groupByParagraph(lineRuns, paragraphs).map((lines) => lines.map((line) => styledLineOf(line, ctx, base)));
 };
 
 // ───────────── 'auto' ─────────────
@@ -166,9 +196,9 @@ export const normalizeParagraph = (pieces: StyledLine): StyledLine =>
   trimEnd(pieces.reduce(appendNormalized, { pieces: [], open: true }).pieces);
 
 const authorPiecesOf = (node: PositionedText, base: RunStyle): StyledLine => {
-  const runs = textRunsOf(node);
-  if (runs.length === 0) return [{ text: node.content, style: base }];
-  return runs.map((run) => ({ text: run.text, style: runStyleOf(run) }));
+  const ctx = contextOf(node);
+  if (ctx.runs.length === 0) return [{ text: node.content, style: base }];
+  return ctx.runs.map((run, index) => ({ text: run.text, style: styleAt(ctx, index, base) }));
 };
 
 /**
@@ -197,6 +227,7 @@ const pptxRunOf = (piece: StyledText, softBreakBefore: boolean, breakLine: boole
     bold: piece.style.bold,
     italic: piece.style.italic,
     color: piece.style.color,
+    ...(piece.style.typeface === undefined ? {} : { fontFace: piece.style.typeface }),
     // M11: decoração (Span e textDecoration) só quando ligada; a caixa nunca leva underline/strike.
     ...(piece.style.underline ? { underline: { style: 'sng' as const } } : {}),
     ...(piece.style.lineThrough ? { strike: 'sngStrike' as const } : {}),

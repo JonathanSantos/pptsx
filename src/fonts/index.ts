@@ -14,12 +14,15 @@ export const DEFAULT_FONTS: readonly FileFontFace[] = [
 ];
 
 // Com postscriptName o fontkit devolve a face daquela coleção (ou null se não existir: cai na 1ª).
+// M13: a família tipográfica (name ID 16) agrupa os pesos ("Inter" para Inter SemiBold); sem ela, a ID 1.
 const internalFamilyOf = (face: FileFontFace): string => {
   const selected: fontkit.Font | fontkit.FontCollection | null = face.postscriptName
     ? fontkit.openSync(face.file, face.postscriptName)
     : null;
   const loaded = selected ?? fontkit.openSync(face.file);
-  return 'fonts' in loaded ? (loaded.fonts[0]?.familyName ?? '') : loaded.familyName;
+  const font = 'fonts' in loaded ? loaded.fonts[0] : loaded;
+  if (font === undefined) return '';
+  return font.getName('preferredFamily', 'en') ?? font.familyName;
 };
 
 const hasFile = (face: FontFace): face is FileFontFace => face.file !== undefined;
@@ -30,7 +33,13 @@ const hasFile = (face: FontFace): face is FileFontFace => face.file !== undefine
  * Faces sem `file` (não resolvidas) ficam de fora.
  */
 export const fontFamilyMapOf = (faces: readonly FontFace[]): Readonly<Record<string, string>> =>
-  Object.fromEntries(faces.filter(hasFile).map((face) => [face.family, internalFamilyOf(face)]));
+  Object.fromEntries(
+    faces
+      .filter(hasFile)
+      // A 1ª face de cada família vence (é a que o deck lista primeiro, em geral a regular).
+      .filter((face, index, all) => all.findIndex((other) => other.family === face.family) === index)
+      .map((face) => [face.family, internalFamilyOf(face)]),
+  );
 
 export {
   createSystemFontIndex,
