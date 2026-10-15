@@ -10,9 +10,11 @@ Origem: `docs/work/reports/REVIEW-2026-10-13.md`. Cada marco segue o fluxo de `d
 | [M9](M9.md) | Props responsivas por breakpoint; slide de continuação | Tira os ternários do deck e resolve listas longas | — (depende de M8) |
 | [M10](M10.md) | `Chart` e `Table` nativos | Fecha a promessa de "tudo editável" | — (depende de M9) |
 | [M11](M11.md) | Motor CSS (adoção da PoC): box model, grid, z-index, herança | DX: agentes e devs escrevem CSS; nós −26 % na demo | — (depende de M10) |
+| [M12](M12.md) | Formas, conectores e ícones: diagramas nativos | Maior buraco para "interfaces": só 4 formas e nenhum ícone | sequencial (sem onda) |
+| [M13](M13.md) | Texto e tipografia: pesos numéricos, sobrescrito, links, continuação de texto, número de slide | Texto é 80 % do slide; cinco buracos práticos | sequencial (sem onda) |
 
 ```
-M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10  ─▶  M11
+M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10  ─▶  M11  ─▶  M12  ─▶  M13
 ```
 
 ## Exploração proposta

@@ -94,6 +94,8 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M11 | M11-F | exemplos em CSS, showcase, AGENT_GUIDE e README em CSS | ✅ |
 | M11 | M11-G | Keynote: demo antiga = legada (exceto gráfico/tabela/ordem) e legada ≈ CSS (±1 pt); vitrine confere (bordas por lado, sombra, rotação, opacidade, camadas, grid, wrap, display responsivo); calibração 34/34 e 30/30 | ✅ |
 | M11 | M11-H | agente virgem: deck de 4 slides com grid, herança, margin auto, wrap, zIndex e paginate em 3 builds (1º já exit 0); 3 lacunas do guia aplicadas | ✅ |
+| M12 | M12-1…6 | formas curadas, `Box shape`, `Path`, `Icon`, `Connector`, guia e validação (sequencial, plano em M12.md) | ⬜ |
+| M13 | M13-1…8 | pesos numéricos, sobrescrito/subscrito, `href`, `Text paginate`, `SlideNumber`/`footer`, fonte por Span (go/no-go), guia e validação (sequencial, plano em M13.md) | ⬜ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
 
