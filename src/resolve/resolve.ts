@@ -107,6 +107,8 @@ const baseRunStyleOf = (n: Normalized): RunStyle => ({
   color: n.text.color ?? DEFAULTS.text.color,
   underline: n.css.textDecoration.underline,
   lineThrough: n.css.textDecoration.lineThrough,
+  // M13: o href do Text vale para todos os runs; um Span pode trocar o dele.
+  ...(typeof n.own.href === 'string' ? { href: n.own.href } : {}),
 });
 
 const resolveText = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {

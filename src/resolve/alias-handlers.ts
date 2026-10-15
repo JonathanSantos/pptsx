@@ -7,6 +7,7 @@ import type { Handler } from './draft.ts';
 import { backgroundColor, borderRadius } from './paint-handlers.ts';
 import { SHAPE_CSS } from './shape-handlers.ts';
 import { CONNECTOR_KEYS } from './connector-keys.ts';
+import { parseHref } from './href.ts';
 import { fontWeight, TEXT_HANDLERS, whiteSpace } from './text-handlers.ts';
 import { parsePt } from './values.ts';
 import { BOX_HANDLERS } from './box-handlers.ts';
@@ -62,6 +63,9 @@ const nodeId: Handler = (draft, value, key) => {
   if (typeof value !== 'string' || value.trim() === '') throw new InvalidPropError(key, value, 'use um texto não vazio, único no slide');
   return pass('id')(draft, value, key);
 };
+
+/** M13: link (URL ou slide:N), validado na forma. */
+const href: Handler = (draft, value, key) => pass('href')(draft, parseHref(key, value), key);
 
 const ITEM_LEGACY: Readonly<Record<string, Handler>> = {
   grow: legacyGrow,
@@ -122,9 +126,10 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     radius: borderRadius,
     paginate: pass('paginate'),
     shape: pass('shape'),
+    href,
   },
-  text: { ...ITEM_LEGACY, ...TEXT_LEGACY },
-  image: { ...ITEM_LEGACY, src: pass('src'), fit: pass('fit'), objectFit },
+  text: { ...ITEM_LEGACY, ...TEXT_LEGACY, href, paginate: pass('paginate') },
+  image: { ...ITEM_LEGACY, src: pass('src'), fit: pass('fit'), objectFit, href },
   shape: {
     ...ITEM_LEGACY,
     ...passAll(['kind', 'strokeWidth', 'radius', 'flipH', 'flipV', 'lineStyle', 'lineCap', 'startArrow', 'endArrow']),

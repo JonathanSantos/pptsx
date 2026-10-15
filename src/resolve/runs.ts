@@ -6,6 +6,7 @@ import { InvalidPropError, ResolveError } from './errors.ts';
 import { expandChild } from './expand.ts';
 import type { Expanded } from './expand.ts';
 import { parseFontWeight } from './values.ts';
+import { parseHref } from './href.ts';
 
 /**
  * Runs de um Text: cada trecho de texto vira um run com o estilo do caminho até ele. O estilo
@@ -36,8 +37,14 @@ const overrideStyle = (style: RunStyle, span: CssSpanProps): RunStyle => ({
   underline: decorationOf(span.textDecoration, 'underline') ?? style.underline ?? false,
   lineThrough: decorationOf(span.textDecoration, 'line-through') ?? style.lineThrough ?? false,
   ...verticalAlignOf(span.verticalAlign ?? style.verticalAlign),
-  ...(span.href ?? style.href) === undefined ? {} : { href: span.href ?? style.href },
+  ...hrefOf(span.href, style.href),
 });
+
+/** O href do Span vence o herdado (do Text ou de um Span de fora). */
+const hrefOf = (own: unknown, inherited: string | undefined): Pick<TextRun, 'href'> => {
+  const href = own === undefined ? inherited : parseHref('href', own);
+  return href === undefined ? {} : { href };
+};
 
 const VERTICAL_ALIGNS: readonly VerticalAlign[] = ['baseline', 'super', 'sub'];
 

@@ -75,11 +75,22 @@ const groupOf = (item: PaintItem, body: string): string => {
 /** Gráfico e tabela nativos não giram nem ficam translúcidos no PPTX (css-not-emitted): só a decoração. */
 const isNativeFrame = (node: PositionedNode): boolean => node.kind === 'chart' || node.kind === 'table';
 
+/** M13: link do nó (Box, Image, Text) já traduzido pelo fit. */
+const hrefOfNode = (node: PositionedNode): string | undefined =>
+  node.kind === 'box' || node.kind === 'image' || node.kind === 'text' ? node.props.href : undefined;
+
+/** O SVG ganha o link (o PNG não muda): `slide:N` vira âncora `#slide-N`. */
+const linked = (node: PositionedNode, body: string): string => {
+  const href = hrefOfNode(node);
+  if (href === undefined || body === '') return body;
+  return element('a', { href: href.startsWith('slide:') ? `#slide-${href.slice('slide:'.length)}` : href }, body);
+};
+
 const drawItem = (item: PaintItem, ctx: DrawContext): string => {
   const decoration = decorationSvg(item.node, ctx.loadImage, item.index);
   const content = dispatch(drawers, item.node, ctx, item.index);
   if (isNativeFrame(item.node)) return groupOf(item, decoration) + content;
-  return groupOf(item, decoration + content);
+  return linked(item.node, groupOf(item, decoration + content));
 };
 
 const BACKGROUND_CLIP_ID = 'clip-background';

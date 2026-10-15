@@ -17,6 +17,7 @@ import { debugOutlineOf, iconImageOf, imageOf, shapeOf, textOf, type ShapeSpec }
 import type { PaintItem } from './paint.ts';
 import { tableOf } from './table.ts';
 import { pathOf } from './vector.ts';
+import { hyperlinkOf } from './link.ts';
 import { iconDrawnRectOf, iconPngOf, iconShapesOf } from './icon.ts';
 
 export interface EmitContext {
@@ -74,9 +75,21 @@ const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: Emi
 };
 
 /** Fundo/sombra, imagem de fundo, bordas e, por cima, o conteúdo do nó. */
+/**
+ * M13: link de um Box = hyperlink no fundo; sem fundo, um retângulo 100 % transparente (clicável no
+ * PowerPoint, ao contrário de um shape sem preenchimento) no frame.
+ */
+const linkedUnder = (under: readonly ShapeSpec[], node: PositionedNode, item: PaintItem): readonly ShapeSpec[] => {
+  if (node.kind !== 'box' || node.props.href === undefined) return under;
+  const link = hyperlinkOf(node.props.href);
+  const [first, ...rest] = under;
+  if (first !== undefined) return [{ ...first, options: { ...first.options, ...link } }, ...rest];
+  return [{ shape: 'rect', options: { ...placedOf(node.frame, item.rotations), fill: { type: 'solid', color: 'FFFFFF', transparency: 100 }, ...link } }];
+};
+
 export const emitItem = (slide: Pptx.Slide, item: PaintItem, ctx: EmitContext): void => {
   const decoration = decorationOf(item.node, item);
-  decoration.under.forEach((spec) => addShape(slide, spec));
+  linkedUnder(decoration.under, item.node, item).forEach((spec) => addShape(slide, spec));
   const backgroundImage = backgroundImageOf(item.node, item, ctx.baseDir);
   if (backgroundImage) slide.addImage(backgroundImage);
   decoration.over.forEach((spec) => addShape(slide, spec));

@@ -17,6 +17,7 @@ import type {
 import { ptToInches } from '../sizes.ts';
 import { ACTIVE_LINE_SPACING, lineSpacingOf, type LineSpacingStrategy } from './calibration.ts';
 import { dashOf } from './line-style.ts';
+import { hyperlinkOf } from './link.ts';
 import { hexOf, textRunsOfNode } from './runs.ts';
 
 /**
@@ -167,6 +168,7 @@ export const imageOf = (node: PositionedImage, baseDir: string): Pptx.ImageProps
     sizing: { type: imageFitOf(node.props), w: box.w, h: box.h },
     // Sem isso o pptxgenjs grava o caminho absoluto local como texto alternativo.
     altText: basename(node.props.src),
+    ...hyperlinkOf(node.props.href),
   };
 };
 

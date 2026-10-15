@@ -1,5 +1,6 @@
 import type * as Pptx from './pptx.ts';
 import { DEFAULTS, textStyleOf } from '../core/defaults.ts';
+import { hyperlinkOf } from './link.ts';
 import type { Color, FontWeight, LineBreaks, LineRun, PositionedText, RunFace, TextLayout, TextRun, VerticalAlign } from '../core/types.ts';
 
 /**
@@ -32,6 +33,8 @@ export interface RunStyle {
   readonly typeface?: string;
   /** M13: sobrescrito/subscrito (ausente = baseline). */
   readonly verticalAlign?: VerticalAlign;
+  /** M13: link do trecho (já traduzido para o deck de saída). */
+  readonly href?: string;
 }
 
 /** Pedaço de texto com estilo: vira um <a:r>. */
@@ -74,6 +77,7 @@ const runStyleOf = (run: TextRun, face: RunFace | undefined, family: string): Ru
   underline: run.underline ?? false,
   lineThrough: run.lineThrough ?? false,
   ...(run.verticalAlign === undefined || run.verticalAlign === 'baseline' ? {} : { verticalAlign: run.verticalAlign }),
+  ...(run.href === undefined ? {} : { href: run.href }),
 });
 
 // Guards: árvores montadas antes do M8 (ou à mão) podem não ter runs/lineRuns;
@@ -107,7 +111,8 @@ const sameStyle = (a: RunStyle, b: RunStyle): boolean =>
   a.underline === b.underline &&
   a.lineThrough === b.lineThrough &&
   a.typeface === b.typeface &&
-  a.verticalAlign === b.verticalAlign;
+  a.verticalAlign === b.verticalAlign &&
+  a.href === b.href;
 
 /** Funde pedaços vizinhos com o mesmo estilo (ex.: um run que atravessou linhas). */
 export const mergeAdjacent = (line: StyledLine): StyledLine =>
@@ -233,6 +238,7 @@ const pptxRunOf = (piece: StyledText, softBreakBefore: boolean, breakLine: boole
     color: piece.style.color,
     ...(piece.style.typeface === undefined ? {} : { fontFace: piece.style.typeface }),
     ...baselineOf(piece.style.verticalAlign),
+    ...hyperlinkOf(piece.style.href),
     // M11: decoração (Span e textDecoration) só quando ligada; a caixa nunca leva underline/strike.
     ...(piece.style.underline ? { underline: { style: 'sng' as const } } : {}),
     ...(piece.style.lineThrough ? { strike: 'sngStrike' as const } : {}),

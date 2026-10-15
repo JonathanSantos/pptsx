@@ -1,5 +1,6 @@
 import type { Diagnostic, LayoutEnv, PositionedDeck, PositionedSlide, ResolvedDeck, ResolvedNode, ResolvedSlide, SlideSize } from '../core/types.ts';
 import { routeConnectors } from './connectors.ts';
+import { linkDeck } from './links.ts';
 import { withSourceSlide } from './diagnostics.ts';
 import type { FitResult } from './fit.ts';
 import { paginateSlide } from './paginate.ts';
@@ -60,5 +61,7 @@ export const fitDeck = ({ deck, size, env }: FitDeckInput): FitDeckResult => {
     },
     { slides: [], diagnostics: [] },
   );
-  return { positioned: { size, slides: fitted.slides }, diagnostics: fitted.diagnostics };
+  // M13: links slide:N do autor → slide de saída (a paginação já aconteceu).
+  const linked = linkDeck(fitted.slides, deck.slides.length, size.name);
+  return { positioned: { size, slides: linked.slides }, diagnostics: [...fitted.diagnostics, ...linked.diagnostics] };
 };
