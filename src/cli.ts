@@ -533,6 +533,9 @@ const runLint = async (args: LintArgs, cwd: string, deps: CliDeps): Promise<numb
     baseDir: dirname(args.deckPath),
     ...(config.theme === undefined ? {} : { theme: config.theme }),
     render: { fonts: config.fonts, lang: config.lang, textSafety: config.textSafety, lineBreaks: config.lineBreaks },
+    // M17: as regras da config e as dos DS registrados; o núcleo não sabe de qual DS cada uma vem.
+    rules: [...(config.lint?.rules ?? []), ...(config.ds ?? []).flatMap((ds) => ds.rules)],
+    disable: config.lint?.disable ?? [],
   });
   if (args.json) console.log(JSON.stringify({ ...(fix === undefined ? {} : { fix }), findings }, null, 2));
   else console.log([...(fix === undefined ? [] : fixLinesOf(fix)), lintSummaryOf(findings)].join('\n'));

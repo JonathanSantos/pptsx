@@ -197,7 +197,17 @@ const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: R
   return { nodes: [{ kind: 'box', path, props, css: n.css, children: children.nodes }], connectors };
 };
 
-const resolveItem = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): ResolvedChildren => {
+/** M17: o nó que a primitiva gerou leva a identidade do componente (os filhos levam a deles). */
+const withComponent = (item: ExpandedPrimitive, resolved: ResolvedChildren): ResolvedChildren => {
+  const [first, ...rest] = resolved.nodes;
+  if (item.component === undefined || first === undefined) return resolved;
+  return { ...resolved, nodes: [{ ...first, component: item.component }, ...rest] };
+};
+
+const resolveItem = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): ResolvedChildren =>
+  withComponent(item, resolvePrimitive(item, path, ctx, parent));
+
+const resolvePrimitive = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): ResolvedChildren => {
   if (item.kind === 'box') return resolveBox(item, path, normalizedOf(item, path, ctx, parent), ctx);
   if (item.kind === 'connector') {
     assertNoChildren(item, path);
@@ -293,6 +303,7 @@ const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResolveScope,
     children: nodes,
     ...(notes === undefined ? {} : { notes }),
     ...(layout === undefined ? {} : { layout }),
+    ...(item.component === undefined ? {} : { component: item.component }),
     ...(connectors.length === 0 ? {} : { connectors: connectors.map((connector) => withMissing(connector, ids)) }),
   };
   assertSinglePaginate(slide);

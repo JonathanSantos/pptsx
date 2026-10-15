@@ -3,6 +3,8 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { ImportModule, ImportOptions, UserModule } from './cli/loader.ts';
 import type { DocumentProperties, FontFace, LineBreaks, SizeSpec, Theme } from './core/types.ts';
+import type { DsManifest } from './ds.ts';
+import type { LintRule } from './lint/rule.ts';
 
 export const CONFIG_FILE_NAME = 'pptsx.config.ts';
 
@@ -22,6 +24,10 @@ export interface PptsxConfig {
   readonly theme?: Theme;
   /** M15: propriedades do documento; sem `title`, a CLI usa o nome do arquivo do deck. */
   readonly document?: DocumentProperties;
+  /** M17: regras de lint próprias e códigos desligados (os da engine ou de um DS). */
+  readonly lint?: { readonly rules?: readonly LintRule[]; readonly disable?: readonly string[] };
+  /** M17: design systems registrados (`defineDs`): regras no lint, guia e schema no MCP. */
+  readonly ds?: readonly DsManifest[];
 }
 
 /** @deprecated Use PptsxConfig (nome antigo, de antes do pacote se chamar pptsx). */

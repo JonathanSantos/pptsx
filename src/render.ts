@@ -18,6 +18,10 @@ import type {
   PreviewOptions,
   RenderOptions,
   RenderResult,
+  PositionedSlide,
+  SizeSpec,
+  SlideElement,
+  Theme,
   ResolvedTheme,
   SlideSize,
 } from './core/types.ts';
@@ -38,6 +42,8 @@ import { cssNotEmittedOf, fitDeck } from './fit/index.ts';
 import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
 import { createResolveEnv, resolveDeck, resolveTheme, type ResolveEnv } from './resolve/index.ts';
 import { createContext, resolveSize } from './sizes.ts';
+import { jsx } from './jsx/jsx-runtime.ts';
+import { Deck, Slide } from './primitives/index.ts';
 import { createFontkitMeasurer, createFontRegistry } from './text/index.ts';
 
 /** Tudo que é derivado das opções uma única vez e vale para todos os tamanhos. */
@@ -271,4 +277,53 @@ export const render = async (deck: DeckDefinition, options: RenderOptions = {}):
   const settings = settingsOf(options);
   const sizes = (options.sizes ?? ['16x9']).map(resolveSize);
   return Promise.all(sizes.map((size) => renderSize(deck, size, settings)));
+};
+
+// ───────────────────────── Fragmento (M17) ─────────────────────────
+
+export interface FragmentOptions {
+  readonly size: SizeSpec;
+  /** Margem do slide em volta do elemento (pt). Padrão DEFAULTS.fragment.padding. */
+  readonly padding?: number;
+  readonly fonts?: readonly FontFace[];
+  readonly theme?: Theme;
+  readonly baseDir?: string;
+  readonly lang?: string;
+  /** Também rasteriza (PNG); padrão false (o SVG sempre sai). */
+  readonly png?: boolean;
+  /** Largura do SVG/PNG em px; padrão DEFAULTS.preview.width. */
+  readonly widthPx?: number;
+}
+
+export interface FragmentResult {
+  readonly size: SlideSize;
+  readonly slide: PositionedSlide;
+  readonly diagnostics: readonly Diagnostic[];
+  readonly svg: string;
+  readonly png?: Buffer;
+}
+
+/**
+ * M17: um elemento sozinho num slide do tamanho pedido, sem gravar nada — a base do catálogo de
+ * componentes de um DS. O elemento vai dentro de um Slide em coluna com `padding`; um fragmento não
+ * pagina (um `paginate` dentro dele é medido como no slide, mas só a 1ª parte volta).
+ */
+export const renderFragment = async (element: SlideElement, options: FragmentOptions): Promise<FragmentResult> => {
+  const widthPx = options.widthPx ?? DEFAULTS.preview.width;
+  const deck: DeckDefinition = () => jsx(Deck, { children: jsx(Slide, { padding: options.padding ?? DEFAULTS.fragment.padding, children: element }) });
+  const [result] = await render(deck, {
+    sizes: [options.size],
+    includePositioned: true,
+    preview: options.png === true ? { mode: 'native', width: widthPx } : false,
+    ...(options.fonts === undefined ? {} : { fonts: options.fonts }),
+    ...(options.theme === undefined ? {} : { theme: options.theme }),
+    ...(options.baseDir === undefined ? {} : { baseDir: options.baseDir }),
+    ...(options.lang === undefined ? {} : { lang: options.lang }),
+  });
+  const positioned = result!.positioned!;
+  const slide = positioned.slides[0]!;
+  const { faces } = resolveFontFaces(options.fonts ?? DEFAULT_FONTS);
+  const svg = slideToSvg(slide, positioned.size, { widthPx, baseDir: options.baseDir ?? process.cwd(), fontFamilyMap: fontFamilyMapOf(faces), ...(options.lang === undefined ? {} : { lang: options.lang }) });
+  const png = result!.preview?.slides[0];
+  return { size: positioned.size, slide, diagnostics: result!.diagnostics.filter((diagnostic) => diagnostic.slide === 1), svg, ...(png === undefined ? {} : { png }) };
 };

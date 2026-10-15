@@ -5,6 +5,8 @@ import type { Diagnostic } from '../core/types.ts';
 import { createResolveEnv, resolveDeck, ResolveError, resolveTheme } from '../resolve/index.ts';
 import { createContext, resolveSize } from '../sizes.ts';
 import { aliasRuleOf, suggestionOf } from './aliases.ts';
+import type { LintContext, LintRule } from './rule.ts';
+import type { ResolvedDeck, ResolvedSlide } from '../core/types.ts';
 
 /**
  * M16-5: `pptsx lint` — carrega e resolve o deck (sem gravar nada) e aponta o que vai dar trabalho:
@@ -16,7 +18,8 @@ export type LintCode = 'structure' | 'legacy-prop' | 'css-not-emitted' | 'keynot
 
 export interface LintFinding {
   readonly severity: Severity;
-  readonly code: LintCode;
+  /** Os da engine (LintCode) ou o `id` de uma regra externa (M17). */
+  readonly code: LintCode | (string & {});
   /** Ausente quando vale para todos os tamanhos. */
   readonly size?: string;
   readonly slide: number;
@@ -29,6 +32,10 @@ export interface LintOptions {
   readonly baseDir: string;
   readonly theme?: Theme;
   readonly render?: Omit<RenderOptions, 'sizes' | 'preview' | 'includePositioned' | 'baseDir' | 'theme'>;
+  /** M17: regras externas (config, DS), rodadas depois das da engine em cada tamanho. */
+  readonly rules?: readonly LintRule[];
+  /** M17: códigos que não saem (da engine ou de regras externas). */
+  readonly disable?: readonly string[];
 }
 
 /** lineHeight numérico a partir daqui desloca a 1ª linha no Keynote de forma visível (M11-G: até 2,3 pt com 1.5). */
@@ -141,8 +148,50 @@ export const lintDeck = async (deck: DeckDefinition, options: LintOptions): Prom
   }
   const theme = options.theme === undefined ? undefined : resolveTheme(options.theme);
   const declared = theme === undefined ? undefined : new Set(theme.declared.map((name) => theme.colors[name].toUpperCase()));
-  const perSize = await Promise.all(options.sizes.map((size) => sizeFindingsOf(deck, size, options, declared)));
-  return groupFindings([...legacyFindingsOf(observed), ...mergeSizes(perSize)]);
+  const perSize = await Promise.all(
+    options.sizes.map(async (size) => [...(await sizeFindingsOf(deck, size, options, declared)), ...externalFindingsOf(deck, size, options)]),
+  );
+  const disabled = new Set(options.disable ?? []);
+  return groupFindings([...legacyFindingsOf(observed), ...mergeSizes(perSize)].filter((finding) => !disabled.has(finding.code)));
+};
+
+// ───────────── regras externas (M17) ─────────────
+
+const withChildren = (node: ResolvedSlide | ResolvedDeck['slides'][number]['children'][number]) => ('children' in node ? node.children : []);
+
+/** Cada regra em cada slide e nó, pré-ordem; uma regra que lança vira um achado error com o motivo. */
+const externalFindingsOf = (deck: DeckDefinition, size: SizeSpec, options: LintOptions): readonly LintFinding[] => {
+  const rules = options.rules ?? [];
+  if (rules.length === 0) return [];
+  const ctx = createContext(resolveSize(size));
+  const resolved = resolveDeck(deck(ctx), ctx, createResolveEnv(options.baseDir));
+  const run = (node: Parameters<LintRule['check']>[0], context: LintContext): readonly LintFinding[] =>
+    rules.flatMap((rule): readonly LintFinding[] => {
+      try {
+        return rule.check(node, context).map((found) => ({
+          severity: found.severity ?? rule.severity,
+          code: rule.id,
+          size: ctx.name,
+          slide: context.slide,
+          path: found.path ?? context.path,
+          message: found.message,
+        }));
+      } catch (error) {
+        return [{ severity: 'error', code: rule.id, size: ctx.name, slide: context.slide, path: context.path, message: `A regra ${rule.id} falhou: ${error instanceof Error ? error.message : String(error)}` }];
+      }
+    });
+  const walk = (node: Parameters<LintRule['check']>[0], slide: number, parent: LintContext['parent']): readonly LintFinding[] => {
+    const context: LintContext = {
+      size: ctx,
+      slide,
+      path: node.path,
+      ...(options.theme === undefined ? {} : { theme: options.theme }),
+      ...(node.component === undefined ? {} : { component: node.component }),
+      ...(parent === undefined ? {} : { parent }),
+    };
+    return [...run(node, context), ...withChildren(node).flatMap((child) => walk(child, slide, node))];
+  };
+  return resolved.slides.flatMap((slide, index) => walk(slide, index + 1, undefined));
 };
 
 /**

@@ -1,5 +1,5 @@
-import { LAYOUT_DEFINITION, PRIMITIVE_KIND } from '../core/types.ts';
-import type { AuthorPropsMap, Component, LayoutComponent, LayoutOptions, Primitive, PrimitiveKind, SlideElement } from '../core/types.ts';
+import { COMPONENT_META, LAYOUT_DEFINITION, PRIMITIVE_KIND } from '../core/types.ts';
+import type { AuthorPropsMap, Child, Component, ComponentMeta, LayoutComponent, LayoutOptions, Primitive, PrimitiveKind, SlideElement } from '../core/types.ts';
 import { jsx } from '../jsx/jsx-runtime.ts';
 
 const capitalize = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
@@ -61,3 +61,18 @@ export const defineLayout = <P>(name: string, options: LayoutOptions, component:
   Object.defineProperty(layout, LAYOUT_DEFINITION, { value: Object.freeze({ name, ...options }), enumerable: false });
   return Object.freeze(layout) as LayoutComponent<P>;
 };
+
+/**
+ * M17: componente com identidade. O nome (`displayName ?? name`) vai no path mesmo quando a função é
+ * anônima ou embrulhada; `defaults` preenche as props ausentes; o `meta` (livre: `ds`, `tags`, `catalog`…)
+ * chega ao nó resolvido em `component`, onde regras de lint e o catálogo o leem. Sem variantes nem estilo:
+ * isso é do DS. Função comum continua valendo como componente.
+ */
+export function defineComponent<P extends object>(meta: string | ComponentMeta, fn: (props: P) => Child, defaults?: Partial<P>): Component<P> {
+  const identity: ComponentMeta = Object.freeze(typeof meta === 'string' ? { name: meta } : { ...meta });
+  if (typeof identity.name !== 'string' || identity.name.trim() === '') throw new Error('defineComponent: o nome do componente não pode ser vazio');
+  const component = (props: P): Child => fn(defaults === undefined ? props : ({ ...defaults, ...props } as P));
+  Object.defineProperty(component, 'name', { value: identity.displayName ?? identity.name });
+  Object.defineProperty(component, COMPONENT_META, { value: identity, enumerable: false });
+  return Object.freeze(component) as Component<P>;
+}

@@ -43,13 +43,13 @@ export const createPptsxMcpServer = (ctx: McpContext, version: string): McpServe
   }, async (input) => asResult(initTool(input, ctx)));
   server.registerTool('guide', {
     title: 'Guia do agente',
-    description: 'Trechos do docs/AGENT_GUIDE.md. Sem `section`: o índice. Com "§8", "6.17" ou parte do título: a seção.',
-    inputSchema: { section: z.string().optional() },
+    description: 'Trechos do guia. Fonte padrão "pptsx" (docs/AGENT_GUIDE.md); um DS registrado é outra fonte (`source` = nome do DS). Sem `section`: o índice (e as fontes). Com "§8", "6.17" ou parte do título: a seção.',
+    inputSchema: { source: z.string().optional().describe('"pptsx" (padrão) ou o nome de um DS registrado.'), section: z.string().optional() },
   }, async (input) => asResult(guideTool(input, ctx)));
   server.registerTool('schema', {
     title: 'Props das primitivas',
-    description: 'Props aceitas por primitiva (gerado dos tipos): tipo TypeScript e descrição de cada uma; props antigas (size, weight, direction…) são aliases a evitar — prefira as CSS (fontSize, fontWeight, flexDirection). Sem `primitive`: todas.',
-    inputSchema: { primitive: z.string().optional().describe('"box", "text", "chart"…') },
-  }, async (input) => asResult(schemaTool(input)));
+    description: 'Props aceitas por primitiva (gerado dos tipos): tipo TypeScript e descrição de cada uma; props antigas (size, weight, direction…) são aliases a evitar — prefira as CSS (fontSize, fontWeight, flexDirection). Com `source` = nome de um DS: as props dos componentes dele. Sem `primitive`: todas.',
+    inputSchema: { source: z.string().optional().describe('"pptsx" (padrão) ou o nome de um DS registrado.'), primitive: z.string().optional().describe('"box", "text", "chart"… ou o nome de um componente do DS') },
+  }, async (input) => asResult(schemaTool(input, ctx)));
   return server;
 };

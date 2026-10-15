@@ -8,6 +8,9 @@ exports[`resolveDeck — full tree > matches the stored snapshot 1`] = `
         {
           "children": [
             {
+              "component": {
+                "name": "Title",
+              },
               "content": "Hello",
               "css": {
                 "alignContent": "stretch",
@@ -314,6 +317,9 @@ exports[`resolveDeck — full tree > matches the stored snapshot 1`] = `
           "props": {},
         },
       ],
+      "component": {
+        "name": "CoverLayout",
+      },
       "css": {
         "alignContent": "stretch",
         "alignItems": "stretch",

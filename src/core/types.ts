@@ -857,8 +857,24 @@ export interface Primitive<K extends PrimitiveKind> {
   readonly [PRIMITIVE_KIND]: K;
 }
 
+/** M17: marca de identidade de um componente (`defineComponent`). */
+export const COMPONENT_META: unique symbol = Symbol.for('pptsx.component');
+
+/**
+ * M17: identidade de um componente — o nome que vai no path (`displayName ?? name`), o DS de onde vem e
+ * metadados livres que regras de lint e o catálogo leem (`catalog`, por exemplo). O núcleo não interpreta
+ * nada além de `name`/`displayName`.
+ */
+export interface ComponentMeta {
+  readonly name: string;
+  readonly displayName?: string;
+  readonly ds?: string;
+  readonly tags?: readonly string[];
+  readonly [key: string]: unknown;
+}
+
 /** Componente do usuário: função pura (props) => elemento. Sem hooks, sem estado. */
-export type Component<P = any> = (props: P) => Child;
+export type Component<P = any> = ((props: P) => Child) & { readonly [COMPONENT_META]?: ComponentMeta };
 
 /** M15: marca de um componente de layout (`defineLayout`). */
 export const LAYOUT_DEFINITION: unique symbol = Symbol.for('pptsx.layout');
@@ -927,6 +943,11 @@ interface ResolvedBase<K extends PrimitiveKind, P> {
    * toda a geometria (M16: layout, fit, emit e preview leem daqui).
    */
   readonly css: CssStyle;
+  /**
+   * M17: o componente mais externo que gerou este nó (o mesmo que dá o segmento do path). Função comum
+   * tem só `{ name }`; `defineComponent` traz o `meta` inteiro. Ausente = a primitiva foi escrita direto.
+   */
+  readonly component?: ComponentMeta;
   /**
    * Props que não são CSS geométrico: o estilo de texto resolvido (com herança; o fit troca o `size`),
    * política de ajuste (`fit`, `minSize`, `maxLines`), conteúdo (`src`, `data`, `columns`, `kind`…) e

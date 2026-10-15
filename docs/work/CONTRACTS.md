@@ -596,3 +596,14 @@ Plano: `docs/work/milestones/M16.md`.
 - `pptsx preview <deck> --serve`: `node:http`, rotas `/`, `/state.json` (frames por path), `/svg/<tamanho>/<n>`, `/diagnostics.json`, `/events` (SSE `update`); só o último resultado em memória; escuta depois do 1º build do `runWatchLoop`.
 - `pptsx lint`: `ResolveEnv.observe` (opcional) recebe as props cruas de cada primitiva com o path; aliases em `src/lint/aliases.ts`; `--fix` = `migrateSource(ts, arquivo, fonte)` com a API do TypeScript injetada.
 - `--watch`/MCP/preview recarregam com `?pptsx-fresh=N` só nos arquivos do usuário (`bin/fresh-hooks.mjs`) e um namespace do tsx por tsconfig.
+
+## M17 — extração: ganchos para design systems (regras por etapa)
+
+Plano: `docs/work/milestones/M17.md`. Regra da linha: o que só faz sentido com uma marca não entra no núcleo; se o núcleo precisa do nome de um componente, falta um gancho.
+
+### Ganchos no núcleo (M17-1)
+- `ComponentMeta` (`name`, `displayName?`, `ds?`, `tags?`, livre) e `COMPONENT_META`; `defineComponent(meta | nome, fn, defaults?)`: o nome do segmento do path é `displayName ?? name` (o componente **mais externo** dá o segmento, como antes); `defaults` preenchem props ausentes. `ResolvedBase.component` = meta do componente mais externo que gerou o nó (função comum: `{ name }`; primitiva escrita direto: ausente); os filhos não herdam.
+- `LintRule { id, severity, check(node | slide, LintContext) → RuleFinding[] }` (`src/lint/rule.ts`); `LintContext { size: DeckContext, theme?, slide (do autor), path, component?, parent? }`. `lintDeck({ rules, disable })`: as externas rodam em cada tamanho sobre a árvore resolvida (slide e nós, pré-ordem), depois das da engine; `code` = `id`; regra que lança vira achado `error`. `PptsxConfig.lint { rules, disable }` e `PptsxConfig.ds` (regras dos DS entram no `pptsx lint`).
+- `renderFragment(elemento, { size, padding? = DEFAULTS.fragment.padding, fonts?, theme?, baseDir?, lang?, png?, widthPx? })` → `{ size, slide, diagnostics, svg, png? }`: o elemento num Slide em coluna; não grava nada; só a 1ª parte se algo paginar.
+- `DsManifest { name, version, components, theme?, rules, guide?, schema?, examples? }` e `defineDs` (nome obrigatório, ids de regra únicos) em `src/ds.ts`.
+- MCP: `McpContext.ds`; `guide({ source?, section? })` e `schema({ source?, primitive? })` — fonte padrão `"pptsx"`, cada DS é uma fonte com o próprio nome; o índice do núcleo lista as outras fontes. DS do `pptsx.config.ts` do cwd e de `pptsx-mcp --ds <pacote>` (resolvido a partir do cwd; export default ou `ds`).

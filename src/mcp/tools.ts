@@ -8,6 +8,7 @@ import type { Diagnostic, LineBreaks } from '../core/types.ts';
 import { render } from '../render.ts';
 import { guideLookup } from './guide.ts';
 import { PROPS_SCHEMA } from './schema.generated.ts';
+import type { DsManifest } from '../ds.ts';
 
 /**
  * M16-3: as ferramentas do `pptsx-mcp`. Cada uma devolve o resultado no formato do MCP (texto e imagens);
@@ -29,6 +30,8 @@ export interface McpContext {
   readonly importModule?: ImportModule;
   /** Texto do docs/AGENT_GUIDE.md (injetável nos testes). */
   readonly guideText?: () => string;
+  /** M17: design systems registrados (config ou `--ds`): o guia e o schema de cada um viram fontes. */
+  readonly ds?: readonly DsManifest[];
 }
 
 const text = (value: string): ToolContent => ({ type: 'text', text: value });
@@ -134,16 +137,51 @@ export const initTool = (input: { readonly dir: string; readonly force?: boolean
 
 const GUIDE = new URL('../../docs/AGENT_GUIDE.md', import.meta.url);
 
-export const guideTool = (input: { readonly section?: string }, ctx: McpContext): ToolResult => {
-  const { text: body, found } = guideLookup(ctx.guideText?.() ?? readFileSync(GUIDE, 'utf8'), input.section);
-  return { content: [text(body)], ...(found ? {} : { isError: true }) };
+/** O núcleo é a fonte "pptsx"; cada DS registrado é uma fonte com o nome dele. */
+export const CORE_SOURCE = 'pptsx';
+
+const sourcesLine = (ctx: McpContext, has: (ds: DsManifest) => boolean): string => {
+  const others = (ctx.ds ?? []).filter(has).map((ds) => `"${ds.name}"`);
+  return others.length === 0 ? '' : `\n\nOutras fontes (passe source): ${others.join(', ')}.`;
 };
 
-export const schemaTool = (input: { readonly primitive?: string }): ToolResult => {
-  if (input.primitive === undefined) return { content: [text(JSON.stringify(PROPS_SCHEMA, null, 2))] };
+const unknownSource = (source: string, ctx: McpContext): ToolResult => ({
+  content: [text(`Fonte "${source}" não registrada. Fontes: "${CORE_SOURCE}"${(ctx.ds ?? []).map((ds) => `, "${ds.name}"`).join('')}. Um DS entra pelo pptsx.config.ts (ds: [...]) ou por pptsx-mcp --ds <pacote>.`)],
+  isError: true,
+});
+
+const dsOf = (ctx: McpContext, source: string): DsManifest | undefined => (ctx.ds ?? []).find((ds) => ds.name === source);
+
+export const guideTool = (input: { readonly source?: string; readonly section?: string }, ctx: McpContext): ToolResult => {
+  const source = input.source ?? CORE_SOURCE;
+  if (source !== CORE_SOURCE) {
+    const ds = dsOf(ctx, source);
+    if (ds === undefined) return unknownSource(source, ctx);
+    if (ds.guide === undefined) return { content: [text(`O DS "${ds.name}" não registrou guia.`)], isError: true };
+    const { text: body, found } = guideLookup(ds.guide, input.section);
+    return { content: [text(body)], ...(found ? {} : { isError: true }) };
+  }
+  const { text: body, found } = guideLookup(ctx.guideText?.() ?? readFileSync(GUIDE, 'utf8'), input.section);
+  const extra = input.section === undefined ? sourcesLine(ctx, (ds) => ds.guide !== undefined) : '';
+  return { content: [text(body + extra)], ...(found ? {} : { isError: true }) };
+};
+
+const lookupSchema = (schema: Readonly<Record<string, unknown>>, name: string | undefined, label: string): ToolResult => {
+  if (name === undefined) return { content: [text(JSON.stringify(schema, null, 2))] };
   // "Text", "text" e "TEXT" valem: o agente costuma escrever como a tag JSX.
-  const key = Object.keys(PROPS_SCHEMA).find((name) => name.toLowerCase() === input.primitive!.toLowerCase());
-  const schema = key === undefined ? undefined : (PROPS_SCHEMA as Readonly<Record<string, unknown>>)[key];
-  if (schema === undefined) return { content: [text(`Primitiva "${input.primitive}" não existe; use ${Object.keys(PROPS_SCHEMA).join(', ')}.`)], isError: true };
-  return { content: [text(JSON.stringify(schema, null, 2))] };
+  const key = Object.keys(schema).find((item) => item.toLowerCase() === name.toLowerCase());
+  if (key === undefined) return { content: [text(`"${name}" não existe em ${label}; use ${Object.keys(schema).join(', ')}.`)], isError: true };
+  return { content: [text(JSON.stringify(schema[key], null, 2))] };
+};
+
+export const schemaTool = (input: { readonly source?: string; readonly primitive?: string }, ctx: McpContext = { cwd: process.cwd() }): ToolResult => {
+  const source = input.source ?? CORE_SOURCE;
+  if (source !== CORE_SOURCE) {
+    const ds = dsOf(ctx, source);
+    if (ds === undefined) return unknownSource(source, ctx);
+    if (ds.schema === undefined) return { content: [text(`O DS "${ds.name}" não registrou schema.`)], isError: true };
+    return lookupSchema(ds.schema, input.primitive, ds.name);
+  }
+  if (input.primitive === undefined) return { content: [text(JSON.stringify(PROPS_SCHEMA, null, 2) + sourcesLine(ctx, (ds) => ds.schema !== undefined))] };
+  return lookupSchema(PROPS_SCHEMA, input.primitive, 'pptsx (primitivas)');
 };
