@@ -170,6 +170,13 @@ export const imageOf = (node: PositionedImage, baseDir: string): Pptx.ImageProps
   };
 };
 
+/** M12: PNG do ícone raster como `data:` na área desenhada. */
+export const iconImageOf = (png: Buffer, rect: Rect): Pptx.ImageProps => ({
+  data: `image/png;base64,${png.toString('base64')}`,
+  ...positionOf(rect),
+  altText: 'ícone',
+});
+
 export const debugOutlineOf = (frame: Rect): ShapeSpec => ({
   shape: 'rect',
   options: { ...positionOf(frame), line: { ...DEBUG_OUTLINE } },

@@ -82,6 +82,32 @@ const objectFit: Handler = (draft, value, key) =>
   value === 'contain' || value === 'cover' ? pass('fit')(draft, value, key) : reject(draft, key, value, 'só contain e cover');
 
 
+const NO_BOX_REASON = 'o nó vetorial não tem caixa; envolva-o num Box para ter fundo ou borda';
+
+/** M12: Icon não pinta caixa (fundo, borda, contorno): avisa em vez de sumir em silêncio. */
+const NO_BOX: Readonly<Record<string, Handler>> = Object.fromEntries(
+  [
+    'background',
+    'backgroundColor',
+    'backgroundImage',
+    'fill',
+    'stroke',
+    'strokeWidth',
+    'border',
+    'borderWidth',
+    'borderColor',
+    'borderStyle',
+    'borderRadius',
+    'borderTop',
+    'borderRight',
+    'borderBottom',
+    'borderLeft',
+    'outline',
+    'outlineColor',
+    'outlineWidth',
+  ].map((key): [string, Handler] => [key, (draft, value) => reject(draft, key, value, NO_BOX_REASON)]),
+);
+
 export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<string, Handler>>>> = {
   deck: {},
   span: {},
@@ -124,8 +150,13 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     ...passColors(['fill', 'stroke']),
     ...SHAPE_CSS,
     borderRadius: (draft, value, key) => reject(draft, key, value, 'o Path não tem cantos; desenhe-os no d'),
+    backgroundImage: (draft, value, key) => reject(draft, key, value, NO_BOX_REASON),
     backgroundColor: passColor('fill'),
   },
-  icon: {},
+  icon: {
+    ...ITEM_LEGACY,
+    ...passAll(['src', 'size', 'recolor', 'render']),
+    ...NO_BOX,
+  },
   connector: {},
 };

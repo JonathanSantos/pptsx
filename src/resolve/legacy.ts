@@ -116,7 +116,8 @@ const BUILDERS: Readonly<Record<PrimitiveKind, LegacyBuilder>> = {
     ...own,
   }),
   path: ({ css, own }) => ({ ...itemOf(css), ...own }),
-  icon: ({ css, own }) => ({ ...itemOf(css), ...own }),
+  // Ícone herda a cor do texto (currentColor do CSS).
+  icon: ({ css, text, own }) => ({ ...itemOf(css), color: text.color, ...own }),
   connector: ({ own }) => own,
 };
 

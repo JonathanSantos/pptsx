@@ -6,6 +6,9 @@ import type { DiagnosticContext } from './diagnostics.ts';
  * `path-invalid` (error, o Path não é desenhado) e `icon-rasterized` (info, o ícone virou imagem).
  */
 
+/** Motivo gravado pelo resolve quando o autor força a imagem. */
+const FORCED = 'render="image"';
+
 const pathInvalid = (ctx: DiagnosticContext, path: string, problem: string): Diagnostic => ({
   severity: 'error',
   code: 'path-invalid',
@@ -21,7 +24,10 @@ const iconRasterized = (ctx: DiagnosticContext, path: string, reason: string): D
   size: ctx.size,
   slide: ctx.slide,
   path,
-  message: `O ícone saiu como imagem (não editável como forma): ${reason}. Para forma nativa, use um SVG só com path/rect/circle/ellipse/line/polygon/polyline e cores sólidas.`,
+  message:
+    reason === FORCED
+      ? 'O ícone saiu como imagem porque render="image" foi pedido (não é editável como forma no PowerPoint).'
+      : `O ícone saiu como imagem (não editável como forma): ${reason}. Para forma nativa, use um SVG só com path/rect/circle/ellipse/line/polygon/polyline, cores sólidas e sem transform/opacity.`,
 });
 
 export const vectorDiagnosticsOf = (nodes: readonly PositionedNode[], ctx: DiagnosticContext): readonly Diagnostic[] =>

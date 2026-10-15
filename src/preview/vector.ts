@@ -1,8 +1,11 @@
 import { DEFAULTS, pathPaintOf } from '../core/defaults.ts';
-import type { CssStyle, LineCap, LineJoin, PathCommand, PositionedPath } from '../core/types.ts';
-import { placeCommands } from '../emit/vector.ts';
+import type { CssStyle, LineCap, LineJoin, PathCommand, PositionedIcon, PositionedPath } from '../core/types.ts';
+import { iconDrawnRectOf, iconPngOf } from '../emit/icon.ts';
+import { placeCommands, strokeScaleOf } from '../emit/vector.ts';
 import { dashArrayOf } from './arrows.ts';
 import { shadowFilterSvg } from './decoration.ts';
+import { dataUriOf } from './image.ts';
+import { rectAttrs } from './svg.ts';
 import { element, type Attrs } from './xml.ts';
 
 /**
@@ -70,4 +73,27 @@ export const pathSvg = (node: PositionedPath, index: number): string => {
     dash: dashArrayOf(props.lineStyle, width, props.lineCap === 'round'),
   });
   return withShadow(node.css, index, element('path', { d, ...attrs }));
+};
+
+/** Ícone: os mesmos traços do emissor (viewBox centrado, traço × escala) ou o mesmo PNG. */
+export const iconSvg = (node: PositionedIcon, index: number): string => {
+  const png = iconPngOf(node);
+  if (png !== undefined) return element('image', { ...rectAttrs(iconDrawnRectOf(node)), href: dataUriOf('image/png', png), preserveAspectRatio: 'none' });
+  if (!('paths' in node.content)) return '';
+  const scale = strokeScaleOf(node.viewBox, node.frame, 'meet');
+  const body = node.content.paths
+    .map((path) =>
+      element('path', {
+        d: svgPathData(placeCommands(path.commands, node.viewBox, node.frame, 'meet')),
+        ...vectorAttrs({
+          fill: path.fill,
+          stroke: path.stroke,
+          strokeWidth: (path.strokeWidth ?? DEFAULTS.strokeWidth) * scale,
+          lineCap: path.lineCap,
+          lineJoin: path.lineJoin,
+        }),
+      }),
+    )
+    .join('');
+  return withShadow(node.css, index, body);
 };

@@ -19,7 +19,7 @@ import {
   textWidthOverflowRectOf,
 } from './svg.ts';
 import { tableOverflowRectOf, tableSvg } from './table.ts';
-import { pathSvg } from './vector.ts';
+import { iconSvg, pathSvg } from './vector.ts';
 import { attrs, element } from './xml.ts';
 
 /**
@@ -58,7 +58,7 @@ const drawers: DispatchTable<PositionedNode, string, [ctx: DrawContext, index: n
   chart: (node, ctx) => chartSvg(contentOf(node), { fontFamilyMap: ctx.fontFamilyMap, lang: ctx.lang }),
   table: (node, ctx, index) => tableSvg(contentOf(node), { fontFamilyMap: ctx.fontFamilyMap }, `clip-${index}`),
   path: (node, _ctx, index) => pathSvg(node, index),
-  icon: () => '',
+  icon: (node, _ctx, index) => iconSvg(node, index),
 };
 
 const transformOf = (item: PaintItem): string | undefined =>

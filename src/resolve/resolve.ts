@@ -1,5 +1,6 @@
 import { DEFAULTS } from '../core/defaults.ts';
 import type { ResponsiveContext } from '../core/responsive.ts';
+import { createResolveEnv, iconGeometryOf, type ResolveEnv } from './icon.ts';
 import type {
   Children,
   CssStyle,
@@ -34,6 +35,9 @@ import type { RunStyle } from './runs.ts';
  */
 
 const SEPARATOR = ' > ';
+
+/** O que desce pela árvore inteira: o contexto responsivo e a IO injetada (leitura de ícones). */
+type ResolveScope = ResponsiveContext & { readonly env: ResolveEnv };
 
 const joinPath = (parent: string, segment: string): string =>
   parent === '' ? segment : `${parent}${SEPARATOR}${segment}`;
@@ -80,7 +84,7 @@ interface ParentInfo {
 const parentOf = (n: Normalized): ParentInfo => ({ text: n.text, css: n.css });
 
 /** A normalização não conhece o path: o erro de valor ganha aqui o path e a primitiva. */
-const normalizedOf = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext, parent: ParentInfo): Normalized => {
+const normalizedOf = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): Normalized => {
   const props = resolvePropsOf(item.element, item.kind, path, ctx);
   try {
     return normalizeProps(item.kind, props, parent.text);
@@ -132,6 +136,13 @@ const resolvePath = (item: ExpandedPrimitive, path: string, n: Normalized): Reso
   return { kind: 'path', path, props, css: n.css, commands, viewBox, ...(problem === undefined ? {} : { problem }) };
 };
 
+const resolveIcon = (item: ExpandedPrimitive, path: string, n: Normalized, env: ResolveEnv): ResolvedNode => {
+  assertNoChildren(item, path);
+  const props = legacyPropsOf('icon', n);
+  const { viewBox, content } = iconGeometryOf(props, path, env);
+  return { kind: 'icon', path, props, css: n.css, viewBox, content };
+};
+
 const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
   assertNoChildren(item, path);
   const props = legacyPropsOf('table', n);
@@ -139,7 +150,7 @@ const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized): Res
   return { kind: 'table', path, props, css: n.css, rows: normalizeRows(props.rows) };
 };
 
-const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: ResponsiveContext): ResolvedNode => {
+const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: ResolveScope): ResolvedNode => {
   const props = legacyPropsOf('box', n);
   assertPaginateInFlow(props, path);
   assertBoxShape(props, path);
@@ -147,7 +158,7 @@ const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: R
   return { kind: 'box', path, props, css: n.css, children };
 };
 
-const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveContext, parent: ParentInfo): ResolvedNode => {
+const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): ResolvedNode => {
   const n = normalizedOf(item, path, ctx, parent);
   switch (item.kind) {
     case 'box':
@@ -166,6 +177,7 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveConte
     case 'path':
       return resolvePath(item, path, n);
     case 'icon':
+      return resolveIcon(item, path, n, ctx.env);
     case 'connector':
       throw new ResolveError(`<${nameOf(item)}> ainda não está disponível`, path);
     case 'span':
@@ -182,7 +194,7 @@ const isDisplayed = (node: ResolvedNode): boolean => node.css.display !== 'none'
 const resolveChildren = (
   children: Children,
   parentPath: string,
-  ctx: ResponsiveContext,
+  ctx: ResolveScope,
   parent: ParentInfo,
 ): readonly ResolvedNode[] => {
   const items = onlyPrimitives(expandChild(children), parentPath);
@@ -195,7 +207,7 @@ const resolveChildren = (
 const ROOT_PARENT: ParentInfo = { text: ROOT_TEXT, css: undefined };
 
 /** O slide é o primeiro segmento do path e não leva índice (o índice vai em Diagnostic.slide). */
-const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResponsiveContext): ResolvedSlide => {
+const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResolveScope): ResolvedSlide => {
   if (item.kind !== 'slide') {
     throw new ResolveError(`Filhos de <Deck> têm que ser <Slide>; encontrado <${nameOf(item)}>`, item.segment);
   }
@@ -224,7 +236,8 @@ const expandRoot = (root: SlideElement): ExpandedPrimitive => {
 };
 
 /** Valores responsivos são resolvidos aqui para `ctx`; a árvore resolvida só tem valores concretos. */
-export const resolveDeck = (root: SlideElement, ctx: ResponsiveContext): ResolvedDeck => {
+export const resolveDeck = (root: SlideElement, responsive: ResponsiveContext, env: ResolveEnv = createResolveEnv()): ResolvedDeck => {
+  const ctx: ResolveScope = { ...responsive, env };
   const deck = expandRoot(root);
   const slides = onlyPrimitives(expandChild(deck.element.props.children), '').map((item, index) =>
     resolveSlide(item, index, ctx),

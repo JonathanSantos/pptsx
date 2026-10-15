@@ -21,6 +21,9 @@ interface Candidate {
   readonly members: readonly Member[];
 }
 
+// M12: nesses códigos o motivo está só na mensagem (por que virou imagem, qual id falta): mensagens diferentes não se agrupam.
+const MESSAGE_IDENTITY: ReadonlySet<Diagnostic['code']> = new Set(['icon-rasterized', 'path-invalid', 'connector-target-missing', 'connector-omitted']);
+
 // Tamanhos entram na identidade: um 44→41 agrupado com 44→28 esconderia que um irmão coube melhor.
 const identityOf = (diagnostic: Diagnostic): string =>
   [
@@ -33,6 +36,7 @@ const identityOf = (diagnostic: Diagnostic): string =>
     diagnostic.data?.toSize ?? '',
     // Altura e largura do mesmo Text são problemas diferentes (ações diferentes).
     diagnostic.data?.axis ?? '',
+    MESSAGE_IDENTITY.has(diagnostic.code) ? diagnostic.message : '',
   ].join('\u0000');
 
 interface Variation {

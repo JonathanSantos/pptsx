@@ -12,10 +12,11 @@ import {
   paintedShapeOf,
   placedOf,
 } from './decoration.ts';
-import { debugOutlineOf, imageOf, shapeOf, textOf, type ShapeSpec } from './options.ts';
+import { debugOutlineOf, iconImageOf, imageOf, shapeOf, textOf, type ShapeSpec } from './options.ts';
 import type { PaintItem } from './paint.ts';
 import { tableOf } from './table.ts';
 import { pathOf } from './vector.ts';
+import { iconDrawnRectOf, iconPngOf, iconShapesOf } from './icon.ts';
 
 export interface EmitContext {
   readonly baseDir: string;
@@ -62,7 +63,13 @@ const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: Emi
     const spec = pathOf(node);
     if (spec !== undefined) addShape(slide, paintedShapeOf(spec, node, item, { cap: node.props.lineCap, join: node.props.lineJoin }));
   },
-  icon: () => undefined,
+  icon: (node, slide, _ctx, item) => {
+    iconShapesOf(node).forEach(({ spec, path }) =>
+      addShape(slide, paintedShapeOf(spec, node, item, { cap: path.lineCap, join: path.lineJoin })),
+    );
+    const png = iconPngOf(node);
+    if (png !== undefined) slide.addImage(paintedImageOf(iconImageOf(png, iconDrawnRectOf(node)), iconDrawnRectOf(node), item));
+  },
 };
 
 /** Fundo/sombra, imagem de fundo, bordas e, por cima, o conteúdo do nó. */

@@ -33,7 +33,7 @@ import {
 } from './fonts/index.ts';
 import { cssNotEmittedOf, fitDeck } from './fit/index.ts';
 import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
-import { resolveDeck } from './resolve/index.ts';
+import { createResolveEnv, resolveDeck, type ResolveEnv } from './resolve/index.ts';
 import { createContext, resolveSize } from './sizes.ts';
 import { createFontkitMeasurer, createFontRegistry } from './text/index.ts';
 
@@ -51,6 +51,8 @@ interface RenderSettings {
   readonly embedFonts: boolean;
   readonly preview: PreviewOptions | false;
   readonly env: LayoutEnv;
+  /** M12: leitura de assets no resolve (SVG dos ícones), relativa ao baseDir. */
+  readonly resolveEnv: ResolveEnv;
 }
 
 const readImageSize =
@@ -76,6 +78,7 @@ const settingsOf = (options: RenderOptions): RenderSettings => {
     preview: options.preview ?? { mode: 'native', width: DEFAULTS.preview.width },
     // M11: o min-content do grid precisa da mesma folga do medidor.
     env: { measureText, imageSize: readImageSize(baseDir), textSafety: options.textSafety ?? DEFAULTS.textSafety },
+    resolveEnv: createResolveEnv(baseDir),
   };
 };
 
@@ -203,7 +206,7 @@ const embedPlanOf = (deck: PositionedDeck, settings: RenderSettings): EmbedPlan 
 
 const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: RenderSettings): Promise<RenderResult> => {
   const ctx = createContext(size);
-  const fitted = fitDeck({ deck: resolveDeck(deck(ctx), ctx), size, env: settings.env });
+  const fitted = fitDeck({ deck: resolveDeck(deck(ctx), ctx, settings.resolveEnv), size, env: settings.env });
   const { positioned } = fitted;
   const embed = embedPlanOf(positioned, settings);
   const buffer = await emitPptx(positioned, {
