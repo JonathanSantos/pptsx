@@ -148,24 +148,24 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M6-G | Mesmo Text pode receber `text-shrunk` e `text-illegible` | aceito (info + warning dizem coisas diferentes) |
 | M6-H | Agrupamento esconde que um `KpiCard` ficou maior → resolvido no gate (identidade inclui from/to) | ✅ |
 | M7-G | `npm publish` bloqueado por `private: true` / `version 0.0.0`; decisão do dono | dono |
-| M7-G | `npm audit`: 3 high em `image-size` via pptxgenjs, sem fix upstream | acompanhar |
+| M7-G | `npm audit`: 3 high em `image-size` via pptxgenjs, sem fix upstream | ✅ M16-1: `overrides` para a versão corrigida (o pptxgenjs não importa o pacote); `npm audit` = 0 |
 | M7-G | `init` regrava tsconfig existente sem preservar comentários (JSONC) | aceito |
-| M7-B | `WATCH_DEBOUNCE_MS` vive em `src/cli/watch.ts`, não em `DEFAULTS` | mover no próximo Mx-0 |
-| M7-B | Cada rebuild do watch cria um grafo novo (memória cresce durante sessões longas) | aceito |
+| M7-B | `WATCH_DEBOUNCE_MS` vive em `src/cli/watch.ts`, não em `DEFAULTS` | ✅ `DEFAULTS.watchDebounceMs` (watch.ts só reexporta) |
+| M7-B | Cada rebuild do watch cria um grafo novo (memória cresce durante sessões longas) | ✅ M16-1: medido +12 MB/rebuild (o motor era recarregado); hook `?pptsx-fresh` só nos arquivos do usuário, 200 rebuilds = +22 MB |
 | M8-S | pptxgenjs grava `<p:sldIdLst>` antes de `<p:notesMasterIdLst>` (fora da ordem do schema CT_Presentation); PowerPoint pode pedir "reparar" | M8-E: reordenar em `sanitize.ts` |
 | M8-S | Keynote descarta `ppt/fonts/` e `embeddedFontLst`; PowerPoint web usa EOT → embed implementado como opção (`embedFonts`) | ✅ M8-D/E |
 | M8-H | `nowrap` saía com `wrap="square"`: Keynote requebrava a linha que estourou (R20) → `wrap="none"` no gate | ✅ gate M8 |
 | M8-H | `font-missing` dizia "não está registrada" mesmo para face registrada sem `file` e ausente no sistema → mensagem reescrita no gate | ✅ gate M8 |
 | M8-H | `text-truncated` agrupado (R24/R25) mostra só os números do pior caso | aceito (regra do contrato: mensagem do pior + ×N) |
 | M8-H | Baseline entre Text 40 pt e Text 12 pt desvia ~1,25 pt no Keynote (deslocamento da 1ª linha varia com o size, M3) | aceito; anotar no guia se virar queixa |
-| M8-H | Scripts de Keynote: outra sessão (skill-ppt) travou o app; `scripts/keynote-export.sh` não tem retry nem trava de máquina | backlog: retry em -1712/-609 |
+| M8-H | Scripts de Keynote: outra sessão (skill-ppt) travou o app; `scripts/keynote-export.sh` não tem retry nem trava de máquina | ✅ M16-1: trava `mkdir` com pid e 3 tentativas em -1712/-1700/-609 |
 | M9-D | Não dá para "desligar" uma prop num breakpoint (`{ base: '100%', tall: undefined }` cai para base; `base: undefined` não compila) | aceito; guia documenta; candidato a M9+ (`null` = ausente) |
 | M9-D | `paginate` numa row divide os itens em colunas (não é erro) | documentado como armadilha no guia |
 | M9-D | Combinar dois valores responsivos numa prop (ex.: `ratio` + `direction`) não tem forma exata; `TwoColumn.ratio` ficou `number` | aceito |
 | M9-E | `long-list.tsx` sem `notes` → `ContentLayout.notes` repassada ao Slide (gate) | ✅ gate M9 |
 | M9-E | Linha da CLI não mostrava o slide do autor após paginação → `slide 5 (3 no deck)` (gate) | ✅ gate M9 |
-| M9-E | Deck fora do cwd com tsconfig próprio falha com "React is not defined": `assertDeckTsconfig` valida o tsconfig da pasta do deck, mas `src/cli/loader.ts` compila com o do cwd | backlog: usar o tsconfig da pasta do deck (M10-0 ou correção isolada) |
-| M10-G | Preview do gráfico mostra 4.0 como "4" e usa ponto decimal; o .pptx grava formatCode 0.0 e segue o idioma | backlog: preview formata com as casas dos dados e vírgula em pt-BR |
+| M9-E | Deck fora do cwd com tsconfig próprio falha com "React is not defined": `assertDeckTsconfig` valida o tsconfig da pasta do deck, mas `src/cli/loader.ts` compila com o do cwd | ✅ M16-1: o loader compila com o tsconfig mais próximo do deck |
+| M10-G | Preview do gráfico mostra 4.0 como "4" e usa ponto decimal; o .pptx grava formatCode 0.0 e segue o idioma | ✅ M11-D (Intl.NumberFormat com as casas dos dados) |
 | M10-H | Soma dos rowH arredondados (0,5 pt) deixa a tabela até 0,4 pt × linhas mais alta no Keynote; pode estourar sem diagnóstico | M11-C: fit usa Σ rowH arredondados |
 | M10-H | Preview do gráfico com ponto decimal e sem as casas do formatCode (Keynote: "38,2", "40,0") | M11-D: Intl.NumberFormat(lang) com as casas dos dados |
 | M10-H | Eixo de valores herda `0.0` dos rótulos ("60,0") | M11-D: eixo com `General`; CONTRACTS §M10-D ajustado |
@@ -174,11 +174,12 @@ Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/
 | M11-E | Tabela da demo cresce +2,8 pt (16x9) pelo arredondamento das linhas a 0,5 pt: intencional (altura emitida = altura do layout), fora do "±1 pt" do gate | aceito; gate reescrito: ±1 pt exceto linhas de tabela |
 | M11-A | Cores hex saem em maiúsculas (`#RRGGBB`) em props e css; alpha de rgba() se perde em props que guardam só o hex (fill do Shape, Table, Chart) | aceito |
 | M11-E | `calibration*.tsx` usam lineHeight numérico, cujo significado mudou: paridade XML byte a byte com a engine antiga deixou de valer; M11-G recalibra | M11-G |
-| M11-D | Chart/Table dentro de caixa girada perdem a rotação herdada em silêncio (só o próprio `rotate` avisa) | backlog: avisar também pela rotação herdada |
+| M11-D | Chart/Table dentro de caixa girada perdem a rotação herdada em silêncio (só o próprio `rotate` avisa) | ✅ M16-1: `css-not-emitted` cita o ancestral girado |
 | M11-F | `TwoColumn` ficou com `stacked?: Responsive<boolean>` (não `direction`, que é alias antigo); `KpiRow` em `repeat(n, minmax(0, 1fr))` porque `1fr` cresce até a palavra mais longa | documentado no guia §3/§9 |
 | M11-B | Image com `width="100%"` + `maxHeight` mantém a proporção (diferença intencional em relação ao browser); em grid, Image sem tamanho não estica | CONTRACTS §M11 layout; guia §6.3 |
 | M11-E | Paridade dos aliases roda sobre cópias congeladas dos decks antigos em `tests/examples/legacy/`; decks em CSS têm `css-positioned.json` | — |
-| M11-G | 1ª baseline no Keynote com `lineHeight` numérico fica em ≈ 0,8 × ⌊spcPts⌋, não na meia-entrelinha: com 1.5 o texto desce até 2,3 pt (C07, C12, C24, C31); 1.2 fica em ±0,3 pt | M12: conferir no PowerPoint e, se igual, subir a caixa em 0,8·⌊lh⌋ − (ascent + meia-entrelinha); guia §4 avisa |
+| M11-G | 1ª baseline no Keynote com `lineHeight` numérico fica em ≈ 0,8 × ⌊spcPts⌋, não na meia-entrelinha: com 1.5 o texto desce até 2,3 pt (C07, C12, C24, C31); 1.2 fica em ±0,3 pt | ⛔ dono: a correção depende do PowerPoint (se fizer como o Keynote, subir a caixa; se seguir o CSS, documentar); sem a conferência não muda; guia §4 avisa |
 | M11-G | `spcPts` fracionário é truncado pelo Keynote (−0,4 a −0,8 pt/linha), como já valia para 'normal' desde o M3 | aceito; guia §4 |
 | M11-G | Colunas livres da Table seguem o conteúdo (`table-layout: auto`): demo 16x9 256/141,4/141,4/101,2 (antes 128×3) | aceito; CONTRACTS §M10-B atualizado |
 | M11-G | Validação no PowerPoint pendente (dono): regra 0,8 × espaçamento na calibração (C07, C12, C29–C31), bordas por lado, sombra, rotação, opacidade, camadas, display responsivo | dono |
+| M16-1 | `causedBy` entre linhas `auto` de grid (M11-C, simplificado) | não fazer: com linhas `auto` o track sizing dá a cada linha pelo menos a altura do conteúdo, nenhuma célula é espremida por outra; o excesso já sai como `box-overflow` do próprio grid ("os tracks ocupam N pt"). Implementado e revertido: não havia estouro interno para atribuir |
