@@ -29,6 +29,24 @@ const boxShapeNotes = (node: PositionedNode): readonly NotEmitted[] => {
   ];
 };
 
+/** M16: ancestral girado mais próximo (o PPTX gira cada forma no próprio centro; gráfico e tabela, nem isso). */
+interface Walked {
+  readonly node: PositionedNode;
+  readonly rotatedAncestor?: { readonly path: string; readonly rotate: number };
+}
+
+const rotationNotes = ({ node, rotatedAncestor }: Walked): readonly NotEmitted[] => {
+  if (node.kind !== 'chart' && node.kind !== 'table') return [];
+  const what = node.kind === 'chart' ? 'gráfico' : 'tabela';
+  if (node.css.rotate !== 0) return [{ property: 'rotate', value: String(node.css.rotate), reason: `${what} nativo não gira no PPTX` }];
+  if (rotatedAncestor === undefined) return [];
+  return [{
+    property: 'rotate',
+    value: `${rotatedAncestor.rotate} (herdado de ${rotatedAncestor.path})`,
+    reason: `${what} nativo não gira no PPTX e sai reto dentro da caixa girada; tire o rotate do ancestral ou o ${what} de dentro dele`,
+  }];
+};
+
 const contextualOf = (node: PositionedNode): readonly NotEmitted[] => {
   const { css } = node;
   const notes: NotEmitted[] = [];
@@ -42,22 +60,27 @@ const contextualOf = (node: PositionedNode): readonly NotEmitted[] => {
     notes.push({ property: 'borderRadius', value: String(css.borderRadius), reason: 'com bordas diferentes por lado, as linhas das bordas saem retas (o fundo continua arredondado)' });
   }
   if (boxShapeOf(node) !== 'rect') notes.push(...boxShapeNotes(node));
-  if (css.rotate !== 0 && (node.kind === 'chart' || node.kind === 'table')) {
-    notes.push({ property: 'rotate', value: String(css.rotate), reason: `${node.kind === 'chart' ? 'gráfico' : 'tabela'} nativo não gira no PPTX` });
-  }
   return notes;
 };
 
 const messageOf = (note: NotEmitted): string =>
   `A propriedade CSS ${note.property}: ${note.value} não sai no PPTX: ${note.reason}. O preview também não a desenha; remova-a ou troque por uma suportada (ver docs/AGENT_GUIDE.md).`;
 
-const nodesOf = (nodes: readonly PositionedNode[]): readonly PositionedNode[] =>
-  nodes.flatMap((node) => (node.kind === 'box' ? [node, ...nodesOf(node.children)] : [node]));
+const nodesOf = (nodes: readonly PositionedNode[], rotatedAncestor?: Walked['rotatedAncestor']): readonly Walked[] =>
+  nodes.flatMap((node): readonly Walked[] => {
+    const own: Walked = rotatedAncestor === undefined ? { node } : { node, rotatedAncestor };
+    if (node.kind !== 'box') return [own];
+    const next = node.css.rotate !== 0 ? { path: node.path, rotate: node.css.rotate } : rotatedAncestor;
+    return [own, ...nodesOf(node.children, next)];
+  });
 
 const slideDiagnostics = (slide: PositionedSlide, index: number, size: string): readonly Diagnostic[] => {
   const owners: readonly { readonly path: string; readonly notes: readonly NotEmitted[] }[] = [
     { path: slide.path, notes: slide.css.notEmitted },
-    ...nodesOf(slide.children).map((node) => ({ path: node.path, notes: [...node.css.notEmitted, ...contextualOf(node)] })),
+    ...nodesOf(slide.children).map((walked) => ({
+      path: walked.node.path,
+      notes: [...walked.node.css.notEmitted, ...contextualOf(walked.node), ...rotationNotes(walked)],
+    })),
   ];
   return owners.flatMap(({ path, notes }) =>
     notes.map(
