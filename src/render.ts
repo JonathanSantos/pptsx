@@ -7,6 +7,7 @@ import type {
   DeckDefinition,
   Diagnostic,
   Dimensions,
+  DocumentProperties,
   FontFace,
   FontWeight,
   LayoutEnv,
@@ -20,7 +21,7 @@ import type {
   ResolvedTheme,
   SlideSize,
 } from './core/types.ts';
-import { emitPptx, type EmitOptions } from './emit/index.ts';
+import { emitPptx, outputSectionsOf, type EmitOptions, type OutputSection } from './emit/index.ts';
 import {
   DEFAULT_FONTS,
   eotOf,
@@ -57,6 +58,7 @@ interface RenderSettings {
   readonly resolveEnv: ResolveEnv;
   /** M15: tema normalizado uma vez (erro de cor no tema falha antes de medir). */
   readonly theme?: ResolvedTheme;
+  readonly document?: DocumentProperties;
 }
 
 const readImageSize =
@@ -84,7 +86,14 @@ const settingsOf = (options: RenderOptions): RenderSettings => {
     env: { measureText, imageSize: readImageSize(baseDir), textSafety: options.textSafety ?? DEFAULTS.textSafety },
     resolveEnv: createResolveEnv(baseDir),
     ...(options.theme === undefined ? {} : { theme: resolveTheme(options.theme) }),
+    ...(options.document === undefined ? {} : { document: options.document }),
   };
+};
+
+/** M15: legenda de seção só no slide em que ela começa. */
+const sectionAt = (sections: readonly OutputSection[], index: number): { readonly section?: string } => {
+  const section = sections.find((item) => item.start === index);
+  return section === undefined ? {} : { section: section.title };
 };
 
 /** Selo do overview: o diagnóstico mais grave do slide (info não aparece). */
@@ -111,8 +120,15 @@ const renderPreview = (
     lang: settings.lang,
   };
   const slides = deck.slides.map((slide) => svgToPng(slideToSvg(slide, deck.size, svgOptions), { widthPx, fontFiles }));
+  const sections = outputSectionsOf(deck);
   const overview = buildOverview(
-    slides.map((png, index) => ({ png, number: index + 1, badge: badgeOf(diagnostics, index + 1) })),
+    slides.map((png, index) => ({
+      png,
+      number: index + 1,
+      badge: badgeOf(diagnostics, index + 1),
+      ...(deck.slides[index]?.props.hidden === true ? { hidden: true } : {}),
+      ...sectionAt(sections, index),
+    })),
     { fontFiles },
   );
   return { slides, overview };
@@ -235,6 +251,7 @@ const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: Rende
     lineBreaks: settings.lineBreaks,
     embedFonts: embed.fonts,
     ...(settings.theme === undefined ? {} : { theme: settings.theme }),
+    ...(settings.document === undefined ? {} : { document: settings.document }),
   });
   // M11: propriedades CSS sem de/para para o PPTX viram warning aqui (uma vez por nó).
   const diagnostics = [...fitted.diagnostics, ...cssNotEmittedOf(positioned), ...embed.diagnostics];

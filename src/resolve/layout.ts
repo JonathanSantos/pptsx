@@ -139,6 +139,9 @@ export const sectionsOf = (sections: unknown, slideCount: number): readonly Deck
     if (!Number.isInteger(section.from) || section.from < 1 || section.from > slideCount) {
       throw new ResolveError(`${label} ("${section.title}") começa no slide ${section.from}; o deck tem ${slideCount} slides (use 1 a ${slideCount})`, 'Deck');
     }
+    if (sections.findIndex((other: DeckSection) => other.title === section.title) !== index) {
+      throw new ResolveError(`${label} repete o título "${section.title}": cada seção precisa de um título próprio`, 'Deck');
+    }
     const previous = sections[index - 1] as DeckSection | undefined;
     if (previous !== undefined && section.from <= previous.from) {
       throw new ResolveError(`${label} ("${section.title}") começa no slide ${section.from}, não depois da anterior (${previous.from}): ordene por from, sem repetir`, 'Deck');

@@ -8,6 +8,10 @@ export interface OverviewItem {
   readonly png: Buffer;
   readonly number: number;
   readonly badge?: 'error' | 'warning';
+  /** M15: slide oculto: miniatura esmaecida e "oculto" na legenda. */
+  readonly hidden?: boolean;
+  /** M15: título da seção que começa neste slide (legenda e marca à esquerda). */
+  readonly section?: string;
 }
 
 export interface OverviewOptions {
@@ -30,6 +34,14 @@ const GRID = {
   badgeRadius: 12,
   badgeInset: 18,
   badgeBorder: 2.5,
+  /** M15: véu sobre a miniatura de slide oculto e a marca de início de seção. */
+  hiddenVeil: '#FFFFFF',
+  hiddenOpacity: 0.6,
+  sectionMark: '#2F6FED',
+  sectionMarkWidth: 4,
+  sectionMarkGap: 6,
+  /** Legenda maior que isso (em caracteres) é cortada com "…" para caber sob a miniatura. */
+  labelChars: 40,
 } as const;
 
 const BADGE_COLORS: Readonly<Record<NonNullable<OverviewItem['badge']>, string>> = {
@@ -115,10 +127,26 @@ const badgeSvg = (cell: Cell, thumbWidth: number): string => {
   return circle + exclamationSvg(cx, cy);
 };
 
+/** "3", "3 · Resultados", "4 · oculto". */
+export const overviewLabelOf = (item: OverviewItem): string => {
+  const label = [String(item.number), item.section, item.hidden === true ? 'oculto' : undefined].filter((part) => part !== undefined).join(' · ');
+  return label.length > GRID.labelChars ? `${label.slice(0, GRID.labelChars - 1)}…` : label;
+};
+
+const veilSvg = (cell: Cell, frame: { readonly x: number; readonly y: number; readonly width: number; readonly height: number }): string =>
+  cell.item.hidden === true ? element('rect', { ...frame, fill: GRID.hiddenVeil, 'fill-opacity': GRID.hiddenOpacity }) : '';
+
+const sectionMarkSvg = (cell: Cell): string =>
+  cell.item.section === undefined
+    ? ''
+    : element('rect', { x: cell.x - GRID.sectionMarkGap - GRID.sectionMarkWidth, y: cell.y, width: GRID.sectionMarkWidth, height: cell.height, fill: GRID.sectionMark });
+
 const cellSvg = (cell: Cell, thumbWidth: number, family: string | undefined): string => {
   const frame = { x: cell.x, y: cell.y, width: thumbWidth, height: cell.height };
   return [
     element('image', { ...frame, href: dataUriOf('image/png', cell.item.png), preserveAspectRatio: 'none' }),
+    veilSvg(cell, frame),
+    sectionMarkSvg(cell),
     element('rect', { ...frame, fill: 'none', stroke: GRID.border, 'stroke-width': 1 }),
     badgeSvg(cell, thumbWidth),
     element(
@@ -131,7 +159,7 @@ const cellSvg = (cell: Cell, thumbWidth: number, family: string | undefined): st
         'font-size': GRID.labelSize,
         fill: GRID.label,
       },
-      String(cell.item.number),
+      overviewLabelOf(cell.item),
     ),
   ].join('');
 };
