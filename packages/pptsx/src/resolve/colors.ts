@@ -34,3 +34,6 @@ export const withHexFields = <T>(property: string, value: T, fields: readonly st
   );
   return Object.fromEntries(entries) as T;
 };
+
+/** M17: cor CSS (#RGB, #RRGGBB, rgb(), nome básico) → '#RRGGBB'; lança Error com o motivo. API pública. */
+export const toHexColor = (value: unknown): string => hexOf('cor', value);

@@ -1,0 +1,82 @@
+{
+  "name": "pptsx",
+  "version": "0.7.0",
+  "description": "TSX → PPTX engine with automatic layout (MVP)",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/jsx/jsx-runtime.d.ts",
+      "import": "./dist/jsx/jsx-runtime.js",
+      "default": "./dist/jsx/jsx-runtime.js"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/jsx/jsx-dev-runtime.d.ts",
+      "import": "./dist/jsx/jsx-dev-runtime.js",
+      "default": "./dist/jsx/jsx-dev-runtime.js"
+    },
+    "./mcp": {
+      "types": "./dist/mcp/index.d.ts",
+      "import": "./dist/mcp/index.js",
+      "default": "./dist/mcp/index.js"
+    }
+  },
+  "bin": {
+    "pptsx": "./bin/pptsx.mjs",
+    "pptsx-mcp": "./bin/pptsx-mcp.mjs"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "bin",
+    "fonts/LiberationSans-*.ttf",
+    "fonts/LICENSE",
+    "tsconfig.deck.json",
+    "docs/AGENT_GUIDE.md",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "test:package": "PPTSX_PACKAGE_TEST=1 vitest run tests/package",
+    "oracle:generate": "tsx tools/oracle/generate.ts",
+    "schema:generate": "tsx tools/schema/generate.ts",
+    "lint:repo": "tsc --noEmit -p . --noUnusedLocals"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "fontkit": "^2.0.4",
+    "image-size": "^2.0.4",
+    "jszip": "^3.10.2",
+    "pptxgenjs": "^4.0.1",
+    "tsx": "^4.23.15",
+    "yoga-layout": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/fontkit": "^2.0.9",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2",
+    "typescript-api": "npm:typescript@6.0.3",
+    "vitest": "^5.0.4"
+  },
+  "optionalDependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "zod": "4.6.7"
+  }
+}

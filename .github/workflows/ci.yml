@@ -1,4 +1,4 @@
-# M16-6: a suíte em cada push e pull request. Keynote/PowerPoint ficam fora (validação visual manual).
+# M16-6/M17: a suíte dos três pacotes (npm workspaces) em cada push e PR. Keynote/PowerPoint ficam fora.
 name: CI
 
 on:
@@ -43,9 +43,11 @@ jobs:
       - run: npm ci
       - name: PNGs da galeria
         run: |
-          for deck in examples/gallery/*.tsx; do
-            node bin/pptsx.mjs build "$deck" --size 16x9,4x3 --out dist/gallery
+          for deck in packages/ds-base/examples/gallery/*.tsx; do
+            node packages/pptsx/bin/pptsx.mjs build "$deck" --size 16x9,4x3 --out dist/gallery
           done
+      - name: Catálogo do ds-base confere com as fixtures
+        run: node packages/ds-kit/bin/pptsx-ds.mjs catalog packages/ds-base/src/ds.ts --check --fixtures packages/ds-base/fixtures
       - uses: actions/upload-artifact@v4
         with:
           name: galeria

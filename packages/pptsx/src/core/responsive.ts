@@ -52,3 +52,12 @@ export const pickResponsive = <T>(value: Responsive<T>, ctx: ResponsiveContext):
   const key = activeBreakpointsOf(ctx).find((name) => value[name] !== undefined);
   return key === undefined ? value.base : (value[key] as T);
 };
+
+/**
+ * M17: aplica `fn` ao valor e, se ele for responsivo, a cada breakpoint (`{ base, tall }` → `{ base: fn(base),
+ * tall: fn(tall) }`). Para um DS montar props responsivas (variantes) sem conhecer os breakpoints.
+ */
+export const mapResponsive = <T, U>(value: Responsive<T>, fn: (item: T) => U): Responsive<U> => {
+  if (!isResponsive(value)) return fn(value as T);
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, fn(item as T)])) as unknown as Responsive<U>;
+};

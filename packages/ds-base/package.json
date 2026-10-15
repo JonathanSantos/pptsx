@@ -1,0 +1,31 @@
+{
+  "name": "@pptsx/ds-base",
+  "version": "0.1.0",
+  "description": "Design system de exemplo sobre o pptsx: tokens, tema, layouts, componentes, regras de marca e galeria.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist/**/*.js", "dist/**/*.d.ts", "src/**/*.md", "README.md", "LICENSE"],
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit -p .",
+    "lint:repo": "tsc --noEmit -p . --noUnusedLocals",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
+  },
+  "peerDependencies": {
+    "pptsx": ">=0.7.0",
+    "@pptsx/ds-kit": ">=0.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

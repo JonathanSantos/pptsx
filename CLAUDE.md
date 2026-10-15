@@ -1,11 +1,13 @@
 # pptsx — engine TSX → PPTX
 
 Spec do produto: `docs/spec.md`. Organização do trabalho: `docs/work/README.md`. Próximos marcos: `docs/work/milestones/ROADMAP.md`.
-Contratos entre módulos: `src/core/types.ts` (tipos) + `docs/work/CONTRACTS.md` (funções e regras).
+Contratos entre módulos: `packages/pptsx/src/core/types.ts` (tipos) + `docs/work/CONTRACTS.md` (funções e regras).
+
+Monorepo (npm workspaces, M17): `packages/pptsx` (núcleo), `packages/ds-kit` (`@pptsx/ds-kit`), `packages/ds-base` (`@pptsx/ds-base`). Caminhos de código abaixo (`src/…`, `tests/…`, `examples/…`) são relativos ao pacote. **Se uma funcionalidade só faz sentido com uma marca, não entra no núcleo**; se o núcleo precisa do nome de um componente, falta um gancho. Os DS usam só a API pública de `pptsx` (nada de `pptsx/src/...`).
 
 ## Regras invioláveis
 
-- **Não altere `src/core/*`** (types, defaults, assets). Se o contrato não serve, pare e reporte ao orquestrador com a proposta de mudança.
+- **Não altere `packages/pptsx/src/core/*`** (types, defaults, assets). Se o contrato não serve, pare e reporte ao orquestrador com a proposta de mudança.
 - **Só edite os arquivos/pastas que a sua tarefa possui** (coluna "Dono" no marco). Outros agentes trabalham em paralelo.
 - Testes ficam em `tests/` espelhando `src/` e são escritos pelo agente de testes. Agente de código não escreve testes (pode rodar os existentes).
 - Antes de concluir: `npm run typecheck` e `npm test` sem erro nos seus arquivos.
@@ -26,7 +28,8 @@ Contratos entre módulos: `src/core/types.ts` (tipos) + `docs/work/CONTRACTS.md`
 
 ## Comandos
 
-- `npm test` — vitest
+- `npm test` — vitest (na raiz: os três pacotes; dentro de um pacote: só ele)
 - `npm run typecheck` — tsc
-- `npx tsx src/cli.ts build examples/demo.tsx --size 16x9,4x3 --out dist/`
+- `node packages/pptsx/bin/pptsx.mjs build <deck.tsx> --size 16x9,4x3 --out dist/`
+- `node packages/ds-kit/bin/pptsx-ds.mjs catalog packages/ds-base/src/ds.ts --out dist/catalog` — catálogo de um DS (`--check` compara com as fixtures)
 - `scripts/keynote-export.sh <arquivo.pptx> <pasta-saida>` — exporta slides via Keynote (validação visual real)

@@ -1,0 +1,45 @@
+{
+  "name": "@pptsx/ds-kit",
+  "version": "0.1.0",
+  "description": "Ferramentas para criar design systems sobre o pptsx: tokens, tema, variantes, slots, regras de lint, catálogo e defineDs.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "pptsx-ds": "./bin/pptsx-ds.mjs"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p .",
+    "lint:repo": "tsc --noEmit -p . --noUnusedLocals",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
+  },
+  "peerDependencies": {
+    "pptsx": ">=0.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": {
+    "typescript-api": "npm:typescript@6.0.3"
+  }
+}

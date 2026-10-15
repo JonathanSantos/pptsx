@@ -6,8 +6,14 @@ export { resolveDeck, ResolveError } from './resolve/index.ts';
 export { render, renderFragment, type FragmentOptions, type FragmentResult } from './render.ts';
 export { defineDs, type DsManifest } from './ds.ts';
 export type { LintContext, LintRule, RuleFinding } from './lint/rule.ts';
-export type { LintFinding, LintCode } from './lint/lint.ts';
+export { lintDeck, type LintFinding, type LintCode, type LintOptions } from './lint/lint.ts';
 export { COMPONENT_META } from './core/types.ts';
+// M17: utilitários genéricos para quem constrói em cima (design systems); nada de marca.
+export { isResponsive, mapResponsive, pickResponsive } from './core/responsive.ts';
+export { resolveTheme } from './resolve/index.ts';
+export { toHexColor } from './resolve/colors.ts';
+export { buildOverview, type OverviewItem } from './preview/overview.ts';
+export { defaultFontFiles } from './fonts/index.ts';
 export { defineConfig } from './config.ts';
 export type { PptsxConfig, TsxSlidesConfig } from './config.ts';
 
@@ -16,6 +22,22 @@ export const defineDeck = (fn: DeckDefinition): DeckDefinition => fn;
 
 /** M11: props CSS do autor (camelCase) por primitiva. */
 export type * from './core/css-props.ts';
+
+// M17: a árvore resolvida e a posicionada (o que regras de lint e ferramentas de DS recebem).
+export type {
+  ResolvedNode,
+  ResolvedSlide,
+  ResolvedDeck,
+  ResolvedText,
+  ResolvedBox,
+  PositionedNode,
+  PositionedSlide,
+  PositionedDeck,
+  PositionedText,
+  PositionedBox,
+  CssStyle,
+  Rect,
+} from './core/types.ts';
 
 export type {
   Align,

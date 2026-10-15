@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "pptsx",
+    "paths": {
+      "pptsx": ["../pptsx/src/index.ts"],
+      "pptsx/jsx-runtime": ["../pptsx/src/jsx/jsx-runtime.ts"],
+      "pptsx/jsx-dev-runtime": ["../pptsx/src/jsx/jsx-dev-runtime.ts"],
+      "@pptsx/ds-kit": ["./src/index.ts"]
+    }
+  },
+  "include": ["src", "tests", "bin", "vitest.config.ts"]
+}
