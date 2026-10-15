@@ -561,3 +561,8 @@ Diferenças em relação ao plano: sem `theme-color-unused` (não há `--verbose
 - Notas: `notes` (string ou rich text) → `ResolvedSlide.notes = { content, runs }` pelo mesmo `runsOf` do Text (estilo base: regular, preto). `hidden` passa em `props.hidden`.
 - `Deck sections`: lista de `{ title, from }` com `from` inteiro em 1..N, estritamente crescente e título não vazio; senão `ResolveError`. Lista vazia = sem seções.
 - Fit: `placeholder-unused` (info) uma vez por layout, no 1º slide que o usa (número de saída), com os placeholders declarados que nenhum nó dele marca; `PositionedDeck.sections` = as do resolve.
+
+### Tema (M15-2)
+- `resolveTheme(theme)` (resolve, chamado uma vez no render): cores por `hexOf` (erro → `Error` com `theme.colors.<nome>`), chave desconhecida → `Error`, fontes não vazias; cores ausentes = Office (`DEFAULTS.theme.colors`); `declared` = as que o autor deu. `ResolvedTheme` em `src/core/types.ts`.
+- Emit (`src/emit/theme.ts`, último passo do `emitPptx`): `theme1.xml` com nome, `clrScheme` (12 cores na ordem do schema) e `latin` de `majorFont` (heading) e `minorFont` (body). Em slides, slideLayouts, slideMasters e gráficos: `<a:srgbClr>` com o hex de uma cor **declarada** → `<a:schemeClr>` (dark1/light1/dark2/light2 → tx1/bg1/tx2/bg2; filhos como `alpha` preservados; empate de hex: ordem de `DEFAULTS.theme.schemes`, acentos primeiro); `<a:latin typeface>` igual à família de título/corpo → `+mj-lt`/`+mn-lt` (iguais → `+mn-lt`). Sem `theme`: nenhuma parte muda. Medição e preview não mudam.
+- Config/CLI: `theme` e `document` no `pptsx.config.ts`; a CLI põe `document.title` = nome do arquivo do deck quando a config não dá.

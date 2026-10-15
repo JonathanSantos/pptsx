@@ -1,6 +1,6 @@
 import { PptxGenJS, type Presentation } from './pptx.ts';
 import { DEFAULTS } from '../core/defaults.ts';
-import type { LineBreaks, PositionedDeck, PositionedSlide } from '../core/types.ts';
+import type { LineBreaks, PositionedDeck, PositionedSlide, ResolvedTheme } from '../core/types.ts';
 import { ptToInches } from '../sizes.ts';
 import type { LineSpacingStrategy } from './calibration.ts';
 import { emitConnector, emitDebugOutlines, emitItem, type EmitContext } from './emitters.ts';
@@ -8,6 +8,7 @@ import { backgroundOf } from './options.ts';
 import { embedFonts, type EmbeddedFont } from './embed.ts';
 import { paintOrderOf } from './paint.ts';
 import { sanitizePptx } from './sanitize.ts';
+import { applyTheme } from './theme.ts';
 
 export interface EmitOptions {
   readonly debug?: boolean;
@@ -20,6 +21,8 @@ export interface EmitOptions {
   readonly lineBreaks?: LineBreaks;
   /** M8: faces a embutir (EOT pronto, ver src/emit/embed.ts); ausente ou vazio = sem embed. */
   readonly embedFonts?: readonly EmbeddedFont[];
+  /** M15: tema do arquivo (cores e fontes); ausente = arquivo como antes. */
+  readonly theme?: ResolvedTheme;
 }
 
 const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOptions): void => {
@@ -55,5 +58,5 @@ export const emitPptx = async (deck: PositionedDeck, options: EmitOptions): Prom
   deck.slides.forEach((slide) => emitSlide(pptx, slide, options));
   const output = await pptx.write({ outputType: 'nodebuffer' });
   const sanitized = await sanitizePptx(output as Buffer);
-  return embedFonts(sanitized, options.embedFonts ?? []);
+  return applyTheme(await embedFonts(sanitized, options.embedFonts ?? []), options.theme);
 };

@@ -17,6 +17,7 @@ import type {
   PreviewOptions,
   RenderOptions,
   RenderResult,
+  ResolvedTheme,
   SlideSize,
 } from './core/types.ts';
 import { emitPptx, type EmitOptions } from './emit/index.ts';
@@ -34,7 +35,7 @@ import {
 } from './fonts/index.ts';
 import { cssNotEmittedOf, fitDeck } from './fit/index.ts';
 import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
-import { createResolveEnv, resolveDeck, type ResolveEnv } from './resolve/index.ts';
+import { createResolveEnv, resolveDeck, resolveTheme, type ResolveEnv } from './resolve/index.ts';
 import { createContext, resolveSize } from './sizes.ts';
 import { createFontkitMeasurer, createFontRegistry } from './text/index.ts';
 
@@ -54,6 +55,8 @@ interface RenderSettings {
   readonly env: LayoutEnv;
   /** M12: leitura de assets no resolve (SVG dos ícones), relativa ao baseDir. */
   readonly resolveEnv: ResolveEnv;
+  /** M15: tema normalizado uma vez (erro de cor no tema falha antes de medir). */
+  readonly theme?: ResolvedTheme;
 }
 
 const readImageSize =
@@ -80,6 +83,7 @@ const settingsOf = (options: RenderOptions): RenderSettings => {
     // M11: o min-content do grid precisa da mesma folga do medidor.
     env: { measureText, imageSize: readImageSize(baseDir), textSafety: options.textSafety ?? DEFAULTS.textSafety },
     resolveEnv: createResolveEnv(baseDir),
+    ...(options.theme === undefined ? {} : { theme: resolveTheme(options.theme) }),
   };
 };
 
@@ -230,6 +234,7 @@ const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: Rende
     lang: settings.lang,
     lineBreaks: settings.lineBreaks,
     embedFonts: embed.fonts,
+    ...(settings.theme === undefined ? {} : { theme: settings.theme }),
   });
   // M11: propriedades CSS sem de/para para o PPTX viram warning aqui (uma vez por nó).
   const diagnostics = [...fitted.diagnostics, ...cssNotEmittedOf(positioned), ...embed.diagnostics];

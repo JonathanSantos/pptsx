@@ -1405,6 +1405,14 @@ export interface Theme {
   readonly fonts?: ThemeFonts;
 }
 
+/** M15: tema normalizado (cores '#RRGGBB'); `declared` = cores que o autor deu (só elas viram referência ao tema). */
+export interface ResolvedTheme {
+  readonly name: string;
+  readonly colors: Readonly<Record<ThemeColorName, Color>>;
+  readonly declared: readonly ThemeColorName[];
+  readonly fonts: ThemeFonts;
+}
+
 /** M15: propriedades do documento (Arquivo → Propriedades). */
 export interface DocumentProperties {
   readonly title?: string;
