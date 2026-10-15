@@ -590,3 +590,9 @@ Plano: `docs/work/milestones/M16.md`.
 - Saíram `containerOf`, `edgesOf` e `DEFAULTS.container`; entraram `flexDirectionOf(css)`, `mainGapOf(css)` e `slideBackgroundOf(css)` em `src/core/defaults.ts`. As validações do resolve recebem a posição do `css` (`assertPaginateInFlow`/`assertTextPaginate`/`assertTablePaginate`).
 - Diferença em relação ao plano: o estilo de texto continua em `props` (não é derivado do `css`: vem da herança de texto do `Normalized` e é o campo que o fit muda); o que o plano chamava de "props derivados" era a geometria repetida.
 - Garantia: `engine-positioned.json`, `css-positioned.json` e as paridades sem mudança; XML da demo idêntico ao do M15. A árvore posicionada pública (`includePositioned`) perde as chaves de geometria em `props` (estão em `css`).
+
+### MCP, preview ao vivo e lint (M16-3…5)
+- `pptsx-mcp` (stdio): `build`/`diagnose`/`preview`/`init`/`guide`/`schema` em `src/mcp/tools.ts`; nada no stdout; `isError` = o deck tem diagnóstico `error`. Config da pasta do deck para cima. `schema` vem de `src/mcp/schema.generated.ts` (`npm run schema:generate`; teste falha se desatualizado).
+- `pptsx preview <deck> --serve`: `node:http`, rotas `/`, `/state.json` (frames por path), `/svg/<tamanho>/<n>`, `/diagnostics.json`, `/events` (SSE `update`); só o último resultado em memória; escuta depois do 1º build do `runWatchLoop`.
+- `pptsx lint`: `ResolveEnv.observe` (opcional) recebe as props cruas de cada primitiva com o path; aliases em `src/lint/aliases.ts`; `--fix` = `migrateSource(ts, arquivo, fonte)` com a API do TypeScript injetada.
+- `--watch`/MCP/preview recarregam com `?pptsx-fresh=N` só nos arquivos do usuário (`bin/fresh-hooks.mjs`) e um namespace do tsx por tsconfig.

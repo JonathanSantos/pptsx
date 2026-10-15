@@ -14,6 +14,8 @@ import { configPathOf, importUserModule, isLineBreaks, lineBreaksErrorOf, loadCo
 import { DEFAULTS } from './core/defaults.ts';
 import type { DeckDefinition, Diagnostic, LineBreaks, RenderOptions, RenderResult, Severity, SizeSpec } from './core/types.ts';
 import { render } from './render.ts';
+import { loadTypeScriptApi, migrateSource, type CodemodSkip } from './lint/codemod.ts';
+import { lintDeck, lintSummaryOf } from './lint/lint.ts';
 import { parseSizeList } from './sizes.ts';
 
 export const USAGE = [
@@ -21,6 +23,7 @@ export const USAGE = [
     '[--preview native|none] [--preview-width 1280] [--lang pt-BR] [--line-breaks forced|auto] [--embed-fonts] [--watch]',
   `     ${INIT_USAGE.replace(/^uso: /, '')}`,
   '     pptsx preview <deck.tsx> --serve [--port 4321] [--size 16x9,4x3,wide] [--lang pt-BR] [--line-breaks forced|auto]',
+  '     pptsx lint <deck.tsx> [--fix] [--json] [--size 16x9,4x3]',
 ].join('\n');
 
 /** Dependências de IO trocáveis (testes): observação de arquivos e o sinal que encerra o --watch. */
@@ -479,6 +482,63 @@ const previewServe = async (args: PreviewArgs, cwd: string, deps: CliDeps): Prom
   return 0;
 };
 
+// ---------- lint (M16-5) ----------
+
+export interface LintArgs {
+  readonly deckPath: string;
+  readonly fix: boolean;
+  readonly json: boolean;
+  readonly sizes?: readonly SizeSpec[];
+}
+
+export const parseLintCli = (argv: readonly string[], cwd: string = process.cwd()): LintArgs => {
+  const { values, positionals } = parseArgs({
+    args: [...argv],
+    allowPositionals: true,
+    options: { fix: { type: 'boolean', default: false }, json: { type: 'boolean', default: false }, size: { type: 'string' } },
+  });
+  const [, deckPath] = positionals;
+  if (!deckPath) throw new Error(USAGE);
+  return { deckPath: resolve(cwd, deckPath), fix: values.fix, json: values.json, sizes: values.size === undefined ? undefined : parseSizeList(values.size) };
+};
+
+interface FixReport {
+  readonly file: string;
+  readonly changes: number;
+  readonly skipped: readonly CodemodSkip[];
+}
+
+const fixDeckFile = async (deckPath: string): Promise<FixReport> => {
+  const ts = await loadTypeScriptApi();
+  const result = migrateSource(ts, deckPath, readFileSync(deckPath, 'utf8'));
+  if (result.changes > 0) writeFileSync(deckPath, result.source);
+  return { file: deckPath, changes: result.changes, skipped: result.skipped };
+};
+
+const fixLinesOf = (fix: FixReport): readonly string[] => [
+  `--fix: ${fix.changes} ${fix.changes === 1 ? 'troca' : 'trocas'} em ${fix.file}`,
+  ...fix.skipped.map((skip) => `  ▲ linha ${skip.line}: ${skip.prop} não migrado — ${skip.reason}`),
+  '',
+];
+
+const runLint = async (args: LintArgs, cwd: string, deps: CliDeps): Promise<number> => {
+  if (!existsSync(args.deckPath)) throw new Error(`deck não encontrado: ${args.deckPath}`);
+  const fix = args.fix ? await fixDeckFile(args.deckPath) : undefined;
+  const importModule = deps.importModule ?? defaultImportModule;
+  // Fresh: depois do --fix o deck reescrito tem que ser recarregado.
+  const config = await loadConfig(cwd, { fresh: true, cwd }, importModule);
+  const deck = await loadDeck(args.deckPath, { fresh: true, cwd }, importModule);
+  const findings = await lintDeck(deck, {
+    sizes: args.sizes ?? config.sizes ?? ['16x9'],
+    baseDir: dirname(args.deckPath),
+    ...(config.theme === undefined ? {} : { theme: config.theme }),
+    render: { fonts: config.fonts, lang: config.lang, textSafety: config.textSafety, lineBreaks: config.lineBreaks },
+  });
+  if (args.json) console.log(JSON.stringify({ ...(fix === undefined ? {} : { fix }), findings }, null, 2));
+  else console.log([...(fix === undefined ? [] : fixLinesOf(fix)), lintSummaryOf(findings)].join('\n'));
+  return findings.some((finding) => finding.severity !== 'info') ? 1 : 0;
+};
+
 /** Primeiro argumento que não é flag; os comandos vêm antes das flags (`pptsx build ...`). */
 export const commandOf = (argv: readonly string[]): string | undefined => argv.find((arg) => !arg.startsWith('-'));
 
@@ -505,6 +565,7 @@ const dispatch = async (argv: readonly string[], cwd: string, deps: CliDeps): Pr
   }
   if (commandOf(argv) === 'init') return runInit(parseInitCli(argv, cwd), cwd);
   if (commandOf(argv) === 'preview') return previewServe(parsePreviewCli(argv, cwd), cwd, deps);
+  if (commandOf(argv) === 'lint') return runLint(parseLintCli(argv, cwd), cwd, deps);
   const args = parseCli(argv, cwd);
   return args.watch ? watchBuild(args, cwd, deps) : build(args, cwd, deps);
 };

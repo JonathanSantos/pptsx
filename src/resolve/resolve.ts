@@ -93,6 +93,7 @@ const parentOf = (n: Normalized): ParentInfo => ({ text: n.text, css: n.css });
 
 /** A normalização não conhece o path: o erro de valor ganha aqui o path e a primitiva. */
 const normalizedOf = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): Normalized => {
+  ctx.env.observe?.(item.kind, path, item.element.props);
   const props = resolvePropsOf(item.element, item.kind, path, ctx);
   try {
     return normalizeProps(item.kind, props, parent.text);
