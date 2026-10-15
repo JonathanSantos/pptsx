@@ -59,7 +59,10 @@ export const generateSchema = (): Readonly<Record<string, PrimitiveSchema>> => {
 export const schemaSourceOf = (schema: Readonly<Record<string, PrimitiveSchema>>): string =>
   `// Gerado por tools/schema/generate.ts a partir de AuthorPropsMap (src/core/types.ts). Não edite à mão.\n` +
   `/* eslint-disable */\n` +
-  `export const PROPS_SCHEMA = ${JSON.stringify(schema, null, 2)} as const;\n`;
+  `export interface PropSchema {\n  readonly type: string;\n  readonly description?: string;\n}\n\n` +
+  `export interface PrimitiveSchema {\n  readonly type: 'object';\n  readonly properties: Readonly<Record<string, PropSchema>>;\n  readonly required: readonly string[];\n}\n\n` +
+  // Tipo anotado (não `as const`): o .d.ts publicado fica pequeno.
+  `export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = ${JSON.stringify(schema, null, 2)};\n`;
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   writeFileSync(OUTPUT, schemaSourceOf(generateSchema()));

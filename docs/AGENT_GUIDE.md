@@ -749,6 +749,10 @@ Para uma linha de tendência no scatter, passe-a como outra série de pontos (os
 
 ## 7. CLI e fluxo de trabalho
 
+**Caminho preferido, se o servidor `pptsx-mcp` estiver conectado:** use as ferramentas MCP em vez do shell — `diagnose({ deck })` para iterar (rápido, sem PNG), `preview({ deck, size, slide })` para ver um slide, `build({ deck, sizes })` no fim (grava o .pptx e devolve o overview), `guide({ section: "§8" })` e `schema({ primitive: "text" })` para consultar. `isError: true` quer dizer que o deck tem diagnóstico `error` (a ferramenta funcionou). Sem o MCP, a CLI abaixo faz o mesmo.
+
+`pptsx lint deck.tsx` aponta props antigas e outros riscos antes do build; `pptsx lint deck.tsx --fix` migra as props antigas para CSS sem mudar o layout.
+
 **(a) Dentro deste repo** (como na §2): rode na raiz; o deck fica em `examples/agent-test/`, importa `pptsx` sem build e pode usar tokens, layouts e componentes de `examples/`.
 
 ```

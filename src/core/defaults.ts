@@ -3,7 +3,6 @@ import type {
   CssStyle,
   Align,
   ChartProps,
-  ContainerProps,
   FitPolicy,
   FlexDirection,
   FontWeight,

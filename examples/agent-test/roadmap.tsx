@@ -1,4 +1,4 @@
-import { Box, Deck, Shape, Slide, Text, defineDeck } from 'pptsx';
+import { Box, Deck, Shape, Text, defineDeck } from 'pptsx';
 import { tokens } from '../tokens.ts';
 import { ContentLayout } from '../layouts/index.ts';
 

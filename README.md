@@ -9,7 +9,7 @@
 <p align="center">
   <img alt="TypeScript ESM" src="https://img.shields.io/badge/TypeScript-ESM-2F6FED?logo=typescript&logoColor=white">
   <img alt="Node 20+" src="https://img.shields.io/badge/Node-%E2%89%A5%2020-1B2A4A?logo=nodedotjs&logoColor=white">
-  <img alt="Testes: 1922" src="https://img.shields.io/badge/testes-1922%20passando-1E9E6A">
+  <img alt="Testes: 1967" src="https://img.shields.io/badge/testes-1967%20passando-1E9E6A">
   <img alt="Calibração no Keynote: 34/34" src="https://img.shields.io/badge/Keynote-34%2F34%20linhas-5B6680">
   <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-F4F6FA?labelColor=5B6680&color=E8EEFC">
 </p>
@@ -864,6 +864,8 @@ O deck completo é [`examples/arquivo/arquivo.tsx`](examples/arquivo/arquivo.tsx
 ```
 pptsx build <deck.tsx> [flags]
 pptsx init [dir] [--force] [--json]
+pptsx preview <deck.tsx> --serve [--port 4321] [--size 16x9,4x3,wide]
+pptsx lint <deck.tsx> [--fix] [--json] [--size 16x9,4x3]
 ```
 
 | flag | padrão | o que faz |
@@ -1004,9 +1006,44 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 - **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30. Da galeria, `tara` (16:9) e `safra` (4:3) foram exportados e conferidos slide a slide: grupo girado com sombra, grid girado atrás do texto, mapa de calor, tabela e barra proporcional saem como no preview; só os gráficos são redesenhados pelo Keynote, como esperado. Os decks de diagramas (`examples/diagrams/`: formas, Path, ícones, fluxo e arquitetura) batem com o preview em ±1 pt nos nós; o relatório de texto corrido e os pesos da Inter (`examples/texto/`) saem com as mesmas linhas, e a calibração rica (com sobrescrito e corpo por trecho) bate 43/43.
 - **PowerPoint e Google Slides:** ainda não validados; a conferência no PowerPoint está com o dono do projeto. O XML é corrigido nos pontos em que o PowerPoint pediria "reparar".
 
+### Preview ao vivo
+
+`pptsx preview deck.tsx --serve` abre um servidor local (`http://127.0.0.1:4321/`) com os slides em SVG e os diagnósticos ao lado. Salvar o deck (ou um componente, tokens, a config) recarrega a página em menos de 1 s; clicar num diagnóstico destaca o nó no slide; o seletor troca entre 16:9, 4:3 e wide, e a caixa *debug* mostra contornos e estouros. Um erro de sintaxe ou de estrutura aparece no topo, sobre o último resultado bom.
+
+### Migração das props antigas
+
+As props de antes do CSS (`direction`, `grow`, `fill` do Box, `size`/`weight` do Text…) ainda funcionam, mas saem na 1.0. `pptsx lint deck.tsx` aponta cada uma com a troca (e também CSS sem de/para no PPTX, `lineHeight` alto para o Keynote, `1fr` solto em grid e cores fora do tema); `pptsx lint deck.tsx --fix` reescreve o arquivo do deck sem mudar o layout (`stroke` vira `outline`, que também não ocupa espaço) e avisa, com a linha, o que precisa de mão (valor calculado numa prop cujo valor muda, como `justify={j}`). O `--fix` usa a API do TypeScript 5/6 (`npm install -D typescript-api@npm:typescript@6` se o projeto estiver no TypeScript 7).
+
 ## Para agentes
 
-O [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md) é o único documento de que um agente precisa: modelo mental, esqueleto, todas as props, receitas, o formato dos diagnósticos, o checklist de correção e as armadilhas comuns. O fluxo é:
+### MCP (`pptsx-mcp`)
+
+O pacote traz um servidor MCP: o agente constrói, lê diagnósticos e vê os PNGs sem shell. Instale as dependências opcionais (`npm install @modelcontextprotocol/sdk zod`) e registre o servidor:
+
+```bash
+claude mcp add pptsx -- npx pptsx-mcp
+```
+
+Claude Desktop e Cursor (`claude_desktop_config.json` / `.cursor/mcp.json`):
+
+```json
+{ "mcpServers": { "pptsx": { "command": "npx", "args": ["pptsx-mcp"] } } }
+```
+
+| ferramenta | o que faz |
+|---|---|
+| `build({ deck, sizes?, debug?, lineBreaks?, out? })` | como `pptsx build`: grava .pptx/PNGs e devolve os diagnósticos e o overview de cada tamanho; `isError` quando o deck tem `error` |
+| `diagnose({ deck, sizes? })` | só os diagnósticos (rápido, sem PNG) |
+| `preview({ deck, size, slide })` | o PNG de um slide |
+| `init({ dir })` | cria um projeto |
+| `guide({ section? })` | trechos do guia do agente ("§8", "6.17", parte do título); sem argumento, o índice |
+| `schema({ primitive? })` | as props de cada primitiva com tipo e descrição |
+
+Caminhos relativos valem a partir da pasta onde o servidor foi iniciado; o `pptsx.config.ts` é procurado da pasta do deck para cima. Um agente sem shell corrigiu o `broken.tsx` dos testes com uma chamada de `build` ([LOG](examples/agent-test/LOG-M16.md)).
+
+### Guia e fluxo
+
+O [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md) é o único documento de que um agente precisa: modelo mental, esqueleto, todas as props, receitas, o formato dos diagnósticos, o checklist de correção e as armadilhas comuns (pelo MCP: `guide`). O fluxo é:
 
 1. `npx pptsx build deck.tsx --size 16x9,4x3 --json` e ler o exit code;
 2. corrigir primeiro os `error` **sem** `causedBy` (são as causas), seguindo o `path` e a `message`;
@@ -1016,7 +1053,7 @@ O [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md) é o único documento de que um a
 ## Desenvolvimento
 
 ```sh
-npm test               # vitest (1922 testes)
+npm test               # vitest (1967 testes)
 npm run typecheck      # tsc
 npm run build          # compila src/ para dist/ (JS + .d.ts)
 npm run test:package   # npm pack → projeto vazio → init → build (lento)

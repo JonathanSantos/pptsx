@@ -1,4 +1,4 @@
-import { DEFAULTS, tableHeaderOf, tableStyleOf, textStyleOf } from '../core/defaults.ts';
+import { DEFAULTS, tableStyleOf, textStyleOf } from '../core/defaults.ts';
 import type {
   PositionedNode,
   PositionedTable,

@@ -1,0 +1,55 @@
+# M16-6: a suíte em cada push e pull request. Keynote/PowerPoint ficam fora (validação visual manual).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint do repo (variáveis sem uso)
+        run: npm run lint:repo
+      - name: Testes
+        run: npm test
+      - name: Build do pacote
+        run: npm run build
+      - name: Teste do pacote empacotado
+        run: npm run test:package
+      - name: npm audit
+        run: npm audit --audit-level=high
+
+  gallery:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: PNGs da galeria
+        run: |
+          for deck in examples/gallery/*.tsx; do
+            node bin/pptsx.mjs build "$deck" --size 16x9,4x3 --out dist/gallery
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: galeria
+          path: |
+            dist/gallery/*.overview.png
+            dist/gallery/*.pptx
+            dist/gallery/*.diagnostics.json

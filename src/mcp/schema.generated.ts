@@ -1,6 +1,17 @@
 // Gerado por tools/schema/generate.ts a partir de AuthorPropsMap (src/core/types.ts). Não edite à mão.
 /* eslint-disable */
-export const PROPS_SCHEMA = {
+export interface PropSchema {
+  readonly type: string;
+  readonly description?: string;
+}
+
+export interface PrimitiveSchema {
+  readonly type: 'object';
+  readonly properties: Readonly<Record<string, PropSchema>>;
+  readonly required: readonly string[];
+}
+
+export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
   "deck": {
     "type": "object",
     "properties": {
@@ -3179,4 +3190,4 @@ export const PROPS_SCHEMA = {
     },
     "required": []
   }
-} as const;
+};

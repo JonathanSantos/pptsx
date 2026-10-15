@@ -118,7 +118,12 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M15 | M15-3 | seções após a paginação, slide oculto, notas formatadas, propriedades com palavras-chave; overview com seção e oculto | ✅ |
 | M15 | M15-4 | masters/layouts: placeholders no frame do 1º uso, slides ligados por <p:ph>, conteúdo fixo movido para o layout; Keynote importa os layouts | ✅ |
 | M15 | M15-5 | guia (tema, propriedades, seções, oculto, notas, defineLayout, armadilhas), README "Arquivo pronto para editar", agente virgem (1 build, 0 diagnóstico); versão 0.5.0 | ✅ |
-| M16 | M16-1…6 | dívidas (baseline, rotação herdada, loader, keynote-export, audit, watch), visão única do nó, `pptsx-mcp`, `preview --serve`, `lint --fix`, CI e changelog (plano em M16.md) | ⬜ |
+| M16 | M16-1 | dívidas: rotação herdada, loader com tsconfig do deck, keynote-export com trava/retry, audit limpo, watch sem vazamento (+22 MB em 200 builds); grid auto "não fazer"; baseline aguarda o dono | ✅ |
+| M16 | M16-2 | visão única do nó: geometria só em `css` (`NodeProps`); fixtures e XML da demo idênticos | ✅ |
+| M16 | M16-3 | `pptsx-mcp` (build, diagnose, preview, init, guide, schema gerado dos tipos); agente só com o MCP corrigiu o broken.tsx com 1 build | ✅ |
+| M16 | M16-4 | `pptsx preview --serve`: SVG + diagnósticos + destaque por path, SSE < 1 s de ponta a ponta | ✅ |
+| M16 | M16-5 | `pptsx lint` e `--fix` por AST; broken-original migrado com os mesmos frames (±1 pt) | ✅ |
+| M16 | M16-6 | CI (GitHub Actions), CHANGELOG com a política da 1.0, README (MCP, preview ao vivo, migração), guia §7; versão 0.6.0 | ✅ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
 
