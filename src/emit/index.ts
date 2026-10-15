@@ -38,7 +38,9 @@ const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOpti
   (slide.connectors ?? []).forEach((connector) => emitConnector(target, connector, ctx));
   // Contornos depois de tudo para ficarem por cima do conteúdo.
   if (options.debug) emitDebugOutlines(target, items);
-  if (slide.props.notes) target.addNotes(slide.props.notes);
+  // Árvore montada à mão (sem resolve) pode trazer só props.notes em texto.
+  const notes = slide.notes?.content ?? (typeof slide.props.notes === 'string' ? slide.props.notes : undefined);
+  if (notes) target.addNotes(notes);
 };
 
 export type { EmbeddedFont } from './embed.ts';

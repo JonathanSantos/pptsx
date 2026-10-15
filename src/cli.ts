@@ -128,6 +128,8 @@ export const mergeOptions = (args: CliArgs, config: PptsxConfig): RenderOptions 
   textSafety: config.textSafety,
   lineBreaks: args.lineBreaks ?? config.lineBreaks,
   embedFonts: args.embedFonts ?? config.embedFonts,
+  ...(config.theme === undefined ? {} : { theme: config.theme }),
+  document: { title: deckNameOf(args.deckPath), ...config.document },
   debug: args.debug,
   baseDir: dirname(args.deckPath),
   preview: args.preview ? { mode: 'native', width: args.previewWidth } : false,

@@ -160,7 +160,18 @@ export interface StrokeProps {
   readonly strokeWidth?: Pt;
 }
 
+/** M15: seção nomeada do arquivo; começa no slide `from` do autor (base 1) e vai até a próxima. */
+export interface DeckSection {
+  readonly title: string;
+  readonly from: number;
+}
+
 export interface DeckProps {
+  /**
+   * M15: seções do arquivo (painel de slides do PowerPoint), em ordem crescente de `from`. Os números
+   * são do <Deck> do autor; a paginação é traduzida. Slides antes da 1ª seção vão numa seção padrão.
+   */
+  readonly sections?: readonly DeckSection[];
   /**
    * M13: conteúdo repetido em todo slide (rodapé, número), entra como último filho de cada slide
    * com `position: absolute` (o autor posiciona com bottom/left/right). Repete nas partes paginadas.
@@ -172,9 +183,18 @@ export interface DeckProps {
 export interface SlideProps extends ContainerProps {
   /** Cor hex ou caminho de imagem. */
   readonly background?: Color | { readonly image: string };
-  readonly notes?: string;
+  /** Notas do apresentador. M15: rich text (`B`/`I`/`Span`, links externos; `\n` = parágrafo) além de string. */
+  readonly notes?: string | TextChildren;
+  /** M15: slide oculto (pulado na apresentação; continua no arquivo). Padrão false. */
+  readonly hidden?: boolean;
   readonly children?: Children;
 }
+
+/**
+ * M15: papel de um nó no layout do slide (`defineLayout`). Os nomes conhecidos viram o tipo de
+ * placeholder do PowerPoint (title, subTitle, body, ftr, pic); outro nome vira um `body` com esse nome.
+ */
+export type PlaceholderName = 'title' | 'subtitle' | 'body' | 'footer' | 'pictures' | (string & {});
 
 export interface BoxProps extends FlexItemProps, ContainerProps, StrokeProps {
   /** Raio dos cantos em pt; > 0 emite roundRect. */
@@ -192,6 +212,8 @@ export interface BoxProps extends FlexItemProps, ContainerProps, StrokeProps {
   readonly shape?: ShapeKind;
   /** M13: hyperlink no fundo da caixa: URL externa ou `slide:N` (N = slide do autor, base 1). */
   readonly href?: string;
+  /** M15: a área desta caixa vira um placeholder do layout (o conteúdo continua como objetos do slide). */
+  readonly placeholder?: PlaceholderName;
   readonly children?: Children;
 }
 
@@ -238,6 +260,8 @@ export interface TextProps extends FlexItemProps, TextStyleProps {
    * Só um nó paginate (Box ou Text) por slide; enquanto pagina, este Text não encolhe. Padrão false.
    */
   readonly paginate?: boolean;
+  /** M15: o texto sai ligado ao placeholder deste nome do layout do slide (`defineLayout`). */
+  readonly placeholder?: PlaceholderName;
   /** Conteúdo: strings/números e Span/B/I (M8); concatenados na resolução. */
   readonly children?: TextChildren;
 }
@@ -278,6 +302,8 @@ export interface ImageProps extends FlexItemProps {
   readonly fit?: ImageFit;
   /** M13: hyperlink da imagem (URL ou `slide:N`). */
   readonly href?: string;
+  /** M15: a imagem sai ligada ao placeholder deste nome do layout do slide. */
+  readonly placeholder?: PlaceholderName;
 }
 
 /**
@@ -834,6 +860,25 @@ export interface Primitive<K extends PrimitiveKind> {
 /** Componente do usuário: função pura (props) => elemento. Sem hooks, sem estado. */
 export type Component<P = any> = (props: P) => Child;
 
+/** M15: marca de um componente de layout (`defineLayout`). */
+export const LAYOUT_DEFINITION: unique symbol = Symbol.for('pptsx.layout');
+
+export interface LayoutOptions {
+  /** Placeholders que o layout oferece; os nós marcam com `placeholder="…"`. */
+  readonly placeholders: readonly PlaceholderName[];
+  /** Fundo do layout no master (cor ou imagem); os slides sem fundo próprio herdam. */
+  readonly background?: Color | { readonly image: string };
+  /** Conteúdo fixo do layout (logotipo, faixa): sai no master, não em cada slide. Posicione com `position="absolute"`. */
+  readonly fixed?: Children;
+}
+
+export interface LayoutDefinition extends LayoutOptions {
+  readonly name: string;
+}
+
+/** Componente marcado por `defineLayout`: o <Slide> que ele devolve pertence ao layout. */
+export type LayoutComponent<P = any> = Component<P> & { readonly [LAYOUT_DEFINITION]: LayoutDefinition };
+
 export const FRAGMENT: unique symbol = Symbol.for('pptsx.fragment');
 export type FragmentType = typeof FRAGMENT;
 
@@ -1004,9 +1049,27 @@ export interface ResolvedConnector {
   readonly missing?: readonly ('from' | 'to')[];
 }
 
+/** M15: notas resolvidas; '\n' em `content` separa parágrafos, como no Text. */
+export interface ResolvedNotes {
+  readonly content: string;
+  readonly runs: readonly TextRun[];
+}
+
+/** M15: layout do slide; `fixedPath` = path do invólucro do conteúdo fixo (sai no master), quando há. */
+export interface ResolvedLayout {
+  readonly name: string;
+  readonly placeholders: readonly PlaceholderName[];
+  readonly background?: Color | { readonly image: string };
+  readonly fixedPath?: string;
+}
+
 export interface ResolvedSlide extends ResolvedBase<'slide', Omit<SlideProps, 'children'>> {
   /** M9: índice do slide no <Deck> do autor, começando em 1 (clones de paginação repetem o do original). */
   readonly sourceSlide: number;
+  /** M15: notas com estilo por trecho; ausente = sem notas. */
+  readonly notes?: ResolvedNotes;
+  /** M15: o layout (`defineLayout`) que gerou este slide; ausente = slide solto, sem master próprio. */
+  readonly layout?: ResolvedLayout;
   readonly children: readonly ResolvedNode[];
   /** M12: conectores do slide inteiro (de qualquer Box), fora da árvore de layout. Ausente = nenhum. */
   readonly connectors?: readonly ResolvedConnector[];
@@ -1014,6 +1077,8 @@ export interface ResolvedSlide extends ResolvedBase<'slide', Omit<SlideProps, 'c
 
 export interface ResolvedDeck {
   readonly slides: readonly ResolvedSlide[];
+  /** M15: seções validadas (números do autor). */
+  readonly sections?: readonly DeckSection[];
 }
 
 // ───────────────────────── Texto ─────────────────────────
@@ -1217,6 +1282,8 @@ export interface PositionedSlide extends Omit<ResolvedSlide, 'children' | 'conne
 export interface PositionedDeck {
   readonly size: SlideSize;
   readonly slides: readonly PositionedSlide[];
+  /** M15: como em ResolvedDeck; o emissor traduz `from` pelo `sourceSlide` das partes. */
+  readonly sections?: readonly DeckSection[];
 }
 
 // ───────────────────────── Diagnósticos ─────────────────────────
@@ -1248,6 +1315,7 @@ export type DiagnosticCode =
   | 'link-target-missing'
   /** M14: tabela com ícone em célula: o ícone é uma forma sobre a tabela, não parte dela (info, 1 por tabela). */
   | 'table-cell-icon'
+  | 'placeholder-unused'
   /** M12: `from`/`to` de um Connector sem nó com esse id no slide (error; o conector não sai). */
   | 'connector-target-missing'
   /** M12: as pontas do conector caíram em partes diferentes de um slide paginado (info; omitido nesta parte). */
@@ -1295,10 +1363,56 @@ export interface Diagnostic {
     /** M10: em 'table-overflow', linhas de dados inteiramente visíveis e total. */
     readonly shownRows?: number;
     readonly totalRows?: number;
+    /** M15: em 'placeholder-unused', o layout e os placeholders sem nó. */
+    readonly layout?: string;
+    readonly placeholders?: readonly string[];
   };
 }
 
 // ───────────────────────── API pública ─────────────────────────
+
+/** M15: as 12 cores do tema do arquivo (as do seletor de cores do PowerPoint/Keynote). Ausentes = Office. */
+export interface ThemeColors {
+  readonly dark1?: Color;
+  readonly light1?: Color;
+  readonly dark2?: Color;
+  readonly light2?: Color;
+  readonly accent1?: Color;
+  readonly accent2?: Color;
+  readonly accent3?: Color;
+  readonly accent4?: Color;
+  readonly accent5?: Color;
+  readonly accent6?: Color;
+  readonly hyperlink?: Color;
+  readonly followedHyperlink?: Color;
+}
+
+export type ThemeColorName = keyof ThemeColors;
+
+/** M15: famílias do tema; um Text nessa família sai como fonte do tema (+mj-lt / +mn-lt). */
+export interface ThemeFonts {
+  readonly heading?: string;
+  readonly body?: string;
+}
+
+/**
+ * M15: tema do arquivo. Cor de nó **igual** (hex) a uma cor do tema sai como referência ao tema;
+ * trocar a cor do tema no PowerPoint repinta essas formas. Não muda layout nem preview.
+ */
+export interface Theme {
+  readonly name?: string;
+  readonly colors?: ThemeColors;
+  readonly fonts?: ThemeFonts;
+}
+
+/** M15: propriedades do documento (Arquivo → Propriedades). */
+export interface DocumentProperties {
+  readonly title?: string;
+  readonly author?: string;
+  readonly company?: string;
+  readonly subject?: string;
+  readonly keywords?: string | readonly string[];
+}
 
 export interface PreviewOptions {
   readonly mode: 'native';
@@ -1331,6 +1445,10 @@ export interface RenderOptions {
    * padrão (Liberation não pode sair sob o nome Arial) e fontes com fsType restrito. Padrão false.
    */
   readonly embedFonts?: boolean;
+  /** M15: tema de cores e fontes do arquivo; ausente = tema padrão do pptxgenjs, cores em hex. */
+  readonly theme?: Theme;
+  /** M15: título, autor etc. A CLI usa o nome do arquivo do deck como título padrão. */
+  readonly document?: DocumentProperties;
 }
 
 export type LineBreaks = 'forced' | 'auto';

@@ -67,6 +67,12 @@ const nodeId: Handler = (draft, value, key) => {
 /** M13: link (URL ou slide:N), validado na forma. */
 const href: Handler = (draft, value, key) => pass('href')(draft, parseHref(key, value), key);
 
+/** M15: nome de placeholder do layout: texto não vazio (o layout confere se existe). */
+const placeholder: Handler = (draft, value, key) => {
+  if (typeof value !== 'string' || value.trim() === '') throw new InvalidPropError(key, value, 'use o nome de um placeholder do layout ("title", "body"…)');
+  return pass('placeholder')(draft, value, key);
+};
+
 const ITEM_LEGACY: Readonly<Record<string, Handler>> = {
   grow: legacyGrow,
   shrink: css('flexShrink'),
@@ -116,7 +122,7 @@ const NO_BOX: Readonly<Record<string, Handler>> = Object.fromEntries(
 export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<string, Handler>>>> = {
   deck: {},
   span: {},
-  slide: { ...CONTAINER_LEGACY, notes: pass('notes'), fill: backgroundColor },
+  slide: { ...CONTAINER_LEGACY, notes: pass('notes'), hidden: pass('hidden'), fill: backgroundColor },
   box: {
     ...CONTAINER_LEGACY,
     ...ITEM_LEGACY,
@@ -127,9 +133,10 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     paginate: pass('paginate'),
     shape: pass('shape'),
     href,
+    placeholder,
   },
-  text: { ...ITEM_LEGACY, ...TEXT_LEGACY, href, paginate: pass('paginate') },
-  image: { ...ITEM_LEGACY, src: pass('src'), fit: pass('fit'), objectFit, href },
+  text: { ...ITEM_LEGACY, ...TEXT_LEGACY, href, paginate: pass('paginate'), placeholder },
+  image: { ...ITEM_LEGACY, src: pass('src'), fit: pass('fit'), objectFit, href, placeholder },
   shape: {
     ...ITEM_LEGACY,
     ...passAll(['kind', 'strokeWidth', 'radius', 'flipH', 'flipV', 'lineStyle', 'lineCap', 'startArrow', 'endArrow']),

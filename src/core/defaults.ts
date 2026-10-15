@@ -81,6 +81,34 @@ export const DEFAULTS = {
   lineBreaks: 'forced' as LineBreaks,
   /** M8: fontes embutidas desligadas por padrão (tamanho do arquivo e licença da fonte). */
   embedFonts: false,
+  /**
+   * M15: tema do arquivo. Cores ausentes do autor = as do tema Office (as que o pptxgenjs grava);
+   * `schemes` é o nome de cada cor no XML (`<a:schemeClr val>`, nos slides: tx1/bg1 em vez de dk1/lt1)
+   * e a ordem é a de desempate quando duas cores do tema têm o mesmo hex (acentos primeiro).
+   */
+  theme: {
+    name: 'pptsx',
+    colors: {
+      dark1: '#000000', light1: '#FFFFFF', dark2: '#44546A', light2: '#E7E6E6',
+      accent1: '#4472C4', accent2: '#ED7D31', accent3: '#A5A5A5', accent4: '#FFC000', accent5: '#5B9BD5', accent6: '#70AD47',
+      hyperlink: '#0563C1', followedHyperlink: '#954F72',
+    },
+    schemes: [
+      ['accent1', 'accent1'], ['accent2', 'accent2'], ['accent3', 'accent3'], ['accent4', 'accent4'], ['accent5', 'accent5'], ['accent6', 'accent6'],
+      ['dark1', 'tx1'], ['light1', 'bg1'], ['dark2', 'tx2'], ['light2', 'bg2'], ['hyperlink', 'hlink'], ['followedHyperlink', 'folHlink'],
+    ] as readonly (readonly [string, string])[],
+  },
+  /** M15: seção que recebe os slides antes da 1ª seção do autor (o PowerPoint exige todo slide numa seção). */
+  defaultSection: 'Seção padrão',
+  /**
+   * M15: placeholder do autor → tipo do PowerPoint (`<p:ph type>`); outros nomes → 'body'.
+   * `firstIndex`: idx dos placeholders que não são título (o título não leva idx).
+   */
+  placeholder: {
+    types: { title: 'title', subtitle: 'subTitle', body: 'body', footer: 'ftr', pictures: 'pic' } as Readonly<Record<string, string>>,
+    fallbackType: 'body',
+    firstIndex: 10,
+  },
   /** Largura de quebra = disponível * textSafety; a caixa sai com a largura cheia. */
   textSafety: 0.97,
   /** Limite de RODADAS do loop de ajuste (uma rodada = uma busca binária por escopo disparado). */

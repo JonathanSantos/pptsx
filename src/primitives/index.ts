@@ -1,5 +1,5 @@
-import { PRIMITIVE_KIND } from '../core/types.ts';
-import type { AuthorPropsMap, Primitive, PrimitiveKind, SlideElement } from '../core/types.ts';
+import { LAYOUT_DEFINITION, PRIMITIVE_KIND } from '../core/types.ts';
+import type { AuthorPropsMap, Component, LayoutComponent, LayoutOptions, Primitive, PrimitiveKind, SlideElement } from '../core/types.ts';
 import { jsx } from '../jsx/jsx-runtime.ts';
 
 const capitalize = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
@@ -49,3 +49,15 @@ export function Sup(props: AuthorPropsMap['span']): SlideElement {
 export function Sub(props: AuthorPropsMap['span']): SlideElement {
   return jsx(Span, { verticalAlign: 'sub', ...props });
 }
+
+/**
+ * M15: marca um componente que devolve um <Slide> como layout do arquivo: os slides que ele gera
+ * usam um slide layout próprio no master (nome = `name`), com os placeholders nas posições do
+ * primeiro uso e o conteúdo `fixed` no master. O componente continua sendo chamado como antes.
+ */
+export const defineLayout = <P>(name: string, options: LayoutOptions, component: Component<P>): LayoutComponent<P> => {
+  const layout = (props: P) => component(props);
+  Object.defineProperty(layout, 'name', { value: name });
+  Object.defineProperty(layout, LAYOUT_DEFINITION, { value: Object.freeze({ name, ...options }), enumerable: false });
+  return Object.freeze(layout) as LayoutComponent<P>;
+};

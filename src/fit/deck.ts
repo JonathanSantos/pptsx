@@ -2,7 +2,8 @@ import type { Diagnostic, LayoutEnv, PositionedDeck, PositionedSlide, ResolvedDe
 import { routeConnectors } from './connectors.ts';
 import { linkDeck } from './links.ts';
 import { numberSlides } from './slide-number.ts';
-import { withSourceSlide } from './diagnostics.ts';
+import { placeholderUnused, withSourceSlide } from './diagnostics.ts';
+import { unusedPlaceholdersOf } from '../resolve/index.ts';
 import type { FitResult } from './fit.ts';
 import { paginateSlide } from './paginate.ts';
 
@@ -66,5 +67,21 @@ export const fitDeck = ({ deck, size, env }: FitDeckInput): FitDeckResult => {
   const linked = linkDeck(fitted.slides, deck.slides.length, size.name);
   // M13: números de slide do deck de saída (as partes paginadas contam).
   const numbered = numberSlides(linked.slides, env);
-  return { positioned: { size, slides: numbered }, diagnostics: [...fitted.diagnostics, ...linked.diagnostics] };
+  const positioned: PositionedDeck = { size, slides: numbered, ...(deck.sections === undefined ? {} : { sections: deck.sections }) };
+  return { positioned, diagnostics: [...fitted.diagnostics, ...linked.diagnostics, ...layoutDiagnosticsOf(deck, numbered, size)] };
+};
+
+/** M15: um `placeholder-unused` por layout, olhando o 1º slide que o usa (é dele que saem as posições). */
+const layoutDiagnosticsOf = (deck: ResolvedDeck, output: readonly PositionedSlide[], size: SlideSize): readonly Diagnostic[] => {
+  const firsts = deck.slides.filter((slide, index) =>
+    slide.layout !== undefined && deck.slides.findIndex((other) => other.layout?.name === slide.layout?.name) === index,
+  );
+  return firsts.flatMap((slide) => {
+    const layout = slide.layout!;
+    const unused = unusedPlaceholdersOf(slide.children, layout);
+    if (unused.length === 0) return [];
+    // O diagnóstico aponta a 1ª parte desse slide no deck de saída (a paginação desloca os números).
+    const outputSlide = output.findIndex((part) => part.sourceSlide === slide.sourceSlide) + 1;
+    return [placeholderUnused({ size: size.name, slide: outputSlide }, slide.path, layout.name, unused)];
+  });
 };

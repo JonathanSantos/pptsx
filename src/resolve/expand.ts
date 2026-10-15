@@ -1,5 +1,5 @@
-import { FRAGMENT, PRIMITIVE_KIND } from '../core/types.ts';
-import type { Child, Component, Primitive, PrimitiveKind, SlideElement } from '../core/types.ts';
+import { FRAGMENT, LAYOUT_DEFINITION, PRIMITIVE_KIND } from '../core/types.ts';
+import type { Child, Component, LayoutDefinition, Primitive, PrimitiveKind, SlideElement } from '../core/types.ts';
 import { isPrimitive, primitiveName } from '../primitives/index.ts';
 
 /** Primitiva já desembrulhada de componentes/fragments, com o segmento de path que vai receber. */
@@ -8,6 +8,8 @@ export interface ExpandedPrimitive {
   readonly kind: PrimitiveKind;
   readonly element: SlideElement;
   readonly segment: string;
+  /** M15: o layout (`defineLayout`) do componente que gerou este <Slide>; o mais interno vence. */
+  readonly layout?: LayoutDefinition;
 }
 
 export interface ExpandedText {
@@ -43,5 +45,11 @@ const expandElement = (element: SlideElement, outerName?: string): readonly Expa
     const kind = kindOf(type);
     return [{ type: 'primitive', kind, element, segment: outerName ?? primitiveName(kind) }];
   }
-  return expandChild(type(element.props), outerName ?? componentName(type));
+  const items = expandChild(type(element.props), outerName ?? componentName(type));
+  const layout = layoutOf(type);
+  if (layout === undefined) return items;
+  return items.map((item) => (item.type === 'primitive' && item.kind === 'slide' && item.layout === undefined ? { ...item, layout } : item));
 };
+
+const layoutOf = (component: Component): LayoutDefinition | undefined =>
+  (component as { readonly [LAYOUT_DEFINITION]?: LayoutDefinition })[LAYOUT_DEFINITION];

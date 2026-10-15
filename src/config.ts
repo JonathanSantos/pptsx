@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { ImportModule, ImportOptions, UserModule } from './cli/loader.ts';
-import type { FontFace, LineBreaks, SizeSpec } from './core/types.ts';
+import type { DocumentProperties, FontFace, LineBreaks, SizeSpec, Theme } from './core/types.ts';
 
 export const CONFIG_FILE_NAME = 'pptsx.config.ts';
 
@@ -18,6 +18,10 @@ export interface PptsxConfig {
   readonly lineBreaks?: LineBreaks;
   /** Como em RenderOptions.embedFonts; a flag --embed-fonts vence. */
   readonly embedFonts?: boolean;
+  /** M15: tema de cores e fontes do arquivo, como em RenderOptions.theme. */
+  readonly theme?: Theme;
+  /** M15: propriedades do documento; sem `title`, a CLI usa o nome do arquivo do deck. */
+  readonly document?: DocumentProperties;
 }
 
 /** @deprecated Use PptsxConfig (nome antigo, de antes do pacote se chamar pptsx). */

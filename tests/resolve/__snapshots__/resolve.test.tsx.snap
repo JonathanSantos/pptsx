@@ -421,6 +421,19 @@ exports[`resolveDeck — full tree > matches the stored snapshot 1`] = `
         },
       },
       "kind": "slide",
+      "notes": {
+        "content": "speaker notes",
+        "runs": [
+          {
+            "color": "#000000",
+            "italic": false,
+            "lineThrough": false,
+            "text": "speaker notes",
+            "underline": false,
+            "weight": "regular",
+          },
+        ],
+      },
       "path": "CoverLayout",
       "props": {
         "align": "stretch",

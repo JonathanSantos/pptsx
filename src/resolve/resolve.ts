@@ -26,6 +26,7 @@ import type { Expanded, ExpandedPrimitive } from './expand.ts';
 import { legacyPropsOf } from './legacy.ts';
 import { normalizeProps } from './normalize.ts';
 import type { Normalized } from './normalize.ts';
+import { assertPlaceholders, assertUniqueLayoutNames, notesOf, resolvedLayoutOf, sectionsOf, withFixed } from './layout.ts';
 import { assertPaginateInFlow, assertSinglePaginate, assertTablePaginate, assertTextPaginate } from './paginate.ts';
 import { resolvePropsOf } from './props.ts';
 import { pathGeometryOf } from './path.ts';
@@ -276,8 +277,12 @@ const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResolveScope,
   }
   const path = item.segment;
   const n = normalizedOf(item, path, ctx, ROOT_PARENT);
-  const { nodes, connectors } = resolveChildren(withFooter(item.element.props.children, footer), path, ctx, parentOf(n));
+  const children = withFooter(withFixed(item.element.props.children, item.layout), footer);
+  const { nodes, connectors } = resolveChildren(children, path, ctx, parentOf(n));
   const ids = slideIdsOf(nodes);
+  const layout = item.layout === undefined ? undefined : resolvedLayoutOf(item.layout, path);
+  assertPlaceholders(nodes, layout);
+  const notes = notesOf(n.own.notes, path);
   const slide: ResolvedSlide = {
     kind: 'slide',
     path,
@@ -285,6 +290,8 @@ const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResolveScope,
     props: legacyPropsOf('slide', n),
     css: n.css,
     children: nodes,
+    ...(notes === undefined ? {} : { notes }),
+    ...(layout === undefined ? {} : { layout }),
     ...(connectors.length === 0 ? {} : { connectors: connectors.map((connector) => withMissing(connector, ids)) }),
   };
   assertSinglePaginate(slide);
@@ -306,8 +313,9 @@ export const resolveDeck = (root: SlideElement, responsive: ResponsiveContext, e
   const ctx: ResolveScope = { ...responsive, env };
   const deck = expandRoot(root);
   const footer = deck.element.props.footer as Children | undefined;
-  const slides = onlyPrimitives(expandChild(deck.element.props.children), '').map((item, index) =>
-    resolveSlide(item, index, ctx, footer),
-  );
-  return { slides };
+  const items = onlyPrimitives(expandChild(deck.element.props.children), '');
+  assertUniqueLayoutNames(items.flatMap((item) => (item.layout === undefined ? [] : [[item.layout, item.segment] as const])));
+  const slides = items.map((item, index) => resolveSlide(item, index, ctx, footer));
+  const sections = sectionsOf(deck.element.props.sections, slides.length);
+  return { slides, ...(sections === undefined ? {} : { sections }) };
 };
