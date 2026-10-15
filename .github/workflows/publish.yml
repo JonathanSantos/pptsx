@@ -1,0 +1,36 @@
+# M18-5: publicação por tag (`v1.0.0`) com provenance — o npm valida a origem pelo OIDC do GitHub Actions.
+# Antes do primeiro uso o dono precisa: tirar `private` do núcleo, preencher `repository` nos três pacotes e
+# configurar o "trusted publisher" de cada pacote no npmjs.com (ou o segredo NPM_TOKEN). Ver docs/work/VALIDACAO-DONO.md.
+name: Publicar
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      # Trusted publishing (OIDC sem token) precisa do npm 11.5+.
+      - run: npm install -g npm@11
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:package
+      - name: Campos e dry-run, agora com os itens do dono
+        run: node scripts/publish-check.mjs --strict
+      - name: Publicar os três (núcleo antes dos DS, na ordem dos workspaces)
+        run: npm publish --workspaces --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

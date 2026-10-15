@@ -13,7 +13,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint:repo": "npm run lint:repo --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
-    "test:package": "npm run test:package --workspaces --if-present"
+    "test:package": "npm run test:package --workspaces --if-present",
+    "publish:check": "node scripts/publish-check.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import JSZip from 'jszip';
 import { runCli } from '../../src/cli.ts';
 import type { ImportModule, UserModule } from '../../src/cli/loader.ts';
+import { recursiveWatchErrorOf } from '../../src/cli/watch.ts';
 import { captureConsole, sleep, waitFor, type CapturedConsole } from '../helpers/console.ts';
 
 /**
@@ -400,4 +401,13 @@ describe('build --watch — real process (bin, fs.watch and tsx namespace)', () 
     },
     TIMEOUT,
   );
+});
+
+describe('watch — plataforma sem fs.watch recursivo (M18-5)', () => {
+  it('a mensagem diz a plataforma, a versão do Node e o que fazer', () => {
+    const message = recursiveWatchErrorOf('linux', 'v20.10.0');
+    expect(message).toContain('linux');
+    expect(message).toContain('v20.10.0');
+    expect(message).toContain('Node 20.13');
+  });
 });

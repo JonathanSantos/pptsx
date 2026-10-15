@@ -49,7 +49,7 @@ export const maxChildren = (id: string, component: string, max: number, severity
 
 /** O componente só pode aparecer no slide `index` do autor (base 1). */
 export const onlyOnSlide = (id: string, component: string, index: number, severity: Severity = 'warning'): LintRule =>
-  defineRule(id, severity, (node, ctx) =>
+  defineRule(id, severity, (_node, ctx) =>
     ctx.component?.name === component && ctx.slide !== index
       ? [{ message: `${component} só vai no slide ${index}; está no slide ${ctx.slide}.` }]
       : [],

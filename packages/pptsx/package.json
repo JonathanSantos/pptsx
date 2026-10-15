@@ -4,6 +4,7 @@
   "description": "TSX → PPTX engine with automatic layout (MVP)",
   "license": "MIT",
   "type": "module",
+  "sideEffects": false,
   "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -30,8 +31,8 @@
     }
   },
   "bin": {
-    "pptsx": "./bin/pptsx.mjs",
-    "pptsx-mcp": "./bin/pptsx-mcp.mjs"
+    "pptsx": "bin/pptsx.mjs",
+    "pptsx-mcp": "bin/pptsx-mcp.mjs"
   },
   "files": [
     "dist/**/*.js",
@@ -43,7 +44,8 @@
     "docs/AGENT_GUIDE.md",
     "CHANGELOG.md",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY.md"
   ],
   "scripts": {
     "test": "vitest run",
@@ -51,10 +53,10 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
     "prepack": "npm run build",
-    "test:package": "PPTSX_PACKAGE_TEST=1 vitest run tests/package",
+    "test:package": "vitest run tests/package --config vitest.package.config.ts",
     "oracle:generate": "tsx tools/oracle/generate.ts",
     "schema:generate": "tsx tools/schema/generate.ts",
-    "lint:repo": "tsc --noEmit -p . --noUnusedLocals"
+    "lint:repo": "tsc --noEmit -p . --noUnusedLocals --noUnusedParameters"
   },
   "engines": {
     "node": ">=20"
@@ -78,5 +80,9 @@
   "optionalDependencies": {
     "@modelcontextprotocol/sdk": "1.31.0",
     "zod": "4.6.7"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }

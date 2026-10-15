@@ -9,7 +9,10 @@ import { dsNameOf, dsScaffoldFiles, initDs, tsconfigExtendsFor } from '@pptsx/ds
 // M18-4: `pptsx-ds init` — o DS gerado compila, renderiza o catálogo e respeita os arquivos do autor.
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const bin = fileURLToPath(new URL('../bin/pptsx-ds.mjs', import.meta.url));
-const tsc = join(repo, 'node_modules', '.bin', 'tsc');
+// No Windows o bin é tsc.cmd e só roda com shell.
+const isWindows = process.platform === 'win32';
+const tscBin = join(repo, 'node_modules', '.bin', isWindows ? 'tsc.cmd' : 'tsc');
+const tsc = (args: readonly string[]): string => execFileSync(tscBin, [...args], { encoding: 'utf8', stdio: 'pipe', shell: isWindows });
 
 const dirs: string[] = [];
 // Dentro do repo (dist/ é ignorado): o tsconfig gerado estende o tsconfig.monorepo.json, com paths para o fonte.
@@ -51,7 +54,7 @@ describe('pptsx-ds init', () => {
     const out = execFileSync('node', [bin, 'init', dir], { encoding: 'utf8' });
     expect(out).toContain('criado  components/Card.tsx');
     expect(out).toContain('pptsx init --ds');
-    expect(() => execFileSync(tsc, ['--noEmit', '-p', dir], { encoding: 'utf8' })).not.toThrow();
+    expect(() => tsc(['--noEmit', '-p', dir])).not.toThrow();
     const catalogOut = execFileSync('node', [bin, 'catalog', join(dir, 'ds.ts'), '--out', join(dir, 'dist'), '--fixtures', join(dir, 'fixtures'), '--pptx'], { encoding: 'utf8' });
     expect(catalogOut).toContain('1 componentes, 4 renderizações');
     expect(catalogOut).toContain('Card.16x9.pptx');
@@ -64,7 +67,7 @@ describe('pptsx-ds init', () => {
     initDs(dir);
     const card = join(dir, 'components', 'Card.tsx');
     writeFileSync(card, readFileSync(card, 'utf8').replace('borderRadius: 8', 'borderRadiu: 8'));
-    expect(() => execFileSync(tsc, ['--noEmit', '-p', dir], { encoding: 'utf8', stdio: 'pipe' })).toThrow();
+    expect(() => tsc(['--noEmit', '-p', dir])).toThrow();
   }, 60_000);
 
   it('arquivo existente fica; --force sobrescreve', () => {

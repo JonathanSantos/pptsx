@@ -41,11 +41,21 @@ const watchFile = (file: string, onChange: () => void): FSWatcher | undefined =>
   });
 };
 
-const watchDir = (dir: string, ignoredDirs: readonly string[], onChange: () => void): FSWatcher =>
-  fsWatch(dir, { recursive: true }, (_event, filename) => {
-    if (filename !== null && isIgnoredPath(join(dir, filename.toString()), ignoredDirs)) return;
-    onChange();
-  });
+/** Erro claro quando a plataforma não tem `fs.watch` recursivo (Linux com Node anterior a 20.13). */
+export const recursiveWatchErrorOf = (platform: string, version: string): string =>
+  `--watch precisa de fs.watch recursivo, indisponível em ${platform} com Node ${version}; atualize para Node 20.13 ou mais novo.`;
+
+const watchDir = (dir: string, ignoredDirs: readonly string[], onChange: () => void): FSWatcher => {
+  try {
+    return fsWatch(dir, { recursive: true }, (_event, filename) => {
+      if (filename !== null && isIgnoredPath(join(dir, filename.toString()), ignoredDirs)) return;
+      onChange();
+    });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ERR_FEATURE_UNAVAILABLE_ON_PLATFORM') throw new Error(recursiveWatchErrorOf(process.platform, process.version));
+    throw error;
+  }
+};
 
 const isDirectory = (path: string): boolean => existsSync(path) && statSync(path).isDirectory();
 

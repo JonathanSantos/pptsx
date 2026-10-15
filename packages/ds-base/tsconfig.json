@@ -21,5 +21,5 @@
       "@pptsx/ds-base": ["./src/index.ts"]
     }
   },
-  "include": ["src", "tests", "examples", "vitest.config.ts"]
+  "include": ["src", "tests", "examples", "vitest.config.ts", "vitest.package.config.ts"]
 }

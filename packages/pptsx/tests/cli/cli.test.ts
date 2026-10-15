@@ -50,7 +50,7 @@ describe('parseCli', () => {
   });
 
   it('--out absolute is kept', () => {
-    expect(parseCli(['build', 'd.tsx', '--out', '/tmp/abs'], CWD).outDir).toBe('/tmp/abs');
+    expect(parseCli(['build', 'd.tsx', '--out', '/tmp/abs'], CWD).outDir).toBe(resolve('/tmp/abs'));
   });
 
   it.each([

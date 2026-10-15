@@ -4,6 +4,7 @@
   "description": "Design system de exemplo sobre o pptsx: tokens, tema, layouts, componentes, regras de marca e galeria.",
   "license": "MIT",
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -20,15 +21,17 @@
     "fonts/inter/*",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "THIRD_PARTY.md"
   ],
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit -p .",
-    "lint:repo": "tsc --noEmit -p . --noUnusedLocals",
+    "lint:repo": "tsc --noEmit -p . --noUnusedLocals --noUnusedParameters",
     "build": "tsc -p tsconfig.build.json",
     "prepack": "npm run build",
-    "schema": "tsx tools/schema.ts"
+    "schema": "tsx tools/schema.ts",
+    "test:package": "vitest run tests/package --config vitest.package.config.ts"
   },
   "peerDependencies": {
     "pptsx": ">=0.7.0",
@@ -39,5 +42,9 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }

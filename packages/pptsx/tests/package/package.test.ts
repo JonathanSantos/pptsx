@@ -1,72 +1,42 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import JSZip from 'jszip';
+import { PACKAGE_TEST_ENABLED as ENABLED, PACKAGE_TIMEOUT as TIMEOUT, describeRun, freshDir, npmInstall as npmInstallAll, npxBin, pack, removeFreshDirs, run } from './helpers.ts';
 
 /**
  * Teste de pacote (M7-E), LENTO: `npm pack` → projeto vazio fora do repo → `npm install <tarball>`
  * → `npx pptsx init` → `npx pptsx build deck.tsx --preview none --out dist`.
  *
- * Fica fora do `npm test`: o vitest.config inclui `tests/**`, então o describe só roda com
- * PPTSX_PACKAGE_TEST=1 (o script `test:package` define essa variável).
- * Precisa de rede ou do cache do npm para instalar as dependências do tarball.
+ * Fica fora do `npm test`: só roda com PPTSX_PACKAGE_TEST, que o `npm run test:package`
+ * (vitest.package.config.ts) define. Precisa de rede ou do cache do npm.
  */
 
-const ENABLED = Boolean(process.env.PPTSX_PACKAGE_TEST);
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
-const TIMEOUT = 180_000;
+/** M18-5: meta do tarball do núcleo (as Liberation vão; a Inter fica no ds-base). */
+const MAX_TARBALL_BYTES = 1_500_000;
 
-interface PackedFile {
-  readonly path: string;
-}
-interface PackResult {
-  readonly filename: string;
-  readonly files: readonly PackedFile[];
-}
-
-const tmpDirs: string[] = [];
-const freshDir = (prefix: string): string => {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
-  tmpDirs.push(dir);
-  return dir;
-};
-
-const run = (command: string, args: readonly string[], cwd: string): SpawnSyncReturns<string> =>
-  spawnSync(command, [...args], { cwd, encoding: 'utf8', timeout: TIMEOUT, env: { ...process.env, npm_config_yes: 'true' } });
-
-const describeRun = (proc: SpawnSyncReturns<string>): string =>
-  `status ${proc.status}\n--- stdout\n${proc.stdout}\n--- stderr\n${proc.stderr}`;
-
-const npmInstall = (tarball: string, cwd: string) =>
-  run('npm', ['install', tarball, '--no-audit', '--no-fund', '--prefer-offline', '--loglevel=error'], cwd);
-
-const pptsx = (args: readonly string[], cwd: string) => run('npx', ['--no', 'pptsx', ...args], cwd);
-
-// O stdout do `npm pack --json` pode trazer a saída do prepack antes do JSON.
-const packJsonOf = (stdout: string): readonly PackResult[] => {
-  const start = stdout.search(/^\[/m);
-  if (start === -1) throw new Error(`npm pack --json sem JSON:\n${stdout}`);
-  return JSON.parse(stdout.slice(start)) as PackResult[];
-};
+const npmInstall = (tarball: string, cwd: string) => npmInstallAll([tarball], cwd);
+const pptsx = (args: readonly string[], cwd: string) => npxBin('pptsx', args, cwd);
 
 describe.skipIf(!ENABLED)('package — npm pack → install → init → build', () => {
   let tarball = '';
   let packed: readonly string[] = [];
 
+  let size = 0;
+
   beforeAll(() => {
-    const destination = freshDir('pptsx-pack-');
-    const proc = run('npm', ['pack', '--json', '--pack-destination', destination], ROOT);
-    if (proc.status !== 0) throw new Error(`npm pack falhou\n${describeRun(proc)}`);
-    const [result] = packJsonOf(proc.stdout);
-    if (!result) throw new Error('npm pack --json vazio');
-    tarball = join(destination, result.filename);
-    packed = result.files.map((file) => file.path);
+    ({ tarball, files: packed, size } = pack(ROOT, freshDir('pptsx-pack-')));
   }, TIMEOUT);
 
-  afterAll(() => tmpDirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
+  afterAll(removeFreshDirs);
+
+  it('the tarball stays under 1.5 MB and carries LICENSE and THIRD_PARTY.md', () => {
+    expect(size).toBeLessThanOrEqual(MAX_TARBALL_BYTES);
+    expect(packed).toContain('LICENSE');
+    expect(packed).toContain('THIRD_PARTY.md');
+  });
 
   it('the tarball has the compiled engine, the bin and the fonts', () => {
     expect(existsSync(tarball)).toBe(true);

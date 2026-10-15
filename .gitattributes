@@ -1,0 +1,12 @@
+# Checkout com LF em todas as plataformas: fixtures, snapshots e templates são comparados byte a byte.
+* text=auto eol=lf
+*.png binary
+*.pptx binary
+*.ttf binary
+*.otf binary
+*.ttc binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.wasm binary
+*.tgz binary

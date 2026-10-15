@@ -4,6 +4,7 @@
   "description": "Ferramentas para criar design systems sobre o pptsx: tokens, tema, variantes, slots, regras de lint, catálogo e defineDs.",
   "license": "MIT",
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -15,7 +16,7 @@
     "./tsconfig.base.json": "./tsconfig.base.json"
   },
   "bin": {
-    "pptsx-ds": "./bin/pptsx-ds.mjs"
+    "pptsx-ds": "bin/pptsx-ds.mjs"
   },
   "files": [
     "dist/**/*.js",
@@ -24,14 +25,16 @@
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
-    "tsconfig.base.json"
+    "tsconfig.base.json",
+    "THIRD_PARTY.md"
   ],
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p .",
-    "lint:repo": "tsc --noEmit -p . --noUnusedLocals",
+    "lint:repo": "tsc --noEmit -p . --noUnusedLocals --noUnusedParameters",
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "test:package": "vitest run tests/package --config vitest.package.config.ts"
   },
   "peerDependencies": {
     "pptsx": ">=0.7.0"
@@ -46,5 +49,9 @@
     "typescript-api": "npm:typescript@6.0.3",
     "@types/node": "^26.6.5",
     "jszip": "^3.10.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }

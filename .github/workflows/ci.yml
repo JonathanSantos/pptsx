@@ -1,4 +1,5 @@
-# M16-6/M17: a suíte dos três pacotes (npm workspaces) em cada push e PR. Keynote/PowerPoint ficam fora.
+# M16-6/M17/M18-5: a suíte dos três pacotes (npm workspaces) em cada push e PR, em macOS, Ubuntu e Windows
+# com Node 20 e 22. Keynote/PowerPoint ficam fora.
 name: CI
 
 on:
@@ -7,11 +8,15 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         node: [20, 22]
     steps:
+      # Fixtures e snapshots são comparados byte a byte: nada de CRLF no checkout do Windows (ver .gitattributes).
+      - run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -20,14 +25,16 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npm run typecheck
-      - name: Lint do repo (variáveis sem uso)
+      - name: Lint do repo (variáveis e parâmetros sem uso)
         run: npm run lint:repo
       - name: Testes
         run: npm test
       - name: Build do pacote
         run: npm run build
-      - name: Teste do pacote empacotado
+      - name: Teste dos pacotes empacotados (os três)
         run: npm run test:package
+      - name: npm publish --dry-run dos três
+        run: npm run publish:check
       - name: npm audit
         run: npm audit --audit-level=high
 
