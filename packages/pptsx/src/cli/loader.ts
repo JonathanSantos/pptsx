@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { register as registerHooks } from 'node:module';
 import { register } from 'tsx/esm/api';
 import { nearestTsconfigOf } from './tsconfig.ts';
+import { standaloneRuntime } from '../standalone.ts';
 
 export interface UserModule {
   readonly default?: unknown;
@@ -44,7 +45,8 @@ const freshHooks = { registered: false };
 
 // M16 (M7-B): o `?pptsx-fresh=N` da entrada desce pelo grafo só nos arquivos do usuário (bin/fresh-hooks.mjs).
 const ensureFreshHooks = (): void => {
-  if (freshHooks.registered) return;
+  // O bundle de arquivo único registra os próprios hooks (que também propagam o ?pptsx-fresh).
+  if (freshHooks.registered || standaloneRuntime() !== undefined) return;
   registerHooks(new URL('../../bin/fresh-hooks.mjs', import.meta.url), { data: { engineRoots: ENGINE_ROOTS } });
   freshHooks.registered = true;
 };

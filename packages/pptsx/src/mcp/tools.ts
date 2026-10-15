@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { buildOnce, exitCodeOf, loadDeck, mergeOptions, parseCli, summaryOf } from '../cli.ts';
 import { applyInit, initSummaryOf } from '../cli/init.ts';
+import { standaloneRuntime } from '../standalone.ts';
 import { defaultImportModule, type ImportModule } from '../cli/loader.ts';
 import { configDirOf, loadConfig } from '../config.ts';
 import type { Diagnostic, LineBreaks, SizeSpec } from '../core/types.ts';
@@ -161,7 +162,7 @@ export const guideTool = async (input: { readonly source?: string; readonly sect
     const { text: body, found } = guideLookup(ds.guide, input.section, `guia do DS "${ds.name}"`);
     return { content: [text(body)], ...(found ? {} : { isError: true }) };
   }
-  const { text: body, found } = guideLookup(ctx.guideText?.() ?? readFileSync(GUIDE, 'utf8'), input.section);
+  const { text: body, found } = guideLookup(ctx.guideText?.() ?? standaloneRuntime()?.guide ?? readFileSync(GUIDE, 'utf8'), input.section);
   const extra = input.section === undefined ? sourcesLine(ctx, (ds) => ds.guide !== undefined) : '';
   return { content: [text(body + extra)], ...(found ? {} : { isError: true }) };
 };

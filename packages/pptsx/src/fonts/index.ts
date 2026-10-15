@@ -1,9 +1,15 @@
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as fontkit from 'fontkit';
 import type { FontFace } from '../core/types.ts';
+import { standaloneRuntime } from '../standalone.ts';
 import type { FileFontFace } from './system.ts';
 
-const fontFile = (name: string): string => fileURLToPath(new URL(`../../fonts/${name}`, import.meta.url));
+// No bundle de arquivo único as fontes vêm embutidas e são gravadas numa pasta de cache (M18-7).
+const fontFile = (name: string): string => {
+  const runtime = standaloneRuntime();
+  return runtime === undefined ? fileURLToPath(new URL(`../../fonts/${name}`, import.meta.url)) : join(runtime.fontDir, name);
+};
 
 /** Liberation Sans tem métricas de Arial: mede-se com ela e emite-se "Arial". */
 export const DEFAULT_FONTS: readonly FileFontFace[] = [

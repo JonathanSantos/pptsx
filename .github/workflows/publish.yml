@@ -8,7 +8,8 @@ on:
     tags: ['v*']
 
 permissions:
-  contents: read
+  # contents: write para anexar o bundle à release da tag.
+  contents: write
   id-token: write
 
 jobs:
@@ -30,7 +31,14 @@ jobs:
       - run: npm run test:package
       - name: Campos e dry-run, agora com os itens do dono
         run: node scripts/publish-check.mjs --strict
+      - name: Bundle de arquivo único (paridade com o build normal)
+        run: npm run test:standalone --workspace pptsx
       - name: Publicar os três (núcleo antes dos DS, na ordem dos workspaces)
         run: npm publish --workspaces --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # M18-7: o pptsx.mjs (Node 20+, sem node_modules) e o SHA256SUMS que o script da skill confere.
+      - name: Release com o bundle
+        run: gh release create "$GITHUB_REF_NAME" packages/pptsx/dist/standalone/pptsx.mjs packages/pptsx/dist/standalone/SHA256SUMS --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

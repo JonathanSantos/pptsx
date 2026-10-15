@@ -1013,6 +1013,18 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 
 `pptsx preview deck.tsx --serve` abre um servidor local (`http://127.0.0.1:4321/`) com os slides em SVG e os diagnósticos ao lado. Salvar o deck (ou um componente, tokens, a config) recarrega a página em menos de 1 s; clicar num diagnóstico destaca o nó no slide; o seletor troca entre 16:9, 4:3 e wide, e a caixa *debug* mostra contornos e estouros. Um erro de sintaxe ou de estrutura aparece no topo, sobre o último resultado bom.
 
+### Arquivo único (sem npm)
+
+Cada release traz `pptsx.mjs`: o núcleo inteiro num arquivo, para rodar só com Node 20.6+ e **sem `node_modules` nem `tsconfig`** (é o que a skill para agentes usa). Ele tem as mesmas saídas do pacote do npm, com o XML dos `.pptx` idêntico e os PNGs pelo resvg em wasm.
+
+```sh
+node pptsx.mjs build deck.tsx --size 16x9,4x3   # também init, lint, preview --serve
+node pptsx.mjs mcp                               # o servidor MCP por stdio
+node pptsx.mjs doctor                            # Node, fontes do sistema, cache, espaço
+```
+
+O deck importa `pptsx` normalmente; o arquivo compila o `.tsx` sozinho (sucrase). As fontes Liberation vão embutidas e são gravadas em `~/.cache/pptsx/<versão>/` (`PPTSX_CACHE` muda a pasta). Um DS compilado (`@pptsx/ds-base` instalado) também funciona. O `--fix` do lint precisa da API do TypeScript no projeto. No repositório: `npm run build:standalone` (gera `dist/standalone/pptsx.mjs` e o `SHA256SUMS`) e `npm run test:standalone` (a paridade com o build normal).
+
 ### Migrando de 0.x
 
 Na 1.0 as props de antes do CSS (`direction`, `grow`, `fill` do Box, `size`/`weight` do Text, `showValues` do Chart…) foram removidas: o build para com a troca (`Prop "size" de <Text>: removida na 1.0; troque por fontSize`). `pptsx lint --from 0.x src/` reescreve todos os `.ts`/`.tsx` da pasta (deck, componentes, layouts) e `pptsx lint deck.tsx --fix` só o deck, sem mudar o layout (`stroke` vira `outline`, que também não ocupa espaço; `grow={0}` vira `flexGrow={0}`, não `flex={0}`). O que depende do valor (`justify={prop}`, `grow={expressão}`) fica, com aviso e linha. A tabela completa está no guia do agente (apêndice "Migrando de 0.x"). O codemod usa a API do TypeScript 5/6 (`npm install -D typescript-api@npm:typescript@6` se o projeto estiver no TypeScript 7). `pptsx lint deck.tsx` também aponta CSS sem de/para no PPTX, `lineHeight` alto para o Keynote, `1fr` solto em grid e cores fora do tema.

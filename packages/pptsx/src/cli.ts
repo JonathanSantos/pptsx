@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { INIT_USAGE, parseInitCli, runInit } from './cli/init.ts';
 import { MIGRATION_SOURCES, migrateTree, migrationSummaryOf } from './cli/migrate.ts';
+import { standaloneRuntime } from './standalone.ts';
 import { defaultImportModule, type ImportModule, type ImportOptions } from './cli/loader.ts';
 import { assertDeckTsconfig } from './cli/tsconfig.ts';
 import { createPreviewServer } from './cli/preview/server.ts';
@@ -286,7 +287,8 @@ export const jsonErrorOf = (error: unknown): string => JSON.stringify({ error: e
 
 export const loadDeck = async (deckPath: string, options: ImportOptions, importModule: ImportModule): Promise<DeckDefinition> => {
   if (!existsSync(deckPath)) throw new Error(`deck não encontrado: ${deckPath}`);
-  assertDeckTsconfig(deckPath);
+  // O bundle de arquivo único compila com o JSX do pptsx sempre (sucrase): o tsconfig do deck é opcional.
+  if (standaloneRuntime() === undefined) assertDeckTsconfig(deckPath);
   const module = await importUserModule(deckPath, options, importModule);
   if (typeof module.default !== 'function') throw new Error(`${deckPath} precisa exportar default defineDeck(...)`);
   return module.default as DeckDefinition;
@@ -571,6 +573,8 @@ export const wantsVersion = (argv: readonly string[]): boolean => argv.includes(
 
 // Um nível acima tanto de src/cli.ts quanto de dist/cli.js fica o package.json do pacote.
 const packageVersion = (): string => {
+  const runtime = standaloneRuntime();
+  if (runtime !== undefined) return `${runtime.version} (standalone)`;
   const pkg: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const version = typeof pkg === 'object' && pkg !== null && 'version' in pkg ? pkg.version : undefined;
   if (typeof version !== 'string') throw new Error('package.json do pptsx sem "version"');
@@ -606,7 +610,8 @@ export const runCli = async (argv: readonly string[], cwd: string = process.cwd(
 
 const isEntryPoint = (): boolean => {
   const entry = process.argv[1];
-  if (!entry) return false;
+  // No bundle de arquivo único todo módulo tem o import.meta.url do bundle: quem roda a CLI é a entrada dele.
+  if (!entry || standaloneRuntime() !== undefined) return false;
   try {
     return import.meta.url === pathToFileURL(realpathSync(entry)).href;
   } catch {

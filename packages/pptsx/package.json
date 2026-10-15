@@ -56,7 +56,9 @@
     "test:package": "vitest run tests/package --config vitest.package.config.ts",
     "oracle:generate": "tsx tools/oracle/generate.ts",
     "schema:generate": "tsx tools/schema/generate.ts",
-    "lint:repo": "tsc --noEmit -p . --noUnusedLocals --noUnusedParameters"
+    "lint:repo": "tsc --noEmit -p . --noUnusedLocals --noUnusedParameters",
+    "build:standalone": "tsx tools/standalone/build.ts",
+    "test:standalone": "npm run build:standalone && vitest run tests/standalone --config vitest.standalone.config.ts"
   },
   "engines": {
     "node": ">=20"
@@ -71,8 +73,11 @@
     "yoga-layout": "^3.2.1"
   },
   "devDependencies": {
+    "@resvg/resvg-wasm": "^2.6.2",
     "@types/fontkit": "^2.0.9",
     "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "sucrase": "^3.35.1",
     "typescript": "^7.0.2",
     "typescript-api": "npm:typescript@6.0.3",
     "vitest": "^5.0.4"

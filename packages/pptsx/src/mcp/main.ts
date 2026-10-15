@@ -2,9 +2,12 @@ import { readFileSync } from 'node:fs';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { dsOfServer } from './ds.ts';
 import { createPptsxMcpServer } from './server.ts';
+import { standaloneRuntime } from '../standalone.ts';
 
 /** M16-3: `pptsx-mcp` por stdio. O stdout é do protocolo: nada aqui (nem nas ferramentas) imprime nele. */
 const packageVersion = (): string => {
+  const runtime = standaloneRuntime();
+  if (runtime !== undefined) return runtime.version;
   const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as { readonly version?: string };
   return pkg.version ?? '0.0.0';
 };

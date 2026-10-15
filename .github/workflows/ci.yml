@@ -35,6 +35,8 @@ jobs:
         run: npm run test:package
       - name: npm publish --dry-run dos três
         run: npm run publish:check
+      - name: Bundle de arquivo único × build normal (XML, PNG, tempo)
+        run: npm run test:standalone --workspace pptsx
       - name: npm audit
         run: npm audit --audit-level=high
 
