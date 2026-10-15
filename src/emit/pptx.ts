@@ -26,6 +26,7 @@ export type TextProps = PptxTypes.default.TextProps;
 export type TextPropsOptions = PptxTypes.default.TextPropsOptions;
 export type ImageProps = PptxTypes.default.ImageProps;
 export type BackgroundProps = PptxTypes.default.BackgroundProps;
+export type SlideMasterProps = PptxTypes.default.SlideMasterProps;
 export type ChartName = PptxTypes.default.CHART_NAME;
 export type ChartMulti = PptxTypes.default.IChartMulti;
 export type ChartOptions = PptxTypes.default.IChartOpts;

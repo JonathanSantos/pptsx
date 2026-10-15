@@ -108,6 +108,10 @@ export const DEFAULTS = {
     types: { title: 'title', subtitle: 'subTitle', body: 'body', footer: 'ftr', pictures: 'pic' } as Readonly<Record<string, string>>,
     fallbackType: 'body',
     firstIndex: 10,
+    /** Texto de exemplo do placeholder vazio ("Novo slide" no PowerPoint); outros nomes usam o próprio nome. */
+    prompts: { title: 'Título', subtitle: 'Subtítulo', body: 'Conteúdo', footer: 'Rodapé', pictures: 'Imagem' } as Readonly<Record<string, string>>,
+    /** Ids dos shapes que o pós-processamento põe no layout (longe dos que o pptxgenjs numera a partir de 2). */
+    firstShapeId: 1000,
   },
   /** Largura de quebra = disponível * textSafety; a caixa sai com a largura cheia. */
   textSafety: 0.97,

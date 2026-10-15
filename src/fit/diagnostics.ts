@@ -433,6 +433,6 @@ export const placeholderUnused = (ctx: DiagnosticContext, path: string, layout: 
     severity: 'info',
     code: 'placeholder-unused',
     path,
-    message: `O layout "${layout}" declara ${placeholders.map((name) => `"${name}"`).join(', ')} mas nenhum nó do 1º slide dele marca ${placeholders.length > 1 ? 'esses placeholders' : 'esse placeholder'}: no master ${placeholders.length > 1 ? 'eles ficam' : 'ele fica'} sem posição própria (canto do slide). Marque um nó com placeholder="…" ou tire o nome do defineLayout.`,
+    message: `O layout "${layout}" declara ${placeholders.map((name) => `"${name}"`).join(', ')} mas nenhum nó do 1º slide dele marca ${placeholders.length > 1 ? 'esses placeholders' : 'esse placeholder'}, então ${placeholders.length > 1 ? 'eles não saem' : 'ele não sai'} no layout do arquivo (as posições vêm do 1º slide). Marque um nó com placeholder="…" ou tire o nome do defineLayout.`,
     data: { layout, placeholders },
   });
