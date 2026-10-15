@@ -78,6 +78,30 @@ Toda prop de `Slide`, `Box`, `Text`, `Image`, `Shape`, `Chart` e `Table` aceita 
 - **`ctx.pick(valor)`** resolve com a mesma regra no seu código, para o que não é prop de primitiva: quantos itens mostrar, texto alternativo. `items.slice(0, ctx.pick({ base: 4, tall: 6 }))`, `title={ctx.pick({ base: 'Receita', wide: 'Receita recorrente mensal' })}`.
 - Componentes repassam o valor responsivo **sem resolver** (`<Text fontSize={size}>`); a engine resolve ao chegar na primitiva (§5).
 
+### Arquivo para editar: tema, propriedades, seções, oculto, notas
+
+Para quem vai abrir o `.pptx` e editar no PowerPoint/Keynote. Nada disso muda o layout nem o PNG.
+
+```ts
+// pptsx.config.ts (na pasta de onde você roda o build)
+import { defineConfig } from 'pptsx';
+export default defineConfig({
+  theme: {
+    name: 'Marca',
+    colors: { dark1: '#1B2A4A', light1: '#FFFFFF', dark2: '#5B6680', light2: '#F4F6FA', accent1: '#2F6FED', accent2: '#1E9E6A', accent3: '#D64545' },
+    fonts: { heading: 'Arial', body: 'Arial' },
+  },
+  document: { author: 'Ana Souza', company: 'ACME', subject: 'Resultados do 3º tri', keywords: ['resultados', 'q3'] },
+});
+```
+
+- **De onde vem a paleta:** dentro deste repo, `import { themeOf } from '../theme.ts'` (em `examples/`) monta o tema a partir de `tokens` (`dark1` = ink, `light1` = white, `dark2` = muted, `light2` = surface, `accent1` = accent, `accent2` = positive, `accent3` = negative, `accent4` = accentSoft, `accent5` = brandDark). Imports na config são relativos ao arquivo da config. Projeto próprio: escreva o objeto `theme` à mão.
+- **Tema:** 12 cores possíveis (`dark1`, `light1`, `dark2`, `light2`, `accent1`…`accent6`, `hyperlink`, `followedHyperlink`); as que você não der ficam com as do Office. Toda cor do deck **igual** (mesmo hex) a uma cor declarada sai como cor do tema: no seletor de cores aparece a paleta e trocar `accent1` repinta tudo que usa `accent1` (formas, textos, gráficos). Cor diferente (mesmo que parecida) continua fixa. Dois slots com o mesmo hex: vale o acento (accent1…6 antes de dark/light); não declare o mesmo hex duas vezes. No XML, `dark1`/`light1`/`dark2`/`light2` aparecem como `tx1`/`bg1`/`tx2`/`bg2` (é o mesmo slot). `fonts.heading`/`fonts.body`: textos nessas famílias saem como fontes do tema (a medição não muda; a família precisa estar registrada em `fonts` como qualquer outra, Arial já está).
+- **Propriedades:** sem `document.title`, a CLI usa o nome do arquivo do deck (`deck.tsx` → "deck"): dê `title` quando o nome do arquivo não serve.
+- **Seções** (painel de slides do PowerPoint): `<Deck sections={[{ title: 'Abertura', from: 1 }, { title: 'Resultados', from: 3 }]}>`. `from` é o número do `<Slide>` no seu Deck (base 1), crescente, títulos únicos; a paginação é traduzida. Slides antes da 1ª seção vão numa "Seção padrão". O overview mostra o nome da seção sob o 1º slide dela.
+- **Slide oculto:** `<Slide hidden>` (ou `<ContentLayout hidden>`, que repassa ao Slide; num layout seu, repasse a prop) continua no arquivo e é pulado na apresentação; no overview sai esmaecido com "oculto". Bom para slides de reserva.
+- **Notas formatadas:** `notes={<>Abra com <B>a meta</B>.{'\n'}Depois, <I>o gráfico</I>. Fonte: <Span href="https://…">relatório</Span>.</>}`. `\n` = parágrafo; negrito, itálico, cor, sublinhado e link externo saem nas notas (`slide:N` em nota vira só texto).
+
 ## 3. Primitivas e props CSS
 
 Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do pai (tamanhos, `inset`, `margin`, `padding`). Shorthands como no CSS: `padding="8 16"`, `margin="0 auto"`, `border="2px solid #CCD3E0"`, `flex={1}`, `inset={0}`. Cores: `'#RRGGBB'`, `'#RGB'`, `rgba(27,42,74,0.2)` ou nome (`'white'`). `box-sizing` é sempre border-box: `width` inclui padding e borda.
@@ -99,14 +123,14 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 
 | primitiva | props próprias (além das CSS acima) | filhos |
 |---|---|---|
-| `Deck` | `footer?` (conteúdo repetido em todo slide, inclusive nas partes paginadas; ver §4 "Número de slide e rodapé") | só `Slide` |
-| `Slide` | `backgroundColor`, `backgroundImage="url(…)"` (ou `background={{ image: 'foto.png' }}`), `notes?: string` | primitivas/componentes |
-| `Box` | `paginate?: boolean` (ver "Paginação"), `shape?` (geometria do fundo/borda, ver "Diagramas"), `href?` (link na caixa inteira) | primitivas/componentes |
-| `Text` | `fit`, `minSize`, `maxLines`, `nowrap`/`whiteSpace="nowrap"`, `href`, `paginate` (§4) | strings/números e `Span`/`B`/`I`/`Sup`/`Sub` |
+| `Deck` | `footer?` (conteúdo repetido em todo slide, inclusive nas partes paginadas; ver §4 "Número de slide e rodapé"), `sections?: { title, from }[]` (seções do arquivo; ver "Arquivo para editar") | só `Slide` |
+| `Slide` | `backgroundColor`, `backgroundImage="url(…)"` (ou `background={{ image: 'foto.png' }}`), `notes?` (texto ou rich text: `<>Fale da <B>meta</B>.</>`), `hidden?` (slide oculto) | primitivas/componentes |
+| `Box` | `paginate?: boolean` (ver "Paginação"), `shape?` (geometria do fundo/borda, ver "Diagramas"), `href?` (link na caixa inteira), `placeholder?` (§5 "Layout do arquivo") | primitivas/componentes |
+| `Text` | `fit`, `minSize`, `maxLines`, `nowrap`/`whiteSpace="nowrap"`, `href`, `paginate` (§4), `placeholder?` (§5) | strings/números e `Span`/`B`/`I`/`Sup`/`Sub` |
 | `Span` | `fontWeight`, `fontStyle`, `color`, `textDecoration`, `fontSize`, `fontFamily`, `verticalAlign` (`'super' \| 'sub'`), `href` (**sem** `lineHeight`: é do Text) | strings/números e outros `Span`/`B`/`I`/`Sup`/`Sub`; **só dentro de `Text`** |
 | `B` / `I` / `Sup` / `Sub` | atalhos de `Span fontWeight="bold"` / `fontStyle="italic"` / `verticalAlign="super"` / `verticalAlign="sub"` | como `Span` |
 | `SlideNumber` | `format?: 'n' \| 'n / total'` (padrão `'n'`), mais as props de texto (`fontSize`, `color`, `fontWeight`…) | nenhum |
-| `Image` | `src: string` (obrigatório; relativo ao arquivo do deck), `objectFit?: 'contain' \| 'cover'` (padrão `'contain'`), `href?` | nenhum |
+| `Image` | `src: string` (obrigatório; relativo ao arquivo do deck), `objectFit?: 'contain' \| 'cover'` (padrão `'contain'`), `href?`, `placeholder?` (§5) | nenhum |
 | `Shape` | `kind` (obrigatório; 24 formas, ver "Diagramas"), `backgroundColor` (cor da forma), `stroke`/`strokeWidth` (linha da forma; `line` e `bracketPair` sem `stroke` saem pretas), `radius` (roundRect), `flipH`/`flipV`, `lineStyle` (`'solid' \| 'dashed' \| 'dotted'`), `lineCap` (`'flat' \| 'round'`), `startArrow`/`endArrow` (**só em `line`**: `'arrow' \| 'triangle' \| 'stealth' \| 'diamond' \| 'oval'`) | nenhum |
 | `Path` | `d` (obrigatório; `M L H V C S Q T A Z` do SVG), `viewBox?: [w, h]` (padrão: a caixa do `d`), `fill`, `stroke`, `strokeWidth` (pt), `lineCap`, `lineJoin` (`'miter' \| 'round' \| 'bevel'`), `lineStyle` | nenhum |
 | `Icon` | `src` (obrigatório; `.svg`), `size?` (altura em pt, padrão 24), `color?` (padrão: a cor de texto herdada), `recolor?` (padrão `true`: preto também vira `color`), `render?: 'auto' \| 'shape' \| 'image'` | nenhum |
@@ -340,10 +364,35 @@ Layouts (`'../layouts/index.ts'`) — cada um **devolve um `<Slide>`**, então �
 | layout | props | o que faz |
 |---|---|---|
 | `CoverLayout` | `title; subtitle?; caption?; ctx?` | fundo `brand`, círculo decorativo (`zIndex={-1}`) no canto superior direito, bloco de título empurrado para baixo com `marginTop="auto"`: título `display` bold branco (shrink, minSize 32), subtítulo `h2` (truncate, 2 linhas); `caption` = linha pequena no topo |
-| `ContentLayout` | `title; justify?: 'start' \| 'center'; notes?; children` | fundo branco, padding `page`, cor `ink` herdada por todo o conteúdo, título `h1` bold com barra (`borderLeft`), corpo `Box flex={1}` (coluna) com os children. `justify="center"` centraliza conteúdo curto na altura que sobra |
+| `ContentLayout` | `title; justify?: 'start' \| 'center'; notes? (texto ou rich text); hidden?; children` | fundo branco, padding `page`, cor `ink` herdada por todo o conteúdo, título `h1` bold com barra (`borderLeft`), corpo `Box flex={1}` (coluna) com os children. `justify="center"` centraliza conteúdo curto na altura que sobra |
 | `ClosingLayout` | `title; subtitle?; contact?; ctx?` | fundo `brand`, texto centralizado (`textAlign` herdado), subtítulo com no máximo 80% da largura, círculo no canto inferior esquerdo |
 
 Passe `ctx={ctx}` para `CoverLayout`/`ClosingLayout`: o círculo é dimensionado pela altura do slide e continua redondo em 16:9, 4:3 e wide.
+
+### Layout do arquivo (`defineLayout`, `placeholder`)
+
+Um componente que devolve `<Slide>` pode virar um **layout do arquivo**: no PowerPoint, "Novo slide" oferece o layout e "Redefinir slide" realinha os placeholders.
+
+```tsx
+import { Box, Slide, Text, defineLayout, type Children } from 'pptsx';
+
+export const Conteudo = defineLayout('Conteúdo', {
+  placeholders: ['title', 'body'],
+  // Fixo no master: o usuário não arrasta sem querer. Posicione com position="absolute".
+  fixed: <Text position="absolute" left={40} bottom={14} fontSize={11}>ACME · Confidencial</Text>,
+}, ({ title, children }: { title: string; children?: Children }) => (
+  <Slide padding="40 40 56" gap={20}>
+    <Text placeholder="title" fontSize={32} fontWeight="bold">{title}</Text>
+    <Box placeholder="body" flex={1}>{children}</Box>
+  </Slide>
+));
+```
+
+- `placeholders`: `'title'`, `'subtitle'`, `'body'`, `'footer'`, `'pictures'` (viram os tipos do PowerPoint) ou outro nome (vira um `body`). Marque **um** nó por nome com `placeholder="…"` (`Text`, `Image` ou `Box`); nome fora da lista do layout, repetido no slide ou `placeholder` num slide sem layout = erro de estrutura.
+- A posição e o estilo de cada placeholder no layout vêm do **1º slide** que usa o layout (o frame calculado nesse tamanho). Os outros slides ligam o nó ao placeholder, mas guardam a própria posição.
+- `Text`/`Image` marcados ficam **ligados** ao placeholder. `Box` marcado só reserva a área no layout (o conteúdo continua como objetos do slide).
+- `fixed` (logotipo, faixa, assinatura) sai no layout do master, atrás do conteúdo; `background` (cor ou `{ image }`) é o fundo do layout.
+- Sem `defineLayout`, o arquivo fica como antes (sem layouts próprios). Nome do layout único no deck.
 
 Componentes (`'../components/index.ts'`):
 
@@ -730,7 +779,7 @@ dist/agent-test/
 - Com `--json`, stdout tem **só** `{ "files": [...], "diagnostics": [...] }` (mais `"fontsMissing"` se for o caso). Se o deck nem rodar (erro de sintaxe, texto fora de `<Text>`…), `{ "error": "mensagem" }`.
 - **Exit code**: `1` se houver qualquer diagnóstico `error` ou falha; `0` caso contrário. `warning`/`info` não falham.
 - Sempre gere **os dois tamanhos** (`16x9,4x3`); inclua `wide` se o deck usa esse breakpoint.
-- Config opcional `pptsx.config.ts` (`defineConfig({ fonts?, sizes?, lang?, textSafety?, lineBreaks?, embedFonts? })`); flags vencem a config.
+- Config opcional `pptsx.config.ts` (`defineConfig({ fonts?, sizes?, lang?, textSafety?, lineBreaks?, embedFonts?, theme?, document? })`), lida da pasta de onde o build roda; flags vencem a config.
 
 ## 8. Diagnósticos
 
@@ -781,6 +830,7 @@ Campos de `data` (opcionais): `overflowPt`/`overflowPct`, `fromSize`/`toSize`, `
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi | arquivo com mais resolução ou área menor |
 | `font-missing` | error | família não registrada ou não achada; único diagnóstico desse Text | tire `fontFamily` (Arial), registre a face ou instale |
 | `connector-target-missing` | error | `from`/`to` de um `Connector` sem nó com esse `id` no slide (a mensagem lista os ids do slide); o conector não sai | ponha `id` no nó certo ou corrija o nome |
+| `placeholder-unused` | info | o layout declara um placeholder que nenhum nó do 1º slide dele marca (`data.layout`, `data.placeholders`); ele não sai no layout | marque um nó com `placeholder="…"` ou tire o nome da lista |
 | `connector-omitted` | info | com `paginate`, as duas pontas caíram em slides diferentes; o conector não sai | tire um dos nós do Box paginate ou encurte a lista |
 | `icon-rasterized` | info | o SVG do `Icon` saiu como imagem (motivo na mensagem: gradiente, `transform`, `<defs>`, opacidade, texto…) ou `render="image"` | aceite, ou simplifique o SVG para só formas e cores sólidas |
 | `path-invalid` | error | o `d` de um `Path` tem comando fora de `M L H V C S Q T A Z` ou número malformado; nada é desenhado | corrija o `d` (a mensagem diz o trecho) |
@@ -899,6 +949,11 @@ Só um nó paginate (<Box paginate> ou <Text paginate>) por slide; encontrados 2
 - **`slide:N` é o slide do seu `<Deck>`**, não o do arquivo gerado (a paginação desloca os números; a engine traduz).
 - **`Text paginate` não encolhe**: se a fonte ficar grande demais, diminua `fontSize`; e ele precisa de altura (`flex={1}` numa coluna).
 - **Rodapé por cima do corpo**: o `footer` não ocupa espaço; sem `padding` inferior no Slide, o texto do corpo passa por baixo dele.
+- **Cor do tema só com hex exato**: `#2F6FED` no tema e `#2F6FEE` no slide não casam (fica hex fixo). Use os mesmos tokens no tema e no deck (`theme: themeOf(tokens)`).
+- **Tema na config, não no deck**: `theme` e `document` vêm do `pptsx.config.ts` da pasta onde o build roda (ou de `render({ theme })`).
+- **Placeholder vem do 1º uso**: o layout guarda posição e estilo do 1º slide que o usa; num tamanho em que o 1º slide tem título maior, o layout também tem.
+- **Master não faz layout**: o PowerPoint não reposiciona nada pelo placeholder quando o texto muda; a engine já calculou cada slide.
+- **Notas com `slide:N`** saem como texto (link de nota só para URL).
 - **`stackedBar100` não precisa somar 100**: o PPTX calcula a participação; passe os valores absolutos.
 - **`barH` inverte a ordem**: a 1ª categoria fica embaixo. Para o maior no topo, ordene do menor para o maior.
 - **Linha coberta por merge não repete a célula**: com `rowSpan: 3`, as duas linhas de baixo têm uma célula a menos; repetir dá "tem N células para M colunas".

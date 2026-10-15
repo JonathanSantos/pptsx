@@ -113,7 +113,11 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M14 | M14-3 | células: merges, estilo por célula e cell(), rich text, ícones (espaçador com charSpacing por causa do Keynote) | ✅ |
 | M14 | M14-4 | Table paginate: bisseção por linhas sem cortar rowSpan, cabeçalho repetido; 40 linhas → 12/12/12/4 no Keynote | ✅ |
 | M14 | M14-5 | guia (§3 gráficos/tabelas, receitas 6.17–6.19, códigos, armadilhas), README "Dados", agente virgem (2 builds, 0 diagnóstico); versão 0.4.0 | ✅ |
-| M15 | M15-1…5 | tema de cores/fontes (pós-processamento), seções, slide oculto, notas formatadas, propriedades, masters com placeholders opt-in; guia e validação (plano em M15.md) | ⬜ |
+| M15 | M15-1 | contrato: Theme/DocumentProperties, sections, hidden, notas rich, defineLayout/placeholder; resolve de layout, notas e seções; placeholder-unused | ✅ |
+| M15 | M15-2 | tema: clrScheme e fontes no theme1.xml, cores declaradas → schemeClr, famílias → +mj-lt/+mn-lt; Keynote idêntico e repintado ao trocar accent1 | ✅ |
+| M15 | M15-3 | seções após a paginação, slide oculto, notas formatadas, propriedades com palavras-chave; overview com seção e oculto | ✅ |
+| M15 | M15-4 | masters/layouts: placeholders no frame do 1º uso, slides ligados por <p:ph>, conteúdo fixo movido para o layout; Keynote importa os layouts | ✅ |
+| M15 | M15-5 | guia (tema, propriedades, seções, oculto, notas, defineLayout, armadilhas), README "Arquivo pronto para editar", agente virgem (1 build, 0 diagnóstico); versão 0.5.0 | ✅ |
 | M16 | M16-1…6 | dívidas (baseline, rotação herdada, loader, keynote-export, audit, watch), visão única do nó, `pptsx-mcp`, `preview --serve`, `lint --fix`, CI e changelog (plano em M16.md) | ⬜ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).

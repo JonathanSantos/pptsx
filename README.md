@@ -9,7 +9,7 @@
 <p align="center">
   <img alt="TypeScript ESM" src="https://img.shields.io/badge/TypeScript-ESM-2F6FED?logo=typescript&logoColor=white">
   <img alt="Node 20+" src="https://img.shields.io/badge/Node-%E2%89%A5%2020-1B2A4A?logo=nodedotjs&logoColor=white">
-  <img alt="Testes: 1892" src="https://img.shields.io/badge/testes-1892%20passando-1E9E6A">
+  <img alt="Testes: 1922" src="https://img.shields.io/badge/testes-1922%20passando-1E9E6A">
   <img alt="Calibração no Keynote: 34/34" src="https://img.shields.io/badge/Keynote-34%2F34%20linhas-5B6680">
   <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-F4F6FA?labelColor=5B6680&color=E8EEFC">
 </p>
@@ -820,6 +820,45 @@ O preview desenha cada forma com as fórmulas do OOXML; no Keynote os nós batem
 
 ---
 
+## Arquivo pronto para editar
+
+Quem recebe o `.pptx` edita com o sistema de design do deck, não com hex soltos. O tema vai no `pptsx.config.ts`: toda cor do deck igual a uma cor do tema sai como **cor do tema** (no seletor de cores aparece a paleta; trocar `accent1` repinta formas, textos e gráficos), e as famílias de título e corpo viram as fontes do tema.
+
+```ts
+// pptsx.config.ts
+export default defineConfig({
+  theme: { colors: { dark1: '#1B2A4A', light2: '#F4F6FA', accent1: '#2F6FED', accent2: '#1E9E6A' }, fonts: { heading: 'Arial', body: 'Arial' } },
+  document: { author: 'Ana Souza', company: 'ACME', keywords: ['resultados', 'q3'] },
+});
+```
+
+<p align="center"><img src="docs/readme/arquivo-tema.png" width="960" alt="Dois slides exportados pelo Keynote: à esquerda com o tema do deck, à direita o mesmo arquivo com só a cor accent1 do tema trocada para laranja; barras de título, marcadores e destaques mudam juntos"></p>
+
+À direita, o mesmo arquivo com **só** `accent1` trocado no tema (exportado pelo Keynote): tudo que usava a cor de destaque mudou junto.
+
+No deck, `defineLayout` transforma um componente de slide num layout do arquivo, com placeholders nas posições calculadas e conteúdo fixo (logotipo, faixa) no master; `sections` dá as seções do painel de slides (traduzidas depois da paginação), `hidden` oculta um slide de reserva e `notes` aceita rich text:
+
+```tsx
+const Conteudo = defineLayout('Conteúdo', { placeholders: ['title', 'body'], fixed: <Marca /> },
+  ({ title, children }) => (
+    <Slide padding="40 40 56" gap={20}>
+      <Text placeholder="title" fontSize={32} fontWeight="bold">{title}</Text>
+      <Box placeholder="body" flex={1}>{children}</Box>
+    </Slide>
+  ));
+
+<Deck sections={[{ title: 'Abertura', from: 1 }, { title: 'Resultados', from: 2 }, { title: 'Anexos', from: 4 }]}>
+  <Capa title="Relatório do 3º trimestre" subtitle="Receita, custo e o que vem no 4º trimestre" />
+  <Conteudo title="Destaques" notes={<>Comece pelo <B>crescimento de 14 %</B>.</>}>…</Conteudo>
+  <Conteudo title="Receita contra a meta">…</Conteudo>
+  <Conteudo title="Reserva: metodologia" hidden>…</Conteudo>
+</Deck>
+```
+
+<p align="center"><img src="docs/readme/arquivo-overview.png" width="960" alt="Overview de quatro slides com a seção sob o primeiro slide de cada uma (Abertura, Resultados, Anexos) e o quarto slide esmaecido com a marca oculto"></p>
+
+O deck completo é [`examples/arquivo/arquivo.tsx`](examples/arquivo/arquivo.tsx) (rode o build dentro de `examples/arquivo/`, onde está o `pptsx.config.ts`). No Keynote, os layouts "Capa" e "Conteúdo" aparecem como masters, o slide oculto é pulado e a faixa e a assinatura vêm do master.
+
 ## CLI
 
 ```
@@ -954,6 +993,7 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 - **Rich text por trecho** muda peso, itálico, cor, decoração, tamanho, fonte, sobrescrito e link; a entrelinha vale para o `Text` inteiro.
 - **Keynote e campos:** o número de slide sai como campo nativo; o Keynote apaga texto no mesmo parágrafo de um campo, por isso `n / total` sai em duas caixas encostadas.
 - **`Table`** não tem `truncate`: encolhe, pagina (`paginate`) ou vira `table-overflow`. Ícone de célula é uma forma sobre a tabela, não parte dela. `Chart` e `Table` não giram.
+- **Layouts não reposicionam:** o placeholder guarda a posição do 1º slide do layout; o PowerPoint não refaz o layout quando o texto muda (a engine já calculou cada slide). Cor do tema só com hex igual.
 - **Gráficos fora do escopo:** 3D, radar, bolha, cascata, treemap, linhas de tendência e barras de erro.
 - **O gráfico do PNG é uma aproximação**: PowerPoint e Keynote redesenham o gráfico nativo dentro do mesmo frame.
 - **Conectores não desviam de obstáculos** nem se religam ao mover um nó no PowerPoint: são linhas calculadas no build entre os lados escolhidos.
@@ -976,7 +1016,7 @@ O [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md) é o único documento de que um a
 ## Desenvolvimento
 
 ```sh
-npm test               # vitest (1892 testes)
+npm test               # vitest (1922 testes)
 npm run typecheck      # tsc
 npm run build          # compila src/ para dist/ (JS + .d.ts)
 npm run test:package   # npm pack → projeto vazio → init → build (lento)
