@@ -15,9 +15,10 @@ Origem: `docs/work/reports/REVIEW-2026-10-13.md`. Cada marco segue o fluxo de `d
 | [M14](M14.md) | Gráficos e tabelas 2: barra horizontal/empilhada, área, doughnut, scatter, combo; merges, estilo por célula, `Table paginate` | Último buraco grande de conteúdo | sequencial |
 | [M15](M15.md) | Arquivo e tema: cores e fontes do tema, seções, slide oculto, notas formatadas, propriedades, masters opt-in | Arquivo editável de verdade no PowerPoint | sequencial |
 | [M16](M16.md) | Dívidas do motor, visão única do nó, servidor MCP, preview ao vivo, lint/codemod, CI; candidata a 1.0 | Prepara a 1.0 e muda o canal de uso (agentes sem shell) | sequencial |
+| [M17](M17.md) | Extração: ganchos para DS no núcleo (`defineComponent`, regras de lint, `renderFragment`, MCP agregador, `defineDs`), workspaces, `@pptsx/ds-kit` e `@pptsx/ds-base`; núcleo sem marca | pptsx vira base para DS nascerem sem hackear | sequencial |
 
 ```
-M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10  ─▶  M11  ─▶  M12  ─▶  M13  ─▶  M14  ─▶  M15  ─▶  M16
+M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10  ─▶  M11  ─▶  M12  ─▶  M13  ─▶  M14  ─▶  M15  ─▶  M16  ─▶  M17
 ```
 
 ## Exploração proposta

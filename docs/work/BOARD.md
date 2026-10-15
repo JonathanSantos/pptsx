@@ -124,6 +124,7 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M16 | M16-4 | `pptsx preview --serve`: SVG + diagnósticos + destaque por path, SSE < 1 s de ponta a ponta | ✅ |
 | M16 | M16-5 | `pptsx lint` e `--fix` por AST; broken-original migrado com os mesmos frames (±1 pt) | ✅ |
 | M16 | M16-6 | CI (GitHub Actions), CHANGELOG com a política da 1.0, README (MCP, preview ao vivo, migração), guia §7; versão 0.6.0 | ✅ |
+| M17 | M17-1…5 | ganchos no núcleo (defineComponent, LintRule, renderFragment, MCP agregador, defineDs), workspaces + @pptsx/ds-kit, @pptsx/ds-base extraído, núcleo sem marca, DS de terceiro pelo agente virgem (plano em M17.md) | ⬜ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
 
