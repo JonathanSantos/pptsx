@@ -1,4 +1,4 @@
-import { containerOf } from '../core/defaults.ts';
+import { flexDirectionOf } from '../core/defaults.ts';
 import { contentRectOf } from '../layout/index.ts';
 import type { FlexDirection, PositionedBox, PositionedNode, PositionedSlide, Rect } from '../core/types.ts';
 
@@ -18,7 +18,7 @@ export interface SideExcess {
   readonly pt: number;
 }
 
-export const isInFlow = (node: PositionedNode): boolean => node.props.position !== 'absolute';
+export const isInFlow = (node: PositionedNode): boolean => node.css.position !== 'absolute';
 
 export const isBox = (node: PositionedNode): node is PositionedBox => node.kind === 'box';
 
@@ -88,5 +88,5 @@ export const containerExcessOf = (container: Container, explained: ReadonlySet<s
       .map((child) => excessOf(marginBoxOf(child), content)),
   );
   const layout = layoutOf(container);
-  return { ...excess, available: content[excess.axis], direction: containerOf(container.props).direction, ...(layout === undefined ? {} : { layout }) };
+  return { ...excess, available: content[excess.axis], direction: flexDirectionOf(container.css), ...(layout === undefined ? {} : { layout }) };
 };

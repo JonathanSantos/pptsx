@@ -1,4 +1,4 @@
-import { DEFAULTS, containerOf } from '../core/defaults.ts';
+import { DEFAULTS, flexDirectionOf, mainGapOf } from '../core/defaults.ts';
 import type { Diagnostic, DiagnosticCode, PositionedNode, PositionedSlide, Pt } from '../core/types.ts';
 import { isWidthOverflow } from './detect.ts';
 import type { Overflow } from './detect.ts';
@@ -32,7 +32,7 @@ type Flow = 'column' | 'row' | 'wrap' | 'grid';
 
 const flowOf = (container: Container): Flow => {
   if (container.css.display === 'grid') return 'grid';
-  if (containerOf(container.props).direction !== 'row') return 'column';
+  if (flexDirectionOf(container.css) !== 'row') return 'column';
   return container.css.flexWrap === 'nowrap' ? 'row' : 'wrap';
 };
 
@@ -66,7 +66,7 @@ const boxDemandOf = (container: Container): Pt => {
  * Table pede como o Text: o que as linhas somam além do frame.
  */
 const demandOf = (node: PositionedNode): Pt => {
-  if (node.props.height !== undefined) return 0;
+  if (node.css.height !== undefined) return 0;
   if (node.kind === 'text') return node.text.fontMissing ? 0 : Math.max(0, node.text.height - node.frame.height);
   if (node.kind === 'table') return isTableFontMissing(node) ? 0 : Math.max(0, node.height - node.frame.height);
   if (node.kind === 'box') return boxDemandOf(node);
@@ -85,7 +85,7 @@ const isOverloaded = (container: Container): boolean => {
   }
   const children = container.children.filter(isInFlow);
   const wanted = sum(children.map(wantedOf));
-  const gaps = containerOf(container.props).gap * Math.max(0, children.length - 1);
+  const gaps = mainGapOf(container.css) * Math.max(0, children.length - 1);
   return wanted + gaps > contentOf(container).height + DEFAULTS.fit.epsilon;
 };
 

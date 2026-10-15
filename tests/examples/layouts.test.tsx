@@ -25,15 +25,15 @@ const CTX_16X9 = createContext(resolveSize('16x9'));
 describe('CoverLayout', () => {
   it('circle diameter = 0.9 × ctx.height, with equal width and height', () => {
     for (const ctx of [CTX_16X9, CTX_4X3]) {
-      const { props } = ellipse(resolveSlide(<CoverLayout title="T" ctx={ctx} />));
-      expect(props.width).toBeCloseTo(0.9 * ctx.height);
-      expect(props.height).toBe(props.width);
-      expect(props.position).toBe('absolute');
+      const { css } = ellipse(resolveSlide(<CoverLayout title="T" ctx={ctx} />));
+      expect(css.width).toBeCloseTo(0.9 * ctx.height);
+      expect(css.height).toBe(css.width);
+      expect(css.position).toBe('absolute');
     }
   });
 
   it('without ctx uses the 16:9 height (405 pt)', () => {
-    expect(ellipse(resolveSlide(<CoverLayout title="T" />)).props.width).toBeCloseTo(0.9 * 405);
+    expect(ellipse(resolveSlide(<CoverLayout title="T" />)).css.width).toBeCloseTo(0.9 * 405);
   });
 
   it('caption is an optional small text before the title', () => {
@@ -56,20 +56,20 @@ describe('ContentLayout', () => {
 
   it("body is a growing box with justify 'start' by default", () => {
     const slide = resolveSlide(<ContentLayout title="T"><Text>x</Text></ContentLayout>);
-    expect(body(slide).props.grow).toBe(1);
-    expect(body(slide).props.justify).toBe('start');
+    expect(body(slide).css.flexGrow).toBe(1);
+    expect(body(slide).css.justifyContent).toBe('flex-start');
   });
 
   it("justify='center' is forwarded to the body", () => {
     const slide = resolveSlide(<ContentLayout title="T" justify="center"><Text>x</Text></ContentLayout>);
-    expect(body(slide).props.justify).toBe('center');
+    expect(body(slide).css.justifyContent).toBe('center');
   });
 });
 
 describe('ClosingLayout', () => {
   it('circle diameter = 0.75 × ctx.height (16:9 height without ctx)', () => {
-    expect(ellipse(resolveSlide(<ClosingLayout title="T" ctx={CTX_4X3} />)).props.width).toBeCloseTo(0.75 * CTX_4X3.height);
-    expect(ellipse(resolveSlide(<ClosingLayout title="T" />)).props.width).toBeCloseTo(0.75 * 405);
+    expect(ellipse(resolveSlide(<ClosingLayout title="T" ctx={CTX_4X3} />)).css.width).toBeCloseTo(0.75 * CTX_4X3.height);
+    expect(ellipse(resolveSlide(<ClosingLayout title="T" />)).css.width).toBeCloseTo(0.75 * 405);
   });
 
   it('renders title, subtitle and contact texts', () => {

@@ -13,7 +13,7 @@ import { isWithin } from './scope.ts';
 
 const MAX_PARTS = DEFAULTS.paginate.maxParts;
 
-const isAbsolute = (node: ResolvedNode): boolean => node.props.position === 'absolute';
+const isAbsolute = (node: ResolvedNode): boolean => node.css.position === 'absolute';
 
 const paginatedIn = (node: ResolvedNode): ResolvedBox | undefined => {
   if (node.kind !== 'box') return undefined;

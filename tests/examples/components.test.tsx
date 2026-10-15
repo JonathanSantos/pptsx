@@ -41,11 +41,11 @@ describe('Bullets', () => {
   it('is a column with one row per item', () => {
     expect(root.kind).toBe('box');
     expect(root.path.split(' > ').pop()).toBe('Bullets');
-    expect(root.props.direction ?? 'column').toBe('column');
+    expect(root.css.flexDirection).toBe('column');
     expect(root.children).toHaveLength(items.length);
     for (const row of root.children) {
       expect(row.kind).toBe('box');
-      expect((row as ResolvedBox).props.direction).toBe('row');
+      expect((row as ResolvedBox).css.flexDirection).toBe('row');
     }
   });
 
@@ -54,10 +54,12 @@ describe('Bullets', () => {
       const nodes = descendants([row]);
       const markers = nodes.filter((n) => n.kind === 'shape' && n.props.kind === 'ellipse');
       expect(markers).toHaveLength(1);
-      expect(markers[0]!.props).toMatchObject({ width: 8, height: 8, fill: tokens.color.accent });
+      expect(markers[0]!.props).toMatchObject({ fill: tokens.color.accent });
+      expect(markers[0]!.css).toMatchObject({ width: 8, height: 8 });
       const [text] = texts([row]);
       expect(text!.content).toBe(items[index]);
-      expect(text!.props).toMatchObject({ grow: 1, minSize: 14 });
+      expect(text!.props).toMatchObject({ minSize: 14 });
+      expect(text!.css.flexGrow).toBe(1);
       expect(text!.props.fit ?? 'shrink').toBe('shrink');
     });
   });
@@ -69,8 +71,8 @@ describe('Bullets', () => {
   });
 
   it('gap defaults to 0.7 × size and can be overridden', () => {
-    expect((resolveOne(<Bullets items={['a', 'b']} size={20} />)[0] as ResolvedBox).props.gap).toBeCloseTo(14);
-    expect((resolveOne(<Bullets items={['a', 'b']} size={20} gap={30} />)[0] as ResolvedBox).props.gap).toBe(30);
+    expect((resolveOne(<Bullets items={['a', 'b']} size={20} />)[0] as ResolvedBox).css.rowGap).toBeCloseTo(14);
+    expect((resolveOne(<Bullets items={['a', 'b']} size={20} gap={30} />)[0] as ResolvedBox).css.rowGap).toBe(30);
   });
 });
 
@@ -107,7 +109,7 @@ describe('KpiCard', () => {
   const labelOf = (props: Partial<CardProps> = {}) => cardTexts(props).find((t) => t.content === 'Receita')!;
   const rootOf = (props: Partial<CardProps> = {}) => resolveOne(<KpiCard label="L" value="V" {...props} />)[0] as ResolvedBox;
 
-  /** M11: o padding na visão da engine vem nos 4 lados. */
+  /** M16: o padding fica no css, nos 4 lados. */
   const sides = (n: number) => ({ top: n, right: n, bottom: n, left: n });
 
   it('surface box with radius 8 and padding', () => {
@@ -115,7 +117,7 @@ describe('KpiCard', () => {
     expect(root.path.split(' > ').pop()).toBe('KpiCard');
     // M11: fill/radius do Box são alias de backgroundColor/borderRadius (ficam no css).
     expect(root.css).toMatchObject({ backgroundColor: tokens.color.surface, borderRadius: 8 });
-    expect(root.props.padding).toBeDefined();
+    expect(root.css.padding).toBeDefined();
   });
 
   it('value is bold and larger than the muted label', () => {
@@ -160,13 +162,13 @@ describe('KpiCard', () => {
 
     it.each(Object.entries(SPEC))('%s → padding %s, label/value sizes', (size, [padding, label, value]) => {
       const props = { size: size as CardProps['size'] };
-      expect(rootOf(props).props.padding).toEqual(sides(padding));
+      expect(rootOf(props).css.padding).toEqual(sides(padding));
       expect(labelOf(props).props.size).toBe(label);
       expect(valueOf(props).props.size).toBe(value);
     });
 
     it("defaults to 'md'", () => {
-      expect(rootOf().props.padding).toEqual(sides(SPEC.md[0]));
+      expect(rootOf().css.padding).toEqual(sides(SPEC.md[0]));
       expect(labelOf().props.size).toBe(SPEC.md[1]);
       expect(valueOf().props.size).toBe(SPEC.md[2]);
     });

@@ -107,13 +107,15 @@ describe('resolveDeck — responsive props by size', () => {
     );
     expect(responsiveLeftovers(deck)).toEqual([]);
     const slide = deck.slides[0]!;
-    // M11: padding na visão da engine vem nos 4 lados; o fill do Box é css.backgroundColor.
-    expect(slide.props).toMatchObject({ padding: { top: 32, right: 32, bottom: 32, left: 32 }, gap: 8, background: '#EEEEEE', direction: 'column' });
-    expect(nodeAt(slide, 'Slide > Box').props).toMatchObject({ direction: 'column', gap: 20, grow: 1 });
+    // M16: a geometria fica só no css (padding nos 4 lados; o fill do Box é css.backgroundColor).
+    expect(slide.css).toMatchObject({ padding: { top: 32, right: 32, bottom: 32, left: 32 }, rowGap: 8, backgroundColor: '#EEEEEE', flexDirection: 'column' });
+    expect(nodeAt(slide, 'Slide > Box').css).toMatchObject({ flexDirection: 'column', rowGap: 20, flexGrow: 1 });
     expect(nodeAt(slide, 'Slide > Box').css).toMatchObject({ backgroundColor: '#FF0000' });
     expect(nodeAt(slide, 'Slide > Box > Text').props).toMatchObject({ size: 24, color: '#222222', weight: 'regular', fit: 'truncate' });
-    expect(nodeAt(slide, 'Slide > Box > Image').props).toMatchObject({ src: 'x.png', width: 200, fit: 'cover' });
-    expect(nodeAt(slide, 'Slide > Box > Shape').props).toMatchObject({ kind: 'rect', width: 20, height: 10, radius: 4 });
+    expect(nodeAt(slide, 'Slide > Box > Image').props).toMatchObject({ src: 'x.png', fit: 'cover' });
+    expect(nodeAt(slide, 'Slide > Box > Image').css).toMatchObject({ width: 200 });
+    expect(nodeAt(slide, 'Slide > Box > Shape').props).toMatchObject({ kind: 'rect', radius: 4 });
+    expect(nodeAt(slide, 'Slide > Box > Shape').css).toMatchObject({ width: 20, height: 10 });
   });
 
   it('the same deck resolves differently in 16x9', () => {
@@ -125,7 +127,7 @@ describe('resolveDeck — responsive props by size', () => {
       </Slide>,
       CTX_16X9,
     );
-    expect(nodeAt(slide, 'Slide > Box').props).toMatchObject({ direction: 'row' });
+    expect(nodeAt(slide, 'Slide > Box').css).toMatchObject({ flexDirection: 'row' });
     expect(nodeAt(slide, 'Slide > Box > Text').props).toMatchObject({ size: 20 });
   });
 
@@ -146,7 +148,7 @@ describe('resolveDeck — responsive props by size', () => {
       </Slide>,
       CTX_4X3,
     );
-    expect((nodeAt(slide, 'Slide > Box') as ResolvedBox).props.padding).toEqual({ top: 8, right: 0, bottom: 8, left: 0 });
+    expect((nodeAt(slide, 'Slide > Box') as ResolvedBox).css.padding).toEqual({ top: 8, right: 0, bottom: 8, left: 0 });
   });
 });
 
@@ -161,15 +163,15 @@ describe('resolveDeck — non-responsive objects pass intact', () => {
         </Slide>,
         ctx,
       );
-      // M11: lados ausentes valem 0 na visão da engine (o objeto em si não é responsivo).
-      expect(slide.props.padding).toEqual({ top: 10, right: 0, bottom: 0, left: 0 });
-      expect((nodeAt(slide, 'Slide > Box') as ResolvedBox).props.padding).toEqual({ top: 10, right: 0, bottom: 0, left: 4 });
+      // Lados ausentes valem 0 no css (o objeto em si não é responsivo).
+      expect(slide.css.padding).toEqual({ top: 10, right: 0, bottom: 0, left: 0 });
+      expect((nodeAt(slide, 'Slide > Box') as ResolvedBox).css.padding).toEqual({ top: 10, right: 0, bottom: 0, left: 4 });
     }
   });
 
   it("background={{ image: 'x.png' }} is kept", () => {
     const slide = resolveAt(<Slide background={{ image: 'x.png' }} />, CTX_4X3);
-    expect(slide.props.background).toEqual({ image: 'x.png' });
+    expect(slide.css.backgroundImage).toBe('x.png');
   });
 
   it('notes and src are never touched', () => {
@@ -287,7 +289,7 @@ describe('resolveDeck — user components forward responsive values', () => {
     expect(sizesAt(CTX_16X9)).toEqual([20, 20]);
     expect(sizesAt(CTX_WIDE)).toEqual([24, 24]);
     expect(sizesAt(CTX_4X3)).toEqual([22, 22]);
-    expect(nodeAt(resolveAt(slide, CTX_4X3), 'Slide > Bullets').props).toMatchObject({ gap: 12 });
+    expect(nodeAt(resolveAt(slide, CTX_4X3), 'Slide > Bullets').css).toMatchObject({ rowGap: 12 });
   });
 
   it('component paths do not change with responsive values', () => {

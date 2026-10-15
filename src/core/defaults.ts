@@ -1,4 +1,6 @@
 import type {
+  Color,
+  CssStyle,
   Align,
   ChartProps,
   ContainerProps,
@@ -297,13 +299,15 @@ export const edgesOf = (spacing: Spacing | undefined): Edges => {
   return { top: spacing.top ?? 0, right: spacing.right ?? 0, bottom: spacing.bottom ?? 0, left: spacing.left ?? 0 };
 };
 
-export const containerOf = (props: ContainerProps) => ({
-  direction: props.direction ?? DEFAULTS.container.direction,
-  gap: props.gap ?? DEFAULTS.container.gap,
-  padding: edgesOf(props.padding),
-  align: props.align ?? DEFAULTS.container.align,
-  justify: props.justify ?? DEFAULTS.container.justify,
-});
+/** M16: eixo principal de um contêiner, lido do CSS (row-reverse conta como row). */
+export const flexDirectionOf = (css: CssStyle): FlexDirection => (css.flexDirection.startsWith('row') ? 'row' : 'column');
+
+/** M16: gap no eixo principal (columnGap numa row, rowGap numa column). */
+export const mainGapOf = (css: CssStyle): Pt => (flexDirectionOf(css) === 'row' ? css.columnGap : css.rowGap);
+
+/** M16: fundo do slide pelo CSS: imagem vence cor; nenhum dos dois = sem fundo. */
+export const slideBackgroundOf = (css: CssStyle): Color | { readonly image: string } | undefined =>
+  css.backgroundImage !== undefined ? { image: css.backgroundImage } : css.backgroundColor;
 
 /** Formas que são só traço: sem stroke seriam invisíveis. */
 const STROKE_ONLY: ReadonlySet<ShapeKind> = new Set<ShapeKind>(['line', 'bracketPair']);

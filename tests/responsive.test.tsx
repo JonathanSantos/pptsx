@@ -89,8 +89,8 @@ describe('responsiveness — ctx.aspect changes the structure', () => {
 
   it('direction is row in 16x9 and column in 4x3', () => {
     const boxOf = (name: '16x9' | '4x3') => resolvedAt(name).slides[0]!.children[0]!;
-    expect(boxOf('16x9').props).toMatchObject({ direction: 'row' });
-    expect(boxOf('4x3').props).toMatchObject({ direction: 'column' });
+    expect(boxOf('16x9').css).toMatchObject({ flexDirection: 'row' });
+    expect(boxOf('4x3').css).toMatchObject({ flexDirection: 'column' });
   });
 
   it('render() in both sizes positions the two texts side by side vs stacked', async () => {

@@ -64,8 +64,8 @@ const boxAt = (slide: PositionedSlide, path: string): PositionedBox => {
   return node;
 };
 
-const inFlow = (box: PositionedBox): PositionedNode[] => box.children.filter((c) => c.props.position !== 'absolute');
-const absolutes = (box: PositionedBox): PositionedNode[] => box.children.filter((c) => c.props.position === 'absolute');
+const inFlow = (box: PositionedBox): PositionedNode[] => box.children.filter((c) => c.css.position !== 'absolute');
+const absolutes = (box: PositionedBox): PositionedNode[] => box.children.filter((c) => c.css.position === 'absolute');
 
 const itemsPerPart = (result: FitDeckResult, path = P): number[] =>
   result.positioned.slides.map((slide) => inFlow(boxAt(slide, path)).length);

@@ -1,11 +1,12 @@
-import type { BoxProps, ResolvedNode, ResolvedSlide } from '../core/types.ts';
+import type { CssStyle, ResolvedNode, ResolvedSlide } from '../core/types.ts';
 import { ResolveError } from './errors.ts';
 
-type ResolvedBoxProps = Omit<BoxProps, 'children'>;
+/** M16: a posição vem do CSS (as props do nó não guardam geometria). */
+type Position = CssStyle['position'];
 
 /** Decoração absoluta não participa do fluxo, então não tem filhos "a mais" para mandar ao próximo slide. */
-export const assertPaginateInFlow = (props: ResolvedBoxProps, path: string): void => {
-  if (props.paginate !== true || props.position !== 'absolute') return;
+export const assertPaginateInFlow = (props: { readonly paginate?: boolean }, position: Position, path: string): void => {
+  if (props.paginate !== true || position !== 'absolute') return;
   throw new ResolveError(
     '<Box paginate> não pode ter position="absolute": decoração não pagina; use paginate num Box em fluxo',
     path,
@@ -37,14 +38,14 @@ export const assertSinglePaginate = (slide: ResolvedSlide): void => {
 };
 
 /** M13: Text paginate em absoluto ou com maxLines não tem para onde continuar. */
-export const assertTextPaginate = (props: { readonly paginate?: boolean; readonly position?: string; readonly maxLines?: number }, path: string): void => {
+export const assertTextPaginate = (props: { readonly paginate?: boolean; readonly maxLines?: number }, position: Position, path: string): void => {
   if (props.paginate !== true) return;
-  if (props.position === 'absolute') throw new ResolveError('<Text paginate> não pode ter position="absolute": só texto em fluxo continua no próximo slide', path);
+  if (position === 'absolute') throw new ResolveError('<Text paginate> não pode ter position="absolute": só texto em fluxo continua no próximo slide', path);
   if (props.maxLines !== undefined) throw new ResolveError('<Text paginate> não combina com maxLines: o texto continua no próximo slide em vez de ser cortado', path);
 };
 
 /** M14: Table paginate em absoluto não tem para onde continuar. */
-export const assertTablePaginate = (props: { readonly paginate?: boolean; readonly position?: string }, path: string): void => {
-  if (props.paginate !== true || props.position !== 'absolute') return;
+export const assertTablePaginate = (props: { readonly paginate?: boolean }, position: Position, path: string): void => {
+  if (props.paginate !== true || position !== 'absolute') return;
   throw new ResolveError('<Table paginate> não pode ter position="absolute": só tabela em fluxo continua no próximo slide', path);
 };

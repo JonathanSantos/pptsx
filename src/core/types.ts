@@ -909,19 +909,33 @@ export type DeckDefinition = (ctx: DeckContext) => SlideElement;
  *    i = índice entre esses irmãos homônimos, começando em 0.
  *  - o path começa no slide (o Deck não entra): 'CoverLayout > Box > Text[0]'.
  */
+/**
+ * M16: geometria de item e de contêiner (tamanho, posição, flex, padding, raio, fundo do slide) vive só
+ * em `css`; a "visão da engine" não repete essas chaves.
+ */
+export type ItemGeometryKey = Exclude<keyof FlexItemProps, 'id'>;
+export type ContainerGeometryKey = keyof ContainerProps;
+
+/** Props de um nó resolvido sem `children` e sem a geometria (que está em `css`). */
+export type NodeProps<P, Geometry extends PropertyKey = ItemGeometryKey> = Omit<P, 'children' | Geometry>;
+
 interface ResolvedBase<K extends PrimitiveKind, P> {
   readonly kind: K;
   readonly path: string;
   /**
-   * M11: estilo CSS normalizado do nó (sem shorthands, sem responsivo, já com herança). É a fonte.
-   * `props` é a "visão da engine" derivada do mesmo estilo (nomes antigos), lida por fit/emit/preview.
+   * M11: estilo CSS normalizado do nó (sem shorthands, sem responsivo, já com herança). É a fonte de
+   * toda a geometria (M16: layout, fit, emit e preview leem daqui).
    */
   readonly css: CssStyle;
-  /** Visão da engine (derivada de `css` + props não-CSS como fit/minSize/src/data). Padrões: core/defaults.ts. */
+  /**
+   * Props que não são CSS geométrico: o estilo de texto resolvido (com herança; o fit troca o `size`),
+   * política de ajuste (`fit`, `minSize`, `maxLines`), conteúdo (`src`, `data`, `columns`, `kind`…) e
+   * marcações (`paginate`, `href`, `id`, `placeholder`). Padrões: core/defaults.ts.
+   */
   readonly props: P;
 }
 
-export interface ResolvedBox extends ResolvedBase<'box', Omit<BoxProps, 'children'>> {
+export interface ResolvedBox extends ResolvedBase<'box', NodeProps<BoxProps, ItemGeometryKey | ContainerGeometryKey | 'radius'>> {
   readonly children: readonly ResolvedNode[];
 }
 
@@ -943,7 +957,7 @@ export interface TextRun {
   readonly family?: string;
 }
 
-export interface ResolvedText extends ResolvedBase<'text', Omit<TextProps, 'children'>> {
+export interface ResolvedText extends ResolvedBase<'text', NodeProps<TextProps>> {
   /** Conteúdo já concatenado; '\n' separa parágrafos. */
   readonly content: string;
   /** M8: runs em ordem; a concatenação de `text` é igual a `content`. Sem Span: um run só. */
@@ -966,10 +980,10 @@ export interface ResolvedText extends ResolvedBase<'text', Omit<TextProps, 'chil
   };
 }
 
-export type ResolvedImage = ResolvedBase<'image', ImageProps>;
-export type ResolvedShape = ResolvedBase<'shape', ShapeProps>;
+export type ResolvedImage = ResolvedBase<'image', NodeProps<ImageProps>>;
+export type ResolvedShape = ResolvedBase<'shape', NodeProps<ShapeProps>>;
 /** M10: dados já validados (séries do tamanho das categorias; pie com 1 série). */
-export type ResolvedChart = ResolvedBase<'chart', ChartProps>;
+export type ResolvedChart = ResolvedBase<'chart', NodeProps<ChartProps>>;
 /** M10: `rows` já com todas as células como string e com `columns.length` células. */
 /** M14: ícone de célula já lido (como o do Icon). */
 export interface ResolvedCellIcon {
@@ -993,7 +1007,7 @@ export interface ResolvedCell {
   readonly icon?: ResolvedCellIcon;
 }
 
-export interface ResolvedTable extends ResolvedBase<'table', TableProps> {
+export interface ResolvedTable extends ResolvedBase<'table', NodeProps<TableProps>> {
   /** Texto das linhas de dados (compatível com o M10). */
   readonly rows: readonly (readonly string[])[];
   /**
@@ -1009,7 +1023,7 @@ export interface ResolvedTable extends ResolvedBase<'table', TableProps> {
  * caixa envolvente do `d`). `problem` = o `d` saiu do subconjunto: nada é desenhado e o fit
  * emite `path-invalid` (error).
  */
-export interface ResolvedPath extends ResolvedBase<'path', Omit<PathProps, 'children'>> {
+export interface ResolvedPath extends ResolvedBase<'path', NodeProps<PathProps>> {
   readonly commands: readonly PathCommand[];
   readonly viewBox: Rect;
   readonly problem?: string;
@@ -1021,7 +1035,7 @@ export type IconContent =
   | { readonly raster: true; readonly svg: string; readonly reason: string };
 
 /** M12: `props.color` já é a cor efetiva (a do autor ou a herdada). */
-export interface ResolvedIcon extends ResolvedBase<'icon', IconProps> {
+export interface ResolvedIcon extends ResolvedBase<'icon', NodeProps<IconProps>> {
   readonly viewBox: Rect;
   readonly content: IconContent;
 }
@@ -1063,7 +1077,7 @@ export interface ResolvedLayout {
   readonly fixedPath?: string;
 }
 
-export interface ResolvedSlide extends ResolvedBase<'slide', Omit<SlideProps, 'children'>> {
+export interface ResolvedSlide extends ResolvedBase<'slide', NodeProps<SlideProps, ContainerGeometryKey | 'background'>> {
   /** M9: índice do slide no <Deck> do autor, começando em 1 (clones de paginação repetem o do original). */
   readonly sourceSlide: number;
   /** M15: notas com estilo por trecho; ausente = sem notas. */

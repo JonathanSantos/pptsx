@@ -1,3 +1,4 @@
+import { slideBackgroundOf } from '../core/defaults.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
 import type { PositionedNode, PositionedSlide, PositionedTable, PositionedText, Rect, SlideSize } from '../core/types.ts';
 import { paintOrderOf, type PaintItem } from '../emit/paint.ts';
@@ -99,7 +100,7 @@ const BACKGROUND_CLIP_ID = 'clip-background';
 const DEFAULT_BACKGROUND = '#FFFFFF';
 
 const backgroundSvg = (slide: PositionedSlide, area: Rect, ctx: DrawContext): string => {
-  const { background } = slide.props;
+  const background = slideBackgroundOf(slide.css);
   const base = backgroundColorSvg(area, typeof background === 'string' ? background : DEFAULT_BACKGROUND);
   if (background === undefined || typeof background === 'string') return base;
   return base + imageElementSvg(area, ctx.loadImage(background.image), 'cover', BACKGROUND_CLIP_ID);

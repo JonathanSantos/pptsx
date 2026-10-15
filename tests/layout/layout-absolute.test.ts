@@ -37,7 +37,7 @@ describe('layoutSlide — slide', () => {
   it('keeps kind, path and props of the slide', () => {
     const fake = createFakeEnv();
     const slide = layoutSlide(rSlide([], { background: '#ffffff', notes: 'n' }, 'CoverLayout'), SIZE_16X9, fake.env);
-    expect(slide).toMatchObject({ kind: 'slide', path: 'CoverLayout', props: { background: '#ffffff', notes: 'n' } });
+    expect(slide).toMatchObject({ kind: 'slide', path: 'CoverLayout', props: { notes: 'n' }, css: { backgroundColor: '#ffffff' } });
   });
 
   it('keeps children order, kinds and paths', () => {

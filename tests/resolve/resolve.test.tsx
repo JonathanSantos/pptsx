@@ -64,7 +64,7 @@ describe('resolveDeck — full tree', () => {
     </Deck>
   );
 
-  // M11: `css` é a fonte; `props` é a visão da engine derivada (padrões preenchidos). O Box
+  // M16: a geometria fica só em `css`; `props` guarda o que não é CSS (texto resolvido, src…). O Box
   // guarda `fill` como css.backgroundColor; a forma (Shape) guarda o próprio fill em props.
   const run = (text: string, weight: 'regular' | 'bold') => ({ text, weight, italic: false, color: '#000000', underline: false, lineThrough: false });
 
@@ -76,13 +76,14 @@ describe('resolveDeck — full tree', () => {
           kind: 'slide',
           path: 'CoverLayout',
           sourceSlide: 1,
-          props: { background: '#112233', notes: 'speaker notes' },
+          css: { backgroundColor: '#112233' },
+          props: { notes: 'speaker notes' },
           children: [
             {
               kind: 'box',
               path: 'CoverLayout > Box',
               css: { position: 'absolute', inset: { left: 10, top: 20 }, width: 300, height: 100, backgroundColor: '#FFFFFF' },
-              props: { position: 'absolute', left: 10, top: 20, width: 300, height: 100 },
+              props: {},
               children: [
                 { kind: 'text', path: 'CoverLayout > Box > Title', props: { size: 40, weight: 'bold' }, content: 'Hello', runs: [run('Hello', 'bold')] },
                 { kind: 'text', path: 'CoverLayout > Box > Text', props: { size: 20 }, content: 'World', runs: [run('World', 'regular')] },
@@ -99,9 +100,9 @@ describe('resolveDeck — full tree', () => {
               kind: 'shape',
               path: 'Slide > Shape',
               css: { position: 'absolute', width: 50, height: 50 },
-              props: { kind: 'ellipse', position: 'absolute', width: 50, height: 50, fill: '#FF0000' },
+              props: { kind: 'ellipse', fill: '#FF0000' },
             },
-            { kind: 'image', path: 'Slide > Image', css: { width: 100 }, props: { src: 'img.png', width: 100 } },
+            { kind: 'image', path: 'Slide > Image', css: { width: 100 }, props: { src: 'img.png' } },
           ],
         },
       ],
@@ -324,10 +325,10 @@ describe('resolveDeck — props', () => {
         RESOLVE_CTX,
       ),
     );
-    expect(slide.props).toMatchObject({ direction: 'row', gap: 4 });
+    expect(slide.css).toMatchObject({ flexDirection: 'row', columnGap: 4 });
     expect(slide.props).not.toHaveProperty('children');
     const box = slide.children[0];
-    expect(box?.props).toMatchObject({ padding: { top: 8, right: 8, bottom: 8, left: 8 } });
+    expect(box?.css).toMatchObject({ padding: { top: 8, right: 8, bottom: 8, left: 8 } });
     expect(box?.css).toMatchObject({ backgroundColor: '#000000', padding: { top: 8, right: 8, bottom: 8, left: 8 } });
     expect(box?.props).not.toHaveProperty('children');
     const text = box && box.kind === 'box' ? box.children[0] : undefined;

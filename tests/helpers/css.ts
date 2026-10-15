@@ -170,3 +170,20 @@ export const boxOf = (css?: CssStyle): BoxMetrics => {
     padding: sides((side) => css.padding[side]),
   };
 };
+
+const ITEM_KEYS = ['width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight', 'grow', 'shrink', 'alignSelf', 'position', 'top', 'right', 'bottom', 'left'] as const;
+const CONTAINER_KEYS = ['direction', 'gap', 'padding', 'align', 'justify'] as const;
+
+/** Chaves de geometria que, por primitiva, vão só para o `css` (M16: as props do nó não as repetem). */
+const GEOMETRY_KEYS: Readonly<Partial<Record<PrimitiveKind, readonly string[]>>> = {
+  slide: [...CONTAINER_KEYS, 'background'],
+  // No Box, fill/stroke/radius são aliases de CSS (no Shape são da forma e ficam).
+  box: [...ITEM_KEYS, ...CONTAINER_KEYS, 'fill', 'stroke', 'strokeWidth', 'radius'],
+};
+
+/** As props do nó como o resolve entrega: sem a geometria, que o helper já pôs no `css`. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const nodePropsOf = <P extends object>(kind: PrimitiveKind, props: P): any => {
+  const keys = new Set(GEOMETRY_KEYS[kind] ?? ITEM_KEYS);
+  return Object.fromEntries(Object.entries(props).filter(([key]) => !keys.has(key)));
+};

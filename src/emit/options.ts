@@ -1,7 +1,7 @@
 import { basename } from 'node:path';
 import type * as Pptx from './pptx.ts';
 import { resolveAssetPath } from '../core/assets.ts';
-import { DEFAULTS, imageFitOf, strokeColorOf, textStyleOf } from '../core/defaults.ts';
+import { DEFAULTS, imageFitOf, slideBackgroundOf, strokeColorOf, textStyleOf } from '../core/defaults.ts';
 import type {
   Color,
   LineBreaks,
@@ -185,7 +185,7 @@ export const debugOutlineOf = (frame: Rect): ShapeSpec => ({
 });
 
 export const backgroundOf = (slide: PositionedSlide, baseDir: string): Pptx.BackgroundProps | undefined => {
-  const { background } = slide.props;
+  const background = slideBackgroundOf(slide.css);
   if (background === undefined) return undefined;
   if (typeof background === 'string') return { color: hexOf(background) };
   return { path: resolveAssetPath(baseDir, background.image) };

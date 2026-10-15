@@ -122,7 +122,7 @@ const resolveText = (item: ExpandedPrimitive, path: string, n: Normalized): Reso
   const runs = runsOf(children, baseRunStyleOf(n), n.css.textTransform, path);
   const content = runs.map((run) => run.text).join('');
   const props = legacyPropsOf('text', n);
-  assertTextPaginate(props, path);
+  assertTextPaginate(props, n.css.position, path);
   return { kind: 'text', path, props, css: n.css, content, runs };
 };
 
@@ -173,7 +173,7 @@ const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized, env:
   assertNoChildren(item, path);
   const props = legacyPropsOf('table', n);
   assertValidTable(props, path);
-  assertTablePaginate(props, path);
+  assertTablePaginate(props, n.css.position, path);
   const { grid, headerCount, rows } = tableGridOf(props, path, env);
   return { kind: 'table', path, props, css: n.css, rows, grid, headerCount };
 };
@@ -188,7 +188,7 @@ const NO_CONNECTORS: readonly ResolvedConnector[] = [];
 
 const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: ResolveScope): ResolvedChildren => {
   const props = legacyPropsOf('box', n);
-  assertPaginateInFlow(props, path);
+  assertPaginateInFlow(props, n.css.position, path);
   assertBoxShape(props, path);
   const children = resolveChildren(item.element.props.children, path, ctx, parentOf(n));
   // display: none leva junto os conectores declarados dentro do Box.
