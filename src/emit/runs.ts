@@ -1,6 +1,6 @@
 import type * as Pptx from './pptx.ts';
 import { DEFAULTS, textStyleOf } from '../core/defaults.ts';
-import type { Color, FontWeight, LineBreaks, LineRun, PositionedText, RunFace, TextLayout, TextRun } from '../core/types.ts';
+import type { Color, FontWeight, LineBreaks, LineRun, PositionedText, RunFace, TextLayout, TextRun, VerticalAlign } from '../core/types.ts';
 
 /**
  * Texto → runs do pptxgenjs (M8: rich text). Funções puras.
@@ -30,6 +30,8 @@ export interface RunStyle {
   readonly lineThrough: boolean;
   /** M13: `<a:latin typeface>` do run quando difere da caixa (face de peso não 400/700). */
   readonly typeface?: string;
+  /** M13: sobrescrito/subscrito (ausente = baseline). */
+  readonly verticalAlign?: VerticalAlign;
 }
 
 /** Pedaço de texto com estilo: vira um <a:r>. */
@@ -71,6 +73,7 @@ const runStyleOf = (run: TextRun, face: RunFace | undefined, family: string): Ru
   color: hexOf(run.color),
   underline: run.underline ?? false,
   lineThrough: run.lineThrough ?? false,
+  ...(run.verticalAlign === undefined || run.verticalAlign === 'baseline' ? {} : { verticalAlign: run.verticalAlign }),
 });
 
 // Guards: árvores montadas antes do M8 (ou à mão) podem não ter runs/lineRuns;
@@ -103,7 +106,8 @@ const sameStyle = (a: RunStyle, b: RunStyle): boolean =>
   a.color === b.color &&
   a.underline === b.underline &&
   a.lineThrough === b.lineThrough &&
-  a.typeface === b.typeface;
+  a.typeface === b.typeface &&
+  a.verticalAlign === b.verticalAlign;
 
 /** Funde pedaços vizinhos com o mesmo estilo (ex.: um run que atravessou linhas). */
 export const mergeAdjacent = (line: StyledLine): StyledLine =>
@@ -228,6 +232,7 @@ const pptxRunOf = (piece: StyledText, softBreakBefore: boolean, breakLine: boole
     italic: piece.style.italic,
     color: piece.style.color,
     ...(piece.style.typeface === undefined ? {} : { fontFace: piece.style.typeface }),
+    ...baselineOf(piece.style.verticalAlign),
     // M11: decoração (Span e textDecoration) só quando ligada; a caixa nunca leva underline/strike.
     ...(piece.style.underline ? { underline: { style: 'sng' as const } } : {}),
     ...(piece.style.lineThrough ? { strike: 'sngStrike' as const } : {}),
@@ -235,6 +240,18 @@ const pptxRunOf = (piece: StyledText, softBreakBefore: boolean, breakLine: boole
     ...(breakLine ? { breakLine } : {}),
   },
 });
+
+/**
+ * M13: `baseline` do OOXML em milésimos de %; o pptxgenjs grava `round(valor × 50)`, então o valor
+ * da opção é % × 20 (30 % → 600 → 30000). O corpo não muda: o renderizador reduz sozinho.
+ */
+const PPTX_BASELINE_PER_PERCENT = 20;
+
+const baselineOf = (align: VerticalAlign | undefined): { readonly baseline?: number } => {
+  if (align === 'super') return { baseline: DEFAULTS.text.superscriptBaseline * PPTX_BASELINE_PER_PERCENT };
+  if (align === 'sub') return { baseline: DEFAULTS.text.subscriptBaseline * PPTX_BASELINE_PER_PERCENT };
+  return {};
+};
 
 // Linha ou parágrafo vazio vira um run vazio: o <a:p> continua ocupando uma linha.
 const lineOrEmpty = (line: StyledLine, base: RunStyle): StyledLine => (line.length === 0 ? [{ text: '', style: base }] : line);

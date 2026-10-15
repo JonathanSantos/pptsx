@@ -1,6 +1,6 @@
 import type { CssSpanProps } from '../core/css-props.ts';
 import { DEFAULTS } from '../core/defaults.ts';
-import type { FontWeight, TextChildren, TextRun, TextTransform } from '../core/types.ts';
+import type { FontWeight, TextChildren, TextRun, TextTransform, VerticalAlign } from '../core/types.ts';
 import { hexOf } from './colors.ts';
 import { InvalidPropError, ResolveError } from './errors.ts';
 import { expandChild } from './expand.ts';
@@ -35,7 +35,18 @@ const overrideStyle = (style: RunStyle, span: CssSpanProps): RunStyle => ({
   color: span.color === undefined ? style.color : hexOf('color', span.color),
   underline: decorationOf(span.textDecoration, 'underline') ?? style.underline ?? false,
   lineThrough: decorationOf(span.textDecoration, 'line-through') ?? style.lineThrough ?? false,
+  ...verticalAlignOf(span.verticalAlign ?? style.verticalAlign),
+  ...(span.href ?? style.href) === undefined ? {} : { href: span.href ?? style.href },
 });
+
+const VERTICAL_ALIGNS: readonly VerticalAlign[] = ['baseline', 'super', 'sub'];
+
+/** 'baseline' é o padrão: não entra no run (runs antigos e novos comparam igual). */
+const verticalAlignOf = (value: unknown): Pick<TextRun, 'verticalAlign'> => {
+  if (value === undefined || value === 'baseline') return {};
+  if (!VERTICAL_ALIGNS.includes(value as VerticalAlign)) throw new InvalidPropError('verticalAlign', value, 'use "baseline", "super" ou "sub"');
+  return { verticalAlign: value as VerticalAlign };
+};
 
 const spanStyleOf = (style: RunStyle, span: CssSpanProps, path: string): RunStyle => {
   try {
@@ -51,7 +62,9 @@ const sameStyle = (a: RunStyle, b: RunStyle): boolean =>
   a.italic === b.italic &&
   a.color === b.color &&
   (a.underline ?? false) === (b.underline ?? false) &&
-  (a.lineThrough ?? false) === (b.lineThrough ?? false);
+  (a.lineThrough ?? false) === (b.lineThrough ?? false) &&
+  (a.verticalAlign ?? 'baseline') === (b.verticalAlign ?? 'baseline') &&
+  a.href === b.href;
 
 const collectRuns = (children: TextChildren, style: RunStyle, path: string): readonly TextRun[] =>
   expandChild(children).flatMap((item: Expanded): readonly TextRun[] => {

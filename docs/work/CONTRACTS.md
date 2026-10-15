@@ -510,7 +510,7 @@ Diferenças em relação ao plano: o nome da face (família tipográfica) não e
 - Fit: `font-weight-fallback` (warning) por Text, uma vez por par pedido/usado. Emit: `fontFace` por run = `typeface`, `bold` = `faces[run].bold`. Embed: por face (o estilo OOXML do `<p:embeddedFont>` de uma face não 400/700 é `regular` sob o nome tipográfico da face). Preview: `font-family` = `previewFamily`, `font-weight` numérico.
 
 ### Sobrescrito/subscrito (M13-3)
-- `Sup`/`Sub` = `Span verticalAlign`. Medição: largura do trecho com `size × superscriptRatio`; altura e ascent da linha inalterados. Emit: run com `sz` reduzido e `baseline` (30000 / −25000) por pós-processamento se o pptxgenjs não gravar o valor; preview: `font-size` reduzido e `baseline-shift`/`dy`.
+- `Sup`/`Sub` = `Span verticalAlign`. Medição: largura do trecho com `size × superscriptRatio` (2/3, medido no Keynote); altura e ascent da linha inalterados. Emit: run com o `sz` do Text e `baseline` 30000 / −25000 (opção `baseline` do pptxgenjs): o renderizador reduz o corpo sozinho, gravar `sz` menor encolheria duas vezes. Preview: `font-size` × 2/3 e `baseline-shift` = % × size (semântica do OOXML).
 
 ### Links (M13-4)
 - `href` = URL (`http(s):`, `mailto:`…) ou `slide:N` (N do autor). `slide:N` fora de 1..slides → `link-target-missing` (error, o link some). Depois da paginação, `slide:N` aponta para a 1ª parte do slide N do autor. Emit: `hyperlink: { url }` / `{ slide }` em runs (Span/Text), imagem e no shape de fundo do Box (sem fundo, um retângulo transparente com o link). Preview: `<a href>` em volta (o PNG não muda).

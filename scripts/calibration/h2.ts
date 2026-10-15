@@ -50,6 +50,15 @@ const samplesOf = (slides: readonly { readonly children: readonly AnyNode[] }[])
 // O PDF não guarda espaço como glifo: compara a linha sem espaços (o que importa é onde ela termina).
 const normalize = (line: string): string => line.replace(/[\s\u00A0]+/g, '');
 
+/**
+ * M13: o PDFKit lê o sobrescrito/subscrito fora do retângulo da linha (o glifo sai deslocado);
+ * a comparação é de onde a linha termina, então esses trechos saem das linhas da engine.
+ */
+const baselineLinesOf = (text: PositionedText): readonly string[] =>
+  text.text.lineRuns.map((pieces) =>
+    pieces.filter((piece) => (text.runs[piece.run]?.verticalAlign ?? 'baseline') === 'baseline').map((piece) => piece.text).join(''),
+  );
+
 const keyOf = (page: number, text: PositionedText): string => `${page}|${text.path}`;
 
 // A caixa de texto do PPTX é a área de conteúdo (frame sem padding/borda).
@@ -104,7 +113,7 @@ const main = async (): Promise<void> => {
   const keynote = JSON.parse(raw) as Readonly<Record<string, readonly string[]>>;
   const rows = samples.map((sample) => {
     const texts = sample.bodies.map((text) => {
-      const ours = text.text.lines.map(normalize).filter((line) => line !== '');
+      const ours = baselineLinesOf(text).map(normalize).filter((line) => line !== '');
       const theirs = (keynote[keyOf(sample.page, text)] ?? []).map(normalize).filter((line) => line !== '');
       return { ours, theirs, same: ours.join('\n') === theirs.join('\n') };
     });

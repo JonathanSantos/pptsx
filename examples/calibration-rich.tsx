@@ -1,4 +1,4 @@
-import { B, Box, Deck, I, Image, Shape, Slide, Span, Text, defineDeck } from 'pptsx';
+import { B, Box, Deck, I, Image, Shape, Slide, Span, Sub, Sup, Text, defineDeck } from 'pptsx';
 import type { CssTextPropsAuthor, SlideElement, TextChildren } from 'pptsx';
 
 // M8: grade de calibração do rich text (Span/B/I), NBSP, nowrap e alignItems="baseline".
@@ -123,6 +123,14 @@ const placed: readonly Placed[] = [
         {text(14, <>Gráfico com base na <I>baseline</I> do texto.</>)}
       </Box>
     ) },
+
+  // ── Slide 6, M13-3: sobrescrito/subscrito (corpo 2/3, a linha não muda de altura)
+  { slide: 6, row: 2, id: 'R31', size: 14, width: 200, note: 'sobrescrito no meio da linha',
+    body: text(14, <>Área de 52 m<Sup>2</Sup> em cada uma das 12 unidades do condomínio novo do bairro.</>) },
+  { slide: 6, row: 2, id: 'R32', size: 12, width: 180, note: 'subscrito em fórmulas',
+    body: text(12, <>A água H<Sub>2</Sub>O e o gás CO<Sub>2</Sub> aparecem no relatório de impacto ambiental anual.</>) },
+  { slide: 6, row: 2, id: 'R33', size: 18, width: 260, note: 'notas de rodapé',
+    body: text(18, <>Receita recorde<Sup>1</Sup> e margem estável<Sup>2</Sup> no trimestre, segundo a auditoria.</>) },
 ];
 
 /** Metadados planos para o agente de calibração cruzar com o renderizador real. */
@@ -142,7 +150,7 @@ const SECTION_TITLES: Readonly<Record<number, string>> = {
   3: 'Tamanhos 12/18/32 pt, entrelinha e run dentro da palavra',
   4: 'NBSP e nowrap',
   5: 'Parágrafos, reticência e herança de estilo',
-  6: 'alignItems="baseline"',
+  6: 'alignItems="baseline" e sobrescrito/subscrito',
 };
 
 const SLIDES = Object.keys(SECTION_TITLES).map(Number);

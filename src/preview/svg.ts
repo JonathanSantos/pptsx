@@ -16,6 +16,7 @@ import type {
   TextAlign,
   TextLayout,
   TextRun,
+  VerticalAlign,
 } from '../core/types.ts';
 import { arrowHeadSvg, arrowInsetOf, dashArrayOf, insetPoint, type Point } from './arrows.ts';
 import { shapeGeometryOf, type ShapeGeometry } from './shapes.ts';
@@ -208,6 +209,8 @@ interface SvgRunStyle {
   readonly lineThrough?: boolean;
   /** M13: família da face escolhida (resvg), quando difere da do Text. */
   readonly family?: string;
+  /** M13: sobrescrito/subscrito. */
+  readonly verticalAlign?: VerticalAlign;
 }
 
 const textDecorationOf = (style: SvgRunStyle): string | undefined => {
@@ -231,8 +234,15 @@ const runStyleAttrs = (style: SvgRunStyle): Attrs => ({
   'text-decoration': textDecorationOf(style),
 });
 
-const tspanOf = (text: string, style: SvgRunStyle): string =>
-  element('tspan', { ...runStyleAttrs(style), 'xml:space': 'preserve' }, escapeXml(text));
+/** M13: corpo reduzido e deslocamento da baseline em pt (positivo sobe), como o `baseline` do OOXML. */
+const verticalAttrs = (align: VerticalAlign | undefined, size: Pt): Attrs => {
+  if (align !== 'super' && align !== 'sub') return {};
+  const percent = align === 'super' ? DEFAULTS.text.superscriptBaseline : DEFAULTS.text.subscriptBaseline;
+  return { 'font-size': size * DEFAULTS.text.superscriptRatio, 'baseline-shift': (percent / DEFAULTS.css.percentBase) * size };
+};
+
+const tspanOf = (text: string, style: SvgRunStyle, size: Pt): string =>
+  element('tspan', { ...runStyleAttrs(style), ...verticalAttrs(style.verticalAlign, size), 'xml:space': 'preserve' }, escapeXml(text));
 
 /** M13: a face que o medidor usou decide o peso e, fora de 400/700, a família do tspan. */
 const withFace = (style: SvgRunStyle, face: RunFace | undefined, baseFamily: string): SvgRunStyle => {
@@ -245,10 +255,11 @@ const withFace = (style: SvgRunStyle, face: RunFace | undefined, baseFamily: str
 const lineTspansOf = (node: PositionedText, base: SvgRunStyle, baseFamily: string): readonly string[] => {
   const lineRuns = lineRunsOf(node.text);
   const faces = node.text.faces;
-  if (lineRuns === undefined) return node.text.lines.map((line) => tspanOf(line, withFace(base, faces?.[0], baseFamily)));
+  const size = node.text.fontSize;
+  if (lineRuns === undefined) return node.text.lines.map((line) => tspanOf(line, withFace(base, faces?.[0], baseFamily), size));
   const runs = textRunsOf(node);
   return lineRuns.map((pieces) =>
-    pieces.map((piece) => tspanOf(piece.text, withFace(runs[piece.run] ?? base, faces?.[piece.run], baseFamily))).join(''),
+    pieces.map((piece) => tspanOf(piece.text, withFace(runs[piece.run] ?? base, faces?.[piece.run], baseFamily), size)).join(''),
   );
 };
 

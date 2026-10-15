@@ -44,8 +44,11 @@ export const DEFAULTS = {
      * com minSize explícito menor, desce e avisa com text-illegible.
      */
     minLegibleSize: 10,
-    /** M13: corpo do sobrescrito/subscrito em relação ao do texto. */
-    superscriptRatio: 0.65,
+    /**
+     * M13: corpo do sobrescrito/subscrito em relação ao do texto. O renderizador reduz sozinho quando
+     * o run tem `baseline` (o emissor não grava `sz` menor); 2/3 medido no Keynote (relatório M13-3).
+     */
+    superscriptRatio: 2 / 3,
     /** M13: deslocamento da baseline em % do corpo (OOXML `baseline` = valor × 1000). */
     superscriptBaseline: 30,
     subscriptBaseline: -25,

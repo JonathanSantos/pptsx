@@ -3,7 +3,7 @@ import { DEFAULTS, weightValueOf } from '../core/defaults.ts';
 import type { FontWeight, Pt, RunFace, TextLayout, TextMeasureInput, TextMeasurer } from '../core/types.ts';
 import { brokenWordsOf } from './broken.ts';
 import { createEstimateMeasurer } from './estimate.ts';
-import { lineBoxOf, spacingOf, type LineBox } from './leading.ts';
+import { lineBoxOf, runSizeOf, spacingOf, type LineBox } from './leading.ts';
 import { layoutText } from './lines.ts';
 import type { MeasureRun } from './pieces.ts';
 import type { FaceMatch, FontRegistry } from './registry.ts';
@@ -153,7 +153,7 @@ export const createFontkitMeasurer = (registry: FontRegistry, options: FontkitMe
     const metricsFont = registry.get(family, weight, italic) ?? firstFont;
     if (metricsFont === undefined) return { ...estimate(input), fontMissing: true };
     const spacing = input.letterSpacing ?? 0;
-    const widths = fonts.map((font) => measureWidthOf(unitWidthOf(font), font.unitsPerEm, size, spacing));
+    const widths = fonts.map((font, index) => measureWidthOf(unitWidthOf(font), font.unitsPerEm, runSizeOf(runs[index], size), spacing));
     const measure: MeasureRun = (text, run) => widths[run]?.(text) ?? 0;
     return { ...measureWithFonts(metricsFont, measure, input, safety), faces };
   };

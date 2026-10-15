@@ -38,3 +38,13 @@ export function B(props: AuthorPropsMap['span']): SlideElement {
 export function I(props: AuthorPropsMap['span']): SlideElement {
   return jsx(Span, { italic: true, ...props });
 }
+
+/** M13: sobrescrito (m², nota¹). */
+export function Sup(props: AuthorPropsMap['span']): SlideElement {
+  return jsx(Span, { verticalAlign: 'super', ...props });
+}
+
+/** M13: subscrito (H₂O). */
+export function Sub(props: AuthorPropsMap['span']): SlideElement {
+  return jsx(Span, { verticalAlign: 'sub', ...props });
+}
