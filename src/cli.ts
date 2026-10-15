@@ -1,11 +1,15 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { INIT_USAGE, parseInitCli, runInit } from './cli/init.ts';
 import { defaultImportModule, type ImportModule, type ImportOptions } from './cli/loader.ts';
 import { assertDeckTsconfig } from './cli/tsconfig.ts';
-import { createFsWatch, runWatchLoop, stampLine, watchPathsOf, type WatchFn } from './cli/watch.ts';
+import { createPreviewServer } from './cli/preview/server.ts';
+import { sizeStatesOf, type PreviewState } from './cli/preview/state.ts';
+import { createFsWatch, runWatchLoop, stampLine, timestampOf, watchPathsOf, type WatchFn } from './cli/watch.ts';
 import { configPathOf, importUserModule, isLineBreaks, lineBreaksErrorOf, loadConfig, type PptsxConfig } from './config.ts';
 import { DEFAULTS } from './core/defaults.ts';
 import type { DeckDefinition, Diagnostic, LineBreaks, RenderOptions, RenderResult, Severity, SizeSpec } from './core/types.ts';
@@ -16,6 +20,7 @@ export const USAGE = [
   'uso: pptsx build <deck.tsx> [--size 16x9,4x3,10x7.5in] [--out dist/] [--debug] [--json] ' +
     '[--preview native|none] [--preview-width 1280] [--lang pt-BR] [--line-breaks forced|auto] [--embed-fonts] [--watch]',
   `     ${INIT_USAGE.replace(/^uso: /, '')}`,
+  '     pptsx preview <deck.tsx> --serve [--port 4321] [--size 16x9,4x3,wide] [--lang pt-BR] [--line-breaks forced|auto]',
 ].join('\n');
 
 /** Dependências de IO trocáveis (testes): observação de arquivos e o sinal que encerra o --watch. */
@@ -26,6 +31,10 @@ export interface CliDeps {
   readonly signal?: AbortSignal;
   /** Carga do deck e da config. Padrão: import() normal; no --watch, namespace novo do tsx a cada build. */
   readonly importModule?: ImportModule;
+  /** M16-4: avisado quando o `preview --serve` começa a escutar (a URL com a porta real). */
+  readonly onListening?: (url: string) => void;
+  /** M16-4: avisado depois de cada rebuild do `preview --serve` (testes esperam por ele). */
+  readonly onRebuild?: (state: PreviewState) => void;
 }
 
 export interface CliArgs {
@@ -374,6 +383,102 @@ const watchBuild = async (args: CliArgs, cwd: string, deps: CliDeps): Promise<nu
   return 0;
 };
 
+// ---------- preview --serve (M16-4) ----------
+
+export interface PreviewArgs {
+  readonly deckPath: string;
+  readonly port: number;
+  readonly sizes?: readonly SizeSpec[];
+  readonly lang?: string;
+  readonly lineBreaks?: LineBreaks;
+}
+
+export const parsePreviewCli = (argv: readonly string[], cwd: string = process.cwd()): PreviewArgs => {
+  const { values, positionals } = parseArgs({
+    args: [...argv],
+    allowPositionals: true,
+    options: {
+      serve: { type: 'boolean', default: false },
+      port: { type: 'string', default: String(DEFAULTS.previewServer.port) },
+      size: { type: 'string' },
+      lang: { type: 'string' },
+      'line-breaks': { type: 'string' },
+    },
+  });
+  const [, deckPath] = positionals;
+  if (!deckPath || !values.serve) throw new Error(USAGE);
+  const port = Number(values.port);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error(`--port inválido: "${values.port}" (use 0 a 65535)`);
+  return {
+    deckPath: resolve(cwd, deckPath),
+    port,
+    sizes: values.size === undefined ? undefined : parseSizeList(values.size),
+    lang: values.lang,
+    lineBreaks: values['line-breaks'] === undefined ? undefined : parseLineBreaks(values['line-breaks']),
+  };
+};
+
+const previewBuildArgsOf = (args: PreviewArgs, cwd: string): CliArgs => ({
+  ...parseCli(['build', args.deckPath, '--preview', 'none'], cwd),
+  ...(args.lang === undefined ? {} : { lang: args.lang }),
+  ...(args.lineBreaks === undefined ? {} : { lineBreaks: args.lineBreaks }),
+});
+
+/** Um rebuild do preview: sem PNG (o browser desenha o SVG), todos os tamanhos do seletor. */
+const previewStateFrom = async (args: PreviewArgs, cwd: string, deps: CliDeps, version: number, previous: PreviewState): Promise<PreviewState> => {
+  const builtAt = timestampOf(new Date());
+  try {
+    const importModule = deps.importModule ?? defaultImportModule;
+    const config = await loadConfig(cwd, { fresh: true, cwd }, importModule);
+    const deck = await loadDeck(args.deckPath, { fresh: true, cwd }, importModule);
+    const sizes = args.sizes ?? config.sizes ?? parseSizeList(DEFAULTS.previewServer.sizes.join(','));
+    const results = await render(deck, { ...mergeOptions(previewBuildArgsOf(args, cwd), config), sizes, preview: false, includePositioned: true });
+    return { version, builtAt, sizes: sizeStatesOf(results) };
+  } catch (error) {
+    // Erro no deck não derruba o servidor: a página mostra o erro sobre o último resultado bom.
+    return { ...previous, version, builtAt, error: errorMessageOf(error) };
+  }
+};
+
+const listen = (server: Server, port: number): Promise<number> =>
+  new Promise((done, fail) => {
+    server.once('error', fail);
+    server.listen(port, '127.0.0.1', () => done((server.address() as AddressInfo).port));
+  });
+
+const previewServe = async (args: PreviewArgs, cwd: string, deps: CliDeps): Promise<number> => {
+  if (!existsSync(args.deckPath)) throw new Error(`deck não encontrado: ${args.deckPath}`);
+  const current = { state: { version: 0, builtAt: '', sizes: [] } as PreviewState };
+  const preview = createPreviewServer({ getState: () => current.state, baseDir: dirname(args.deckPath), lang: args.lang, widthPx: DEFAULTS.previewServer.widthPx });
+  // O build inicial é o do runWatchLoop (ele observa antes de construir); o servidor só escuta depois dele.
+  let firstBuilt: () => void = () => undefined;
+  const firstBuild = new Promise<void>((done) => (firstBuilt = done));
+  const rebuild = async (): Promise<void> => {
+    current.state = await previewStateFrom(args, cwd, deps, current.state.version + 1, current.state);
+    preview.notify();
+    deps.onRebuild?.(current.state);
+    console.log(stampLine(new Date(), current.state.error === undefined ? summaryOf(current.state.sizes.flatMap((size) => size.diagnostics)).split('\n')[0]! : `erro: ${current.state.error}`));
+    firstBuilt();
+  };
+  const paths = watchPathsOf(args.deckPath, configPathOf(cwd));
+  const watch = deps.watch ?? createFsWatch([]);
+  try {
+    await withStopSignal(deps.signal, async (signal) => {
+      const loop = runWatchLoop({ paths, watch, signal, rebuild });
+      await Promise.race([firstBuild, loop]);
+      if (signal.aborted) return loop;
+      const port = await listen(preview.server, args.port);
+      const url = `http://127.0.0.1:${port}/`;
+      console.log(stampLine(new Date(), `preview em ${url} (Ctrl-C para sair)`));
+      deps.onListening?.(url);
+      return loop;
+    });
+  } finally {
+    await preview.close();
+  }
+  return 0;
+};
+
 /** Primeiro argumento que não é flag; os comandos vêm antes das flags (`pptsx build ...`). */
 export const commandOf = (argv: readonly string[]): string | undefined => argv.find((arg) => !arg.startsWith('-'));
 
@@ -399,6 +504,7 @@ const dispatch = async (argv: readonly string[], cwd: string, deps: CliDeps): Pr
     return 0;
   }
   if (commandOf(argv) === 'init') return runInit(parseInitCli(argv, cwd), cwd);
+  if (commandOf(argv) === 'preview') return previewServe(parsePreviewCli(argv, cwd), cwd, deps);
   const args = parseCli(argv, cwd);
   return args.watch ? watchBuild(args, cwd, deps) : build(args, cwd, deps);
 };

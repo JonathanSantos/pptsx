@@ -1,0 +1,113 @@
+/**
+ * M16-4: a página do `pptsx preview --serve`. HTML estático sem bundler (string, para sair no dist/):
+ * os slides em SVG, os diagnósticos ao lado, seletor de tamanho, debug, e um clique no diagnóstico
+ * destaca o nó pelo path (frames vêm do /state.json). Recarrega por SSE (/events) a cada rebuild.
+ */
+export const PREVIEW_PAGE = `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pptsx preview</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f3f4f6; --panel: #fff; --ink: #1b2a4a; --muted: #5b6680; --line: #d0d5dd; --error: #e02424; --warning: #b7791f; --info: #2f6fed; --mark: rgba(224, 36, 36, 0.18); }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111827; --panel: #1f2937; --ink: #e5e7eb; --muted: #9ca3af; --line: #374151; } }
+  * { box-sizing: border-box; }
+  select { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+  body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { position: sticky; top: 0; z-index: 2; display: flex; gap: 12px; align-items: center; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  header .spacer { flex: 1; }
+  #status { color: var(--muted); font-size: 12px; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; padding: 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .slide { position: relative; margin: 0 0 16px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .slide img { display: block; width: 100%; height: auto; }
+  .slide .label { position: absolute; left: 0; top: -1px; transform: translateY(-100%); font-size: 12px; color: var(--muted); }
+  .slides > div { margin-top: 22px; }
+  .mark { position: absolute; border: 2px solid var(--error); background: var(--mark); pointer-events: none; }
+  aside { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; align-self: start; position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow: auto; }
+  .diag { padding: 8px; border-radius: 6px; cursor: pointer; border-left: 4px solid var(--info); margin-bottom: 6px; }
+  .diag:hover, .diag.active { background: var(--bg); }
+  .diag.error { border-color: var(--error); } .diag.warning { border-color: var(--warning); }
+  .diag code { font-size: 12px; color: var(--muted); word-break: break-all; }
+  .error-box { background: var(--error); color: #fff; padding: 10px 16px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <strong>pptsx preview</strong>
+  <label>Tamanho <select id="size"></select></label>
+  <label><input type="checkbox" id="debug"> debug</label>
+  <span class="spacer"></span>
+  <span id="status">carregando…</span>
+</header>
+<div id="error"></div>
+<main><section class="slides" id="slides"></section><aside id="diagnostics"></aside></main>
+<script>
+const $ = (id) => document.getElementById(id);
+let state = null;
+let active = null;
+const escapeHtml = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const current = () => state.sizes.find((s) => s.size === $('size').value) || state.sizes[0];
+
+// Path agrupado ("Box[0..3] > Text") vira os paths individuais (data.paths) quando há.
+const pathsOf = (d) => (d.data && d.data.paths ? d.data.paths : [d.path]);
+
+function render() {
+  const size = current();
+  if (!size) return;
+  const debug = $('debug').checked ? 1 : 0;
+  $('slides').innerHTML = size.slides.map((slide) =>
+    '<div><div class="slide" id="slide-' + slide.number + '" style="aspect-ratio:' + size.width + '/' + size.height + '">' +
+    '<span class="label">' + slide.number + (slide.sourceSlide !== slide.number ? ' (' + slide.sourceSlide + ' no deck)' : '') + '</span>' +
+    '<img alt="slide ' + slide.number + '" src="/svg/' + size.size + '/' + slide.number + '?debug=' + debug + '&v=' + state.version + '"></div></div>').join('');
+  const diagnostics = size.diagnostics;
+  $('diagnostics').innerHTML = diagnostics.length === 0 ? '<p>Nenhum diagnóstico.</p>' :
+    diagnostics.map((d, i) => '<div class="diag ' + d.severity + '" data-i="' + i + '"><b>slide ' + d.slide + ' · ' + d.code + '</b><br><code>' + escapeHtml(d.path) + '</code><div>' + escapeHtml(d.message) + '</div></div>').join('');
+  document.querySelectorAll('.diag').forEach((el) => el.addEventListener('click', () => highlight(Number(el.dataset.i))));
+  if (active !== null) highlight(active);
+}
+
+function highlight(index) {
+  const size = current();
+  const d = size.diagnostics[index];
+  document.querySelectorAll('.mark').forEach((el) => el.remove());
+  document.querySelectorAll('.diag').forEach((el) => el.classList.toggle('active', Number(el.dataset.i) === index));
+  if (!d) return;
+  active = index;
+  const slide = size.slides[d.slide - 1];
+  const box = $('slide-' + d.slide);
+  if (!slide || !box) return;
+  const wanted = pathsOf(d);
+  const nodes = slide.nodes.filter((n) => wanted.includes(n.path));
+  const targets = nodes.length > 0 ? nodes : [{ frame: { x: 0, y: 0, width: size.width, height: size.height } }];
+  targets.forEach((n) => {
+    const mark = document.createElement('div');
+    mark.className = 'mark';
+    const f = n.frame;
+    Object.assign(mark.style, { left: (100 * f.x / size.width) + '%', top: (100 * f.y / size.height) + '%', width: (100 * f.width / size.width) + '%', height: (100 * f.height / size.height) + '%' });
+    box.appendChild(mark);
+  });
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function load() {
+  const started = performance.now();
+  state = await (await fetch('/state.json')).json();
+  const sizes = state.sizes.map((s) => s.size);
+  const chosen = $('size').value || sizes[0];
+  $('size').innerHTML = sizes.map((s) => '<option' + (s === chosen ? ' selected' : '') + '>' + s + '</option>').join('');
+  $('error').innerHTML = state.error ? '<div class="error-box">' + escapeHtml(state.error) + '</div>' : '';
+  const count = state.sizes.reduce((n, s) => n + s.diagnostics.filter((d) => d.severity !== 'info').length, 0);
+  $('status').textContent = 'build ' + state.version + ' · ' + state.builtAt + ' · ' + count + ' error/warning · ' + Math.round(performance.now() - started) + ' ms';
+  render();
+}
+
+$('size').addEventListener('change', () => { active = null; render(); });
+$('debug').addEventListener('change', render);
+new EventSource('/events').addEventListener('update', load);
+load();
+</script>
+</body>
+</html>
+`;

@@ -82,6 +82,7 @@ describe('pptsx-mcp', () => {
     expect(chart.required).toEqual(['data', 'kind']);
     expect(chart.properties.kind!.type).toContain('"stackedBar100"');
     expect((await call('schema', { primitive: 'xyz' })).isError).toBe(true);
+    expect((await call('schema', { primitive: 'Text' })).isError).toBeFalsy();
   });
 
   it('init cria o projeto', async () => {

@@ -192,6 +192,8 @@ export const DEFAULTS = {
     transparencyScale: 100,
   },
   preview: { width: 1280, thumbWidth: 320, overviewColumns: 4 },
+  /** M16-4: `pptsx preview --serve` — porta padrão, tamanhos do seletor e largura do SVG servido. */
+  previewServer: { port: 4321, sizes: ['16x9', '4x3', 'wide'] as readonly string[], widthPx: 960 },
   /**
    * M12: formas. `pptx[kind]` = `prstGeom` emitido e os ajustes (`adj`, em 1/100000 como no
    * OOXML) que o PPTX usa por padrão; o preview (src/preview/shapes.ts) desenha com esses mesmos

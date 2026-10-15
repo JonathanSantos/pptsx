@@ -14,34 +14,35 @@ export default defineDeck(() => (
   <Deck>
     <ContentLayout title="Prioridades do próximo trimestre">
       <Bullets
-        size={28}
+        size={font.h2}
         items={[
-          'Migrar todos os serviços legados, inclusive relatórios regulatórios, painéis da diretoria e integrações com parceiros, para a nova plataforma de dados até o fim do trimestre',
-          'Reduzir em 30% o custo de infraestrutura por consulta, renegociando contratos de nuvem, consolidando clusters e desligando ambientes ociosos de homologação',
-          'Publicar o catálogo de dados com dono, regras de qualidade e linhagem de cada tabela crítica, revisado mensalmente pelos responsáveis de cada domínio',
-          'Treinar as áreas de negócio no self-service dos painéis e das consultas e medir a adoção semanalmente por área',
+          'Migrar legados (relatórios regulatórios, painéis, integrações) para a nova plataforma',
+          'Cortar 30% do custo por consulta: renegociar nuvem, consolidar clusters',
+          'Publicar catálogo com dono, qualidade e linhagem das tabelas críticas',
+          'Treinar o negócio no self-service e medir a adoção semanal por área',
         ]}
       />
     </ContentLayout>
 
     <ContentLayout title="Indicadores">
       <KpiRow
+        size="sm"
         items={[
-          { label: 'Receita', value: 'R$ 52.400.000,00', delta: '+14,2%', trend: 'up' },
-          { label: 'Clientes ativos', value: '1.284.392', delta: '+8,1%', trend: 'up' },
-          { label: 'Disponibilidade', value: '99,95%', delta: '+0,05 p.p.', trend: 'up' },
-          { label: 'Tempo de resposta', value: '182 ms', delta: '−12 ms', trend: 'up' },
+          { label: 'Receita (R$ mi)', value: '52,4', delta: '+14,2%', trend: 'up' },
+          { label: 'Clientes (mi)', value: '1,28', delta: '+8,1%', trend: 'up' },
+          { label: 'Uptime', value: '99,95%', delta: '+0,05 p.p.', trend: 'up' },
+          { label: 'Resposta (ms)', value: '182', delta: '−12 ms', trend: 'up' },
           { label: 'Chamados', value: '3.412', delta: '+22%', trend: 'down' },
         ]}
       />
     </ContentLayout>
 
     <ContentLayout title="Linha do tempo">
-      <Box direction="row" gap={24}>
+      <Box display="flex" gap={12}>
         {['Planejamento', 'Migração', 'Validação', 'Desligamento'].map((phase, i) => (
-          <Box width={200} shrink={0} padding={16} gap={6} fill={color.surface} radius={8}>
-            <Text size={font.small} weight="bold" color={color.accent}>Etapa {i + 1}</Text>
-            <Text size={font.h2} weight="bold" color={color.ink} fit="error">{phase}</Text>
+          <Box flex={1} padding={10} gap={6} backgroundColor={color.surface} borderRadius={8}>
+            <Text fontSize={font.small} fontWeight="bold" color={color.accent}>Etapa {i + 1}</Text>
+            <Text fontSize={font.body - 2} fontWeight="bold" color={color.ink} fit="error">{phase}</Text>
           </Box>
         ))}
       </Box>

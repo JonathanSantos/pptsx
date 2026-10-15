@@ -17,7 +17,7 @@ export const createPptsxMcpServer = (ctx: McpContext, version: string): McpServe
   const server = new McpServer({ name: 'pptsx', version });
   server.registerTool('build', {
     title: 'Construir o deck',
-    description: 'Gera .pptx, PNGs e diagnostics.json (como `pptsx build`) e devolve os diagnósticos e o overview de cada tamanho. isError quando há diagnóstico de severidade error.',
+    description: 'Gera .pptx, PNGs e diagnostics.json (como `pptsx build`) e devolve os diagnósticos e o overview de cada tamanho. isError = o deck tem diagnóstico de severidade error (a ferramenta funcionou; corrija o deck).',
     inputSchema: {
       deck: DECK,
       sizes: SIZES,
@@ -28,7 +28,7 @@ export const createPptsxMcpServer = (ctx: McpContext, version: string): McpServe
   }, async (input) => asResult(await buildTool(input, ctx)));
   server.registerTool('diagnose', {
     title: 'Diagnosticar o deck',
-    description: 'Só os diagnósticos (sem PNG, sem gravar arquivos): o caminho rápido para iterar.',
+    description: 'Só os diagnósticos (sem PNG, sem gravar arquivos): o caminho rápido para iterar. isError = o deck tem diagnóstico de severidade error.',
     inputSchema: { deck: DECK, sizes: SIZES },
   }, async (input) => asResult(await diagnoseTool(input, ctx)));
   server.registerTool('preview', {
@@ -48,7 +48,7 @@ export const createPptsxMcpServer = (ctx: McpContext, version: string): McpServe
   }, async (input) => asResult(guideTool(input, ctx)));
   server.registerTool('schema', {
     title: 'Props das primitivas',
-    description: 'Props aceitas por primitiva (gerado dos tipos): tipo e descrição de cada uma. Sem `primitive`: todas.',
+    description: 'Props aceitas por primitiva (gerado dos tipos): tipo TypeScript e descrição de cada uma; props antigas (size, weight, direction…) são aliases a evitar — prefira as CSS (fontSize, fontWeight, flexDirection). Sem `primitive`: todas.',
     inputSchema: { primitive: z.string().optional().describe('"box", "text", "chart"…') },
   }, async (input) => asResult(schemaTool(input)));
   return server;

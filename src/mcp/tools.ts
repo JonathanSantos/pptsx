@@ -141,7 +141,9 @@ export const guideTool = (input: { readonly section?: string }, ctx: McpContext)
 
 export const schemaTool = (input: { readonly primitive?: string }): ToolResult => {
   if (input.primitive === undefined) return { content: [text(JSON.stringify(PROPS_SCHEMA, null, 2))] };
-  const schema = (PROPS_SCHEMA as Readonly<Record<string, unknown>>)[input.primitive];
+  // "Text", "text" e "TEXT" valem: o agente costuma escrever como a tag JSX.
+  const key = Object.keys(PROPS_SCHEMA).find((name) => name.toLowerCase() === input.primitive!.toLowerCase());
+  const schema = key === undefined ? undefined : (PROPS_SCHEMA as Readonly<Record<string, unknown>>)[key];
   if (schema === undefined) return { content: [text(`Primitiva "${input.primitive}" não existe; use ${Object.keys(PROPS_SCHEMA).join(', ')}.`)], isError: true };
   return { content: [text(JSON.stringify(schema, null, 2))] };
 };
