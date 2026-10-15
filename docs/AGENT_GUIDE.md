@@ -91,7 +91,7 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 | Flex | `flexDirection`, `flexWrap="wrap"`, `gap` / `rowGap` / `columnGap`, `justifyContent`, `alignItems`, `alignContent`, `alignSelf`, `flex={1}`, `flexGrow`, `flexShrink`, `flexBasis`, `order` | valores CSS: `'flex-start'`, `'center'`, `'flex-end'`, `'space-between'`, `'space-around'`, `'space-evenly'`, `'stretch'`, `'baseline'` (`'start'`/`'end'` também valem) |
 | Grid | `gridTemplateColumns/Rows` (pt, `%`, `fr`, `auto`, `min-content`, `max-content`, `minmax(a, b)`, `repeat(n, …)`), `gridAutoRows/Columns`, `gap`; no item: `gridColumn="1 / 3"`, `"span 2"`, `"2 / -1"`, `gridRow`, `justifySelf`, `alignSelf`, `placeItems/placeSelf` | auto-placement por linhas; itens esticam na célula por padrão |
 | Posição | `position="relative" \| "absolute"`, `top/right/bottom/left/inset`, `zIndex` | absoluto mede pela borda do pai e sai do fluxo (só para **decoração**: não gera diagnóstico de caixa). Ordem de pintura abaixo |
-| Texto (herda) | `fontFamily`, `fontSize`, `fontWeight` (`'bold'`, 700), `fontStyle="italic"`, `color`, `lineHeight`, `textAlign`, `letterSpacing`, `textTransform` | §4. Em `Slide`/`Box` só descem para os filhos |
+| Texto (herda) | `fontFamily`, `fontSize`, `fontWeight` (`'bold'`, `600`, 1–1000: a face registrada mais próxima), `fontStyle="italic"`, `color`, `lineHeight`, `textAlign`, `letterSpacing`, `textTransform` | §4. Em `Slide`/`Box` só descem para os filhos |
 | Pintura | `backgroundColor`, `backgroundImage="url(./foto.png)"` (cover), `boxShadow="0 4px 12px rgba(0,0,0,.2)"` (uma, externa), `opacity`, `rotate={12}` ou `transform="rotate(12deg) translate(4px, 0)"`, `zIndex` | opacidade e rotação valem para o nó e os filhos |
 | Escape | `style={{ … }}` | qualquer CSS em camelCase; vence as props. O que não tem de/para vira `css-not-emitted` |
 
@@ -99,13 +99,14 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 
 | primitiva | props próprias (além das CSS acima) | filhos |
 |---|---|---|
-| `Deck` | — | só `Slide` |
+| `Deck` | `footer?` (conteúdo repetido em todo slide, inclusive nas partes paginadas; ver §4 "Número de slide e rodapé") | só `Slide` |
 | `Slide` | `backgroundColor`, `backgroundImage="url(…)"` (ou `background={{ image: 'foto.png' }}`), `notes?: string` | primitivas/componentes |
-| `Box` | `paginate?: boolean` (ver "Paginação"), `shape?` (geometria do fundo/borda, ver "Diagramas") | primitivas/componentes |
-| `Text` | `fit`, `minSize`, `maxLines`, `nowrap`/`whiteSpace="nowrap"` (§4) | strings/números e `Span`/`B`/`I` |
-| `Span` | `fontWeight`, `fontStyle`, `color`, `textDecoration` (**sem** `fontSize`/`fontFamily`/`lineHeight`: não compila) | strings/números e outros `Span`/`B`/`I`; **só dentro de `Text`** |
-| `B` / `I` | atalhos de `Span fontWeight="bold"` / `Span fontStyle="italic"` | como `Span` |
-| `Image` | `src: string` (obrigatório; relativo ao arquivo do deck), `objectFit?: 'contain' \| 'cover'` (padrão `'contain'`) | nenhum |
+| `Box` | `paginate?: boolean` (ver "Paginação"), `shape?` (geometria do fundo/borda, ver "Diagramas"), `href?` (link na caixa inteira) | primitivas/componentes |
+| `Text` | `fit`, `minSize`, `maxLines`, `nowrap`/`whiteSpace="nowrap"`, `href`, `paginate` (§4) | strings/números e `Span`/`B`/`I`/`Sup`/`Sub` |
+| `Span` | `fontWeight`, `fontStyle`, `color`, `textDecoration`, `fontSize`, `fontFamily`, `verticalAlign` (`'super' \| 'sub'`), `href` (**sem** `lineHeight`: é do Text) | strings/números e outros `Span`/`B`/`I`/`Sup`/`Sub`; **só dentro de `Text`** |
+| `B` / `I` / `Sup` / `Sub` | atalhos de `Span fontWeight="bold"` / `fontStyle="italic"` / `verticalAlign="super"` / `verticalAlign="sub"` | como `Span` |
+| `SlideNumber` | `format?: 'n' \| 'n / total'` (padrão `'n'`), mais as props de texto (`fontSize`, `color`, `fontWeight`…) | nenhum |
+| `Image` | `src: string` (obrigatório; relativo ao arquivo do deck), `objectFit?: 'contain' \| 'cover'` (padrão `'contain'`), `href?` | nenhum |
 | `Shape` | `kind` (obrigatório; 24 formas, ver "Diagramas"), `backgroundColor` (cor da forma), `stroke`/`strokeWidth` (linha da forma; `line` e `bracketPair` sem `stroke` saem pretas), `radius` (roundRect), `flipH`/`flipV`, `lineStyle` (`'solid' \| 'dashed' \| 'dotted'`), `lineCap` (`'flat' \| 'round'`), `startArrow`/`endArrow` (**só em `line`**: `'arrow' \| 'triangle' \| 'stealth' \| 'diamond' \| 'oval'`) | nenhum |
 | `Path` | `d` (obrigatório; `M L H V C S Q T A Z` do SVG), `viewBox?: [w, h]` (padrão: a caixa do `d`), `fill`, `stroke`, `strokeWidth` (pt), `lineCap`, `lineJoin` (`'miter' \| 'round' \| 'bevel'`), `lineStyle` | nenhum |
 | `Icon` | `src` (obrigatório; `.svg`), `size?` (altura em pt, padrão 24), `color?` (padrão: a cor de texto herdada), `recolor?` (padrão `true`: preto também vira `color`), `render?: 'auto' \| 'shape' \| 'image'` | nenhum |
@@ -170,7 +171,7 @@ Baseline de cada filho: `Text` = 1ª linha; `Box` = a do 1º filho em fluxo; `Im
 
 `<Box paginate>` divide os **filhos em fluxo** do Box entre slides quando não cabem: a 1ª parte leva os primeiros itens que cabem, e o resto continua num **clone do slide** (mesmo título, fundo, decoração e `notes`). É a saída para lista longa sem encolher a fonte.
 
-- **Um por slide** (dois → erro de estrutura `Só um <Box paginate> por slide; encontrados 2`), e **não** em `position="absolute"`. Use numa coluna: numa row a divisão é por colunas estreitas.
+- **Um por slide** (dois → erro de estrutura `Só um <Box paginate> por slide; encontrados 2`; um Box e um `Text paginate` também contam), e **não** em `position="absolute"`. Para **texto corrido** que continua no próximo slide, use `<Text paginate>` (§4). Use numa coluna: numa row a divisão é por colunas estreitas.
 - Enquanto pagina, os `Text` dentro do Box **não encolhem**; o resto do slide encolhe normalmente. Coube tudo → nada muda.
 - Os paths dos itens **não mudam** nas partes: o 8º item é `Box[7]` na parte 2 também.
 - Cada parte é um slide no `.pptx`, no overview e nos diagnósticos; a 1ª recebe `slide-continued` (info) com `data.parts`.
@@ -192,7 +193,7 @@ Baseline de cada filho: `Text` = 1ª linha; `Box` = a do 1º filho em fluxo; `Im
 | prop | tipo | padrão | nota |
 |---|---|---|---|
 | `fontSize` | pt | 18 | herda |
-| `fontWeight` | `'normal' \| 'bold'` ou número | `'normal'` | 600+ = bold; a engine só tem regular e bold (100–500 e 800–900 saem com aviso) |
+| `fontWeight` | `'normal' \| 'bold'` ou número 1–1000 | `'normal'` | usa a face registrada mais próxima (regra do CSS); sem face a até 100 do pedido → `font-weight-fallback` (ver "Pesos") |
 | `fontStyle` | `'normal' \| 'italic'` | `'normal'` | |
 | `color` | cor | `'#000000'` | herda |
 | `fontFamily` | string | `'Arial'` | família registrada em `fonts`; de fábrica **só Arial**; não registrada = `font-missing` (ver "Fontes") |
@@ -229,9 +230,45 @@ import { B, I, Span, Text } from 'pptsx';
 ```
 
 - `Span`/`B`/`I` só existem **dentro de `Text`**. Fora dele → erro de estrutura `<Span> só pode aparecer dentro de <Text>`.
-- Por trecho mudam só `fontWeight`, `fontStyle`, `color` e `textDecoration`. Tamanho, fonte e entrelinha são do `Text` inteiro; `<B fontSize={30}>` não compila. Número grande ao lado de texto pequeno = dois `Text` numa row com `alignItems="baseline"` (§3).
+- Por trecho mudam `fontWeight`, `fontStyle`, `color`, `textDecoration`, `fontSize`, `fontFamily`, `verticalAlign` e `href`. A **entrelinha** é do `Text` inteiro; com `fontSize` por trecho, a linha em que o trecho cai cresce para caber (maior ascendente + maior descendente da linha). Número grande colado num rótulo pequeno: `<Text fontSize={14}>Satisfação de <Span fontSize={32}>4,8</Span> de 5</Text>`; para blocos separados, dois `Text` numa row com `alignItems="baseline"` (§3).
 - O trecho herda o estilo do `Text`; o `Span` mais interno vence: `<Text fontWeight="bold">Total: <Span fontWeight="normal">acima da meta</Span></Text>`.
 - **Espaços em JSX:** uma quebra de linha **no código** encostada num elemento some: `Receita` numa linha e `<B>subiu</B>` na seguinte vira "Receitasubiu". Mantenha o espaço na mesma linha ou use `{' '}`.
+
+### Sobrescrito e subscrito (`Sup`, `Sub`)
+
+```tsx
+<Text fontSize={18}>Área de 52 m<Sup>2</Sup>, emissão de CO<Sub>2</Sub> e receita recorde<Sup>1</Sup>.</Text>
+```
+
+O trecho sai a 2/3 do corpo (o PowerPoint/Keynote reduzem sozinhos) e deslocado (30 % para cima, 25 % para baixo); a linha **não** muda de altura. No Keynote o sobrescrito fica ~0,08 × corpo mais baixo que no preview (1,4 pt a 18 pt).
+
+### Links (`href`)
+
+`href` em `Text`, `Span`, `Image` e `Box`: uma URL com esquema (`"https://…"`, `"mailto:…"`) ou `"slide:N"`, onde **N é o número do slide no seu `<Deck>`** (antes da paginação: a engine aponta para a 1ª parte). O link sai nativo; PowerPoint e Keynote **sublinham** o texto com link (o preview também), na cor do próprio texto. `slide:N` fora do deck → `link-target-missing` (error). Um Box sem fundo com `href` ganha uma área clicável transparente.
+
+### Texto que continua (`Text paginate`)
+
+`<Text paginate>` divide as **linhas** do texto entre clones do slide quando não cabem (como o `Box paginate` faz com itens): mesmo título, fundo e rodapé em cada parte; o texto **não encolhe** enquanto pagina. O corte cai no fim de um parágrafo se a parte ficar ao menos meio cheia; senão, dentro do parágrafo, deixando ao menos 2 linhas dele de cada lado. Dê área ao Text com `flex={1}` numa coluna. Não combina com `maxLines` nem `position="absolute"`, e é um nó paginate por slide (Box **ou** Text). A 1ª parte recebe `slide-continued` (info) com as linhas de cada parte.
+- **Parágrafos:** `{'\n'}` separa parágrafos também no meio de rich text (`texto<Sup>1</Sup>{'\n'}próximo`); para um espaço visível entre eles, `{'\n\n'}` (uma linha vazia). `gap`/`margin` só valem entre `Text` diferentes.
+- **Partes desequilibradas:** como o corte prefere fim de parágrafo, uma parte pode ficar até meio vazia. Ajuste `fontSize`/`lineHeight` por breakpoint (`fontSize={{ base: 15, tall: 16 }}`) e confira as linhas por parte na mensagem do `slide-continued`.
+- Estilos, links (`href` de `Span`/`Sup`) e sobrescritos continuam valendo nas partes seguintes; componentes próprios que devolvem `Span`/`B`/`Sup` podem ser filhos de `Text`.
+
+### Número de slide e rodapé (`SlideNumber`, `Deck footer`)
+
+```tsx
+const RODAPE = (
+  <Box display="flex" justifyContent="space-between" padding="0 40 12" fontSize={10} color="#64748B">
+    <Text>Relatório 2026</Text>
+    <SlideNumber format="n / total" />
+  </Box>
+);
+
+<Deck footer={RODAPE}>…</Deck>
+```
+
+- `footer` entra em **todo** slide como uma camada do tamanho do slide com o conteúdo empurrado para a base (não ocupa espaço no fluxo; deixe `padding` inferior no Slide maior que a altura do rodapé — o do exemplo tem ~24 pt, então 40 pt basta — para o corpo não passar por baixo dele). Path: `Slide > Footer > …`.
+- O rodapé **herda** o estilo de texto de cada Slide (`color`, `fontFamily`…), como um filho: num slide de fundo escuro com `color="#FFFFFF"`, o rodapé sai branco. Para cor fixa, declare `color` no Box do rodapé.
+- `SlideNumber` é o número do slide **no arquivo gerado** (as partes paginadas contam), como campo nativo do PowerPoint (atualiza se alguém reordenar). `format="n / total"` acrescenta o total como texto fixo. Também funciona solto num slide, fora do `footer`.
 
 ### NBSP e `nowrap`
 
@@ -256,6 +293,7 @@ export default defineConfig({
 
 - Sem `file`, a engine procura a família nas pastas de fontes do sistema. Não achou: a CLI imprime `▲ fontes não encontradas no sistema: Inter bold` (no `--json`, `fontsMissing`) e todo `Text` que usa a face recebe `font-missing` (error).
 - Itálico sem face `italic: true` registrada é medido com a face reta.
+- **Pesos:** registre cada peso como uma face (`{ family: 'Inter', weight: 300, file: … }`, `weight: 600`…; `'regular'` = 400 e `'bold'` = 700). `fontWeight` escolhe a face mais próxima pela regra do CSS (500 tenta 400; 600 tenta 700 antes de descer). Fora de 400/700 o `.pptx` usa o nome da própria face (`Inter SemiBold`): aparece certo onde a fonte está **instalada** ou embutida (`--embed-fonts`, só PowerPoint); sem ela, o renderizador cai para a família base. Peso sem face a até 100 → `font-weight-fallback` (warning) e o texto sai com a face mais próxima. Exemplo: `examples/texto/pesos.tsx`.
 - `--embed-fonts` (§7) embute as faces no `.pptx`, mas **só o PowerPoint usa** (o Keynote ignora). Só TrueType de uma face (`.ttf`) com licença que permite embed; o resto gera `font-not-embeddable`.
 
 ## 5. Tokens, layouts e componentes prontos
@@ -313,7 +351,7 @@ Tamanhos do `KpiCard` (pt):
 
 ## 6. Receitas
 
-Trechos filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape`, `Chart`, `Table`, `Span`, `Path`, `Icon`, `Connector` de `'pptsx'` quando usados). Vitrine completa de CSS: `examples/showcase.tsx`.
+Trechos filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape`, `Chart`, `Table`, `Span`, `Sup`, `Sub`, `SlideNumber`, `Path`, `Icon`, `Connector` de `'pptsx'` quando usados). Vitrine completa de CSS: `examples/showcase.tsx`.
 
 ### 6.1 Conteúdo com bullets, só primitivas
 
@@ -540,6 +578,41 @@ const STEPS = [
 
 Seta solta sem nós: `<Shape kind="line" width={80} height={0} strokeWidth={2} endArrow="triangle" />`, `<Shape kind="arrowRight" width={40} height={20} />` (seta cheia) ou um `Path` (`d="M0 12 L16 12 M10 6 L16 12 L10 18"` com `lineCap="round"`). As três receitas estão em `examples/diagrams/receitas.tsx`.
 
+### 6.14 Relatório corrido com rodapé numerado
+
+```tsx
+<Deck footer={RODAPE /* §4 "Número de slide e rodapé" */}>
+  <Slide padding="32 40 40" gap={12}>
+    <Text fontSize={24} fontWeight="bold">O ano em resumo</Text>
+    <Text paginate flex={1} fontSize={16} lineHeight={1.4}>{textoLongo}</Text>
+  </Slide>
+</Deck>
+```
+
+O texto que não cabe continua nos slides seguintes, com o mesmo título e o rodapé numerado (`1 / 4`, `2 / 4`…). Parágrafos separados por `'\n'`. Exemplo completo: `examples/texto/relatorio.tsx`.
+
+### 6.15 Nota de rodapé
+
+```tsx
+<Text fontSize={18}>Receita recorde<Sup href="slide:3">1</Sup> no trimestre.</Text>
+…
+<Text fontSize={11} color="#64748B"><Sup>1</Sup> Fonte: balanço auditado de 2026.</Text>
+```
+
+`href="slide:3"` no número leva ao slide de notas (3 = o 3º `<Slide>` do seu Deck).
+
+### 6.16 Índice com links
+
+```tsx
+const SECOES = [{ titulo: 'O ano em resumo', slide: 2 }, { titulo: 'Notas', slide: 3 }];
+
+<Box gap={10}>
+  {SECOES.map((s) => <Text fontSize={20} href={`slide:${s.slide}`} color="#2F6FED">{s.titulo}</Text>)}
+</Box>
+```
+
+As três receitas estão em `examples/texto/receitas.tsx`.
+
 ## 7. CLI e fluxo de trabalho
 
 **(a) Dentro deste repo** (como na §2): rode na raiz; o deck fica em `examples/agent-test/`, importa `pptsx` sem build e pode usar tokens, layouts e componentes de `examples/`.
@@ -615,8 +688,10 @@ Campos de `data` (opcionais): `overflowPt`/`overflowPct`, `fromSize`/`toSize`, `
 | `text-truncated` | warning | `truncate`/`maxLines` cortou com `…` | se não era a intenção: encurte ou aumente a área |
 | `box-overflow` | error | filhos em fluxo (tamanhos fixos, margens, gap, padding, borda) somam mais que a área de conteúdo; linhas do wrap que não cabem; item maior que a sua **célula de grid** | reduza fixos/gap/margens; `flexShrink` volta a 1; troque fixos por `flex`/`%`; no grid, track `auto` ou `minmax(auto, …)`; no wrap, dê altura ou menos itens |
 | `out-of-slide` | error | nó **em fluxo** fora do slide | reduza; use `%`/`flex`; decoração → `position="absolute"` |
-| `css-not-emitted` | warning | propriedade CSS sem de/para no PPTX (`overflow: hidden`, gradiente, `filter`, `scale`/`skew`, sombra `inset`/`spread`/múltipla, sombra sem fundo, raio por canto, raio com bordas diferentes por lado, `fontWeight` 100–500/800–900, track fora do subconjunto, rotate em Chart/Table, propriedade desconhecida). O preview também não desenha | remova ou troque por uma suportada (§3); se o efeito é dispensável, ignore |
-| `slide-continued` | info | um `Box paginate` virou `data.parts` slides | nada; partes desequilibradas → `fontSize`/`gap` responsivos |
+| `css-not-emitted` | warning | propriedade CSS sem de/para no PPTX (`overflow: hidden`, gradiente, `filter`, `scale`/`skew`, sombra `inset`/`spread`/múltipla, sombra sem fundo, raio por canto, raio com bordas diferentes por lado, track fora do subconjunto, rotate em Chart/Table, propriedade desconhecida). O preview também não desenha | remova ou troque por uma suportada (§3); se o efeito é dispensável, ignore |
+| `slide-continued` | info | um `Box paginate` (itens) ou `Text paginate` (`data.kind: "text"`, linhas) virou `data.parts` slides | nada; partes desequilibradas → `fontSize`/`gap` responsivos |
+| `font-weight-fallback` | warning | `fontWeight` sem face registrada a até 100; `data.requestedWeight` / `data.usedWeight` | registre a face desse peso em `fonts` ou use um peso que existe |
+| `link-target-missing` | error | `href="slide:N"` com N maior que os slides do `<Deck>`; o link não sai | corrija o N (número do `<Slide>` no seu Deck, a partir de 1) |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi | arquivo com mais resolução ou área menor |
 | `font-missing` | error | família não registrada ou não achada; único diagnóstico desse Text | tire `fontFamily` (Arial), registre a face ou instale |
 | `connector-target-missing` | error | `from`/`to` de um `Connector` sem nó com esse `id` no slide (a mensagem lista os ids do slide); o conector não sai | ponha `id` no nó certo ou corrija o nome |
@@ -654,6 +729,8 @@ Mensagens reais:
 
 As mensagens usam os nomes CSS (`flexShrink`, `flexGrow`, `fontSize`); `minSize`, `nowrap` e `fit` são props da engine (§4).
 
+O exit code não vem dentro do `--json`: leia `$?` logo depois do comando (num pipe, ele é o do último programa).
+
 Sem `--json`, a CLI imprime um resumo em que os derivados (com `causedBy`) aparecem **sob a causa**, com `↳`, e não contam no cabeçalho (`+N derivados`); o exit code conta todos.
 
 Erros de estrutura (o deck não chega a ser medido; exit 1):
@@ -669,6 +746,9 @@ id "a" repetido no slide (já usado em Slide > Box); ids têm que ser únicos po
 <Shape kind="rect">: startArrow/endArrow só valem em kind="line"; para seta cheia use kind="arrowRight" ou <Connector>
 <Connector> não aceita "backgroundColor": ele não é uma caixa (use from, to, fromSide, …)
 <Icon>: não consegui ler "./icones/x.svg" (…)
+Prop "href" de <Text>: … use "slide:N" com N ≥ 1 (o número do slide no seu <Deck>)
+Só um nó paginate (<Box paginate> ou <Text paginate>) por slide; encontrados 2
+<Text paginate> não combina com maxLines: o texto continua no próximo slide em vez de ser cortado
 ```
 
 ### O overview PNG
@@ -728,6 +808,11 @@ id "a" repetido no slide (já usado em Slide > Box); ids têm que ser únicos po
 - **Texto dentro de `Box shape`** fica no retângulo do padding, não na forma: losango, hexágono e paralelogramo precisam de `padding` lateral; `callout` tem a ponta **fora** do frame (deixe espaço embaixo).
 - **Ícone com gradiente vira imagem** (`icon-rasterized`): não muda de cor nem é editável. Para recolorir, o SVG precisa usar `currentColor` ou preto.
 - **`Path` com arco (`A`)** é aproximado por cúbicas (erro < 0,1 % do raio): invisível, mas o PowerPoint mostra pontos de Bézier ao editar.
+- **Peso sem face vira aviso, não negrito sintético**: `fontWeight={600}` com só regular e bold registrados usa a bold (a 100) sem aviso; `fontWeight={900}` usa a bold **com** `font-weight-fallback`. Registre as faces que o deck usa.
+- **`Inter SemiBold` só aparece onde está instalada** (ou embutida, no PowerPoint): no Keynote de quem não tem a fonte, o texto cai para a família base.
+- **`slide:N` é o slide do seu `<Deck>`**, não o do arquivo gerado (a paginação desloca os números; a engine traduz).
+- **`Text paginate` não encolhe**: se a fonte ficar grande demais, diminua `fontSize`; e ele precisa de altura (`flex={1}` numa coluna).
+- **Rodapé por cima do corpo**: o `footer` não ocupa espaço; sem `padding` inferior no Slide, o texto do corpo passa por baixo dele.
 - **Diagrama com `position="absolute"`** funciona, mas não se adapta a 4:3; prefira grid com `placeItems="center"` e tamanhos fixos nos nós.
 
 ## Apêndice — Migração das props antigas → CSS

@@ -100,7 +100,14 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M12 | M12-4 | Icon: SVG → formas (classificação conservadora, recolor) ou PNG + icon-rasterized; 12 ícones MIT | ✅ |
 | M12 | M12-5 | Connector: roteamento pós-ajuste (auto, reta, cotovelo), pontas, rótulo, omitido entre partes | ✅ |
 | M12 | M12-6 | guia (§3 diagramas, receitas 6.11–6.13, códigos, armadilhas), README, Keynote dos decks (±1 pt), agente virgem em 1 build; versão 0.2.0 | ✅ |
-| M13 | M13-1…8 | pesos numéricos, sobrescrito/subscrito, `href`, `Text paginate`, `SlideNumber`/`footer`, fonte por Span (go/no-go), guia e validação (sequencial, plano em M13.md) | ⬜ |
+| M13 | M13-1 | contrato: FontWeight numérico, RunFace, verticalAlign, href, Text paginate, SlideNumber/footer, 2 códigos; Inter OFL | ✅ |
+| M13 | M13-2 | pesos pela correspondência do CSS Fonts, nome da face no PPTX, font-weight-fallback; calibração intacta | ✅ |
+| M13 | M13-3 | Sup/Sub, corpo 2/3 medido no Keynote; calibração rica 33/33 | ✅ |
+| M13 | M13-4 | href em Span/Text/Image/Box, slide:N traduzido depois da paginação, link-target-missing | ✅ |
+| M13 | M13-5 | Text paginate (linhas, fim de parágrafo, órfãs); relatorio.tsx no Keynote | ✅ |
+| M13 | M13-6 | Deck footer + SlideNumber (campo slidenum; duas caixas em n / total por causa do Keynote) | ✅ |
+| M13 | M13-7 | fontSize/fontFamily por Span — **go**: 10/10 no Keynote, calibração rica 43/43 | ✅ |
+| M13 | M13-8 | guia, README "Texto", receitas, agente virgem (exit 0 sem error/warning no 1º build); versão 0.3.0 | ✅ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
 

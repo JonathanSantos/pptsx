@@ -711,6 +711,39 @@ A `Table` é medida pela engine: colunas com `width` ficam fixas e as outras seg
 
 ---
 
+## Texto: pesos, notas, links e continuação
+
+- **Pesos de verdade:** `fontWeight={300}`, `600`… escolhem a face registrada mais próxima (regra do CSS); fora de 400/700 o `.pptx` leva o nome da face (`Inter SemiBold`), que o PowerPoint e o Keynote usam quando a fonte está instalada ou embutida. Peso sem face avisa (`font-weight-fallback`).
+- **`<Sup>`/`<Sub>`** para m², CO₂ e notas; **`fontSize`/`fontFamily` por `Span`**, com a linha crescendo para caber.
+- **`href`** em texto, trecho, imagem e caixa: URL ou `slide:N` (o número do seu slide; a engine corrige depois da paginação).
+- **`<Text paginate>`**: texto corrido que não cabe continua no slide seguinte, cortando em fim de parágrafo e sem deixar linhas órfãs.
+- **`<Deck footer>` + `<SlideNumber format="n / total">`**: rodapé em todo slide com o número como campo nativo.
+
+```tsx
+<Deck footer={<Box display="flex" justifyContent="space-between" padding="0 56 14" fontSize={10}>
+  <Text>Cooperativa Safra · Relatório anual 2026</Text>
+  <SlideNumber format="n / total" fontWeight={600} />
+</Box>}>
+  <Slide padding="32 56 36" gap={14} fontFamily="Inter">
+    <Text fontSize={24} fontWeight={600}>O ano em resumo</Text>
+    <Text paginate flex={1} fontSize={16} lineHeight={1.45}>
+      <Span fontWeight={600}>Contexto.</Span> Em 2026 a cooperativa atendeu 4.800 famílias…<Sup href="slide:3">1</Sup>
+      …
+    </Text>
+  </Slide>
+</Deck>
+```
+
+[`examples/texto/relatorio.tsx`](examples/texto/relatorio.tsx): 3 slides do autor viram 6 (o corpo continua em 4 partes), notas em sobrescrito com link para o slide de notas, Inter 300/600 e "n / 6" em todos:
+
+<p align="center"><img src="docs/readme/texto-relatorio.png" width="960" alt="Overview de seis slides: capa, quatro partes do texto corrido com o mesmo título e o slide de notas, todos com rodapé e número de slide"></p>
+
+[`examples/texto/pesos.tsx`](examples/texto/pesos.tsx), com a Inter em 300/400/600/700 (OFL, em `fonts/inter/`):
+
+<p align="center"><img src="docs/readme/texto-pesos.png" width="720" alt="A frase Relatório anual 2026 em Inter light, regular, semibold e bold, e um parágrafo com trechos em semibold e light"></p>
+
+---
+
 ## Diagramas
 
 Fluxogramas, arquiteturas e linhas do tempo saem **nativos**: cada nó, seta e ícone é um objeto que dá para mover, recolorir e editar no PowerPoint/Keynote.
@@ -857,7 +890,7 @@ O `render` não grava arquivos nem imprime; devolve um resultado por tamanho.
 O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não sai, e **sempre avisa**. O preview desenha só o que o `.pptx` tem, então o PNG nunca promete mais do que o arquivo entrega.
 
 <p align="center">
-  <img src="docs/readme/css-to-pptx.svg" width="900" alt="Três colunas: sai nativo (cores, bordas, raio, sombra, opacity, rotate, zIndex, texto, Chart e Table), sai com diferença (fundo de Text, opacity por forma, letterSpacing sem kerning, lineHeight no Keynote) e css-not-emitted com warning (overflow hidden, gradiente, scale, sombra inset, raio por canto, pesos intermediários, auto-fill)">
+  <img src="docs/readme/css-to-pptx.svg" width="900" alt="Três colunas: sai nativo (cores, bordas, raio, sombra, opacity, rotate, zIndex, texto, Chart e Table), sai com diferença (fundo de Text, opacity por forma, letterSpacing sem kerning, lineHeight no Keynote) e css-not-emitted com warning (overflow hidden, gradiente, scale, sombra inset, raio por canto, peso sem face, auto-fill)">
 </p>
 
 <details>
@@ -871,8 +904,8 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 | `borderRadius` | `lineHeight` numérico no Keynote: passo truncado a pt inteiro e 1ª linha até ~2 pt mais baixa | sombra `inset`, `spread` ou múltipla; sombra sem fundo |
 | `boxShadow` (uma, externa) | | raio diferente por canto (sai o menor) |
 | `opacity`, `rotate`, `translate`, `zIndex` (ordem de desenho) | | `borderRadius` com bordas diferentes por lado (o fundo arredonda, as linhas saem retas) |
-| `backgroundImage: url()` (cover), `Image` com `objectFit` | | `fontWeight` 100–500 e 800–900 (sai regular ou bold) |
-| fonte, tamanho, peso, itálico, cor, alinhamento, `textTransform`, `textDecoration` por trecho, `letterSpacing` | | `auto-fill`, áreas nomeadas e `[linhas]` no grid; `gridAutoFlow` diferente de `row` |
+| `backgroundImage: url()` (cover), `Image` com `objectFit` | | |
+| fonte, tamanho, peso (faces 100–900), itálico, cor, alinhamento, `textTransform`, `textDecoration`, sobrescrito, tamanho/fonte e link por trecho, `letterSpacing`, número de slide (campo) | | `auto-fill`, áreas nomeadas e `[linhas]` no grid; `gridAutoFlow` diferente de `row` |
 | `Chart` (bar, line, pie) e `Table` | | `whiteSpace` além de `normal`/`nowrap`; `objectFit` além de `contain`/`cover` |
 | 24 formas (`Shape kind`, `Box shape`), `Path` (custGeom), `Icon` vetorial, `Connector` com pontas | `Icon` com gradiente/máscara/`transform` sai como imagem (`icon-rasterized`, info) | borda por lado ou raio num `Box shape` que não é rect; fundo/borda num `Icon` |
 
@@ -883,18 +916,19 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 ## Limitações
 
 - **Fora do escopo do CSS:** `float`, `position: fixed/sticky`, unidades `em`/`rem`/`vw`, áreas nomeadas e `auto-fill` no grid. `position: absolute` é para decoração: mede pela borda do pai e não gera diagnóstico de caixa.
-- **Só Arial de fábrica.** Outras famílias entram em `fonts` (por arquivo ou instaladas no sistema); uma família não registrada gera `font-missing`. `fontWeight` só tem regular e bold.
+- **Só Arial de fábrica.** Outras famílias entram em `fonts` (por arquivo ou instaladas no sistema); uma família não registrada gera `font-missing`. Pesos fora de 400/700 precisam da face registrada e só aparecem onde ela está instalada (ou embutida, no PowerPoint).
 - **Fonte embutida só no PowerPoint.** `--embed-fonts` grava as faces em EOT; o Keynote ignora. Só entram `.ttf` de uma face com licença que permite embed.
 - **Quebras forçadas por padrão.** Quem editar o texto no PowerPoint herda as quebras manuais; `lineBreaks: 'auto'` troca isso por possíveis diferenças de quebra (ver [acima](#por-que-as-quebras-de-linha-são-forçadas)).
-- **Rich text por trecho** muda peso, itálico, cor e decoração; tamanho, fonte e entrelinha valem para o `Text` inteiro.
+- **Rich text por trecho** muda peso, itálico, cor, decoração, tamanho, fonte, sobrescrito e link; a entrelinha vale para o `Text` inteiro.
+- **Keynote e campos:** o número de slide sai como campo nativo; o Keynote apaga texto no mesmo parágrafo de um campo, por isso `n / total` sai em duas caixas encostadas.
 - **`Table` não pagina** e não tem `truncate`: encolhe ou vira `table-overflow`. `Chart` e `Table` não giram.
 - **O gráfico do PNG é uma aproximação**: PowerPoint e Keynote redesenham o gráfico nativo dentro do mesmo frame.
 - **Conectores não desviam de obstáculos** nem se religam ao mover um nó no PowerPoint: são linhas calculadas no build entre os lados escolhidos.
 
 ## Validação
 
-- **Testes:** 1795 com `vitest` (unitários, layout calculado à mão, oráculo do grid contra o Chrome, XML emitido, preview).
-- **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30. Da galeria, `tara` (16:9) e `safra` (4:3) foram exportados e conferidos slide a slide: grupo girado com sombra, grid girado atrás do texto, mapa de calor, tabela e barra proporcional saem como no preview; só os gráficos são redesenhados pelo Keynote, como esperado. Os decks de diagramas (`examples/diagrams/`: formas, Path, ícones, fluxo e arquitetura) batem com o preview em ±1 pt nos nós.
+- **Testes:** 1854 com `vitest` (unitários, layout calculado à mão, oráculo do grid contra o Chrome, XML emitido, preview).
+- **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30. Da galeria, `tara` (16:9) e `safra` (4:3) foram exportados e conferidos slide a slide: grupo girado com sombra, grid girado atrás do texto, mapa de calor, tabela e barra proporcional saem como no preview; só os gráficos são redesenhados pelo Keynote, como esperado. Os decks de diagramas (`examples/diagrams/`: formas, Path, ícones, fluxo e arquitetura) batem com o preview em ±1 pt nos nós; o relatório de texto corrido e os pesos da Inter (`examples/texto/`) saem com as mesmas linhas, e a calibração rica (com sobrescrito e corpo por trecho) bate 43/43.
 - **PowerPoint e Google Slides:** ainda não validados; a conferência no PowerPoint está com o dono do projeto. O XML é corrigido nos pontos em que o PowerPoint pediria "reparar".
 
 ## Para agentes

@@ -83,7 +83,7 @@
 <circle cx="692" cy="332.5" r="3" fill="#F59E0B"/>
 <text x="704.0" y="337.0" font-size="12.5" fill="#1B2A4A">raio + bordas diferentes por lado</text>
 <circle cx="692" cy="353.5" r="3" fill="#F59E0B"/>
-<text x="704.0" y="358.0" font-size="12.5" fill="#1B2A4A">fontWeight 100–500 e 800–900</text>
+<text x="704.0" y="358.0" font-size="12.5" fill="#1B2A4A">peso sem face (font-weight-fallback)</text>
 <circle cx="692" cy="374.5" r="3" fill="#F59E0B"/>
 <text x="704.0" y="379.0" font-size="12.5" fill="#1B2A4A">auto-fill, áreas nomeadas no grid</text>
 <circle cx="692" cy="395.5" r="3" fill="#F59E0B"/>
