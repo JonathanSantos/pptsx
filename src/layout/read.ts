@@ -114,6 +114,8 @@ const READERS: DispatchTable<ResolvedNode, PositionedNode, [built: BuiltNode, fr
   shape: readShape,
   chart: readChart,
   table: readTable,
+  path: (source, built, frame) => ({ ...source, frame, box: boxOf(built.yoga) }),
+  icon: (source, built, frame) => ({ ...source, frame, box: boxOf(built.yoga) }),
 };
 
 const readNode = (built: BuiltNode, origin: Origin, env: LayoutEnv): PositionedNode =>

@@ -57,6 +57,8 @@ const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: Emi
     const { rows, options } = structuredClone(tableOf(contentOf(node), ctx));
     slide.addTable(rows, options);
   },
+  path: () => undefined,
+  icon: () => undefined,
 };
 
 /** Fundo/sombra, imagem de fundo, bordas e, por cima, o conteúdo do nó. */

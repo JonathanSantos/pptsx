@@ -147,6 +147,10 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveConte
       return resolveChart(item, path, n, parent);
     case 'table':
       return resolveTable(item, path, n);
+    case 'path':
+    case 'icon':
+    case 'connector':
+      throw new ResolveError(`<${nameOf(item)}> ainda não está disponível`, path);
     case 'span':
       throw new ResolveError(SPAN_OUTSIDE_TEXT, path);
     case 'slide':

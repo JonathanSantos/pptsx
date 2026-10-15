@@ -14,7 +14,9 @@ import { buildChildren, parentLayoutOf } from './tree.ts';
  * shrink 1), box model completo, grid próprio (grid.ts) e frames absolutos no slide.
  */
 
-export const layoutSlide = (slide: ResolvedSlide, size: SlideSize, env: LayoutEnv): PositionedSlide => {
+export const layoutSlide = (resolved: ResolvedSlide, size: SlideSize, env: LayoutEnv): PositionedSlide => {
+  // Conectores não entram no layout: o fit os roteia depois (M12).
+  const { connectors: _connectors, ...slide } = resolved;
   const config = createConfig();
   const root = Yoga.Node.create(config);
   try {

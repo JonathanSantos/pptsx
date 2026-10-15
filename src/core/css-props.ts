@@ -8,7 +8,10 @@ import type {
   BoxProps,
   ChartProps,
   Color,
+  ConnectorProps,
+  IconProps,
   ImageProps,
+  PathProps,
   Responsive,
   ResponsiveProps,
   ShapeProps,
@@ -131,6 +134,11 @@ export type CssTextPropsAuthor = WithCss<TextProps> & {
 export type CssImagePropsAuthor = WithCss<ImageProps> & { readonly objectFit?: Responsive<'contain' | 'cover'> };
 export type CssShapePropsAuthor = WithCss<ShapeProps>;
 export type CssChartPropsAuthor = WithCss<ChartProps>;
+/** M12: Path e Icon aceitam o CSS de item (tamanho, margem, opacity, rotate, boxShadow…). */
+export type CssPathPropsAuthor = WithCss<PathProps>;
+export type CssIconPropsAuthor = WithCss<IconProps>;
+/** M12: Connector não é caixa: só as props dele (responsivas). */
+export type ConnectorPropsAuthor = ResponsiveProps<ConnectorProps>;
 /** Em Table, `border` continua sendo a cor das linhas da grade (prop da engine). */
 export type CssTablePropsAuthor = ResponsiveProps<Omit<TableProps, keyof Css | 'border'> & Omit<Css, 'border'>> & {
   readonly border?: Responsive<Color>;

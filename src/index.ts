@@ -15,6 +15,17 @@ export type * from './core/css-props.ts';
 
 export type {
   Align,
+  ArrowType,
+  ConnectorLabelStyle,
+  ConnectorProps,
+  ConnectorRoute,
+  ConnectorSide,
+  IconProps,
+  LineCap,
+  LineJoin,
+  LineStyle,
+  PathCommand,
+  PathProps,
   AuthorPropsMap,
   BoxProps,
   Breakpoint,

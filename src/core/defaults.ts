@@ -10,6 +10,8 @@ import type {
   Justify,
   LineBreaks,
   Pt,
+  ArrowType,
+  ShapeKind,
   ShapeProps,
   Spacing,
   TableFitPolicy,
@@ -133,6 +135,60 @@ export const DEFAULTS = {
     transparencyScale: 100,
   },
   preview: { width: 1280, thumbWidth: 320, overviewColumns: 4 },
+  /**
+   * M12: formas. `pptx[kind]` = `prstGeom` emitido e os ajustes (`adj`, em 1/100000 como no
+   * OOXML) que o PPTX usa por padrão; o preview (src/preview/shapes.ts) desenha com esses mesmos
+   * números para bater com o Keynote/PowerPoint. A engine não muda os ajustes (só `roundRect`/`pill`,
+   * pelo raio).
+   */
+  shape: {
+    pptx: {
+      rect: { prst: 'rect', adj: {} },
+      roundRect: { prst: 'roundRect', adj: { adj: 16667 } },
+      ellipse: { prst: 'ellipse', adj: {} },
+      line: { prst: 'line', adj: {} },
+      triangle: { prst: 'triangle', adj: { adj: 50000 } },
+      rightTriangle: { prst: 'rtTriangle', adj: {} },
+      diamond: { prst: 'diamond', adj: {} },
+      parallelogram: { prst: 'parallelogram', adj: { adj: 25000 } },
+      trapezoid: { prst: 'trapezoid', adj: { adj: 25000 } },
+      pentagon: { prst: 'pentagon', adj: { hf: 105146, vf: 110557 } },
+      hexagon: { prst: 'hexagon', adj: { adj: 25000, vf: 115470 } },
+      octagon: { prst: 'octagon', adj: { adj: 29289 } },
+      chevron: { prst: 'chevron', adj: { adj: 50000 } },
+      arrowRight: { prst: 'rightArrow', adj: { adj1: 50000, adj2: 50000 } },
+      arrowLeft: { prst: 'leftArrow', adj: { adj1: 50000, adj2: 50000 } },
+      arrowUp: { prst: 'upArrow', adj: { adj1: 50000, adj2: 50000 } },
+      arrowDown: { prst: 'downArrow', adj: { adj1: 50000, adj2: 50000 } },
+      doubleArrow: { prst: 'leftRightArrow', adj: { adj1: 50000, adj2: 50000 } },
+      pill: { prst: 'roundRect', adj: { adj: 50000 } },
+      star: { prst: 'star5', adj: { adj: 19098, hf: 105146, vf: 110557 } },
+      cloud: { prst: 'cloud', adj: {} },
+      callout: { prst: 'wedgeRectCallout', adj: { adj1: -20833, adj2: 62500 } },
+      bracketPair: { prst: 'bracketPair', adj: { adj: 16667 } },
+      cylinder: { prst: 'can', adj: { adj: 25000 } },
+    } as Readonly<Record<ShapeKind, { readonly prst: string; readonly adj: Readonly<Record<string, number>> }>>,
+    /** Escala dos `adj` do OOXML (100000 = 100 %). */
+    adjScale: 100000,
+    /**
+     * Ponta de seta OOXML `w="med" len="med"`: largura e comprimento = 3 × a espessura da linha,
+     * com um mínimo para linhas finas não sumirem com a seta (o PowerPoint/Keynote fazem igual).
+     */
+    arrow: { widthFactor: 3, lengthFactor: 3, minSize: 4.5 },
+  },
+  /** M12: Path sem fill nem stroke recebe este fill (como o SVG, que pinta de preto). */
+  path: { fill: '#000000' },
+  /** M12: ícone SVG. `rasterScale`: a imagem sai com 2× a largura final em px, para ficar nítida. */
+  icon: { size: 24, rasterScale: 2, pxPerPt: 96 / 72 },
+  /** M12: conector entre nós. */
+  connector: {
+    stroke: '#333333',
+    strokeWidth: 1.5,
+    endArrow: 'triangle' as ArrowType,
+    startArrow: 'none' as ArrowType,
+    /** Rótulo: tipografia, respiro (pt) entre o texto e o fundo. */
+    label: { size: 12, color: '#333333', padding: 3 },
+  },
 } as const;
 
 export const PT_PER_INCH = 72;
@@ -177,9 +233,22 @@ export const containerOf = (props: ContainerProps) => ({
   justify: props.justify ?? DEFAULTS.container.justify,
 });
 
-/** Cor de contorno efetiva: a linha sempre tem cor, os demais só se o autor pediu. */
+/** Formas que são só traço: sem stroke seriam invisíveis. */
+const STROKE_ONLY: ReadonlySet<ShapeKind> = new Set<ShapeKind>(['line', 'bracketPair']);
+
+/** Cor de contorno efetiva: linha e colchetes sempre têm cor, os demais só se o autor pediu. */
 export const strokeColorOf = (props: ShapeProps): string | undefined =>
-  props.stroke ?? (props.kind === 'line' ? DEFAULTS.lineStroke : undefined);
+  props.stroke ?? (STROKE_ONLY.has(props.kind) ? DEFAULTS.lineStroke : undefined);
+
+/** M12: pintura efetiva de um Path: o do autor; sem fill nem stroke, fill preto (como o SVG). */
+export const pathPaintOf = (props: { readonly fill?: string; readonly stroke?: string }): { readonly fill?: string; readonly stroke?: string } =>
+  props.fill === undefined && props.stroke === undefined ? { fill: DEFAULTS.path.fill } : { fill: props.fill, stroke: props.stroke };
+
+/** M12: tamanho de uma ponta de seta (pt) para uma linha de espessura `width`. */
+export const arrowSizeOf = (width: Pt): { readonly width: Pt; readonly length: Pt } => {
+  const { widthFactor, lengthFactor, minSize } = DEFAULTS.shape.arrow;
+  return { width: Math.max(width * widthFactor, minSize), length: Math.max(width * lengthFactor, minSize) };
+};
 
 /** M10: estilo de texto efetivo das células da tabela (todas iguais). */
 export const tableStyleOf = (props: TableProps): TextStyle => ({

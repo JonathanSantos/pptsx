@@ -466,3 +466,33 @@ Origem: `docs/work/poc/browser-layout.md`, `docs/work/reports/POC-css.md` e o c�
 
 ### Aliases antigos (M11, até remoção futura)
 `direction→flexDirection`, `align→alignItems`, `justify→justifyContent`, `grow→flexGrow` (basis pela regra antiga), `shrink→flexShrink`, `fill→backgroundColor`, `stroke/strokeWidth→outline`, `radius→borderRadius`, `font→fontFamily`, `size→fontSize`, `weight→fontWeight`, `italic→fontStyle`, `align` (Text)→`textAlign`. Documentados só no apêndice de migração do guia.
+
+## M12 — formas, conectores e ícones (regras por etapa)
+
+Plano: `docs/work/milestones/M12.md` (sequencial). Tipos em `src/core/types.ts` (bloco "Path, Icon e Connector (M12)", `ShapeKind` curado, `LineStyle/LineCap/LineJoin/ArrowType`, `FlexItemProps.id`, `BoxProps.shape`, `ResolvedPath/ResolvedIcon/ResolvedConnector`, `PositionedConnector`, `ResolvedSlide.connectors`/`PositionedSlide.connectors`, códigos `connector-target-missing`, `connector-omitted`, `icon-rasterized`, `path-invalid`). Padrões: `DEFAULTS.shape` (tabela `pptx` com `prst` e `adj` por kind, ponta de seta), `DEFAULTS.path`, `DEFAULTS.icon`, `DEFAULTS.connector`; helpers `strokeColorOf` (linha e `bracketPair` sempre com traço), `pathPaintOf`, `arrowSizeOf`.
+
+### Formas (M12-2)
+- Resolve: `kind` fora de `ShapeKind` → ResolveError; `startArrow`/`endArrow` só em `kind="line"`; `Box shape` aceita qualquer kind menos `line`. `flipH/flipV/lineStyle/lineCap/startArrow/endArrow` são props da forma (não CSS).
+- Layout: nada muda (forma sem tamanho intrínseco).
+- Emit: `prstGeom` = `DEFAULTS.shape.pptx[kind].prst`, sem `avLst` (os `adj` são os padrões do OOXML), salvo `roundRect` (raio do autor) e `pill` (`rectRadius` = min(w,h)/2). `flipH/flipV` no `xfrm`; `lineStyle` → `prstDash` (`dashed`→`dash`, `dotted`→`sysDot`); setas → `headEnd`/`tailEnd`; `lineCap`/`lineJoin` não existem no pptxgenjs: o emissor marca o shape e o pós-processamento (`sanitize`) grava `cap="rnd"` e `<a:round/>|<a:bevel/>|<a:miter/>` no `<a:ln>`, removendo a marca do nome.
+- `Box shape`: o fundo, a borda uniforme (recuada em largura/2, como no rect) e a sombra usam a geometria; bordas diferentes por lado numa forma que não é rect/roundRect saem como `css-not-emitted` (só a borda uniforme tem de/para).
+- Preview (`src/preview/shapes.ts`): um desenho por kind com as fórmulas do `presetShapeDefinitions.xml` e os `adj` de `DEFAULTS.shape.pptx`; `callout` desenha a ponta fora do frame (como o PPTX); setas de linha como polígonos explícitos (nunca `<marker>`), com o tamanho de `arrowSizeOf`.
+
+### `Path` (M12-3)
+- Resolve: parser do `d` (M L H V C S Q T A Z, maiúsculos/minúsculos, números colados `1-2`, `.5.5`, flags de arco sem espaço); saída só com M/L/C/Q/Z absolutos; S/T refletem o controle anterior; A vira até 4 cúbicas (≤ 90° cada). Comando desconhecido ou número malformado → `problem` (o fit emite `path-invalid`, error; nada é desenhado). `viewBox` = `[w, h]` do autor com origem 0,0, ou a caixa envolvente exata (extremos das curvas) do `d`.
+- Tamanho: sem width/height/flex o nó tem o tamanho do viewBox em pt; com só um eixo, o outro pela proporção (`aspectRatio` do CSS, se o autor não deu outro).
+- Emit: `custGeom` com `points` (polegadas, relativos ao frame; o viewBox é esticado até o frame); subcaminhos viram `moveTo` no mesmo `<a:path>`. Pintura: `pathPaintOf` (sem fill nem stroke → fill preto), `strokeWidth` em pt, `lineStyle`/`lineCap`/`lineJoin` como nas formas; opacidade, rotação e sombra como as do Shape.
+- Preview: `<path d>` com os comandos normalizados já escalados para o frame (o traço não escala).
+
+### `Icon` (M12-4)
+- Resolve (IO na borda): `resolveDeck(root, ctx, env?)` com `env.readAsset(src) → string` (padrão: arquivo relativo ao cwd; o render passa o `baseDir`). Classificação conservadora: vetor só se todos os elementos forem `svg`, `g` (sem `transform`), `path`, `rect` (com `rx/ry`), `circle`, `ellipse`, `line`, `polygon`, `polyline`, `title`, `desc`, com cores sólidas (`none`, `currentColor`, hex, rgb, nomes básicos), opacidade 1 e `style` só com propriedades de pintura conhecidas; qualquer outra coisa (gradiente, `url(…)`, `mask`, `clipPath`, `filter`, `text`, `use`, `image`, `transform`, `<style>`) → raster com `reason`. `render="image"` força raster; `render="shape"` num SVG não vetorizável → ResolveError.
+- Cores: `color` = a do autor ou a cor de texto herdada; `currentColor` vira `color`; com `recolor` (padrão true) preto (`#000`, `black`) também. Fill padrão do SVG é preto (que o recolor troca). O raster guarda o SVG já recolorido.
+- Layout: altura = `size` (padrão 24), largura pela proporção do viewBox; width/height do autor vencem (o desenho fica centrado sem distorcer, `xMidYMid meet`).
+- Emit: um `custGeom` por traço, todos com o frame do ícone (o viewBox centrado e escalado uniformemente); `strokeWidth` do SVG × escala. Raster: PNG do resvg com `largura final em px × DEFAULTS.icon.rasterScale`, como `data:`. O fit emite `icon-rasterized` (info) com o motivo.
+- Preview: os mesmos traços como `<path>`; raster como `<image>` com o mesmo PNG.
+
+### `Connector` (M12-5)
+- Resolve: o Connector some da árvore (não entra no layout nem nos paths dos irmãos de outro tipo) e vai para `ResolvedSlide.connectors`, com path próprio (`… > Connector[i]`). `id` duplicado no slide → ResolveError. `from`/`to` sem nó → `missing` (o fit emite `connector-target-missing`, error, e não desenha). `label` é resolvido como o conteúdo de um Text (Span/B/I valem) com `labelStyle` (fonte herdada do slide).
+- Fit (pós-layout, por parte paginada, em `fitDeck`): pontas fora desta parte → omitido com `connector-omitted` (info) na parte em que o conector não sai. Âncora = ponto médio do lado do border-box (sem rotação); `auto` escolhe o par de lados (ou o lado que falta) que minimiza a distância entre as âncoras. `straight` = 2 pontos. `elbow`: lados no mesmo eixo (left/right × left/right, top/bottom × top/bottom) = 3 segmentos com a dobra no meio desse eixo; eixos mistos = um L (2 segmentos); pontos colineares são fundidos (cotovelo alinhado vira reta). Rótulo: medido numa linha com o medidor do env, centrado no meio do segmento mais longo; frame do rótulo = texto + `DEFAULTS.connector.label.padding` por lado.
+- Emit: pintado depois de todos os nós (por cima), na ordem dos conectores. `straight` → `line` com `flipH/flipV` pela direção; `elbow` → `custGeom` aberto sem fill. Setas `headEnd` (início) e `tailEnd` (fim); padrão só `endArrow` (`DEFAULTS.connector.endArrow`). Rótulo = fundo opcional (rect sem linha) + caixa de texto.
+- Preview: polilinha (`<polyline>`) encurtada pelo comprimento da seta onde há ponta cheia; pontas como polígonos/elipses; rótulo com fundo e texto.

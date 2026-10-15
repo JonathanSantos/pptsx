@@ -15,8 +15,11 @@
 
 import type {
   CssBoxPropsAuthor,
+  ConnectorPropsAuthor,
   CssChartPropsAuthor,
+  CssIconPropsAuthor,
   CssImagePropsAuthor,
+  CssPathPropsAuthor,
   CssShapePropsAuthor,
   CssSlideProps,
   CssSpanProps,
@@ -130,6 +133,11 @@ export interface FlexItemProps {
   readonly right?: Length;
   readonly bottom?: Length;
   readonly left?: Length;
+  /**
+   * M12: identificador do nó para `Connector from/to`. Único no slide (duplicado → ResolveError);
+   * não muda layout nem pintura.
+   */
+  readonly id?: string;
 }
 
 /** Props de contêiner flex aceitas por Box e Slide. */
@@ -170,6 +178,12 @@ export interface BoxProps extends FlexItemProps, ContainerProps, StrokeProps {
    * (ver CONTRACTS §M9 "Slide de continuação"). Só um Box paginate por slide. Padrão false.
    */
   readonly paginate?: boolean;
+  /**
+   * M12: geometria do fundo/borda da caixa (padrão 'rect'; com borderRadius vira 'roundRect').
+   * Os filhos continuam posicionados pelo padding, como numa caixa retangular: a forma não
+   * recalcula o layout. 'line' não é aceito.
+   */
+  readonly shape?: ShapeKind;
   readonly children?: Children;
 }
 
@@ -225,12 +239,156 @@ export interface ImageProps extends FlexItemProps {
   readonly fit?: ImageFit;
 }
 
-export type ShapeKind = 'rect' | 'roundRect' | 'ellipse' | 'line';
+/**
+ * M12: lista curada; cada kind tem `prstGeom` próprio (DEFAULTS.shape.pptx) e desenho fiel no
+ * preview (src/preview/shapes.ts). Fora da lista: `Path`.
+ */
+export type ShapeKind =
+  | 'rect'
+  | 'roundRect'
+  | 'ellipse'
+  | 'line'
+  | 'triangle'
+  | 'rightTriangle'
+  | 'diamond'
+  | 'parallelogram'
+  | 'trapezoid'
+  | 'pentagon'
+  | 'hexagon'
+  | 'octagon'
+  | 'chevron'
+  | 'arrowRight'
+  | 'arrowLeft'
+  | 'arrowUp'
+  | 'arrowDown'
+  | 'doubleArrow'
+  | 'pill'
+  | 'star'
+  | 'cloud'
+  | 'callout'
+  | 'bracketPair'
+  | 'cylinder';
+
+/** M12: traço do contorno (PPTX `prstDash`: solid, dash, sysDot). */
+export type LineStyle = 'solid' | 'dashed' | 'dotted';
+/** M12: ponta do traço (PPTX `cap`: flat, rnd). */
+export type LineCap = 'flat' | 'round';
+/** M12: junção dos segmentos (PPTX `<a:miter/>`, `<a:round/>`, `<a:bevel/>`). */
+export type LineJoin = 'miter' | 'round' | 'bevel';
+/** M12: ponta de seta nativa (PPTX `headEnd`/`tailEnd`). */
+export type ArrowType = 'none' | 'arrow' | 'triangle' | 'stealth' | 'diamond' | 'oval';
 
 export interface ShapeProps extends FlexItemProps, StrokeProps {
   readonly kind: ShapeKind;
   /** Raio para roundRect, em pt. */
   readonly radius?: Pt;
+  /** M12: espelha a forma no eixo vertical (horizontal) — `flipH`/`flipV` do PPTX. */
+  readonly flipH?: boolean;
+  readonly flipV?: boolean;
+  /** M12: padrão 'solid'. */
+  readonly lineStyle?: LineStyle;
+  /** M12: padrão 'flat'. */
+  readonly lineCap?: LineCap;
+  /** M12: pontas de seta; só em `kind="line"` (senão ResolveError). Padrão 'none'. */
+  readonly startArrow?: ArrowType;
+  readonly endArrow?: ArrowType;
+}
+
+// ───────────────────────── Path, Icon e Connector (M12) ─────────────────────────
+
+/**
+ * Geometria livre por um subconjunto do `d` do SVG: M L H V C Q Z (absolutos e relativos) e A
+ * (convertido em cúbicas). O `viewBox` é esticado até o frame (como a geometria de uma forma);
+ * sem width/height o tamanho é o do viewBox em pt; com um só, o outro sai da proporção.
+ */
+export interface PathProps extends FlexItemProps, StrokeProps {
+  readonly d: string;
+  /** [largura, altura] com origem em 0,0; padrão: a caixa envolvente do `d`. */
+  readonly viewBox?: readonly [number, number];
+  /** Padrão 'flat' e 'miter' (os do PPTX). */
+  readonly lineCap?: LineCap;
+  readonly lineJoin?: LineJoin;
+  readonly lineStyle?: LineStyle;
+}
+
+/** M12: comando de path normalizado: absoluto, sem H/V/S/T/A (só moveTo, lineTo, cúbica, quadrática, close). */
+export type PathCommand =
+  | { readonly op: 'M'; readonly x: number; readonly y: number }
+  | { readonly op: 'L'; readonly x: number; readonly y: number }
+  | {
+      readonly op: 'C';
+      readonly x1: number;
+      readonly y1: number;
+      readonly x2: number;
+      readonly y2: number;
+      readonly x: number;
+      readonly y: number;
+    }
+  | { readonly op: 'Q'; readonly x1: number; readonly y1: number; readonly x: number; readonly y: number }
+  | { readonly op: 'Z' };
+
+/**
+ * M12: ícone SVG. `render="auto"` (padrão) vira formas nativas quando o SVG é só
+ * path/rect/circle/ellipse/line/polygon/polyline com cores sólidas; senão imagem (resvg) com
+ * `icon-rasterized` (info). Altura padrão `size`, largura pela proporção do viewBox.
+ */
+export interface IconProps extends FlexItemProps {
+  readonly src: string;
+  /** Altura em pt quando o autor não dá width/height; padrão DEFAULTS.icon.size. */
+  readonly size?: Pt;
+  /** Cor que substitui currentColor (e preto, com recolor); padrão: a cor de texto herdada. */
+  readonly color?: Color;
+  /** Troca também fills/strokes pretos por `color`; padrão true. */
+  readonly recolor?: boolean;
+  /** 'shape' exige vetor (senão ResolveError); 'image' força a imagem. Padrão 'auto'. */
+  readonly render?: 'auto' | 'shape' | 'image';
+}
+
+/** M12: um traço de ícone já pronto para desenhar (coordenadas e strokeWidth no viewBox do ícone). */
+export interface VectorPath {
+  readonly commands: readonly PathCommand[];
+  readonly fill?: Color;
+  readonly stroke?: Color;
+  readonly strokeWidth?: number;
+  readonly lineCap?: LineCap;
+  readonly lineJoin?: LineJoin;
+}
+
+export type ConnectorSide = 'top' | 'right' | 'bottom' | 'left' | 'auto';
+export type ConnectorRoute = 'straight' | 'elbow';
+
+export interface ConnectorLabelStyle {
+  readonly font?: string;
+  /** pt; padrão DEFAULTS.connector.label.size */
+  readonly fontSize?: Pt;
+  readonly color?: Color;
+  /** Fundo do rótulo (retângulo atrás do texto); ausente = sem fundo. */
+  readonly background?: Color;
+}
+
+/**
+ * M12: liga dois nós do mesmo slide pelo `id`. Pode ser filho do Slide ou de qualquer Box, mas
+ * não entra no layout: é calculado depois do ajuste, em coordenadas do slide, e pintado por cima
+ * dos nós. Sem desvio de obstáculos; o autor escolhe os lados.
+ */
+export interface ConnectorProps {
+  readonly from: string;
+  readonly to: string;
+  /** Padrão 'auto': o par de lados (pontos médios) mais próximo. */
+  readonly fromSide?: ConnectorSide;
+  readonly toSide?: ConnectorSide;
+  /** Padrão 'straight'. */
+  readonly route?: ConnectorRoute;
+  /** Padrão 'none' e DEFAULTS.connector.endArrow. */
+  readonly startArrow?: ArrowType;
+  readonly endArrow?: ArrowType;
+  /** Padrão DEFAULTS.connector.stroke / strokeWidth. */
+  readonly stroke?: Color;
+  readonly strokeWidth?: Pt;
+  readonly lineStyle?: LineStyle;
+  /** Texto simples ou Span/B/I, como num Text; centrado no segmento mais longo. */
+  readonly label?: TextChildren;
+  readonly labelStyle?: ConnectorLabelStyle;
 }
 
 // ───────────────────────── Chart e Table (M10) ─────────────────────────
@@ -452,7 +610,19 @@ export interface BoxMetrics {
 
 // ───────────────────────── JSX / árvore não resolvida ─────────────────────────
 
-export type PrimitiveKind = 'deck' | 'slide' | 'box' | 'text' | 'image' | 'shape' | 'span' | 'chart' | 'table';
+export type PrimitiveKind =
+  | 'deck'
+  | 'slide'
+  | 'box'
+  | 'text'
+  | 'image'
+  | 'shape'
+  | 'span'
+  | 'chart'
+  | 'table'
+  | 'path'
+  | 'icon'
+  | 'connector';
 
 /** Props concretas por primitiva (o que a árvore resolvida carrega). */
 export interface PrimitivePropsMap {
@@ -465,6 +635,9 @@ export interface PrimitivePropsMap {
   readonly span: SpanProps;
   readonly chart: ChartProps;
   readonly table: TableProps;
+  readonly path: PathProps;
+  readonly icon: IconProps;
+  readonly connector: ConnectorProps;
 }
 
 /**
@@ -481,6 +654,9 @@ export interface AuthorPropsMap {
   readonly span: CssSpanProps;
   readonly chart: CssChartPropsAuthor;
   readonly table: CssTablePropsAuthor;
+  readonly path: CssPathPropsAuthor;
+  readonly icon: CssIconPropsAuthor;
+  readonly connector: ConnectorPropsAuthor;
 }
 
 /** Marca que identifica uma primitiva (vs componente do usuário). */
@@ -571,12 +747,57 @@ export interface ResolvedTable extends ResolvedBase<'table', TableProps> {
   readonly rows: readonly (readonly string[])[];
 }
 
-export type ResolvedNode = ResolvedBox | ResolvedText | ResolvedImage | ResolvedShape | ResolvedChart | ResolvedTable;
+/**
+ * M12: `commands` já absolutos e sem arcos; `viewBox` efetivo (o do autor com origem 0,0 ou a
+ * caixa envolvente do `d`). `problem` = o `d` saiu do subconjunto: nada é desenhado e o fit
+ * emite `path-invalid` (error).
+ */
+export interface ResolvedPath extends ResolvedBase<'path', Omit<PathProps, 'children'>> {
+  readonly commands: readonly PathCommand[];
+  readonly viewBox: Rect;
+  readonly problem?: string;
+}
+
+/** M12: o SVG já lido e classificado. Raster guarda o SVG recolorido e o motivo (vai no `icon-rasterized`). */
+export type IconContent =
+  | { readonly paths: readonly VectorPath[] }
+  | { readonly raster: true; readonly svg: string; readonly reason: string };
+
+/** M12: `props.color` já é a cor efetiva (a do autor ou a herdada). */
+export interface ResolvedIcon extends ResolvedBase<'icon', IconProps> {
+  readonly viewBox: Rect;
+  readonly content: IconContent;
+}
+
+export type ResolvedNode =
+  | ResolvedBox
+  | ResolvedText
+  | ResolvedImage
+  | ResolvedShape
+  | ResolvedChart
+  | ResolvedTable
+  | ResolvedPath
+  | ResolvedIcon;
+
+/**
+ * M12: conector resolvido. Path como o de um nó ('Slide > Box > Connector[1]'). `label` é um Text
+ * resolvido (path `<conector> > Label`) com o estilo de `labelStyle`; `missing` lista as pontas
+ * cujo id não existe no slide do autor (o fit emite `connector-target-missing`).
+ */
+export interface ResolvedConnector {
+  readonly kind: 'connector';
+  readonly path: string;
+  readonly props: Omit<ConnectorProps, 'label'>;
+  readonly label?: ResolvedText;
+  readonly missing?: readonly ('from' | 'to')[];
+}
 
 export interface ResolvedSlide extends ResolvedBase<'slide', Omit<SlideProps, 'children'>> {
   /** M9: índice do slide no <Deck> do autor, começando em 1 (clones de paginação repetem o do original). */
   readonly sourceSlide: number;
   readonly children: readonly ResolvedNode[];
+  /** M12: conectores do slide inteiro (de qualquer Box), fora da árvore de layout. Ausente = nenhum. */
+  readonly connectors?: readonly ResolvedConnector[];
 }
 
 export interface ResolvedDeck {
@@ -711,10 +932,42 @@ export interface PositionedTable extends ResolvedTable, Positioned {
   readonly height: Pt;
 }
 
-export type PositionedNode = PositionedBox | PositionedText | PositionedImage | PositionedShape | PositionedChart | PositionedTable;
+export interface PositionedPath extends ResolvedPath, Positioned {}
+export interface PositionedIcon extends ResolvedIcon, Positioned {}
 
-export interface PositionedSlide extends Omit<ResolvedSlide, 'children'>, Positioned {
+export type PositionedNode =
+  | PositionedBox
+  | PositionedText
+  | PositionedImage
+  | PositionedShape
+  | PositionedChart
+  | PositionedTable
+  | PositionedPath
+  | PositionedIcon;
+
+/** M12: rótulo do conector já medido; `frame` inclui o respiro do fundo (o texto fica no frame do `text`). */
+export interface ConnectorLabel {
+  readonly frame: Rect;
+  readonly text: PositionedText;
+  readonly background?: Color;
+}
+
+/**
+ * M12: conector roteado depois do ajuste. `points` = polilinha em coordenadas do slide (2 pontos
+ * em `straight`; 3 ou 4 em `elbow`; pontos colineares já fundidos). Começa em `from`, termina em `to`.
+ */
+export interface PositionedConnector {
+  readonly kind: 'connector';
+  readonly path: string;
+  readonly props: Omit<ConnectorProps, 'label'>;
+  readonly points: readonly { readonly x: Pt; readonly y: Pt }[];
+  readonly label?: ConnectorLabel;
+}
+
+export interface PositionedSlide extends Omit<ResolvedSlide, 'children' | 'connectors'>, Positioned {
   readonly children: readonly PositionedNode[];
+  /** M12: só os conectores com as duas pontas nesta parte do slide. Ausente = nenhum. */
+  readonly connectors?: readonly PositionedConnector[];
 }
 
 export interface PositionedDeck {
@@ -744,7 +997,15 @@ export type DiagnosticCode =
   /** M10: tabela não coube nem no minSize (ou fit="error"); data: overflowPt/Pct, fromSize, toSize, shown/total linhas. */
   | 'table-overflow'
   /** M11: propriedade CSS que chegou ao nó e não tem de/para para o PPTX (warning; não sai no arquivo nem no preview). */
-  | 'css-not-emitted';
+  | 'css-not-emitted'
+  /** M12: `from`/`to` de um Connector sem nó com esse id no slide (error; o conector não sai). */
+  | 'connector-target-missing'
+  /** M12: as pontas do conector caíram em partes diferentes de um slide paginado (info; omitido nesta parte). */
+  | 'connector-omitted'
+  /** M12: ícone SVG fora do subconjunto vetorial (ou render="image") virou imagem (info). */
+  | 'icon-rasterized'
+  /** M12: `d` de um Path com comando fora do subconjunto (error; o Path não é desenhado). */
+  | 'path-invalid';
 
 export interface Diagnostic {
   readonly severity: Severity;

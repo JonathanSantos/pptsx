@@ -56,6 +56,8 @@ const drawers: DispatchTable<PositionedNode, string, [ctx: DrawContext, index: n
   shape: (node) => shapeSvg(node),
   chart: (node, ctx) => chartSvg(contentOf(node), { fontFamilyMap: ctx.fontFamilyMap, lang: ctx.lang }),
   table: (node, ctx, index) => tableSvg(contentOf(node), { fontFamilyMap: ctx.fontFamilyMap }, `clip-${index}`),
+  path: () => '',
+  icon: () => '',
 };
 
 const transformOf = (item: PaintItem): string | undefined =>

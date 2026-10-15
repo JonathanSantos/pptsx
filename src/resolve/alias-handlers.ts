@@ -108,4 +108,7 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     ...passColors(['stripe', 'border']),
     header: passColor('header', headerColors),
   },
+  path: {},
+  icon: {},
+  connector: {},
 };

@@ -6,7 +6,7 @@ import { primitiveName } from '../primitives/index.ts';
 const SEPARATOR = ' > ';
 const SIBLING_INDEX = /\[\d+\]$/;
 
-const PRIMITIVE_KINDS: readonly PrimitiveKind[] = ['slide', 'box', 'text', 'image', 'shape', 'chart', 'table'];
+const PRIMITIVE_KINDS: readonly PrimitiveKind[] = ['slide', 'box', 'text', 'image', 'shape', 'chart', 'table', 'path', 'icon', 'connector'];
 const PRIMITIVE_SEGMENTS: ReadonlySet<string> = new Set(PRIMITIVE_KINDS.map(primitiveName));
 
 export const segmentsOf = (path: string): readonly string[] => path.split(SEPARATOR);

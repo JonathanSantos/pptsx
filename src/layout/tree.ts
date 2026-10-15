@@ -15,8 +15,10 @@ import type {
   LayoutEnv,
   ResolvedBox,
   ResolvedChart,
+  ResolvedIcon,
   ResolvedImage,
   ResolvedNode,
+  ResolvedPath,
   ResolvedShape,
   ResolvedTable,
   ResolvedText,
@@ -148,7 +150,7 @@ const buildImage: Builder<ResolvedImage> = (source, yoga, { env, parent }) => {
   return { source, yoga, children: [], intrinsic };
 };
 
-const buildLeaf: Builder<ResolvedShape | ResolvedChart> = (source, yoga, { parent }) => {
+const buildLeaf: Builder<ResolvedShape | ResolvedChart | ResolvedPath | ResolvedIcon> = (source, yoga, { parent }) => {
   applyStyle(yoga, { ...toItemStyle(source.css, parent), ...toBoxStyle(source.css) });
   return { source, yoga, children: [] };
 };
@@ -181,6 +183,8 @@ const BUILDERS: DispatchTable<ResolvedNode, BuiltNode, [yoga: YogaNode, ctx: Bui
   shape: buildLeaf,
   chart: buildLeaf,
   table: buildTable,
+  path: buildLeaf,
+  icon: buildLeaf,
 };
 
 const isInFlow = (node: ResolvedNode): boolean => node.css.position !== 'absolute';

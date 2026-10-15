@@ -51,7 +51,7 @@ export const cornerRadiusOf = (radius: Pt | undefined, frame: Rect): Pt => {
 
 type ShapeBuilder = (frame: Rect, props: StrokeProps & { readonly radius?: Pt }) => string;
 
-const shapeBuilders: Readonly<Record<ShapeKind, ShapeBuilder>> = {
+const shapeBuilders: Readonly<Partial<Record<ShapeKind, ShapeBuilder>>> = {
   rect: (frame, props) => element('rect', { ...rectAttrs(frame), ...paintAttrs(props) }),
   roundRect: (frame, props) => {
     const r = cornerRadiusOf(props.radius, frame);
@@ -77,7 +77,7 @@ const shapeBuilders: Readonly<Record<ShapeKind, ShapeBuilder>> = {
 };
 
 export const shapeSvg = (node: PositionedShape): string =>
-  shapeBuilders[node.props.kind](node.frame, { ...node.props, stroke: strokeColorOf(node.props) });
+  (shapeBuilders[node.props.kind] ?? shapeBuilders.rect!)(node.frame, { ...node.props, stroke: strokeColorOf(node.props) });
 
 export const ANCHORS: Readonly<Record<TextAlign, { readonly anchor: string; readonly offset: number }>> = {
   left: { anchor: 'start', offset: 0 },

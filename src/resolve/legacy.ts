@@ -115,6 +115,9 @@ const BUILDERS: Readonly<Record<PrimitiveKind, LegacyBuilder>> = {
     lineHeight: text.lineHeight,
     ...own,
   }),
+  path: ({ css, own }) => ({ ...itemOf(css), ...own }),
+  icon: ({ css, own }) => ({ ...itemOf(css), ...own }),
+  connector: ({ own }) => own,
 };
 
 export type LegacyProps<K extends PrimitiveKind> = Omit<PrimitivePropsMap[K], 'children'>;

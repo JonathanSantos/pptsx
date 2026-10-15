@@ -43,12 +43,8 @@ export interface TextSpec {
 
 const DEBUG_OUTLINE = { color: 'FF0000', width: 0.5, dashType: 'dash' } as const;
 
-const SHAPE_NAMES: Readonly<Record<ShapeKind, Pptx.ShapeName>> = {
-  rect: 'rect',
-  roundRect: 'roundRect',
-  ellipse: 'ellipse',
-  line: 'line',
-};
+/** `prstGeom` de cada kind (DEFAULTS.shape.pptx); os nomes são os do enum do pptxgenjs. */
+const shapeNameOf = (kind: ShapeKind): Pptx.ShapeName => DEFAULTS.shape.pptx[kind].prst as Pptx.ShapeName;
 
 export { hexOf };
 
@@ -84,7 +80,7 @@ const geometryOf = (kind: ShapeKind, radius: number | undefined, frame: Rect) =>
 const shapeSpecOf = (kind: ShapeKind, props: StrokeProps & { readonly radius?: number }, frame: Rect): ShapeSpec => {
   const line = lineOf(props);
   return {
-    shape: SHAPE_NAMES[kind],
+    shape: shapeNameOf(kind),
     options: {
       ...positionOf(frame),
       ...fillOf(props.fill),
