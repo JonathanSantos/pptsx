@@ -1,6 +1,6 @@
 {
   "name": "@pptsx/ds-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Ferramentas para criar design systems sobre o pptsx: tokens, tema, variantes, slots, regras de lint, catálogo e defineDs.",
   "license": "MIT",
   "type": "module",
@@ -37,7 +37,7 @@
     "test:package": "vitest run tests/package --config vitest.package.config.ts"
   },
   "peerDependencies": {
-    "pptsx": ">=0.7.0"
+    "pptsx": ">=1.0.0"
   },
   "engines": {
     "node": ">=20"

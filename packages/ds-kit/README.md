@@ -1,132 +1,194 @@
 # @pptsx/ds-kit
 
-Ferramentas para criar um **design system (DS)** sobre o [pptsx](../pptsx/README.md): tokens, tema, componentes com variantes e slots, regras de lint, catálogo visual e o manifesto que liga o DS ao `pptsx lint` e ao MCP. Um DS usa **só** `'pptsx'` e `'@pptsx/ds-kit'` (nunca `pptsx/src/...`). Exemplo completo: [`@pptsx/ds-base`](../ds-base/README.md).
+Ferramentas para criar um **design system (DS)** sobre o [pptsx](../pptsx/README.md): tokens, tema, componentes com variantes tipadas e slots, regras de lint, catálogo visual e o manifesto que liga o DS ao `pptsx lint`, ao MCP e à skill para agentes. Um DS usa **só** `'pptsx'` e `'@pptsx/ds-kit'`. Exemplo completo: [`@pptsx/ds-base`](../ds-base/README.md).
 
-## Montagem
+Esta página segue a ordem em que um DS nasce: montar → tokens e tema → componente → regras → manifesto → usar num deck → conferir → publicar. Os trechos marcados com `// arquivo:` formam um DS que compila e roda (um teste do pacote os grava numa pasta, compila e faz o build).
+
+## 1. Montar
 
 ```sh
 npm install pptsx @pptsx/ds-kit
-npx pptsx-ds init meu-ds            # tokens, tema, um Card (variante, slot, catálogo, guia), regras, ds.ts, config
-npx pptsx init deck --ds ./meu-ds   # um deck que importa os componentes do DS
+npx pptsx-ds init minha-marca      # tokens, tema, um Card, regras, guia, ds.ts, index, config, package.json, tsconfig
+npx pptsx init deck --ds ./minha-marca
+npx pptsx build deck/deck.tsx --size 16x9,4x3
 ```
 
-O `tsconfig.json` gerado só **estende** o do kit (`"extends": "@pptsx/ds-kit/tsconfig.base.json"`: NodeNext, strict, JSX do pptsx); dentro deste monorepo ele estende o `tsconfig.monorepo.json` da raiz, cujos `paths` apontam os pacotes para o fonte. Arquivo existente não é sobrescrito sem `--force`; `--name` troca o nome do DS (padrão: o da pasta).
+O `init` cria um DS que já compila e renderiza. O `tsconfig.json` dele só **estende** `@pptsx/ds-kit/tsconfig.base.json` (NodeNext, strict, JSX do pptsx); dentro deste monorepo, estende o `tsconfig.monorepo.json`. Arquivos `.ts`/`.tsx`, imports relativos com extensão (`'./tokens.ts'`). Arquivo existente não é sobrescrito sem `--force`. Os passos abaixo explicam cada arquivo e acrescentam um componente, o `StatCard`.
 
-Arquivos `.ts`/`.tsx`, imports relativos com extensão (`'./tokens.ts'`). Comandos rodam na raiz do repositório.
-
-**Primitivas e props CSS** (`Deck`, `Slide`, `Box`, `Text`, `Image`, `Shape`, `Chart`, `Table`…; `display`, `flex`, `gap`, `padding`, `border*`, `fontSize`…) são as do núcleo: veja o guia do agente (`packages/pptsx/docs/AGENT_GUIDE.md`, §3–§4) ou o MCP (`schema({ primitive: 'box' })`). As props de `createVariants` são checadas contra a primitiva-alvo (`for: 'text'` para variantes de texto; padrão `'box'`): nome CSS errado não compila.
-
-## 1. Tokens e tema
+## 2. Tokens e tema
 
 ```ts
-import { defineTokens, themeOf, checkTheme } from '@pptsx/ds-kit';
+// arquivo: tokens.ts
+import { defineTokens } from '@pptsx/ds-kit';
 
 export const tokens = defineTokens({
   color: { ink: '#14213D', paper: '#FFFFFF', brand: '#E63946', calm: '#457B9D', mist: '#F1FAEE' },
-  font: { hero: 48, title: 30, body: 18, small: 13 },
+  font: { title: 30, body: 18, small: 13 },
   space: { page: 40, gap: 16 },
 });
-// Cores (grupos color/colors) validadas e normalizadas para '#RRGGBB'; tudo congelado.
-tokens.tokenAt('font.body');      // 18
-tokens.scale('font.body', 1.25);  // 22.5 (arredonda a 0,5 pt)
+```
+
+Cores (grupos `color`/`colors`) são validadas e normalizadas para `#RRGGBB`; tudo congelado. `tokens.tokenAt('font.body')` lê por caminho e `tokens.scale('font.body', 1.25)` multiplica (arredonda a 0,5 pt).
+
+```ts
+// arquivo: theme.ts
+import { checkTheme, themeOf } from '@pptsx/ds-kit';
+import { tokens } from './tokens.ts';
 
 export const theme = themeOf(tokens, {
   name: 'Minha marca',
   colors: { dark1: 'color.ink', light1: 'color.paper', accent1: 'color.brand', accent2: 'color.calm', light2: 'color.mist' },
   fonts: { heading: 'Arial', body: 'Arial' },
 });
-checkTheme(theme); // avisos de contraste abaixo do WCAG AA (texto 4,5:1, acentos 3:1)
+
+export const themeWarnings = checkTheme(theme);
 ```
 
-O tema é o do arquivo PPTX (seletor de cores do PowerPoint). Slots: `dark1`, `light1`, `dark2`, `light2`, `accent1`…`accent6`, `hyperlink`, `followedHyperlink`; cada um recebe um caminho de token (`'color.ink'`) ou uma cor. Não declare o mesmo hex em dois slots. `checkTheme` compara, entre os slots declarados, texto (`dark1`/`dark2`) sobre fundo (`light1`/`light2`, 4,5:1) e cada acento sobre `light1` (3:1).
+O tema é o do arquivo PPTX (o seletor de cores do PowerPoint). Slots: `dark1`, `light1`, `dark2`, `light2`, `accent1`…`accent6`, `hyperlink`, `followedHyperlink`; cada um recebe um caminho de token ou uma cor, sem repetir o mesmo hex. `checkTheme` devolve os avisos de contraste abaixo do WCAG AA: texto (`dark1`, `dark2`) sobre fundo (`light1`, `light2`) a 4,5:1 e cada acento sobre `light1` a 3:1. **Num DS escuro**, mantenha o sentido dos slots (a cor escura em `dark1`/`dark2`, a clara em `light1`/`light2`): o fundo escuro do slide vem do `backgroundColor` do Slide ou do layout, não do tema. Os avisos aparecem em `ds.warnings` e o `pptsx-ds catalog` os imprime.
 
-## 2. Componentes
+## 3. Um componente
 
 ```tsx
+// arquivo: components/StatCard.tsx
 import { Box, Text, type Responsive } from 'pptsx';
 import { createVariants, defineComponent, slot, type Slots } from '@pptsx/ds-kit';
-import { tokens } from './tokens.ts';
+import { tokens } from '../tokens.ts';
 
-const box = createVariants({
-  base: { padding: 16, borderRadius: 8 },
+const { color, font, space } = tokens;
+
+const card = createVariants({
+  base: { borderRadius: 8, gap: 4 },
   variants: {
-    tone: { neutral: { backgroundColor: tokens.color.mist }, strong: { backgroundColor: tokens.color.brand, color: tokens.color.paper } },
-    size: { md: { padding: 16 }, lg: { padding: 24 } },
+    tone: { neutral: { backgroundColor: color.mist, color: color.ink }, strong: { backgroundColor: color.brand, color: color.paper } },
+    size: { md: { padding: space.gap }, lg: { padding: space.gap * 1.5 } },
   },
   defaults: { tone: 'neutral', size: 'md' },
 });
 
-interface StatCardProps extends Slots<'footer'> {
+// Variante de texto: `for: 'text'` checa as props contra o Text (fontSize, minSize…).
+const value = createVariants({
+  for: 'text',
+  base: { fontWeight: 'bold' },
+  variants: { size: { md: { fontSize: font.title }, lg: { fontSize: font.title * 1.4, minSize: font.title } } },
+  defaults: { size: 'md' },
+});
+
+export interface StatCardProps extends Slots<'footer'> {
   readonly label: string;
   readonly value: string;
   readonly tone?: 'neutral' | 'strong';
-  readonly size?: Responsive<'md' | 'lg'>;   // { base: 'md', tall: 'lg' } funciona
+  readonly size?: Responsive<'md' | 'lg'>;
 }
 
-export const StatCard = defineComponent<StatCardProps>(
+export const StatCard = defineComponent(
   {
-    name: 'StatCard',          // vai no path: "Slide > StatCard[0] > Text"
-    ds: 'meu-ds',
-    catalog: [                 // casos do catálogo (props de exemplo)
-      { name: 'neutro', props: { label: 'Receita', value: '52,4' } },
+    name: 'StatCard',
+    guide: '`<StatCard label value tone? size? footer? />` — um número com rótulo. `tone`: neutral | strong; `size`: md | lg (responsivo: `{ base: "md", tall: "lg" }`); `footer` é um slot.',
+    catalog: [
+      { name: 'neutro', props: { label: 'Receita (R$ mi)', value: '52,4' } },
       { name: 'forte-lg', props: { label: 'NPS', value: '62', tone: 'strong', size: 'lg' } },
     ],
   },
-  ({ label, value, tone, size, footer }) => (
-    <Box {...box({ tone, size })} gap={4}>
-      <Text fontSize={tokens.font.small}>{label}</Text>
-      <Text fontSize={tokens.font.title} fontWeight="bold">{value}</Text>
+  ({ label, value: shown, tone, size, footer }: StatCardProps) => (
+    <Box {...card({ tone, size })}>
+      <Text fontSize={font.small}>{label}</Text>
+      <Text {...value({ size })}>{shown}</Text>
       {slot(footer)}
     </Box>
   ),
 );
 ```
 
-- `defineComponent(meta, fn, defaults?)`: `meta.name` é o nome no path e o que as regras comparam; `defaults` preenchem props ausentes.
-- `createVariants`: escolha → props CSS; ordem `base` < variantes; escolha responsiva vira props responsivas. Espalhe com `{...box({ tone, size })}` e escreva depois o que muda. Breakpoints: `base` (sempre), `tall` (slides mais altos: 4:3, 16:10) e `wide` (o preset 960×540); `{ base: 'md', tall: 'lg' }` só muda em 4:3/16:10.
-- `Slots<'header' | 'body'>` e `slot(valor, padrão?)`: áreas nomeadas que recebem qualquer elemento; `filledSlots(props, nomes)` diz quais vieram.
-- Um componente que **preenche o corpo** (`flex={1}`) leva `fill: true` no caso do catálogo.
-- Layout de slide = componente que devolve `<Slide>` (filho direto de `<Deck>`); fica fora do catálogo (o catálogo renderiza o componente dentro de um slide).
+- **`createVariants`**: escolha → props CSS (`base` < variantes; espalhe com `{...card({ tone, size })}` e escreva depois o que muda). As props são checadas contra a primitiva-alvo (`for`: `'box'` por padrão, `'text'`, `'image'`, `'shape'`): um nome CSS errado, um valor do tipo errado, uma opção ou um padrão inexistentes **não compilam**. Escolha responsiva vira prop responsiva. Breakpoints: `base` (sempre), `tall` (4:3 e 16:10), `wide` (960×540).
+- **`defineComponent(meta, fn, defaults?)`**: `meta.name` vai no path dos diagnósticos (`Slide > StatCard[0] > Text`) e é o que as regras comparam. `catalog` e `defaults` são tipados pelas props do componente. `guide` (markdown) vira a seção do componente no guia do MCP e na skill.
+- **Slots**: `Slots<'footer' | 'header'>` declara as áreas; `slot(valor, padrão?)` desenha; `filledSlots(props, nomes)` diz quais vieram.
+- **Catálogo**: um caso que preenche o corpo (`flex={1}`) leva `fill: true`. Um layout de slide (componente que devolve `<Slide>`) fica fora do catálogo.
 
-## 3. Regras de lint
+## 4. Regras de lint
 
 ```ts
-import { colorsFromTokens, defineRule, fontsFromTheme, maxChildren, onlyOnSlide } from '@pptsx/ds-kit';
+// arquivo: rules.ts
+import { colorsFromTokens, defineRule, maxChildren } from '@pptsx/ds-kit';
+import { tokens } from './tokens.ts';
 
 export const rules = [
-  colorsFromTokens('meu-ds/cores', tokens),             // cor pintada fora de tokens.color
-  maxChildren('meu-ds/grade-max-3', 'StatGrid', 3),     // componente com mais de 3 filhos
-  onlyOnSlide('meu-ds/hero-no-inicio', 'Hero', 1),      // componente só no slide 1
-  defineRule('meu-ds/quote-curta', 'warning', (node, ctx) =>
-    ctx.component?.name === 'Quote' && node.kind === 'box' && node.children.length > 2 ? [{ message: 'Quote tem texto e autor, nada mais.' }] : []),
+  colorsFromTokens('minha-marca/cores', tokens),
+  maxChildren('minha-marca/grade-max-4', 'StatGrid', 4),
+  defineRule('minha-marca/statcard-curto', 'warning', (node, ctx) =>
+    ctx.component?.name === 'StatCard' && node.kind === 'box' && node.children.length > 3 ? [{ message: 'StatCard tem rótulo, valor e um rodapé; nada mais.' }] : []),
 ];
 ```
 
-Uma regra roda em cada slide e nó resolvido, em cada tamanho: `node` (com `css`, `props`, `path`, `children`), `ctx.component` (o meta do componente que gerou o nó; só o nó raiz dele), `ctx.slide` (slide do autor, base 1), `ctx.parent`, `ctx.theme`. Ela devolve uma lista de `{ message, severity?, path? }` (padrões: a severidade da regra e o path do nó). Prefixe o id com o nome do DS.
+Prontas (todas com `severity` opcional no fim, padrão `'warning'`): `colorsFromTokens(id, tokens)` (cor pintada fora de `tokens.color`; inclusive o preto padrão do texto, então dê `color` no componente ou no Slide), `fontsFromTheme(id, theme)` (`fontFamily` fora das fontes do tema; o tamanho não conta), `maxChildren(id, componente, máximo)` e `onlyOnSlide(id, componente, slide)`; ex.: `maxChildren('x/max-4', 'MetricRow', 4, 'error')`. Uma regra roda em cada slide e nó resolvido, em cada tamanho: `node` (`css`, `props`, `path`, `children`), `ctx.component` (o meta do componente que gerou o nó), `ctx.slide`, `ctx.parent`, `ctx.theme`. Ela devolve `{ message, severity?, path? }[]`. Prefixe o id com o nome do DS.
 
-## 4. O manifesto
+## 5. O manifesto
 
 ```ts
-// ds.ts
+// arquivo: ds.ts
 import { componentGuides, createDs } from '@pptsx/ds-kit';
-const components = [StatCard, Hero, Quote];   // todos criados com defineComponent
+import { StatCard } from './components/StatCard.tsx';
+import { rules } from './rules.ts';
+import { theme } from './theme.ts';
+
+const components = [StatCard];
+
 export const ds = createDs({
-  name: 'meu-ds', version: '0.1.0',
+  name: 'minha-marca',
+  version: '0.1.0',
   components,
-  theme, rules,
-  guide: [{ title: 'Visão geral', markdown: '…' }, ...componentGuides(components)],  // o guia do MCP (uma seção por parte)
+  theme,
+  rules,
+  guide: [{ title: 'Visão geral', markdown: 'Números grandes com `StatCard`; cores só dos tokens.' }, ...componentGuides(components)],
 });
+
 export default ds;
 ```
 
-`ds.warnings` traz os avisos de montagem (contraste). Sem `guide`, o guia junta os `meta.guide` dos componentes (`componentGuides` devolve essas seções para somar às suas); sem `schema`, ele sai dos casos do catálogo e dos `defaults`. **Schema completo das props** (para `schema({ source })` no MCP): gere uma vez por script, não a cada carga — `schemaOf(caminhoAbsoluto, ['StatCard', …])` lê os tipos (API do TypeScript 5/6, usa o `tsconfig.json` mais próximo) e devolve o objeto; grave-o num `.ts` (`export const PROPS_SCHEMA = {…}`) e passe `schema: PROPS_SCHEMA` ao `createDs`.
+`createDs` liga tudo: as regras entram no `pptsx lint`, o guia no `guide({ source: 'minha-marca' })` do MCP e o schema no `schema({ source })`. Sem `guide`, ele junta os `meta.guide`; sem `schema`, monta um a partir dos casos do catálogo e dos `defaults`. Para os tipos completos, gere uma vez com `schemaOf(caminho, ['StatCard'])` (API do TypeScript 5/6) e passe `schema`. `ds.warnings` traz os avisos de montagem (contraste).
 
-## 5. Usar, conferir e publicar
+## 6. Usar num deck
 
-- **Config** (`pptsx.config.ts`): `defineConfig({ ds: [ds], theme })` — as regras entram no `pptsx lint` e o tema no arquivo. Vale a config da pasta do deck ou a mais próxima acima dela (sem nenhuma, a do diretório de onde o comando roda).
-- **Deck**: um arquivo que exporta `export default defineDeck((ctx) => <Deck>…</Deck>)` (`defineDeck` de `'pptsx'`; o `<Deck>` direto não serve). Build: `node packages/pptsx/bin/pptsx.mjs build caminho/deck.tsx --size 16x9,4x3 --out dist/meu-ds --json` (exit 1 só com `error`).
-- **Lint**: `node packages/pptsx/bin/pptsx.mjs lint caminho/deck.tsx` (regras do núcleo + as do DS da config).
-- **Catálogo**: `node packages/ds-kit/bin/pptsx-ds.mjs catalog caminho/ds.ts --out dist/catalogo --fixtures caminho/fixtures` grava um PNG por caso, um overview por componente e `fixtures/<Componente>.json`; `--check` compara com as fixtures (±1 pt) — o contrato visual do DS.
-- **MCP**: `pptsx-mcp --ds caminho/ds.ts` (ou o `ds` da config) — `guide({ source: 'meu-ds' })` e `schema({ source: 'meu-ds' })`. No repo, para testar: `npx tsx packages/pptsx/tools/mcp/call.ts guide '{"source":"meu-ds"}' dist/mcp-img --ds ./caminho/ds.ts`.
+```ts
+// arquivo: pptsx.config.ts
+import { defineConfig } from 'pptsx';
+import { ds } from './ds.ts';
 
-Armadilhas: cor que não está nos tokens aparece na regra de cores (inclusive o preto padrão do texto: dê `color` no componente ou no Slide); `meta.name` diferente do nome usado nas regras faz a regra nunca disparar; caso de catálogo sem `fill` mostra o componente na largura toda e na altura do conteúdo (um `flex={1}` não estica nem encolhe); borda por lado precisa de estilo — `borderLeft="6px solid #E63946"`, não só `borderLeftWidth`/`borderLeftColor` (o build avisa).
+export default defineConfig({ ds: [ds], theme: ds.theme });
+```
+
+```tsx
+// arquivo: deck.tsx
+import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
+import { StatCard } from './components/StatCard.tsx';
+import { tokens } from './tokens.ts';
+
+const { color, font, space } = tokens;
+
+export default defineDeck(() => (
+  <Deck>
+    <Slide padding={space.page} gap={space.gap} backgroundColor={color.paper} color={color.ink}>
+      <Text fontSize={font.title} fontWeight="bold">Resultados</Text>
+      <Box display="grid" gridTemplateColumns={{ base: 'repeat(2, minmax(0, 1fr))', tall: 'minmax(0, 1fr)' }} gap={space.gap}>
+        <StatCard label="Receita (R$ mi)" value="52,4" />
+        <StatCard label="NPS" value="62" tone="strong" size={{ base: 'md', tall: 'lg' }} footer={<Text fontSize={font.small}>+4 pts</Text>} />
+      </Box>
+    </Slide>
+  </Deck>
+));
+```
+
+A config vale para os decks da pasta dela e das de baixo (sem nenhuma, a do diretório de onde o comando roda). O deck exporta `export default defineDeck(…)` (`<Deck>` direto não serve). `npx pptsx init deck --ds <pacote|caminho>` gera um deck assim, com um slide por componente.
+
+## 7. Conferir
+
+- **Build:** `npx pptsx build deck.tsx --size 16x9,4x3` (exit 1 só com `error`).
+- **Lint:** `npx pptsx lint deck.tsx` — as regras do núcleo e as do DS da config. Sai com 1 se houver `error` ou `warning` (só `info` dá 0).
+- **Catálogo:** `npx pptsx-ds catalog ds.ts --out dist/catalog --fixtures fixtures --pptx` grava um PNG por caso, um overview por componente, `fixtures/<Componente>.json` e um `.pptx` por componente e tamanho (um slide por caso, para abrir no PowerPoint/Keynote). Com `--check`, compara com as fixtures (±1 pt): é o contrato visual do DS. O slide do catálogo é branco: um componente feito para fundo escuro declara o próprio `backgroundColor` (ou o caso usa `fill: true` dentro de um componente que o pinte).
+- **MCP:** `pptsx-mcp --ds ./ds.ts` (ou o `ds` da config do deck): `guide({ source: 'minha-marca' })`, `schema({ source: 'minha-marca' })` e `lint({ deck })`.
+
+## 8. Publicar
+
+- `package.json` do DS: `peerDependencies` com `pptsx` e `@pptsx/ds-kit`, `exports` para o JS compilado (`tsc` com `rewriteRelativeImportExtensions`), como o `@pptsx/ds-base`.
+- **Skill para agentes:** `npx pptsx-ds skill ds.ts --out skill/` gera a skill `pptsx-<pacote>` para Claude e Copilot (SKILL.md, `references/ds.md` com cada componente e regra, a config que registra o DS e o script que roda o pptsx).
+
+**Armadilhas:** um `meta.name` diferente do nome usado nas regras faz a regra nunca disparar. Um caso de catálogo sem `fill` mostra o componente na largura toda e na altura do conteúdo. Uma borda por lado precisa de estilo (`borderLeft="6px solid #E63946"`, não só `borderLeftWidth`); o build avisa.

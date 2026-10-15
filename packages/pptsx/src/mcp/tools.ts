@@ -71,7 +71,8 @@ const reportOf = (diagnostics: readonly Diagnostic[], extra: Readonly<Record<str
 export const buildTool = async (input: BuildInput, ctx: McpContext): Promise<ToolResult> => {
   try {
     const deckPath = resolve(ctx.cwd, input.deck);
-    const out = resolve(ctx.cwd, input.out ?? 'dist');
+    // Padrão ao lado do deck: dois deck.tsx em pastas diferentes não se sobrescrevem (agente virgem do M18-9).
+    const out = input.out === undefined ? resolve(dirname(deckPath), 'dist') : resolve(ctx.cwd, input.out);
     const args = parseCli(argvOf(deckPath, input, out, true), ctx.cwd);
     const outcome = await buildOnce(args, configDirOf(deckPath, ctx.cwd), { importModule: ctx.importModule ?? defaultImportModule }, true);
     const overviews = outcome.files.filter((file) => file.endsWith('.overview.png'));

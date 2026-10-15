@@ -207,10 +207,10 @@ export const initDs = (dir: string, options: DsInitOptions & { readonly force?: 
     written,
     kept,
     next: [
-      `npx pptsx init --ds ${spec}          # um deck que usa o DS`,
+      `npx pptsx init deck --ds ${spec}     # um deck (pasta deck/) que usa o DS`,
       `npx pptsx-ds catalog ${spec}/ds.ts --out dist/catalog --fixtures ${spec}/fixtures --pptx`,
-      'npx pptsx build deck.tsx --size 16x9,4x3',
-      'npx pptsx lint deck.tsx',
+      'npx pptsx build deck/deck.tsx --size 16x9,4x3',
+      'npx pptsx lint deck/deck.tsx',
     ],
   };
 };

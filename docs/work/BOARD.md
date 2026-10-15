@@ -129,7 +129,17 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M17 | M17-3 | @pptsx/ds-base extraído só pela API pública: 17 decks com os mesmos frames (±1 pt), catálogo com fixtures, regras de marca no lint | ✅ |
 | M17 | M17-4 | núcleo sem marca: exemplos só de primitivas, guia §5 sobre como um DS se liga, README com a topologia | ✅ |
 | M17 | M17-5 | DS de terceiro (Aurora) pelo agente virgem só com o guia do kit (2 builds); correções que ele achou (config da pasta do deck, borda sem estilo avisa, catálogo sem colapso); gate: pptsx 0.7.0, ds-kit/ds-base 0.1.0 | ✅ |
-| M18 | M18-1…9 | variantes/slots tipados, schema automático + MCP lint, catálogo --pptx no Keynote, pptsx-ds init e init --ds, CI matriz + test:package dos 3 + provenance, núcleo 1.0 sem aliases, bundle de arquivo único (secundário), skill para Claude e Copilot/VS Code (`pptsx skill`, `pptsx-ds skill`), guia do kit + agentes virgens + VALIDACAO-DONO.md (plano em M18.md) | ⬜ |
+| M18 | M18-1 | variantes tipadas pela primitiva-alvo, catalog/defaults tipados; KpiCard sem `as` | ✅ |
+| M18 | M18-2 | schema e guia automáticos no createDs, `lint` no MCP, DS descoberto pela config do deck, JSON Schema 2020-12 | ✅ |
+| M18 | M18-3 | catálogo em .pptx (fragmentSlide), keynote-export de pasta; catálogo do ds-base conferido no Keynote | ✅ |
+| M18 | M18-4 | `pptsx-ds init`, `pptsx init --ds`, tsconfig.base do kit; provado fora do repo com tarballs | ✅ |
+| M18 | M18-5 | bins sem "./" (o npm 11 os removia), publish-check, test:package nos 3, THIRD_PARTY, CI matriz SO × Node, workflow de publicação | ✅ (matriz no GitHub: dono) |
+| M18 | M18-6 | núcleo 1.0 sem aliases (ResolveError com a troca), `lint --from 0.x`, legacy migrado com as mesmas fixtures | ✅ |
+| M18 | M18-7 | bundle de arquivo único `pptsx.mjs` (resvg-wasm, sucrase), paridade em 27 decks | ✅ |
+| M18 | M18-8 | `pptsx skill` / `pptsx-ds skill` (Claude e Copilot), agente virgem no Claude Code em 1 build | ✅ (Copilot: dono) |
+| M18 | M18-9 | README do kit reescrito e testado, agentes virgens DS (1 build) e MCP (1 build), VALIDACAO-DONO.md; pptsx 1.0.0, ds-kit/ds-base 0.2.0 | ✅ (tag e publicação: dono) |
+| M18-9 | Aviso de contraste do ds-base agora visível no catálogo: `accent4` (#E8EEFC, fundo suave) sobre `light1` a 1,16:1 | 1.x: tirar o fundo suave dos acentos do tema (vira `light2` ou fica só nos tokens) |
+| M18-9 | Agente DS: slot vazio dentro de um Box próprio deixa o gap; layout do caso "sem autor" com espaço sobrando | aceito: `slot()` sem valor não gera nó; o espaço é do Box do autor |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
 

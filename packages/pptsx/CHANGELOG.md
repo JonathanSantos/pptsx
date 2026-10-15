@@ -4,7 +4,7 @@ Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Ve
 
 ## 1.0.0 — M18: redondo antes de liberar
 
-A versão sai no gate do M18, depois da validação do dono no PowerPoint (gráficos, tema, layouts, notas).
+Versão do gate do M18. A publicação (tag `v1.0.0`) espera a lista do dono em `docs/work/VALIDACAO-DONO.md` (PowerPoint, Google Slides, CI em matriz, `repository` e `private`).
 
 ### Mudanças incompatíveis
 

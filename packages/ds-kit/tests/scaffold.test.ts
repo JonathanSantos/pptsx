@@ -53,7 +53,7 @@ describe('pptsx-ds init', () => {
     const dir = repoDir();
     const out = execFileSync('node', [bin, 'init', dir], { encoding: 'utf8' });
     expect(out).toContain('criado  components/Card.tsx');
-    expect(out).toContain('pptsx init --ds');
+    expect(out).toContain('pptsx init deck --ds');
     expect(() => tsc(['--noEmit', '-p', dir])).not.toThrow();
     const catalogOut = execFileSync('node', [bin, 'catalog', join(dir, 'ds.ts'), '--out', join(dir, 'dist'), '--fixtures', join(dir, 'fixtures'), '--pptx'], { encoding: 'utf8' });
     expect(catalogOut).toContain('1 componentes, 4 renderizações');

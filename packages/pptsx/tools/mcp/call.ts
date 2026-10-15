@@ -10,12 +10,19 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 const [tool, rawArgs = '{}', imageDir = 'dist/mcp-images', ...serverArgs] = process.argv.slice(2);
 if (tool === undefined) {
-  console.error("uso: npx tsx tools/mcp/call.ts <build|diagnose|preview|init|guide|schema> '<json>' [pasta]");
+  console.error("uso: npx tsx tools/mcp/call.ts <list|build|diagnose|preview|init|guide|schema|lint> '<json>' [pasta]");
   process.exit(2);
 }
 const bin = resolve(import.meta.dirname, '../../bin/pptsx-mcp.mjs');
 const client = new Client({ name: 'pptsx-call', version: '1' });
 await client.connect(new StdioClientTransport({ command: process.execPath, args: [bin, ...serverArgs], stderr: 'inherit' }));
+// `list`: as ferramentas com os argumentos (o inputSchema que um cliente MCP de verdade mostra ao modelo).
+if (tool === 'list') {
+  const { tools } = await client.listTools();
+  tools.forEach((item) => console.log(`${item.name}: ${item.description ?? ''}\n  argumentos: ${JSON.stringify(item.inputSchema.properties ?? {})}\n  obrigatórios: ${JSON.stringify(item.inputSchema.required ?? [])}\n`));
+  await client.close();
+  process.exit(0);
+}
 const result = (await client.callTool({ name: tool, arguments: JSON.parse(rawArgs) as Record<string, unknown> })) as {
   readonly content: readonly { readonly type: string; readonly text?: string; readonly data?: string }[];
   readonly isError?: boolean;

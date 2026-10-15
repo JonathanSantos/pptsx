@@ -1,6 +1,6 @@
 {
   "name": "@pptsx/ds-base",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Design system de exemplo sobre o pptsx: tokens, tema, layouts, componentes, regras de marca e galeria.",
   "license": "MIT",
   "type": "module",
@@ -34,8 +34,8 @@
     "test:package": "vitest run tests/package --config vitest.package.config.ts"
   },
   "peerDependencies": {
-    "pptsx": ">=0.7.0",
-    "@pptsx/ds-kit": ">=0.1.0"
+    "pptsx": ">=1.0.0",
+    "@pptsx/ds-kit": ">=0.2.0"
   },
   "engines": {
     "node": ">=20"

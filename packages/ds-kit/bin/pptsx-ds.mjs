@@ -72,6 +72,8 @@ if (command === 'skill') {
   console.log(`  .claude/skills/${result.name}/ e .github/skills/${result.name}/ (SKILL.md, references/ds.md, scripts/pptsx.mjs), .vscode/mcp.json, .mcp.json`);
   process.exit(0);
 }
+// Avisos de montagem (contraste do tema): o catálogo é onde o autor do DS olha.
+(ds.warnings ?? []).forEach((warning) => console.error(`▲ ${ds.name}: ${warning}`));
 const out = values.out === undefined ? undefined : resolve(values.out);
 const result = await kit.catalog({
   ds,

@@ -23,7 +23,7 @@ export const createPptsxMcpServer = (ctx: McpContext, version: string): McpServe
       sizes: SIZES,
       debug: z.boolean().optional().describe('Contornos e estouros desenhados no PNG.'),
       lineBreaks: z.enum(['forced', 'auto']).optional(),
-      out: z.string().optional().describe('Pasta de saída. Padrão: dist/ no diretório do servidor.'),
+      out: z.string().optional().describe('Pasta de saída. Padrão: dist/ na pasta do deck. Os arquivos saem como <nome-do-deck>.<tamanho>.pptx, .overview.png e um PNG por slide.'),
     },
   }, async (input) => asResult(await buildTool(input, ctx)));
   server.registerTool('diagnose', {
