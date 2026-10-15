@@ -7,8 +7,9 @@ export { themeOf, checkTheme, contrastOf, AA_TEXT, AA_LARGE, type ThemeMap } fro
 export { createVariants, type PropsFor, type VariantConfig, type VariantDefs, type VariantProps, type VariantSelection, type VariantTarget } from './variants.ts';
 export { slot, filledSlots, type Slots } from './slots.ts';
 export { defineRule, colorsFromTokens, fontsFromTheme, maxChildren, onlyOnSlide, paintedColorsOf } from './rules.ts';
-export { createDs, guideOf, metaOfComponent, schemaFromMeta, type CatalogCase, type Ds, type DsInput, type GuidePart } from './ds.ts';
+export { createDs, componentGuides, guideOf, metaOfComponent, schemaFromMeta, type CatalogCase, type Ds, type DsInput, type GuidePart } from './ds.ts';
 export { catalog, compareFrames, type CatalogDiff, type CatalogOptions, type CatalogResult, type ComponentFixture, type FrameFixture } from './catalog.ts';
 export { schemaOf, type ComponentSchema } from './schema.ts';
+export { dsNameOf, dsScaffoldFiles, initDs, tsconfigExtendsFor, type DsInitOptions, type DsInitResult, type DsScaffoldFile } from './scaffold.ts';
 // Do núcleo, para o DS importar tudo de um lugar.
 export { defineComponent, defineDs, defineLayout, type ComponentMeta, type DsManifest, type LintRule } from 'pptsx';

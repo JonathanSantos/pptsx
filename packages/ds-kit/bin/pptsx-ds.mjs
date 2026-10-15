@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// pptsx-ds: comandos do @pptsx/ds-kit. Hoje: `catalog <módulo-do-ds> [--out dir] [--size 16x9,4x3] [--check] [--fixtures dir]`.
+// pptsx-ds: comandos do @pptsx/ds-kit. `init <pasta> [--name] [--force]` cria um DS novo;
+// `catalog <módulo-do-ds> [--out dir] [--size 16x9,4x3] [--check] [--fixtures dir] [--pptx]` renderiza os casos.
 // O módulo do DS é .ts/.tsx (export default createDs(...)): o tsx transpila com o tsconfig mais próximo dele.
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -7,7 +8,10 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { register } from 'tsx/esm/api';
 
-const USAGE = 'uso: pptsx-ds catalog <ds.ts> [--out dist/catalog] [--size 16x9,4x3] [--check] [--fixtures dir] [--pptx]';
+const USAGE = [
+  'uso: pptsx-ds init <pasta> [--name nome] [--force]',
+  '     pptsx-ds catalog <ds.ts> [--out dist/catalog] [--size 16x9,4x3] [--check] [--fixtures dir] [--pptx]',
+].join('\n');
 
 const nearestTsconfig = (dir) => {
   const file = join(dir, 'tsconfig.json');
@@ -19,18 +23,36 @@ const nearestTsconfig = (dir) => {
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
   allowPositionals: true,
-  options: { out: { type: 'string' }, size: { type: 'string' }, check: { type: 'boolean', default: false }, fixtures: { type: 'string' }, pptx: { type: 'boolean', default: false } },
+  options: {
+    out: { type: 'string' }, size: { type: 'string' }, check: { type: 'boolean', default: false }, fixtures: { type: 'string' }, pptx: { type: 'boolean', default: false },
+    name: { type: 'string' }, force: { type: 'boolean', default: false },
+  },
 });
 const [command, target] = positionals;
-if (command !== 'catalog' || target === undefined) {
+if (!['catalog', 'init'].includes(command) || target === undefined) {
   console.error(USAGE);
   process.exit(2);
 }
+const inRepo = existsSync(fileURLToPath(new URL('../src/index.ts', import.meta.url)));
+const kitUrl = new URL(inRepo ? '../src/index.ts' : '../dist/index.js', import.meta.url).href;
+
+if (command === 'init') {
+  // Só o scaffold (sem o núcleo): o init funciona antes de qualquer tsconfig existir.
+  const api = register({ namespace: 'pptsx-ds' });
+  const { initDs } = await api.import(new URL(inRepo ? '../src/scaffold.ts' : '../dist/scaffold.js', import.meta.url).href, import.meta.url);
+  const result = initDs(target, { force: values.force, ...(values.name === undefined ? {} : { name: values.name }) });
+  console.log(`DS ${result.name} em ${result.dir}:`);
+  result.written.forEach((path) => console.log(`  criado  ${path}`));
+  result.kept.forEach((path) => console.log(`  mantido ${path} (use --force para sobrescrever)`));
+  console.log('\nPróximos passos:');
+  result.next.forEach((step) => console.log(`  ${step}`));
+  process.exit(0);
+}
+
 const file = resolve(target);
 const tsconfig = nearestTsconfig(dirname(file));
 const api = register({ namespace: 'pptsx-ds', ...(tsconfig ? { tsconfig } : {}) });
-const inRepo = existsSync(fileURLToPath(new URL('../src/index.ts', import.meta.url)));
-const kit = await api.import(new URL(inRepo ? '../src/index.ts' : '../dist/index.js', import.meta.url).href, import.meta.url);
+const kit = await api.import(kitUrl, import.meta.url);
 const module = await api.import(pathToFileURL(file).href, import.meta.url);
 const ds = module.default ?? module.ds;
 if (!ds || !Array.isArray(ds.implementations)) {

@@ -80,9 +80,15 @@ export const schemaFromMeta = (meta: ComponentMeta): Readonly<Record<string, unk
   return { type: 'object', properties, required, 'x-source': 'catálogo e defaults (sem os tipos; para os tipos, schemaOf)' };
 };
 
+const guidePartsOf = (metas: readonly ComponentMeta[]): readonly GuidePart[] =>
+  metas.flatMap((meta): readonly GuidePart[] => (typeof meta.guide === 'string' ? [{ title: meta.displayName ?? meta.name, markdown: meta.guide }] : []));
+
+/** As seções do guia que os componentes trazem (`meta.guide`): para juntar com partes escritas à mão. */
+export const componentGuides = (components: readonly Component[]): readonly GuidePart[] => guidePartsOf(components.map(metaOfComponent));
+
 /** Guia montado dos `meta.guide` (markdown) dos componentes, uma seção por componente. */
 const guideFromMetas = (name: string, metas: readonly ComponentMeta[]): string | undefined => {
-  const parts = metas.flatMap((meta): readonly GuidePart[] => (typeof meta.guide === 'string' ? [{ title: meta.displayName ?? meta.name, markdown: meta.guide }] : []));
+  const parts = guidePartsOf(metas);
   return parts.length === 0 ? undefined : guideOf(name, parts);
 };
 

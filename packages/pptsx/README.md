@@ -116,6 +116,8 @@ npx pptsx init                               # deck.tsx, tsconfig.json, pptsx.co
 npx pptsx build deck.tsx --size 16x9,4x3     # .pptx + PNG por slide + overview + diagnósticos
 ```
 
+Com um design system: `npx pptsx init --ds @marca/ds` (ou um caminho, `--ds ../meu-ds`) gera um deck que importa os componentes do DS (um slide por componente, com as props do primeiro caso do catálogo) e uma config que registra o DS e o tema.
+
 Um deck é uma função que devolve `<Deck>` com `<Slide>`s. Contêineres são `Box`, todo texto fica dentro de `Text`, e ninguém informa x/y.
 
 <table>
@@ -863,7 +865,7 @@ O deck completo é [`ds-base/examples/arquivo/arquivo.tsx`](../ds-base/examples/
 
 ```
 pptsx build <deck.tsx> [flags]
-pptsx init [dir] [--force] [--json]
+pptsx init [dir] [--ds <pacote|caminho>] [--force] [--json]
 pptsx preview <deck.tsx> --serve [--port 4321] [--size 16x9,4x3,wide]
 pptsx lint <deck.tsx> [--fix] [--json] [--size 16x9,4x3]
 ```

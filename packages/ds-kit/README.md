@@ -4,27 +4,17 @@ Ferramentas para criar um **design system (DS)** sobre o [pptsx](../pptsx/README
 
 ## Montagem
 
-Projeto próprio: `npm install pptsx @pptsx/ds-kit`. Dentro deste monorepo, numa pasta nova (ex.: `examples/meu-ds/`), crie um `tsconfig.json` que aponta os pacotes para o fonte (sem build):
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext", "strict": true,
-    "allowImportingTsExtensions": true, "noEmit": true, "skipLibCheck": true,
-    "jsx": "react-jsx", "jsxImportSource": "pptsx",
-    "paths": {
-      "pptsx": ["../../packages/pptsx/src/index.ts"],
-      "pptsx/jsx-runtime": ["../../packages/pptsx/src/jsx/jsx-runtime.ts"],
-      "pptsx/jsx-dev-runtime": ["../../packages/pptsx/src/jsx/jsx-dev-runtime.ts"],
-      "@pptsx/ds-kit": ["../../packages/ds-kit/src/index.ts"]
-    }
-  }
-}
+```sh
+npm install pptsx @pptsx/ds-kit
+npx pptsx-ds init meu-ds            # tokens, tema, um Card (variante, slot, catálogo, guia), regras, ds.ts, config
+npx pptsx init deck --ds ./meu-ds   # um deck que importa os componentes do DS
 ```
+
+O `tsconfig.json` gerado só **estende** o do kit (`"extends": "@pptsx/ds-kit/tsconfig.base.json"`: NodeNext, strict, JSX do pptsx); dentro deste monorepo ele estende o `tsconfig.monorepo.json` da raiz, cujos `paths` apontam os pacotes para o fonte. Arquivo existente não é sobrescrito sem `--force`; `--name` troca o nome do DS (padrão: o da pasta).
 
 Arquivos `.ts`/`.tsx`, imports relativos com extensão (`'./tokens.ts'`). Comandos rodam na raiz do repositório.
 
-**Primitivas e props CSS** (`Deck`, `Slide`, `Box`, `Text`, `Image`, `Shape`, `Chart`, `Table`…; `display`, `flex`, `gap`, `padding`, `border*`, `fontSize`…) são as do núcleo: veja o guia do agente (`packages/pptsx/docs/AGENT_GUIDE.md`, §3–§4) ou o MCP (`schema({ primitive: 'box' })`). As props que saem de `createVariants` não são checadas pelo TypeScript: use nomes CSS válidos (um nome sem de/para vira `css-not-emitted` no build).
+**Primitivas e props CSS** (`Deck`, `Slide`, `Box`, `Text`, `Image`, `Shape`, `Chart`, `Table`…; `display`, `flex`, `gap`, `padding`, `border*`, `fontSize`…) são as do núcleo: veja o guia do agente (`packages/pptsx/docs/AGENT_GUIDE.md`, §3–§4) ou o MCP (`schema({ primitive: 'box' })`). As props de `createVariants` são checadas contra a primitiva-alvo (`for: 'text'` para variantes de texto; padrão `'box'`): nome CSS errado não compila.
 
 ## 1. Tokens e tema
 
@@ -118,17 +108,18 @@ Uma regra roda em cada slide e nó resolvido, em cada tamanho: `node` (com `css`
 
 ```ts
 // ds.ts
-import { createDs } from '@pptsx/ds-kit';
+import { componentGuides, createDs } from '@pptsx/ds-kit';
+const components = [StatCard, Hero, Quote];   // todos criados com defineComponent
 export const ds = createDs({
   name: 'meu-ds', version: '0.1.0',
-  components: [StatCard, Hero, Quote],   // todos criados com defineComponent
+  components,
   theme, rules,
-  guide: [{ title: 'StatCard', markdown: 'Uso, props e armadilhas…' }],  // vira o guia do MCP (uma seção por parte)
+  guide: [{ title: 'Visão geral', markdown: '…' }, ...componentGuides(components)],  // o guia do MCP (uma seção por parte)
 });
 export default ds;
 ```
 
-`ds.warnings` traz os avisos de montagem (contraste). **Schema das props** (para `schema({ source })` no MCP): gere uma vez por script, não a cada carga — `schemaOf(caminhoAbsoluto, ['StatCard', …])` lê os tipos (API do TypeScript 5/6, usa o `tsconfig.json` mais próximo) e devolve o objeto; grave-o num `.ts` (`export const PROPS_SCHEMA = {…}`) e passe `schema: PROPS_SCHEMA` ao `createDs`.
+`ds.warnings` traz os avisos de montagem (contraste). Sem `guide`, o guia junta os `meta.guide` dos componentes (`componentGuides` devolve essas seções para somar às suas); sem `schema`, ele sai dos casos do catálogo e dos `defaults`. **Schema completo das props** (para `schema({ source })` no MCP): gere uma vez por script, não a cada carga — `schemaOf(caminhoAbsoluto, ['StatCard', …])` lê os tipos (API do TypeScript 5/6, usa o `tsconfig.json` mais próximo) e devolve o objeto; grave-o num `.ts` (`export const PROPS_SCHEMA = {…}`) e passe `schema: PROPS_SCHEMA` ao `createDs`.
 
 ## 5. Usar, conferir e publicar
 
