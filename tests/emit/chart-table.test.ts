@@ -247,7 +247,7 @@ describe('emit — Chart', () => {
 
   it('category names and values are in the chart data', async () => {
     const xml = await chartXml();
-    for (const c of BAR_DATA.categories) expect(xml).toContain(c);
+    for (const c of BAR_DATA.categories!) expect(xml).toContain(c);
     expect(xml).toContain('Receita');
     expect(xml).toContain('52.4');
   });

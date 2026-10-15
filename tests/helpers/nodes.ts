@@ -40,6 +40,7 @@ import type {
 } from '../../src/core/types.ts';
 import { DEFAULTS, tableHeaderOf, tableStyleOf } from '../../src/core/defaults.ts';
 import { boxOf, legacyCssOf } from './css.ts';
+import { tableGridOf } from '../../src/resolve/index.ts';
 
 export const SIZE_16X9: SlideSize = { name: '16x9', width: 720, height: 405 };
 export const SIZE_4X3: SlideSize = { name: '4x3', width: 720, height: 540 };
@@ -94,12 +95,19 @@ export const rDeck = (...slides: ResolvedSlide[]): ResolvedDeck => ({ slides });
 export const rChart = (props: ChartProps, path = 'Chart'): ResolvedChart => ({ kind: 'chart', path, css: legacyCssOf('chart', props), props });
 
 /** M10: Table resolvida com `rows` normalizado para string, como o resolve entrega. */
+/** M14: grade como o resolve monta (sem ícones: o env não lê arquivo). */
+const gridOf = (props: TableProps) => {
+  const { grid, headerCount } = tableGridOf(props, 'Table', { readAsset: () => '' });
+  return { grid, headerCount };
+};
+
 export const rTable = (props: TableProps, path = 'Table'): ResolvedTable => ({
   kind: 'table',
   path,
   css: legacyCssOf('table', props),
   props,
   rows: props.rows.map((row) => row.map(String)),
+  ...gridOf(props),
 });
 
 // ───────────── LayoutEnv falso ─────────────
@@ -254,6 +262,7 @@ export const pTable = (frame: Rect, props: TableProps, options: PTableOptions = 
     ...placed('table', props),
     props,
     rows: props.rows.map((row) => row.map(String)),
+    ...gridOf(props),
     frame,
     fontSize,
     columnWidths,

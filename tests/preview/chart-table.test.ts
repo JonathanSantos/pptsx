@@ -148,7 +148,7 @@ describe('chartSvg — bar', () => {
   it('bar heights are proportional to the values', () => {
     const s = svg();
     const bars = [...barsOf(s, 0), ...barsOf(s, 1)];
-    const values = [...BAR_DATA.series[0]!.values, ...BAR_DATA.series[1]!.values];
+    const values = [...BAR_DATA.series[0]!.values!, ...BAR_DATA.series[1]!.values!];
     const ratio = num(bars[0]!.attrs.height) / values[0]!;
     bars.forEach((bar, i) => {
       expect(num(bar.attrs.height) / values[i]!, `bar ${i}`).toBeCloseTo(ratio, 6 - 4);
@@ -220,12 +220,12 @@ describe('chartSvg — pie', () => {
 
   it('draws one <path> per category, colored by category', () => {
     const paths = findElements(drawn(chartSvg(pie(), {})), 'path');
-    PIE.categories.forEach((_, i) => expect(withFill(paths, chartColorOf(pie().props, i)), `slice ${i}`).toHaveLength(1));
+    PIE.categories!.forEach((_, i) => expect(withFill(paths, chartColorOf(pie().props, i)), `slice ${i}`).toHaveLength(1));
   });
 
   it('legend on by default lists categories', () => {
     const all = texts(chartSvg(pie(), {})).join('|');
-    for (const c of PIE.categories) expect(all).toContain(c);
+    for (const c of PIE.categories!) expect(all).toContain(c);
   });
 });
 

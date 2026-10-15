@@ -172,8 +172,8 @@ describe('resolve — Chart', () => {
   });
 
   it('invalid kind → error', () => {
-    expect(() => resolveAt(<Slide>{jsx(Chart, { kind: 'area', data: TWO_SERIES, grow: 1 } as never)}</Slide>)).toThrow(
-      /kind "area" inválido/,
+    expect(() => resolveAt(<Slide>{jsx(Chart, { kind: 'radar', data: TWO_SERIES, grow: 1 } as never)}</Slide>)).toThrow(
+      /kind "radar" inválido/,
     );
   });
 

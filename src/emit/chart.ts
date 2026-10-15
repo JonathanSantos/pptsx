@@ -16,7 +16,7 @@ export interface ChartSpec {
 }
 
 /** Mesmos valores de `pptx.ChartType`; aqui como literais para não depender da instância. */
-const CHART_TYPES: Readonly<Record<ChartKind, Pptx.ChartName>> = { bar: 'bar', line: 'line', pie: 'pie' };
+const CHART_TYPES: Readonly<Partial<Record<ChartKind, Pptx.ChartName>>> = { bar: 'bar', line: 'line', pie: 'pie' };
 
 /** O título usa labelSize + 2, como no preview (src/preview/chart.ts). */
 const TITLE_SIZE_DELTA = 2;
@@ -26,7 +26,7 @@ const VALUE_GRID_LINE: Pptx.ChartOptions['valGridLine'] = { color: 'DDDDDD', siz
 const MAX_LABEL_DECIMALS = 6;
 const DECIMALS_TOLERANCE = 1e-12;
 
-const DATA_LABEL_POSITIONS: Readonly<Record<ChartKind, Pptx.ChartOptions['dataLabelPosition']>> = {
+const DATA_LABEL_POSITIONS: Readonly<Partial<Record<ChartKind, Pptx.ChartOptions['dataLabelPosition']>>> = {
   bar: 'outEnd',
   line: 't',
   pie: 'bestFit',
@@ -42,7 +42,7 @@ export const decimalsOf = (value: number): number =>
 
 /** Casas decimais dos rótulos de valor: o maior número de casas entre os dados (o preview usa o mesmo). */
 export const labelDecimalsOf = (props: ChartProps): number => {
-  const values = props.data.series.flatMap((series) => series.values);
+  const values = props.data.series.flatMap((series) => series.values ?? []);
   return Math.max(0, ...values.map(decimalsOf));
 };
 
@@ -60,16 +60,16 @@ export const VALUE_AXIS_FORMAT = 'General';
 
 /** Uma cor por série (bar/line) ou por fatia (pie): com menos cores, a pizza sorteia as que faltam. */
 export const chartColorsOf = (props: ChartProps): string[] => {
-  const count = props.kind === 'pie' ? props.data.categories.length : props.data.series.length;
+  const count = props.kind === 'pie' ? (props.data.categories ?? []).length : props.data.series.length;
   return range(count).map((index) => hexOf(chartColorOf(props, index)));
 };
 
 export const chartDataOf = (props: ChartProps): Pptx.ChartSeriesData[] =>
-  props.data.series.map((series) => ({ name: series.name, labels: [...props.data.categories], values: [...series.values] }));
+  props.data.series.map((series) => ({ name: series.name, labels: [...(props.data.categories ?? [])], values: [...(series.values ?? [])] }));
 
 const axisGridOptions: Pptx.ChartOptions = { valGridLine: VALUE_GRID_LINE, catGridLine: { style: 'none' } };
 
-const KIND_OPTIONS: Readonly<Record<ChartKind, Pptx.ChartOptions>> = {
+const KIND_OPTIONS: Readonly<Partial<Record<ChartKind, Pptx.ChartOptions>>> = {
   bar: { barDir: 'col', barGapWidthPct: DEFAULTS.chart.barGapWidthPct, ...axisGridOptions },
   line: { lineSize: DEFAULTS.chart.lineSize, lineDataSymbol: 'none', ...axisGridOptions },
   pie: { showPercent: false, showLabel: false, dataNoEffects: true },
@@ -124,7 +124,7 @@ export const chartOptionsOf = (node: PositionedChart): Pptx.ChartOptions => {
 };
 
 export const chartOf = (node: PositionedChart): ChartSpec => ({
-  type: CHART_TYPES[node.props.kind],
+  type: CHART_TYPES[node.props.kind] ?? 'bar',
   data: chartDataOf(node.props),
   options: chartOptionsOf(node),
 });

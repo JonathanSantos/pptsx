@@ -104,6 +104,12 @@ export const DEFAULTS = {
     lineSize: 2,
     /** Largura da borda (pt) ao redor do gráfico; 0 = sem borda. */
     borderWidth: 0,
+    /** M14: furo do doughnut em % do diâmetro. */
+    holeSize: 50,
+    /** M14: tamanho (pt) do marcador de ponto (scatter, line/combo com markers). */
+    markerSize: 6,
+    /** M14: área preenchida com esta opacidade (0..1) no preview e no PPTX. */
+    areaOpacity: 0.85,
   },
   /** M10: tabela nativa. Células com o mesmo size; margem interna por lado; cabeçalho em negrito sem fundo. */
   table: {
@@ -318,5 +324,7 @@ export const chartColorOf = (props: ChartProps, index: number): string => {
 };
 
 /** Legenda: explícita, senão só com mais de uma série (pie sempre). */
-export const chartLegendOf = (props: ChartProps): boolean =>
-  props.legend ?? (props.kind === 'pie' || props.data.series.length > 1);
+export const chartLegendOf = (props: ChartProps): boolean => {
+  if (props.legend !== undefined) return props.legend !== false;
+  return props.kind === 'pie' || props.kind === 'doughnut' || props.data.series.length > 1;
+};

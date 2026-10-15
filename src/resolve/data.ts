@@ -4,36 +4,60 @@ import { ResolveError } from './errors.ts';
 type ChartResolvedProps = Omit<ChartProps, 'children'>;
 type TableResolvedProps = Omit<TableProps, 'children'>;
 
-const CHART_KINDS: readonly ChartKind[] = ['bar', 'line', 'pie'];
+const CHART_KINDS: readonly ChartKind[] = [
+  'bar',
+  'barH',
+  'stackedBar',
+  'stackedBarH',
+  'stackedBar100',
+  'line',
+  'area',
+  'stackedArea',
+  'pie',
+  'doughnut',
+  'scatter',
+  'combo',
+];
+
+/** Kinds que o emissor e o preview já desenham (o M14-2 libera os demais). */
+const READY_KINDS: readonly ChartKind[] = ['bar', 'line', 'pie'];
+
+const quoted = (values: readonly string[]): string => values.map((value) => `"${value}"`).join(', ');
 
 const isChartKind = (kind: unknown): kind is ChartKind => (CHART_KINDS as readonly unknown[]).includes(kind);
 
 const assertKind = (kind: unknown, path: string): void => {
-  if (isChartKind(kind)) return;
-  throw new ResolveError(`<Chart>: kind ${JSON.stringify(kind)} inválido; use "bar", "line" ou "pie"`, path);
+  if (!isChartKind(kind)) throw new ResolveError(`<Chart>: kind ${JSON.stringify(kind)} inválido; use ${quoted(CHART_KINDS)}`, path);
+  if (!READY_KINDS.includes(kind)) throw new ResolveError(`<Chart kind="${kind}"> ainda não está disponível`, path);
 };
 
+/** Pizza e anel: uma série, uma fatia por categoria. */
+const isRadial = (kind: ChartKind): boolean => kind === 'pie' || kind === 'doughnut';
+
 // JS sem tipos pode mandar data sem categories/series; erro claro em vez de TypeError lá na frente.
-const isChartData = (data: unknown): data is ChartData =>
+const isChartData = (data: unknown, kind: ChartKind): data is ChartData =>
   typeof data === 'object' &&
   data !== null &&
-  Array.isArray((data as ChartData).categories) &&
-  Array.isArray((data as ChartData).series);
+  Array.isArray((data as ChartData).series) &&
+  (kind === 'scatter' || Array.isArray((data as ChartData).categories));
 
 const assertDataShape = (props: ChartResolvedProps, path: string): void => {
-  if (isChartData(props.data)) return;
-  throw new ResolveError('<Chart> precisa de data = { categories: [...], series: [...] }', path);
+  if (isChartData(props.data, props.kind)) return;
+  const shape = props.kind === 'scatter' ? '{ series: [{ name, points: [[x, y], …] }] }' : '{ categories: [...], series: [...] }';
+  throw new ResolveError(`<Chart> precisa de data = ${shape}`, path);
 };
 
 const assertNotEmpty = (props: ChartResolvedProps, path: string): void => {
-  if (props.data.categories.length === 0) throw new ResolveError('<Chart>: data.categories precisa de ao menos uma categoria', path);
+  if (props.kind !== 'scatter' && (props.data.categories ?? []).length === 0) {
+    throw new ResolveError('<Chart>: data.categories precisa de ao menos uma categoria', path);
+  }
   if (props.data.series.length === 0) throw new ResolveError('<Chart>: data.series precisa de ao menos uma série', path);
 };
 
-const assertSingleSeriesForPie = (props: ChartResolvedProps, path: string): void => {
+const assertSingleSeriesForRadial = (props: ChartResolvedProps, path: string): void => {
   const count = props.data.series.length;
-  if (props.kind !== 'pie' || count === 1) return;
-  throw new ResolveError(`<Chart kind="pie"> aceita uma única série; recebeu ${count}`, path);
+  if (!isRadial(props.kind) || count === 1) return;
+  throw new ResolveError(`<Chart kind="${props.kind}"> aceita uma única série; recebeu ${count}`, path);
 };
 
 const assertSeriesLength = (series: ChartSeries, categories: readonly string[], path: string): void => {
@@ -45,13 +69,43 @@ const assertSeriesLength = (series: ChartSeries, categories: readonly string[], 
   );
 };
 
+const isFiniteNumber = (value: unknown): boolean => typeof value === 'number' && Number.isFinite(value);
+
 const assertFiniteValues = (series: ChartSeries, categories: readonly string[], path: string): void => {
-  const index = series.values.findIndex((value) => typeof value !== 'number' || !Number.isFinite(value));
+  const values = series.values ?? [];
+  const index = values.findIndex((value) => !isFiniteNumber(value));
   if (index === -1) return;
   throw new ResolveError(
-    `<Chart>: a série ${JSON.stringify(series.name)} tem valor não finito (${String(series.values[index])}) no índice ${index} (categoria ${JSON.stringify(categories[index])})`,
+    `<Chart>: a série ${JSON.stringify(series.name)} tem valor não finito (${String(values[index])}) no índice ${index} (categoria ${JSON.stringify(categories[index])})`,
     path,
   );
+};
+
+/** Scatter: cada série com ao menos um par [x, y] de números finitos. */
+const assertPoints = (series: ChartSeries, path: string): void => {
+  const points = series.points;
+  if (!Array.isArray(points) || points.length === 0) {
+    throw new ResolveError(`<Chart kind="scatter">: a série ${JSON.stringify(series.name)} precisa de points: [[x, y], …]`, path);
+  }
+  const bad = points.findIndex((point) => !Array.isArray(point) || point.length !== 2 || !point.every(isFiniteNumber));
+  if (bad === -1) return;
+  throw new ResolveError(`<Chart kind="scatter">: a série ${JSON.stringify(series.name)} tem um ponto inválido no índice ${bad} (use [x, y] com números)`, path);
+};
+
+/** Combo: toda série diz como é desenhada; `axis` só 'primary' | 'secondary'. */
+const assertComboSeries = (series: ChartSeries, path: string): void => {
+  if (series.as !== 'bar' && series.as !== 'line') {
+    throw new ResolveError(`<Chart kind="combo">: a série ${JSON.stringify(series.name)} precisa de as: "bar" ou "line"`, path);
+  }
+  if (series.axis !== undefined && series.axis !== 'primary' && series.axis !== 'secondary') {
+    throw new ResolveError(`<Chart kind="combo">: axis ${JSON.stringify(series.axis)} inválido na série ${JSON.stringify(series.name)}; use "primary" ou "secondary"`, path);
+  }
+};
+
+const assertHoleSize = (props: ChartResolvedProps, path: string): void => {
+  const hole = props.holeSize;
+  if (hole === undefined || (isFiniteNumber(hole) && hole >= 10 && hole <= 90)) return;
+  throw new ResolveError(`<Chart>: holeSize ${JSON.stringify(hole)} inválido; use um número de 10 a 90 (% do diâmetro)`, path);
 };
 
 /** Gráfico precisa de tamanho de fora: width/height, flex, absoluto ou a célula de um grid. */
@@ -76,8 +130,15 @@ export const assertValidChart = (props: ChartResolvedProps, path: string): void 
   assertKind(props.kind, path);
   assertDataShape(props, path);
   assertNotEmpty(props, path);
-  assertSingleSeriesForPie(props, path);
-  const { categories, series } = props.data;
+  assertSingleSeriesForRadial(props, path);
+  assertHoleSize(props, path);
+  const { series } = props.data;
+  if (props.kind === 'scatter') {
+    series.forEach((item) => assertPoints(item, path));
+    return;
+  }
+  const categories = props.data.categories ?? [];
+  if (props.kind === 'combo') series.forEach((item) => assertComboSeries(item, path));
   series.forEach((item) => assertSeriesLength(item, categories, path));
   series.forEach((item) => assertFiniteValues(item, categories, path));
 };
@@ -93,19 +154,15 @@ const assertRowsArray = (props: TableResolvedProps, path: string): void => {
 };
 
 // Linha numerada a partir de 1 (como o autor conta), sem contar o cabeçalho.
-const assertRowWidth = (row: readonly TableCellValue[], index: number, columns: number, path: string): void => {
-  const count = Array.isArray(row) ? row.length : 0;
-  if (count === columns) return;
-  throw new ResolveError(`<Table>: a linha ${index + 1} tem ${count} células para ${columns} colunas`, path);
+const assertRowArray = (row: readonly TableCellValue[], index: number, path: string): void => {
+  if (Array.isArray(row)) return;
+  throw new ResolveError(`<Table>: a linha ${index + 1} tem 0 células: cada linha é uma lista de células`, path);
 };
 
-/** Valida as props já resolvidas de uma Table; lança ResolveError no primeiro problema. */
+/** Valida as props já resolvidas de uma Table; a largura de cada linha (com merges) é do table-grid. */
 export const assertValidTable = (props: TableResolvedProps, path: string): void => {
   assertColumns(props, path);
   assertRowsArray(props, path);
-  props.rows.forEach((row, index) => assertRowWidth(row, index, props.columns.length, path));
+  props.rows.forEach((row, index) => assertRowArray(row, index, path));
 };
 
-/** Células como texto: o layout mede strings; `String(n)` é o que o autor veria no JS. */
-export const normalizeRows = (rows: TableProps['rows']): readonly (readonly string[])[] =>
-  rows.map((row) => row.map((cell) => (typeof cell === 'string' ? cell : String(cell))));

@@ -16,7 +16,8 @@ import type {
 } from '../core/types.ts';
 import { Box, primitiveName } from '../primitives/index.ts';
 import { jsx } from '../jsx/jsx-runtime.ts';
-import { assertChartSize, assertValidChart, assertValidTable, normalizeRows } from './data.ts';
+import { assertChartSize, assertValidChart, assertValidTable } from './data.ts';
+import { tableGridOf } from './table-grid.ts';
 import { ROOT_TEXT } from './draft.ts';
 import type { InheritedText } from './draft.ts';
 import { InvalidPropError, ResolveError } from './errors.ts';
@@ -167,11 +168,12 @@ const resolveSlideNumber = (item: ExpandedPrimitive, path: string, n: Normalized
   return { kind: 'text', path, props: { ...textProps, nowrap: true }, css: n.css, content: sample, runs, slideNumber: { format } };
 };
 
-const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
+const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized, env: ResolveEnv): ResolvedNode => {
   assertNoChildren(item, path);
   const props = legacyPropsOf('table', n);
   assertValidTable(props, path);
-  return { kind: 'table', path, props, css: n.css, rows: normalizeRows(props.rows) };
+  const { grid, headerCount, rows } = tableGridOf(props, path, env);
+  return { kind: 'table', path, props, css: n.css, rows, grid, headerCount };
 };
 
 /** Nós de um contêiner e os conectores declarados neles (de qualquer profundidade). */
@@ -219,7 +221,7 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, p
     case 'chart':
       return resolveChart(item, path, n, parent);
     case 'table':
-      return resolveTable(item, path, n);
+      return resolveTable(item, path, n, ctx.env);
     case 'path':
       return resolvePath(item, path, n);
     case 'icon':

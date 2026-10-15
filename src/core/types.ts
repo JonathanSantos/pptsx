@@ -434,18 +434,67 @@ export interface ConnectorProps {
 
 // ───────────────────────── Chart e Table (M10) ─────────────────────────
 
-export type ChartKind = 'bar' | 'line' | 'pie';
+/**
+ * M14: um `Chart`, vários kinds. Empilhados são kinds próprios (mudam dados válidos e o desenho);
+ * `combo` mistura barras e linhas por série (`series[i].as`), com eixo secundário opcional.
+ */
+export type ChartKind =
+  | 'bar'
+  | 'barH'
+  | 'stackedBar'
+  | 'stackedBarH'
+  | 'stackedBar100'
+  | 'line'
+  | 'area'
+  | 'stackedArea'
+  | 'pie'
+  | 'doughnut'
+  | 'scatter'
+  | 'combo';
 
 export interface ChartSeries {
   readonly name: string;
-  /** Um valor por categoria (mesmo tamanho de `categories`); números finitos. */
-  readonly values: readonly number[];
+  /** Um valor por categoria (mesmo tamanho de `categories`); números finitos. Obrigatório fora do scatter. */
+  readonly values?: readonly number[];
+  /** M14 (scatter): pares [x, y]; dispensa `categories`. */
+  readonly points?: readonly (readonly [number, number])[];
+  /** M14 (combo): como a série é desenhada; obrigatório no combo. */
+  readonly as?: 'bar' | 'line';
+  /** M14 (combo): eixo de valores; 'secondary' cria o eixo da direita. Padrão 'primary'. */
+  readonly axis?: 'primary' | 'secondary';
+  /** M14: cor da série (vence `colors[i]`). */
+  readonly color?: Color;
 }
 
 export interface ChartData {
-  readonly categories: readonly string[];
-  /** `pie` aceita exatamente uma série. */
+  /** Obrigatório fora do scatter. */
+  readonly categories?: readonly string[];
+  /** `pie`/`doughnut` aceitam exatamente uma série. */
   readonly series: readonly ChartSeries[];
+}
+
+/** M14: eixo do gráfico; tudo opcional (padrões do renderizador). */
+export interface ChartAxis {
+  readonly title?: string;
+  readonly min?: number;
+  readonly max?: number;
+  /** Distância entre marcas (unidade principal). */
+  readonly step?: number;
+  /** Código de formato numérico do Excel ('0%', '#,##0', '0.0'). */
+  readonly format?: string;
+  /** Linhas de grade do eixo; padrão: só no eixo de valores. */
+  readonly grid?: boolean;
+  readonly hidden?: boolean;
+}
+
+export type ChartLegendPosition = 'bottom' | 'top' | 'left' | 'right';
+export type ChartLabelPosition = 'outside' | 'inside' | 'center';
+
+/** M14: rótulos de valor; `true` = padrão por kind. */
+export interface ChartLabels {
+  /** Código de formato do Excel; padrão: as casas decimais dos dados. */
+  readonly format?: string;
+  readonly position?: ChartLabelPosition;
 }
 
 /**
@@ -455,12 +504,24 @@ export interface ChartData {
 export interface ChartProps extends FlexItemProps {
   readonly kind: ChartKind;
   readonly data: ChartData;
-  /** Por série (bar/line) ou por categoria (pie); padrão DEFAULTS.chart.palette (cíclica). */
+  /** Por série (bar/line) ou por categoria (pie/doughnut); padrão DEFAULTS.chart.palette (cíclica). */
   readonly colors?: readonly Color[];
-  /** Padrão: `series.length > 1` (pie: true). */
-  readonly legend?: boolean;
-  /** Rótulos de valor sobre as barras/pontos/fatias; padrão false. */
+  /** Padrão: `series.length > 1` (pie/doughnut: true). M14: objeto escolhe a posição (padrão 'bottom'). */
+  readonly legend?: boolean | { readonly position: ChartLegendPosition };
+  /** Rótulos de valor sobre as barras/pontos/fatias; padrão false (alias antigo de `labels`). */
   readonly showValues?: boolean;
+  /** M14: rótulos de valor com formato e posição; vence `showValues`. */
+  readonly labels?: boolean | ChartLabels;
+  /** M14: eixo de categorias (no barH, o vertical), eixo de valores e o secundário (combo). */
+  readonly xAxis?: ChartAxis;
+  readonly yAxis?: ChartAxis;
+  readonly y2Axis?: ChartAxis;
+  /** M14 (doughnut): furo em % do diâmetro; padrão DEFAULTS.chart.holeSize. */
+  readonly holeSize?: number;
+  /** M14 (line/area/combo): linha suavizada. */
+  readonly smooth?: boolean;
+  /** M14 (line/scatter/combo): marcadores nos pontos; padrão: só no scatter. */
+  readonly markers?: boolean;
   readonly title?: string;
   /** Tipografia de rótulos, eixos, legenda e título; padrão DEFAULTS.chart (família = DEFAULTS.text.font). */
   readonly font?: string;
@@ -468,7 +529,47 @@ export interface ChartProps extends FlexItemProps {
   readonly color?: Color;
 }
 
-export type TableCellValue = string | number;
+/** M14: alinhamento vertical na célula. */
+export type CellVerticalAlign = 'top' | 'middle' | 'bottom';
+
+/** M14: ícone no início da célula (forma sobre a tabela; o texto começa depois dele). */
+export interface TableCellIcon {
+  readonly src: string;
+  /** Padrão: a cor do texto da célula. */
+  readonly color?: Color;
+  /** Lado em pt; padrão o corpo do texto da tabela. */
+  readonly size?: Pt;
+}
+
+/**
+ * M14: célula como objeto, quando precisa de merge, estilo ou rich text. `children` é rich text
+ * (Span/B/I/Sup/Sub, como no Text) e vence `text`.
+ */
+export interface TableCellSpec {
+  readonly text?: string | number;
+  readonly children?: TextChildren;
+  readonly colSpan?: number;
+  readonly rowSpan?: number;
+  readonly fill?: Color;
+  readonly color?: Color;
+  readonly fontWeight?: FontWeight;
+  readonly fontStyle?: 'normal' | 'italic';
+  readonly align?: TextAlign;
+  readonly valign?: CellVerticalAlign;
+  readonly icon?: TableCellIcon;
+}
+
+export type TableCellValue = string | number | TableCellSpec;
+
+/** M14: o que `cell()` recebe para decidir o estilo de uma célula. */
+export interface TableCellContext {
+  /** Índice da linha de dados (0 = 1ª linha de `rows`); nas linhas de cabeçalho, o índice entre elas. */
+  readonly row: number;
+  readonly col: number;
+  /** O valor como o autor escreveu (string, número ou objeto). */
+  readonly value: TableCellValue;
+  readonly header: boolean;
+}
 
 export interface TableColumn {
   readonly header: string;
@@ -476,6 +577,8 @@ export interface TableColumn {
   readonly width?: Length;
   /** Alinhamento das células da coluna (e do cabeçalho); padrão 'left'. */
   readonly align?: TextAlign;
+  /** M14: alinhamento vertical das células da coluna; padrão o da tabela. */
+  readonly valign?: CellVerticalAlign;
 }
 
 export interface TableHeaderStyle {
@@ -508,6 +611,19 @@ export interface TableProps extends FlexItemProps, Pick<TextStyleProps, 'font' |
   readonly fit?: TableFitPolicy;
   /** padrão: como no Text (75% de size, piso minLegibleSize) */
   readonly minSize?: Pt;
+  /**
+   * M14: linhas de cabeçalho acima da linha de `columns[].header` (cabeçalho de dois níveis): cada
+   * linha cobre todas as colunas (com `colSpan`). Estilo do cabeçalho; repetem nas partes paginadas.
+   */
+  readonly headerRows?: readonly (readonly TableCellValue[])[];
+  /** M14: estilo por célula calculado (cor por valor); o que a célula declara vence. */
+  readonly cell?: (ctx: TableCellContext) => Partial<TableCellSpec> | undefined;
+  /** M14: linhas que não cabem continuam num clone do slide (corte entre linhas, nunca num rowSpan). */
+  readonly paginate?: boolean;
+  /** M14: repete o cabeçalho em cada parte paginada; padrão true. */
+  readonly repeatHeader?: boolean;
+  /** M14: alinhamento vertical padrão das células; padrão 'top'. */
+  readonly valign?: CellVerticalAlign;
 }
 
 // ───────────────────────── Valores CSS (M11) ─────────────────────────
@@ -810,8 +926,37 @@ export type ResolvedShape = ResolvedBase<'shape', ShapeProps>;
 /** M10: dados já validados (séries do tamanho das categorias; pie com 1 série). */
 export type ResolvedChart = ResolvedBase<'chart', ChartProps>;
 /** M10: `rows` já com todas as células como string e com `columns.length` células. */
+/** M14: ícone de célula já lido (como o do Icon). */
+export interface ResolvedCellIcon {
+  readonly viewBox: Rect;
+  readonly content: IconContent;
+  readonly size: Pt;
+  readonly color: Color;
+}
+
+/** M14: célula normalizada (cabeçalho incluído). Coberta por merge = não desenha nem mede. */
+export interface ResolvedCell {
+  readonly text: string;
+  readonly runs: readonly TextRun[];
+  readonly colSpan: number;
+  readonly rowSpan: number;
+  readonly covered: boolean;
+  readonly header: boolean;
+  readonly fill?: Color;
+  readonly align: TextAlign;
+  readonly valign: CellVerticalAlign;
+  readonly icon?: ResolvedCellIcon;
+}
+
 export interface ResolvedTable extends ResolvedBase<'table', TableProps> {
+  /** Texto das linhas de dados (compatível com o M10). */
   readonly rows: readonly (readonly string[])[];
+  /**
+   * M14: grade completa na ordem de desenho: `headerRows`, a linha de `columns` (se há cabeçalho) e
+   * os dados; `grid[i].length === columns.length`. `headerCount` = quantas linhas são cabeçalho.
+   */
+  readonly grid: readonly (readonly ResolvedCell[])[];
+  readonly headerCount: number;
 }
 
 /**
@@ -1096,6 +1241,8 @@ export type DiagnosticCode =
   | 'font-weight-fallback'
   /** M13: `href="slide:N"` com N fora do deck do autor (error; o link não sai). */
   | 'link-target-missing'
+  /** M14: tabela com ícone em célula: o ícone é uma forma sobre a tabela, não parte dela (info, 1 por tabela). */
+  | 'table-cell-icon'
   /** M12: `from`/`to` de um Connector sem nó com esse id no slide (error; o conector não sai). */
   | 'connector-target-missing'
   /** M12: as pontas do conector caíram em partes diferentes de um slide paginado (info; omitido nesta parte). */
@@ -1136,7 +1283,7 @@ export interface Diagnostic {
     /** M9: em 'slide-continued', total de partes em que o slide do autor foi dividido. */
     readonly parts?: number;
     /** M13: em 'slide-continued', o que paginou: um Box (itens) ou um Text (linhas). Ausente = 'box'. */
-    readonly kind?: 'box' | 'text';
+    readonly kind?: 'box' | 'text' | 'table';
     /** M13: em 'font-weight-fallback', peso pedido e peso da face usada. */
     readonly requestedWeight?: number;
     readonly usedWeight?: number;

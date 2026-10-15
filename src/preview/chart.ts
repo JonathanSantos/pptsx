@@ -136,7 +136,7 @@ const titleOf = (props: ChartProps, area: Rect, style: LabelStyle, options: Char
 
 const legendItemsOf = (props: ChartProps): readonly LegendItem[] =>
   props.kind === 'pie'
-    ? props.data.categories.map((name, i) => ({ name, color: chartColorOf(props, i) }))
+    ? (props.data.categories ?? []).map((name, i) => ({ name, color: chartColorOf(props, i) }))
     : props.data.series.map((series, i) => ({ name: series.name, color: chartColorOf(props, i) }));
 
 /** Uma linha centrada embaixo: quadrado colorido + nome por item. */
@@ -184,8 +184,9 @@ interface Axes {
 
 /** Grade + rótulos do eixo de valores + rótulos de categoria; devolve a área de plotagem. */
 const axesOf = (props: ChartProps, area: Rect, style: LabelStyle, options: ChartSvgOptions): Axes => {
-  const { categories, series } = props.data;
-  const scale = niceScaleOf(series.flatMap((s) => s.values));
+  const { series } = props.data;
+  const categories = props.data.categories ?? [];
+  const scale = niceScaleOf(series.flatMap((s) => s.values ?? []));
   const ticks = ticksOf(scale);
   const tickLabels = ticks.map((t) => formatValue(t, decimalsOf(scale.step), options.lang));
   const gap = style.size * LABEL_GAP_EM;
@@ -254,7 +255,8 @@ const valueLabelSvg = (label: string, value: number, x: Pt, y: Pt, axes: Axes, s
 };
 
 const barsSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: ChartSvgOptions): string => {
-  const { categories, series } = props.data;
+  const { series } = props.data;
+  const categories = props.data.categories ?? [];
   const groupRatio = 1 / (1 + DEFAULTS.chart.barGapWidthPct / 100);
   const base = textAttrsOf(style, options);
   const zeroY = axes.yOf(0);
@@ -266,7 +268,7 @@ const barsSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: Char
       const groupX = band.x + (band.width - groupWidth) / 2;
       return series
         .map((s, i) => {
-          const value = s.values[c] ?? 0;
+          const value = s.values?.[c] ?? 0;
           const y = axes.yOf(value);
           const x = groupX + i * barWidth;
           const bar = element('rect', {
@@ -286,7 +288,8 @@ const barsSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: Char
 };
 
 const linesSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: ChartSvgOptions): string => {
-  const { categories, series } = props.data;
+  const { series } = props.data;
+  const categories = props.data.categories ?? [];
   const base = textAttrsOf(style, options);
   const xOf = (c: number): Pt => {
     const band = axes.bandOf(c);
@@ -294,7 +297,7 @@ const linesSvg = (props: ChartProps, axes: Axes, style: LabelStyle, options: Cha
   };
   return series
     .map((s, i) => {
-      const points = categories.map((_, c) => ({ x: xOf(c), y: axes.yOf(s.values[c] ?? 0), value: s.values[c] ?? 0 }));
+      const points = categories.map((_, c) => ({ x: xOf(c), y: axes.yOf(s.values?.[c] ?? 0), value: s.values?.[c] ?? 0 }));
       const line = element('polyline', {
         points: points.map((p) => `${roundTo(p.x, 3)},${roundTo(p.y, 3)}`).join(' '),
         fill: 'none',
@@ -330,7 +333,7 @@ const sliceSvg = (cx: Pt, cy: Pt, r: Pt, start: number, end: number, fill: strin
 
 const pieSvg = (props: ChartProps, area: Rect, style: LabelStyle, options: ChartSvgOptions): string => {
   // O sinal não tem significado numa fatia: usa o módulo.
-  const values = (props.data.series[0]?.values ?? []).map(Math.abs);
+  const values = (props.data.series[0]?.values ?? []).map((value) => Math.abs(value));
   const total = values.reduce((sum, v) => sum + v, 0);
   const cx = area.x + area.width / 2;
   const cy = area.y + area.height / 2;
@@ -346,7 +349,7 @@ const pieSvg = (props: ChartProps, area: Rect, style: LabelStyle, options: Chart
       const slice = sliceSvg(cx, cy, r, start, end, chartColorOf(props, i));
       if (props.showValues !== true) return slice;
       const mid = pointAt(cx, cy, r * PIE_LABEL_RADIUS, (start + end) / 2);
-      const original = props.data.series[0]?.values[i] ?? value;
+      const original = props.data.series[0]?.values?.[i] ?? value;
       return slice + labelSvg(valueTextOf(props, original, options), mid.x, mid.y + style.size * (LABEL_ASCENT_EM - 0.5), 'middle', base);
     })
     .join('');
@@ -356,7 +359,7 @@ const pieSvg = (props: ChartProps, area: Rect, style: LabelStyle, options: Chart
 
 type PlotDrawer = (props: ChartProps, area: Rect, style: LabelStyle, options: ChartSvgOptions) => string;
 
-const plotDrawers: Readonly<Record<ChartKind, PlotDrawer>> = {
+const plotDrawers: Readonly<Partial<Record<ChartKind, PlotDrawer>>> = {
   bar: (props, area, style, options) => {
     const axes = axesOf(props, area, style, options);
     return axes.svg + barsSvg(props, axes, style, options);
@@ -380,5 +383,5 @@ export const chartSvg = (node: PositionedChart, options: ChartSvgOptions = {}): 
     width: area.width,
     height: Math.max(0, area.height - title.height - legend.height),
   };
-  return element('g', {}, title.svg + plotDrawers[props.kind](props, plotArea, style, options) + legend.svg);
+  return element('g', {}, title.svg + (plotDrawers[props.kind] ?? plotDrawers.bar!)(props, plotArea, style, options) + legend.svg);
 };
