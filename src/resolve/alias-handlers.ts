@@ -159,6 +159,7 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     ...passAll(['src', 'size', 'recolor', 'render']),
     ...NO_BOX,
   },
+  slideNumber: {},
   connector: {
     ...passAll(CONNECTOR_KEYS),
     stroke: passColor('stroke'),

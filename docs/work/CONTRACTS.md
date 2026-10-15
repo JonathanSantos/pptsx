@@ -496,3 +496,27 @@ Plano: `docs/work/milestones/M12.md` (sequencial). Tipos em `src/core/types.ts` 
 - Fit (pós-layout, por parte paginada, em `fitDeck`): pontas fora desta parte → omitido com `connector-omitted` (info) na parte em que o conector não sai. Âncora = ponto médio do lado do border-box (sem rotação); `auto` escolhe o par de lados (ou o lado que falta) que minimiza a distância entre as âncoras. `straight` = 2 pontos. `elbow`: lados no mesmo eixo (left/right × left/right, top/bottom × top/bottom) = 3 segmentos com a dobra no meio desse eixo; eixos mistos = um L (2 segmentos); pontos colineares são fundidos (cotovelo alinhado vira reta). Rótulo: medido numa linha com o medidor do env, centrado no meio do segmento mais longo; frame do rótulo = texto + `DEFAULTS.connector.label.padding` por lado.
 - Emit: pintado depois de todos os nós (por cima), na ordem dos conectores. `straight` → `line` com `flipH/flipV` pela direção; `elbow` → `custGeom` aberto sem fill. Setas `headEnd` (início) e `tailEnd` (fim); padrão só `endArrow` (`DEFAULTS.connector.endArrow`). Rótulo = fundo opcional (rect sem linha) + caixa de texto.
 - Preview: polilinha (`<polyline>`) encurtada pelo comprimento da seta onde há ponta cheia; pontas como polígonos/elipses; rótulo com fundo e texto.
+
+## M13 — texto e tipografia (regras por etapa)
+
+Plano: `docs/work/milestones/M13.md` (sequencial). Tipos em `src/core/types.ts`: `FontWeight = 'regular' | 'bold' | number` (400 e 700 sempre canônicos como `'regular'`/`'bold'`), `VerticalAlign`, `RunFace` e `TextLayout.faces`, `TextRun.verticalAlign/href`, `SpanProps.verticalAlign/href`, `href` em Text/Image/Box, `TextProps.paginate`, `SlideNumberProps`/`SlideNumberFormat` e `ResolvedText.slideNumber`, `DeckProps.footer`, códigos `font-weight-fallback` e `link-target-missing`, `data.kind/requestedWeight/usedWeight`. Padrões em `DEFAULTS.text` (`superscriptRatio`, `superscriptBaseline`, `subscriptBaseline`, `orphanLines`, `weights`, `weightTolerance`, `slideNumberSample`); helpers `weightValueOf`, `canonicalWeightOf`.
+
+Diferenças em relação ao plano: o nome da face (família tipográfica) não entra em `FontFace` (é dado do arquivo): o medidor devolve a face escolhida por run em `TextLayout.faces` (`RunFace`: typeface do PPTX, flag bold, peso usado e pedido, família do preview). `font-size`/`fontFamily` por Span (M13-7) ganham contrato na própria etapa.
+
+### Pesos (M13-2)
+- Resolve: `fontWeight` 1–1000 (número ou string numérica), `normal`/`regular` = 400, `bold` = 700; normalizado por `canonicalWeightOf`. Nada vira `css-not-emitted`.
+- Registro: faces indexadas por família (normalizada) → peso numérico (do `FontFace.weight`) e itálico. `get(family, weight, italic)` segue o CSS Fonts §5.2: itálico primeiro (sem itálico, a reta); depois o peso: pedido 400 → 400, 500, abaixo descendo, acima subindo; 500 → 500, 400, abaixo, acima; < 400 → abaixo descendo, depois acima; > 500 → acima subindo, depois abaixo. Família sem nenhuma face → `undefined` (fontMissing).
+- Medidor: `faces[run]` = face usada. `typeface`: família do autor se a face for 400/700, senão `familyName` (name ID 1) da face; `bold` = peso da face ≥ 600 **e** face 700 (as outras levam `b="0"`); `requested` quando |pedido − usado| > `weightTolerance`. A altura da linha vem da face do estilo (como antes).
+- Fit: `font-weight-fallback` (warning) por Text, uma vez por par pedido/usado. Emit: `fontFace` por run = `typeface`, `bold` = `faces[run].bold`. Embed: por face (o estilo OOXML do `<p:embeddedFont>` de uma face não 400/700 é `regular` sob o nome tipográfico da face). Preview: `font-family` = `previewFamily`, `font-weight` numérico.
+
+### Sobrescrito/subscrito (M13-3)
+- `Sup`/`Sub` = `Span verticalAlign`. Medição: largura do trecho com `size × superscriptRatio`; altura e ascent da linha inalterados. Emit: run com `sz` reduzido e `baseline` (30000 / −25000) por pós-processamento se o pptxgenjs não gravar o valor; preview: `font-size` reduzido e `baseline-shift`/`dy`.
+
+### Links (M13-4)
+- `href` = URL (`http(s):`, `mailto:`…) ou `slide:N` (N do autor). `slide:N` fora de 1..slides → `link-target-missing` (error, o link some). Depois da paginação, `slide:N` aponta para a 1ª parte do slide N do autor. Emit: `hyperlink: { url }` / `{ slide }` em runs (Span/Text), imagem e no shape de fundo do Box (sem fundo, um retângulo transparente com o link). Preview: `<a href>` em volta (o PNG não muda).
+
+### Continuação de texto (M13-5)
+- Um nó paginate por slide (Box **ou** Text). Text paginate: bisseção do número de linhas que cabem; corte no fim de parágrafo mais próximo abaixo, se não deixar menos de `orphanLines` linhas na parte seguinte; dentro de parágrafo, nunca menos de `orphanLines` de cada lado. O clone recebe o texto restante remontado dos runs (estilos e NBSP preservados). Não encolhe enquanto pagina. `slide-continued` com `data.kind: 'text'`.
+
+### Número de slide e rodapé (M13-6)
+- `Deck.footer` entra como último filho absoluto de cada Slide (antes da paginação). `SlideNumber` = Text de uma linha medido com `slideNumberSample`; depois da paginação recebe `index`/`total` e o conteúdo real (remedido no mesmo frame). Emit: o número como `<a:fld type="slidenum">` (pós-processamento) + ` / total` em texto.

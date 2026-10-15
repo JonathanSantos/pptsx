@@ -2,6 +2,7 @@ import { readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { extname, join } from 'node:path';
 import * as fontkit from 'fontkit';
+import { weightValueOf } from '../core/defaults.ts';
 import type { FontFace, FontWeight } from '../core/types.ts';
 
 /** Face já com arquivo: é o que o registro, o preview e o embed consomem. */
@@ -33,7 +34,7 @@ export interface ResolvedFontFaces {
 
 const FONT_EXTENSIONS: ReadonlySet<string> = new Set(['.ttf', '.otf', '.ttc']);
 const BOLD_WEIGHT_CLASS = 600;
-const TARGET_WEIGHT_CLASS: Readonly<Record<FontWeight, number>> = { regular: 400, bold: 700 };
+const TARGET_WEIGHT_CLASS = { regular: 400, bold: 700 } as const;
 
 export const normalizeFamily = (family: string): string => family.trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -139,7 +140,7 @@ export const createSystemFontIndex = (dirs: readonly string[] = defaultFontDirs(
 
 // Prefere arquivo avulso a coleção e, entre iguais, o peso mais perto do canônico (400/700).
 const rankOf = (entry: SystemFontEntry, weight: FontWeight): number =>
-  (entry.collection ? 10_000 : 0) + Math.abs(entry.weightClass - TARGET_WEIGHT_CLASS[weight]);
+  (entry.collection ? 10_000 : 0) + Math.abs(entry.weightClass - weightValueOf(weight));
 
 export const findSystemFont = (
   index: SystemFontIndex,

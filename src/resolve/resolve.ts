@@ -202,6 +202,8 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, p
       return resolvePath(item, path, n);
     case 'icon':
       return resolveIcon(item, path, n, ctx.env);
+    case 'slideNumber':
+      throw new ResolveError(`<${nameOf(item)}> ainda não está disponível`, path);
     case 'span':
       throw new ResolveError(SPAN_OUTSIDE_TEXT, path);
     case 'slide':

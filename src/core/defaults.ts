@@ -44,6 +44,18 @@ export const DEFAULTS = {
      * com minSize explícito menor, desce e avisa com text-illegible.
      */
     minLegibleSize: 10,
+    /** M13: corpo do sobrescrito/subscrito em relação ao do texto. */
+    superscriptRatio: 0.65,
+    /** M13: deslocamento da baseline em % do corpo (OOXML `baseline` = valor × 1000). */
+    superscriptBaseline: 30,
+    subscriptBaseline: -25,
+    /** M13: Text paginate nunca deixa menos que isto de um parágrafo num lado do corte. */
+    orphanLines: 2,
+    /** M13: pesos canônicos e a distância (em unidades de peso) a partir da qual a face escolhida avisa. */
+    weights: { regular: 400, bold: 700 },
+    weightTolerance: 100,
+    /** M13: conteúdo usado para medir um SlideNumber antes de saber o número (pior caso). */
+    slideNumberSample: { n: '88', total: '88 / 88' },
   },
   container: {
     direction: 'column' as FlexDirection,
@@ -204,6 +216,21 @@ export const textStyleOf = (props: TextProps): TextStyle => ({
   italic: props.italic ?? DEFAULTS.text.italic,
   lineHeight: props.lineHeight ?? DEFAULTS.text.lineHeight,
 });
+
+/** M13: peso numérico de um FontWeight ('regular' = 400, 'bold' = 700). */
+export const weightValueOf = (weight: FontWeight): number => {
+  if (weight === 'regular') return DEFAULTS.text.weights.regular;
+  if (weight === 'bold') return DEFAULTS.text.weights.bold;
+  return weight;
+};
+
+/** M13: forma canônica: 400 → 'regular', 700 → 'bold', o resto numérico. */
+export const canonicalWeightOf = (weight: FontWeight): FontWeight => {
+  const value = weightValueOf(weight);
+  if (value === DEFAULTS.text.weights.regular) return 'regular';
+  if (value === DEFAULTS.text.weights.bold) return 'bold';
+  return value;
+};
 
 export const fitPolicyOf = (props: TextProps): FitPolicy => props.fit ?? DEFAULTS.text.fit;
 

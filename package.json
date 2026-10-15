@@ -31,7 +31,8 @@
     "dist/**/*.js",
     "dist/**/*.d.ts",
     "bin",
-    "fonts",
+    "fonts/LiberationSans-*.ttf",
+    "fonts/LICENSE",
     "tsconfig.deck.json",
     "README.md",
     "LICENSE"

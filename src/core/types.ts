@@ -20,6 +20,7 @@ import type {
   CssIconPropsAuthor,
   CssImagePropsAuthor,
   CssPathPropsAuthor,
+  CssSlideNumberPropsAuthor,
   CssShapePropsAuthor,
   CssSlideProps,
   CssSpanProps,
@@ -160,6 +161,11 @@ export interface StrokeProps {
 }
 
 export interface DeckProps {
+  /**
+   * M13: conteúdo repetido em todo slide (rodapé, número), entra como último filho de cada slide
+   * com `position: absolute` (o autor posiciona com bottom/left/right). Repete nas partes paginadas.
+   */
+  readonly footer?: Children;
   readonly children?: Children;
 }
 
@@ -184,10 +190,19 @@ export interface BoxProps extends FlexItemProps, ContainerProps, StrokeProps {
    * recalcula o layout. 'line' não é aceito.
    */
   readonly shape?: ShapeKind;
+  /** M13: hyperlink no fundo da caixa: URL externa ou `slide:N` (N = slide do autor, base 1). */
+  readonly href?: string;
   readonly children?: Children;
 }
 
-export type FontWeight = 'regular' | 'bold';
+/**
+ * M13: 'regular' (= 400) e 'bold' (= 700) são as formas canônicas; os outros pesos (1–1000, como
+ * no CSS) ficam numéricos. O resolve normaliza: 400 → 'regular', 700 → 'bold'.
+ */
+export type FontWeight = 'regular' | 'bold' | number;
+
+/** M13: posição vertical de um trecho (sobrescrito/subscrito). */
+export type VerticalAlign = 'baseline' | 'super' | 'sub';
 export type TextAlign = 'left' | 'center' | 'right';
 export type FitPolicy = 'shrink' | 'truncate' | 'error';
 
@@ -216,6 +231,13 @@ export interface TextProps extends FlexItemProps, TextStyleProps {
   /** padrão: 75% de size (arredondado para baixo) */
   readonly minSize?: Pt;
   readonly maxLines?: number;
+  /** M13: hyperlink no texto inteiro (URL ou `slide:N`); um Span pode ter o próprio. */
+  readonly href?: string;
+  /**
+   * M13: o texto que não cabe continua num clone do slide (divide as linhas já quebradas).
+   * Só um nó paginate (Box ou Text) por slide; enquanto pagina, este Text não encolhe. Padrão false.
+   */
+  readonly paginate?: boolean;
   /** Conteúdo: strings/números e Span/B/I (M8); concatenados na resolução. */
   readonly children?: TextChildren;
 }
@@ -228,7 +250,23 @@ export interface SpanProps {
   readonly weight?: FontWeight;
   readonly italic?: boolean;
   readonly color?: Color;
+  /** M13: sobrescrito/subscrito: corpo × DEFAULTS.text.superscriptRatio, sem mudar a altura da linha. */
+  readonly verticalAlign?: VerticalAlign;
+  /** M13: hyperlink do trecho (URL ou `slide:N`). */
+  readonly href?: string;
   readonly children?: TextChildren;
+}
+
+/** M13: formato do número de slide; `total` = slides do deck de saída (depois da paginação). */
+export type SlideNumberFormat = 'n' | 'n / total';
+
+/**
+ * M13: número do slide como campo nativo (`slidenum`, atualiza se o usuário reordenar); o total
+ * sai como texto fixo. É um Text de uma linha, medido no pior caso ("88 / 88").
+ */
+export interface SlideNumberProps extends FlexItemProps, TextStyleProps {
+  /** Padrão 'n'. */
+  readonly format?: SlideNumberFormat;
 }
 
 export type ImageFit = 'contain' | 'cover';
@@ -237,6 +275,8 @@ export interface ImageProps extends FlexItemProps {
   readonly src: string;
   /** padrão 'contain' */
   readonly fit?: ImageFit;
+  /** M13: hyperlink da imagem (URL ou `slide:N`). */
+  readonly href?: string;
 }
 
 /**
@@ -622,7 +662,8 @@ export type PrimitiveKind =
   | 'table'
   | 'path'
   | 'icon'
-  | 'connector';
+  | 'connector'
+  | 'slideNumber';
 
 /** Props concretas por primitiva (o que a árvore resolvida carrega). */
 export interface PrimitivePropsMap {
@@ -638,6 +679,7 @@ export interface PrimitivePropsMap {
   readonly path: PathProps;
   readonly icon: IconProps;
   readonly connector: ConnectorProps;
+  readonly slideNumber: SlideNumberProps;
 }
 
 /**
@@ -657,6 +699,7 @@ export interface AuthorPropsMap {
   readonly path: CssPathPropsAuthor;
   readonly icon: CssIconPropsAuthor;
   readonly connector: ConnectorPropsAuthor;
+  readonly slideNumber: CssSlideNumberPropsAuthor;
 }
 
 /** Marca que identifica uma primitiva (vs componente do usuário). */
@@ -729,6 +772,10 @@ export interface TextRun {
   /** M11: decoração por run (Span textDecoration). */
   readonly underline?: boolean;
   readonly lineThrough?: boolean;
+  /** M13: sobrescrito/subscrito; ausente = 'baseline'. */
+  readonly verticalAlign?: VerticalAlign;
+  /** M13: hyperlink do trecho, já traduzido para o deck de saída no fim do fit (`slide:N` de saída). */
+  readonly href?: string;
 }
 
 export interface ResolvedText extends ResolvedBase<'text', Omit<TextProps, 'children'>> {
@@ -736,6 +783,11 @@ export interface ResolvedText extends ResolvedBase<'text', Omit<TextProps, 'chil
   readonly content: string;
   /** M8: runs em ordem; a concatenação de `text` é igual a `content`. Sem Span: um run só. */
   readonly runs: readonly TextRun[];
+  /**
+   * M13: este Text é um SlideNumber. `content` é o pior caso até o fim do fit; depois da paginação
+   * vira o número real (`slideIndex`/`slideTotal`), e o emissor grava o número como campo `slidenum`.
+   */
+  readonly slideNumber?: { readonly format: SlideNumberFormat; readonly index?: number; readonly total?: number };
 }
 
 export type ResolvedImage = ResolvedBase<'image', ImageProps>;
@@ -808,6 +860,7 @@ export interface ResolvedDeck {
 
 export interface FontFace {
   readonly family: string;
+  /** M13: 'regular', 'bold' ou o peso numérico da face (100–900; o do OS/2 do arquivo). */
   readonly weight: FontWeight;
   readonly italic?: boolean;
   /** Caminho para .ttf/.otf/.ttc. Ausente (M8) → procurar nas pastas de fontes do sistema. */
@@ -850,6 +903,23 @@ export interface LineRun {
   readonly run: number;
 }
 
+/**
+ * M13: face que o medidor escolheu para um run (correspondência de peso do CSS Fonts §5.2). O PPTX só
+ * tem a flag negrito: faces 400/700 saem com a família do autor e `b`; as outras, com o nome de
+ * família da própria face (`Inter SemiBold`, name ID 1) e `b="0"`.
+ */
+export interface RunFace {
+  /** Nome que vai em `<a:latin typeface>`. */
+  readonly typeface: string;
+  readonly bold: boolean;
+  /** Peso da face usada (usWeightClass, ou o registrado). */
+  readonly weight: number;
+  /** Peso pedido, quando a face usada difere dele em mais de DEFAULTS.text.weightTolerance (font-weight-fallback). */
+  readonly requested?: number;
+  /** Família para o preview (resvg): a tipográfica da face (name ID 16, senão ID 1). */
+  readonly previewFamily: string;
+}
+
 /** Resultado da medição: as linhas JÁ quebradas são usadas por todos os emissores. */
 export interface TextLayout {
   /** Todas as linhas, achatadas (preview, diagnósticos). */
@@ -881,6 +951,8 @@ export interface TextLayout {
   readonly truncated: boolean;
   /** true se a família/peso não estava registrada (medição foi estimada). */
   readonly fontMissing: boolean;
+  /** M13: face de cada run (mesmo índice de `runs`); ausente na estimativa (sem fonte real). */
+  readonly faces?: readonly RunFace[];
 }
 
 /** Strategy: estimativa (M2) ou fontkit (M3). Função pura. */
@@ -998,6 +1070,10 @@ export type DiagnosticCode =
   | 'table-overflow'
   /** M11: propriedade CSS que chegou ao nó e não tem de/para para o PPTX (warning; não sai no arquivo nem no preview). */
   | 'css-not-emitted'
+  /** M13: peso pedido sem face registrada a até 100 dele; usada a face mais próxima pelo CSS (warning). */
+  | 'font-weight-fallback'
+  /** M13: `href="slide:N"` com N fora do deck do autor (error; o link não sai). */
+  | 'link-target-missing'
   /** M12: `from`/`to` de um Connector sem nó com esse id no slide (error; o conector não sai). */
   | 'connector-target-missing'
   /** M12: as pontas do conector caíram em partes diferentes de um slide paginado (info; omitido nesta parte). */
@@ -1037,6 +1113,11 @@ export interface Diagnostic {
     readonly sourceSlide?: number;
     /** M9: em 'slide-continued', total de partes em que o slide do autor foi dividido. */
     readonly parts?: number;
+    /** M13: em 'slide-continued', o que paginou: um Box (itens) ou um Text (linhas). Ausente = 'box'. */
+    readonly kind?: 'box' | 'text';
+    /** M13: em 'font-weight-fallback', peso pedido e peso da face usada. */
+    readonly requestedWeight?: number;
+    readonly usedWeight?: number;
     /** M10: em 'table-overflow', linhas de dados inteiramente visíveis e total. */
     readonly shownRows?: number;
     readonly totalRows?: number;

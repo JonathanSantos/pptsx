@@ -119,6 +119,7 @@ const BUILDERS: Readonly<Record<PrimitiveKind, LegacyBuilder>> = {
   // Ícone herda a cor do texto (currentColor do CSS).
   icon: ({ css, text, own }) => ({ ...itemOf(css), color: text.color, ...own }),
   connector: ({ own }) => own,
+  slideNumber: textOf,
 };
 
 export type LegacyProps<K extends PrimitiveKind> = Omit<PrimitivePropsMap[K], 'children'>;

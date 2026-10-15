@@ -12,6 +12,7 @@ import type {
   IconProps,
   ImageProps,
   PathProps,
+  SlideNumberProps,
   Responsive,
   ResponsiveProps,
   ShapeProps,
@@ -139,11 +140,14 @@ export type CssPathPropsAuthor = WithCss<PathProps>;
 export type CssIconPropsAuthor = WithCss<IconProps>;
 /** M12: Connector não é caixa: só as props dele (responsivas). */
 export type ConnectorPropsAuthor = ResponsiveProps<ConnectorProps>;
+/** M13: SlideNumber é um Text de uma linha (CSS de item e de texto). */
+export type CssSlideNumberPropsAuthor = WithCss<SlideNumberProps>;
 /** Em Table, `border` continua sendo a cor das linhas da grade (prop da engine). */
 export type CssTablePropsAuthor = ResponsiveProps<Omit<TableProps, keyof Css | 'border'> & Omit<Css, 'border'>> & {
   readonly border?: Responsive<Color>;
 };
 export interface CssSpanProps extends SpanProps {
+  /** M13: pesos numéricos 100–900 usam a face registrada mais próxima. */
   readonly fontWeight?: 'normal' | 'bold' | 'regular' | Num;
   readonly fontStyle?: 'normal' | 'italic';
   readonly textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through';
