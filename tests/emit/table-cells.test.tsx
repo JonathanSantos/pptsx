@@ -19,7 +19,7 @@ const COLUMNS = [{ header: 'A' }, { header: 'B' }, { header: 'C' }];
 const one = (props: Partial<TableProps>) => (
   <Deck>
     <Slide padding={20}>
-      <Table columns={COLUMNS} rows={[]} border="#CCCCCC" {...(props as TableProps)} />
+      <Table border="#CCCCCC" {...({ columns: COLUMNS, rows: [], ...props } as TableProps)} />
     </Slide>
   </Deck>
 );
