@@ -6,6 +6,7 @@ import { InvalidPropError } from './errors.ts';
 import type { Handler } from './draft.ts';
 import { backgroundColor, borderRadius } from './paint-handlers.ts';
 import { SHAPE_CSS } from './shape-handlers.ts';
+import { CONNECTOR_KEYS } from './connector-keys.ts';
 import { fontWeight, TEXT_HANDLERS, whiteSpace } from './text-handlers.ts';
 import { parsePt } from './values.ts';
 import { BOX_HANDLERS } from './box-handlers.ts';
@@ -158,5 +159,8 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     ...passAll(['src', 'size', 'recolor', 'render']),
     ...NO_BOX,
   },
-  connector: {},
+  connector: {
+    ...passAll(CONNECTOR_KEYS),
+    stroke: passColor('stroke'),
+  },
 };

@@ -3,7 +3,7 @@ import { DEFAULTS } from '../core/defaults.ts';
 import type { LineBreaks, PositionedDeck, PositionedSlide } from '../core/types.ts';
 import { ptToInches } from '../sizes.ts';
 import type { LineSpacingStrategy } from './calibration.ts';
-import { emitDebugOutlines, emitItem, type EmitContext } from './emitters.ts';
+import { emitConnector, emitDebugOutlines, emitItem, type EmitContext } from './emitters.ts';
 import { backgroundOf } from './options.ts';
 import { embedFonts, type EmbeddedFont } from './embed.ts';
 import { paintOrderOf } from './paint.ts';
@@ -35,6 +35,7 @@ const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOpti
   // M11: ordem de pintura CSS (zIndex, camadas), não a ordem da árvore.
   const items = paintOrderOf(slide);
   items.forEach((item) => emitItem(target, item, ctx));
+  (slide.connectors ?? []).forEach((connector) => emitConnector(target, connector, ctx));
   // Contornos depois de tudo para ficarem por cima do conteúdo.
   if (options.debug) emitDebugOutlines(target, items);
   if (slide.props.notes) target.addNotes(slide.props.notes);

@@ -20,7 +20,7 @@ const boxShapeNotes = (node: PositionedNode): readonly NotEmitted[] => {
   const { css } = node;
   const shape = boxShapeOf(node);
   return [
-    ...(css.borderRadius !== undefined && css.borderRadius > 0
+    ...(css.borderRadius !== undefined && css.borderRadius > 0 && shape !== 'roundRect'
       ? [{ property: 'borderRadius', value: String(css.borderRadius), reason: `a forma "${shape}" tem geometria própria; o raio só vale em rect/roundRect` }]
       : []),
     ...(hasSideBorders(css)

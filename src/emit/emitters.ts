@@ -1,6 +1,7 @@
 import type * as Pptx from './pptx.ts';
 import { dispatch, type DispatchTable } from '../core/dispatch.ts';
-import type { LineBreaks, PositionedNode, Rect } from '../core/types.ts';
+import type { LineBreaks, PositionedConnector, PositionedNode, Rect } from '../core/types.ts';
+import { connectorLabelOf, connectorShapeOf } from './connector.ts';
 import { contentRectOf } from '../layout/index.ts';
 import type { LineSpacingStrategy } from './calibration.ts';
 import { chartOf } from './chart.ts';
@@ -80,6 +81,15 @@ export const emitItem = (slide: Pptx.Slide, item: PaintItem, ctx: EmitContext): 
   if (backgroundImage) slide.addImage(backgroundImage);
   decoration.over.forEach((spec) => addShape(slide, spec));
   dispatch(emitters, item.node, slide, ctx, item);
+};
+
+/** M12: conectores por cima de todos os nós, na ordem em que foram declarados. */
+export const emitConnector = (slide: Pptx.Slide, connector: PositionedConnector, ctx: EmitContext): void => {
+  addShape(slide, connectorShapeOf(connector));
+  const label = connectorLabelOf(connector, ctx.lineSpacing, ctx.lang, ctx.lineBreaks);
+  if (label === undefined) return;
+  if (label.background !== undefined) addShape(slide, label.background);
+  slide.addText(label.text.runs, { ...label.text.options });
 };
 
 /** Frames de Box/Text/Image/Chart/Table na ordem de pintura, para o contorno de debug. */

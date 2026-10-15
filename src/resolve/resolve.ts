@@ -4,6 +4,7 @@ import { createResolveEnv, iconGeometryOf, type ResolveEnv } from './icon.ts';
 import type {
   Children,
   CssStyle,
+  ResolvedConnector,
   ResolvedDeck,
   ResolvedNode,
   ResolvedSlide,
@@ -23,6 +24,7 @@ import type { Normalized } from './normalize.ts';
 import { assertPaginateInFlow, assertSinglePaginate } from './paginate.ts';
 import { resolvePropsOf } from './props.ts';
 import { pathGeometryOf } from './path.ts';
+import { resolveConnector, slideIdsOf, withMissing } from './connector.ts';
 import { runsOf } from './runs.ts';
 import { assertBoxShape, assertValidShape } from './shape.ts';
 import type { RunStyle } from './runs.ts';
@@ -150,19 +152,41 @@ const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized): Res
   return { kind: 'table', path, props, css: n.css, rows: normalizeRows(props.rows) };
 };
 
-const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: ResolveScope): ResolvedNode => {
+/** Nós de um contêiner e os conectores declarados neles (de qualquer profundidade). */
+interface ResolvedChildren {
+  readonly nodes: readonly ResolvedNode[];
+  readonly connectors: readonly ResolvedConnector[];
+}
+
+const NO_CONNECTORS: readonly ResolvedConnector[] = [];
+
+const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: ResolveScope): ResolvedChildren => {
   const props = legacyPropsOf('box', n);
   assertPaginateInFlow(props, path);
   assertBoxShape(props, path);
   const children = resolveChildren(item.element.props.children, path, ctx, parentOf(n));
-  return { kind: 'box', path, props, css: n.css, children };
+  // display: none leva junto os conectores declarados dentro do Box.
+  const connectors = n.css.display === 'none' ? NO_CONNECTORS : children.connectors;
+  return { nodes: [{ kind: 'box', path, props, css: n.css, children: children.nodes }], connectors };
+};
+
+const resolveItem = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): ResolvedChildren => {
+  if (item.kind === 'box') return resolveBox(item, path, normalizedOf(item, path, ctx, parent), ctx);
+  if (item.kind === 'connector') {
+    assertNoChildren(item, path);
+    const props = resolvePropsOf(item.element, item.kind, path, ctx);
+    const n = normalizeProps('connector', props, parent.text);
+    return { nodes: [], connectors: [resolveConnector(props, n.own, path, parent.text)] };
+  }
+  return { nodes: [resolveNode(item, path, ctx, parent)], connectors: NO_CONNECTORS };
 };
 
 const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): ResolvedNode => {
   const n = normalizedOf(item, path, ctx, parent);
   switch (item.kind) {
     case 'box':
-      return resolveBox(item, path, n, ctx);
+    case 'connector':
+      throw new ResolveError(`<${nameOf(item)}> resolvido fora de resolveItem`, path);
     case 'text':
       return resolveText(item, path, n);
     case 'image':
@@ -178,8 +202,6 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, p
       return resolvePath(item, path, n);
     case 'icon':
       return resolveIcon(item, path, n, ctx.env);
-    case 'connector':
-      throw new ResolveError(`<${nameOf(item)}> ainda não está disponível`, path);
     case 'span':
       throw new ResolveError(SPAN_OUTSIDE_TEXT, path);
     case 'slide':
@@ -196,12 +218,14 @@ const resolveChildren = (
   parentPath: string,
   ctx: ResolveScope,
   parent: ParentInfo,
-): readonly ResolvedNode[] => {
+): ResolvedChildren => {
   const items = onlyPrimitives(expandChild(children), parentPath);
   const segments = siblingSegments(items.map((item) => item.segment));
-  return items
-    .map((item, index) => resolveNode(item, joinPath(parentPath, segments[index] ?? item.segment), ctx, parent))
-    .filter(isDisplayed);
+  const resolved = items.map((item, index) => resolveItem(item, joinPath(parentPath, segments[index] ?? item.segment), ctx, parent));
+  return {
+    nodes: resolved.flatMap((entry) => entry.nodes).filter(isDisplayed),
+    connectors: resolved.flatMap((entry) => entry.connectors),
+  };
 };
 
 const ROOT_PARENT: ParentInfo = { text: ROOT_TEXT, css: undefined };
@@ -213,13 +237,16 @@ const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResolveScope)
   }
   const path = item.segment;
   const n = normalizedOf(item, path, ctx, ROOT_PARENT);
+  const { nodes, connectors } = resolveChildren(item.element.props.children, path, ctx, parentOf(n));
+  const ids = slideIdsOf(nodes);
   const slide: ResolvedSlide = {
     kind: 'slide',
     path,
     sourceSlide: index + 1,
     props: legacyPropsOf('slide', n),
     css: n.css,
-    children: resolveChildren(item.element.props.children, path, ctx, parentOf(n)),
+    children: nodes,
+    ...(connectors.length === 0 ? {} : { connectors: connectors.map((connector) => withMissing(connector, ids)) }),
   };
   assertSinglePaginate(slide);
   return slide;

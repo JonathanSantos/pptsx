@@ -66,8 +66,15 @@ const sideLineSvg = (segment: Rect, border: BorderSide): string =>
   });
 
 /** Rect (com o raio do CSS) ou, num Box com `shape`, a geometria da kind (M12). */
-const boxPartSvg = (kind: ShapeKind, rect: Rect, radius: number | undefined, attrs: Attrs, part: 'fill' | 'stroke'): string =>
-  kind === 'rect' ? element('rect', { ...rectAttrs(rect), ...radiusAttrs(radius, rect), ...attrs }) : kindSvg(kind, rect, attrs, part);
+const boxPartSvg = (kind: ShapeKind, rect: Rect, radius: number | undefined, attrs: Attrs, part: 'fill' | 'stroke'): string => {
+  if (kind === 'rect') return element('rect', { ...rectAttrs(rect), ...radiusAttrs(radius, rect), ...attrs });
+  // roundRect sem raio do autor: o arredondamento padrão do preset (como no PPTX).
+  if (kind === 'roundRect') {
+    const r = cornerRadiusOf(radius !== undefined && radius > 0 ? radius : undefined, rect);
+    return element('rect', { ...rectAttrs(rect), rx: r, ry: r, ...attrs });
+  }
+  return kindSvg(kind, rect, attrs, part);
+};
 
 const backgroundSvg = (css: CssStyle, frame: Rect, filterId: string, kind: ShapeKind): string => {
   const fill = css.backgroundColor === undefined || css.backgroundAlpha === 0 ? 'none' : css.backgroundColor;

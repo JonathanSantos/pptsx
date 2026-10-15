@@ -186,6 +186,8 @@ export const DEFAULTS = {
     strokeWidth: 1.5,
     endArrow: 'triangle' as ArrowType,
     startArrow: 'none' as ArrowType,
+    /** Cotovelo com o mesmo lado nas duas pontas: a dobra sai para fora dos nós esta distância (pt). */
+    elbowOffset: 16,
     /** Rótulo: tipografia, respiro (pt) entre o texto e o fundo. */
     label: { size: 12, color: '#333333', padding: 3 },
   },

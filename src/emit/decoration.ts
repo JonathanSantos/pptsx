@@ -91,12 +91,12 @@ const lineOf = (side: BorderSide, opacity: number): Pptx.ShapeLineProps =>
   withTransparency({ color: hexOf(side.color), width: side.width, dashType: DASH_TYPES[side.style] }, side.alpha, opacity);
 
 /**
- * M12: kind do fundo da caixa. Sem `shape` (ou rect/roundRect) vale o raio, como antes; as demais
- * kinds ignoram o raio (o fit avisa com css-not-emitted).
+ * M12: kind do fundo da caixa. Sem `shape` (ou 'rect') vale o raio, como antes; 'roundRect' usa o
+ * raio do autor ou o arredondamento padrão do preset; as demais ignoram o raio (css-not-emitted).
  */
 export const boxShapeOf = (node: PositionedNode): ShapeKind => {
   const shape = node.kind === 'box' ? node.props.shape : undefined;
-  return shape === undefined || shape === 'rect' || shape === 'roundRect' ? 'rect' : shape;
+  return shape === undefined ? 'rect' : shape;
 };
 
 const geometryFor = (kind: ShapeKind, radius: number | undefined, rect: Rect): { readonly shape: Pptx.ShapeName; readonly rectRadius?: number } => {

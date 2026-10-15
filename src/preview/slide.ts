@@ -3,6 +3,7 @@ import type { PositionedNode, PositionedSlide, PositionedTable, PositionedText, 
 import { paintOrderOf, type PaintItem } from '../emit/paint.ts';
 import { contentRectOf } from '../layout/index.ts';
 import { chartSvg } from './chart.ts';
+import { connectorSvg } from './connector.ts';
 import { decorationSvg } from './decoration.ts';
 import { loadImageUri } from './image.ts';
 import {
@@ -170,6 +171,7 @@ export const slideToSvg = (slide: PositionedSlide, size: SlideSize, options: Svg
   const body = [
     backgroundSvg(slide, area, ctx),
     ...paintOrderOf(slide).map((item) => drawItem(item, ctx)),
+    ...(slide.connectors ?? []).map((connector) => connectorSvg(connector, { fontFamilyMap: ctx.fontFamilyMap })),
     options.debug ? debugSvg(slide) : '',
   ].join('');
   const root = attrs({

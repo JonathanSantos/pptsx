@@ -1,4 +1,5 @@
-import type { Diagnostic, LayoutEnv, PositionedDeck, PositionedSlide, ResolvedDeck, SlideSize } from '../core/types.ts';
+import type { Diagnostic, LayoutEnv, PositionedDeck, PositionedSlide, ResolvedDeck, ResolvedNode, ResolvedSlide, SlideSize } from '../core/types.ts';
+import { routeConnectors } from './connectors.ts';
 import { withSourceSlide } from './diagnostics.ts';
 import type { FitResult } from './fit.ts';
 import { paginateSlide } from './paginate.ts';
@@ -30,12 +31,28 @@ const withSources = (results: readonly FitResult[], firstIndex: number, sourceSl
   );
 };
 
+const idsOf = (nodes: readonly ResolvedNode[]): readonly string[] =>
+  nodes.flatMap((node) => [...(node.props.id === undefined ? [] : [node.props.id]), ...(node.kind === 'box' ? idsOf(node.children) : [])]);
+
+/** M12: conectores roteados depois do ajuste de cada parte (não mexem no layout). */
+const withConnectors = (results: readonly FitResult[], slide: ResolvedSlide, firstIndex: number, input: Omit<FitDeckInput, 'deck'>): readonly FitResult[] => {
+  const { connectors } = slide;
+  if (connectors === undefined || connectors.length === 0) return results;
+  const knownIds = idsOf(slide.children);
+  return results.map((result, part) => {
+    const ctx = { size: input.size.name, slide: firstIndex + part + 1 };
+    const routed = routeConnectors({ slide: result.slide, connectors, env: input.env, ctx, knownIds, firstPart: part === 0 });
+    const positioned = routed.connectors.length === 0 ? result.slide : { ...result.slide, connectors: routed.connectors };
+    return { slide: positioned, diagnostics: [...result.diagnostics, ...routed.diagnostics] };
+  });
+};
+
 /** Layout + ajuste de cada slide, já paginado: o deck de saída pode ter mais slides que o do autor. */
 export const fitDeck = ({ deck, size, env }: FitDeckInput): FitDeckResult => {
   const fitted = deck.slides.reduce<Fitted>(
     (done, slide) => {
       const slideIndex = done.slides.length;
-      const results = paginateSlide({ slide, slideIndex, size, env });
+      const results = withConnectors(paginateSlide({ slide, slideIndex, size, env }), slide, slideIndex, { size, env });
       return {
         slides: [...done.slides, ...results.map((result) => result.slide)],
         diagnostics: [...done.diagnostics, ...withSources(results, slideIndex, slide.sourceSlide)],
