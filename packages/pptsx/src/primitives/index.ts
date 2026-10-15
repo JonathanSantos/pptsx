@@ -69,7 +69,9 @@ export const defineLayout = <P>(name: string, options: LayoutOptions, component:
  * isso é do DS. Função comum continua valendo como componente.
  */
 export function defineComponent<P extends object>(meta: string | ComponentMetaFor<NoInfer<P>>, fn: (props: P) => Child, defaults?: Partial<NoInfer<P>>): Component<P> {
-  const identity: ComponentMeta = Object.freeze(typeof meta === 'string' ? { name: meta } : { ...meta });
+  const base: ComponentMeta = typeof meta === 'string' ? { name: meta } : { ...meta };
+  // Os padrões ficam no meta (só leitura): o catálogo e o schema automático de um DS os mostram.
+  const identity: ComponentMeta = Object.freeze(defaults === undefined ? base : { ...base, defaults });
   if (typeof identity.name !== 'string' || identity.name.trim() === '') throw new Error('defineComponent: o nome do componente não pode ser vazio');
   const component = (props: P): Child => fn(defaults === undefined ? props : ({ ...defaults, ...props } as P));
   Object.defineProperty(component, 'name', { value: identity.displayName ?? identity.name });

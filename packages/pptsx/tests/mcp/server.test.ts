@@ -28,9 +28,9 @@ describe('pptsx-mcp', () => {
   });
   const call = async (name: string, args: Record<string, unknown>) => (await client.callTool({ name, arguments: args })) as unknown as CallResult;
 
-  it('lista as seis ferramentas', async () => {
+  it('lista as sete ferramentas', async () => {
     const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name).sort()).toEqual(['build', 'diagnose', 'guide', 'init', 'preview', 'schema']);
+    expect(tools.map((tool) => tool.name).sort()).toEqual(['build', 'diagnose', 'guide', 'init', 'lint', 'preview', 'schema']);
   });
 
   it('build num deck com erro: isError, diagnósticos com as mensagens da engine e o overview em PNG', async () => {
@@ -78,9 +78,12 @@ describe('pptsx-mcp', () => {
   });
 
   it('schema por primitiva', async () => {
-    const chart = JSON.parse((await call('schema', { primitive: 'chart' })).content[0]!.text!) as { required: string[]; properties: Record<string, { type: string }> };
+    const chart = JSON.parse((await call('schema', { primitive: 'chart' })).content[0]!.text!) as { $schema: string; $id: string; required: string[]; properties: Record<string, { type: string; enum?: string[]; 'x-tsType': string }> };
+    expect(chart.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
+    expect(chart.$id).toBe('pptsx:schema/pptsx#/$defs/chart');
     expect(chart.required).toEqual(['data', 'kind']);
-    expect(chart.properties.kind!.type).toContain('"stackedBar100"');
+    expect(chart.properties.kind!.enum).toContain('stackedBar100');
+    expect(chart.properties.kind!['x-tsType']).toContain('"stackedBar100"');
     expect((await call('schema', { primitive: 'xyz' })).isError).toBe(true);
     expect((await call('schema', { primitive: 'Text' })).isError).toBeFalsy();
   });

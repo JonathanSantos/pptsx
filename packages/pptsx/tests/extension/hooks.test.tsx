@@ -25,7 +25,7 @@ describe('defineComponent', () => {
     const slide = resolve(<Deck><Slide><Card label="a" /><Card label="b" tone="dark" /></Slide></Deck>).slides[0]!;
     const [a, b] = slide.children as ResolvedBox[];
     expect(a!.path).toBe('Slide > StatCard[0]');
-    expect(a!.component).toEqual({ name: 'Card', displayName: 'StatCard', ds: 'teste', tags: ['kpi'] });
+    expect(a!.component).toEqual({ name: 'Card', displayName: 'StatCard', ds: 'teste', tags: ['kpi'], defaults: { tone: 'light' } });
     expect(a!.css.backgroundColor).toBe('#EEEEEE');
     expect(b!.css.backgroundColor).toBe('#000000');
     // Os filhos não herdam a identidade do componente (só o nó que ele gerou).
