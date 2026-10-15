@@ -43,7 +43,7 @@ import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
 import { createResolveEnv, resolveDeck, resolveTheme, type ResolveEnv } from './resolve/index.ts';
 import { createContext, resolveSize } from './sizes.ts';
 import { jsx } from './jsx/jsx-runtime.ts';
-import { Deck, Slide } from './primitives/index.ts';
+import { Box, Deck, Slide } from './primitives/index.ts';
 import { createFontkitMeasurer, createFontRegistry } from './text/index.ts';
 
 /** Tudo que é derivado das opções uma única vez e vale para todos os tamanhos. */
@@ -293,6 +293,12 @@ export interface FragmentOptions {
   readonly png?: boolean;
   /** Largura do SVG/PNG em px; padrão DEFAULTS.preview.width. */
   readonly widthPx?: number;
+  /**
+   * true: o elemento é filho direto do Slide (um `flex={1}` ocupa a altura toda — componentes feitos
+   * para preencher o corpo). Padrão false: o elemento fica num Box do tamanho do conteúdo, e o
+   * catálogo mostra o tamanho natural dele.
+   */
+  readonly fill?: boolean;
 }
 
 export interface FragmentResult {
@@ -310,7 +316,8 @@ export interface FragmentResult {
  */
 export const renderFragment = async (element: SlideElement, options: FragmentOptions): Promise<FragmentResult> => {
   const widthPx = options.widthPx ?? DEFAULTS.preview.width;
-  const deck: DeckDefinition = () => jsx(Deck, { children: jsx(Slide, { padding: options.padding ?? DEFAULTS.fragment.padding, children: element }) });
+  const content = options.fill === true ? element : jsx(Box, { children: element });
+  const deck: DeckDefinition = () => jsx(Deck, { children: jsx(Slide, { padding: options.padding ?? DEFAULTS.fragment.padding, children: content }) });
   const [result] = await render(deck, {
     sizes: [options.size],
     includePositioned: true,
@@ -321,9 +328,28 @@ export const renderFragment = async (element: SlideElement, options: FragmentOpt
     ...(options.lang === undefined ? {} : { lang: options.lang }),
   });
   const positioned = result!.positioned!;
-  const slide = positioned.slides[0]!;
+  const slide = options.fill === true ? positioned.slides[0]! : unwrapped(positioned.slides[0]!);
   const { faces } = resolveFontFaces(options.fonts ?? DEFAULT_FONTS);
   const svg = slideToSvg(slide, positioned.size, { widthPx, baseDir: options.baseDir ?? process.cwd(), fontFamilyMap: fontFamilyMapOf(faces), ...(options.lang === undefined ? {} : { lang: options.lang }) });
   const png = result!.preview?.slides[0];
-  return { size: positioned.size, slide, diagnostics: result!.diagnostics.filter((diagnostic) => diagnostic.slide === 1), svg, ...(png === undefined ? {} : { png }) };
+  const diagnostics = result!.diagnostics
+    .filter((diagnostic) => diagnostic.slide === 1)
+    .map((diagnostic) => (options.fill === true ? diagnostic : { ...diagnostic, path: withoutWrapper(diagnostic.path) }));
+  return { size: positioned.size, slide, diagnostics, svg, ...(png === undefined ? {} : { png }) };
+};
+
+const WRAPPER = 'Slide > Box';
+
+/** O invólucro do tamanho natural não aparece no resultado: `Slide > Box > X` volta a ser `Slide > X`. */
+const withoutWrapper = (path: string): string => (path.startsWith(`${WRAPPER} > `) ? `Slide${path.slice(WRAPPER.length)}` : path);
+
+const rewritePaths = (node: PositionedNode): PositionedNode => {
+  const path = withoutWrapper(node.path);
+  return node.kind === 'box' ? { ...node, path, children: node.children.map(rewritePaths) } : { ...node, path };
+};
+
+const unwrapped = (slide: PositionedSlide): PositionedSlide => {
+  const [wrapper] = slide.children;
+  if (wrapper === undefined || wrapper.kind !== 'box') return slide;
+  return { ...slide, children: wrapper.children.map(rewritePaths) };
 };

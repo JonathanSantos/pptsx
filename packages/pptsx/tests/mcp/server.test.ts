@@ -35,7 +35,7 @@ describe('pptsx-mcp', () => {
 
   it('build num deck com erro: isError, diagnósticos com as mensagens da engine e o overview em PNG', async () => {
     const out = mkdtempSync(join(tmpdir(), 'pptsx-mcp-'));
-    const result = await call('build', { deck: 'examples/agent-test/broken-original.tsx', sizes: ['16x9'], out });
+    const result = await call('build', { deck: 'tests/examples/legacy/broken-original.tsx', sizes: ['16x9'], out });
     expect(result.isError).toBe(true);
     const report = result.content[0]!.text!;
     expect(report).toMatch(/error/);

@@ -13,13 +13,21 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist/**/*.js", "dist/**/*.d.ts", "src/**/*.md", "README.md", "LICENSE"],
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "guide/*.md",
+    "fonts/inter/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit -p .",
     "lint:repo": "tsc --noEmit -p . --noUnusedLocals",
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "schema": "tsx tools/schema.ts"
   },
   "peerDependencies": {
     "pptsx": ">=0.7.0",

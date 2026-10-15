@@ -1,0 +1,1 @@
+`<TwoColumn left={…} right={…} stacked? ratio? />` — duas colunas que ocupam o corpo; `left`/`right` são slots. `stacked={{ base: false, tall: true }}` empilha em 4:3. `ratio` (padrão 0,5) é a fração da coluna esquerda.

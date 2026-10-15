@@ -3,7 +3,7 @@ import { groupDiagnostics } from '../../src/fit/index.ts';
 import type { Diagnostic } from '../../src/core/types.ts';
 import { fileURLToPath } from 'node:url';
 import { render } from '../../src/render.ts';
-import brokenOriginal from '../../examples/agent-test/broken-original.tsx';
+import brokenOriginal from '../examples/legacy/broken-original.tsx';
 
 const AGENT_TEST_DIR = fileURLToPath(new URL('../../examples/agent-test/', import.meta.url));
 

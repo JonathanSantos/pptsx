@@ -1,0 +1,3 @@
+O `@pptsx/ds-base` é um design system de exemplo sobre o pptsx: tokens (`tokens.color`, `tokens.font`, `tokens.space`), o tema do arquivo (`theme`), três layouts que devolvem `<Slide>` (`CoverLayout`, `ContentLayout`, `ClosingLayout`) e quatro componentes (`Bullets`, `KpiCard`, `KpiRow`, `TwoColumn`). Tudo vem de `import { … } from '@pptsx/ds-base'`.
+
+Registre o DS na config para o lint e o MCP o conhecerem: `defineConfig({ ds: [ds], theme })` (com `import { ds, theme } from '@pptsx/ds-base'`). Regras: `ds-base/colors-from-tokens` (cor fora de `tokens.color`), `ds-base/fonts-from-theme`, `ds-base/kpi-row-max-4`, `ds-base/cover-only-first`.

@@ -11,6 +11,8 @@ import { checkTheme } from './theme.ts';
 export interface CatalogCase {
   readonly name: string;
   readonly props: Readonly<Record<string, unknown>>;
+  /** O componente preenche o corpo do slide (`renderFragment({ fill: true })`); padrão: tamanho natural. */
+  readonly fill?: boolean;
 }
 
 export interface DsInput {

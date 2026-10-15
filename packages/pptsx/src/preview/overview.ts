@@ -12,6 +12,8 @@ export interface OverviewItem {
   readonly hidden?: boolean;
   /** M15: título da seção que começa neste slide (legenda e marca à esquerda). */
   readonly section?: string;
+  /** M17: legenda própria (sem marca de seção), para overviews fora de um deck (catálogo de componentes). */
+  readonly label?: string;
 }
 
 export interface OverviewOptions {
@@ -129,7 +131,7 @@ const badgeSvg = (cell: Cell, thumbWidth: number): string => {
 
 /** "3", "3 · Resultados", "4 · oculto". */
 export const overviewLabelOf = (item: OverviewItem): string => {
-  const label = [String(item.number), item.section, item.hidden === true ? 'oculto' : undefined].filter((part) => part !== undefined).join(' · ');
+  const label = [String(item.number), item.label ?? item.section, item.hidden === true ? 'oculto' : undefined].filter((part) => part !== undefined).join(' · ');
   return label.length > GRID.labelChars ? `${label.slice(0, GRID.labelChars - 1)}…` : label;
 };
 

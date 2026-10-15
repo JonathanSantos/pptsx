@@ -10,7 +10,7 @@ import { slideToSvg } from '../../src/preview/index.ts';
 import { Deck, Slide, Span, Text } from '../../src/primitives/index.ts';
 import type { FontFace, RenderOptions, SlideElement } from '../../src/core/types.ts';
 
-const inter = (file: string) => fileURLToPath(new URL(`../../fonts/inter/${file}`, import.meta.url));
+const inter = (file: string) => fileURLToPath(new URL(`../fixtures/fonts/inter/${file}`, import.meta.url));
 const INTER: readonly FontFace[] = [
   { family: 'Inter', weight: 'regular', file: inter('Inter-Regular.ttf') },
   { family: 'Inter', weight: 300, file: inter('Inter-Light.ttf') },

@@ -607,3 +607,9 @@ Plano: `docs/work/milestones/M17.md`. Regra da linha: o que só faz sentido com 
 - `renderFragment(elemento, { size, padding? = DEFAULTS.fragment.padding, fonts?, theme?, baseDir?, lang?, png?, widthPx? })` → `{ size, slide, diagnostics, svg, png? }`: o elemento num Slide em coluna; não grava nada; só a 1ª parte se algo paginar.
 - `DsManifest { name, version, components, theme?, rules, guide?, schema?, examples? }` e `defineDs` (nome obrigatório, ids de regra únicos) em `src/ds.ts`.
 - MCP: `McpContext.ds`; `guide({ source?, section? })` e `schema({ source?, primitive? })` — fonte padrão `"pptsx"`, cada DS é uma fonte com o próprio nome; o índice do núcleo lista as outras fontes. DS do `pptsx.config.ts` do cwd e de `pptsx-mcp --ds <pacote>` (resolvido a partir do cwd; export default ou `ds`).
+
+### Kit, DS de exemplo e ajustes do núcleo (M17-2/3)
+- `renderFragment({ fill? })`: padrão `false` — o elemento fica num Box do tamanho do conteúdo (o catálogo mostra o tamanho natural; um `flex={1}` não estica) e o invólucro **não aparece** no resultado (paths `Slide > X`, diagnósticos idem); `fill: true` põe o elemento direto no Slide (componentes que preenchem o corpo). `CatalogCase.fill` repassa.
+- `OverviewItem.label`: legenda própria sem marca de seção (overviews fora de um deck).
+- API pública para DS (sem marca): `mapResponsive`/`isResponsive`/`pickResponsive`, `toHexColor`, `resolveTheme`, `buildOverview`, `defaultFontFaces`/`defaultFontFiles`, `createContext`/`resolveSize`, `lintDeck`, tipos da árvore resolvida e posicionada.
+- `@pptsx/ds-base`: só a API pública de `pptsx` e do `ds-kit`; componentes com `defineComponent` (mesmos nomes de antes: paths iguais), `KpiCard` com `createVariants`, `TwoColumn` com slots, `meta.catalog` nos quatro componentes; regras `ds-base/colors-from-tokens`, `fonts-from-theme`, `kpi-row-max-4`, `cover-only-first`; guia em `guide/*.md`; schema gerado (`npm run schema`).

@@ -96,6 +96,7 @@ export const catalog = async (options: CatalogOptions): Promise<CatalogResult> =
       for (const size of sizes) {
         const result = await renderFragment(jsx(component, item.props), {
           size,
+          ...(item.fill === true ? { fill: true } : {}),
           png: options.out !== undefined && options.check !== true,
           ...(options.fonts === undefined ? {} : { fonts: options.fonts }),
           ...(options.ds.theme === undefined ? {} : { theme: options.ds.theme }),
@@ -136,7 +137,7 @@ export const catalog = async (options: CatalogOptions): Promise<CatalogResult> =
         files.push(file);
       });
       const overview = join(options.out, `${name}.overview.png`);
-      writeFileSync(overview, buildOverview(thumbs.map((thumb, index) => ({ png: thumb.png, number: index + 1, section: thumb.label })), { columns: sizes.length, thumbWidth: THUMB_WIDTH, fontFiles: defaultFontFiles() }));
+      writeFileSync(overview, buildOverview(thumbs.map((thumb, index) => ({ png: thumb.png, number: index + 1, label: thumb.label })), { columns: sizes.length, thumbWidth: THUMB_WIDTH, fontFiles: defaultFontFiles() }));
       files.push(overview);
     }
   }

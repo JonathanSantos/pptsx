@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import typescript from 'typescript-api';
@@ -66,14 +66,15 @@ const framesOf = (nodes: readonly PositionedNode[]): readonly (readonly [string,
 
 describe('--fix em broken-original.tsx', () => {
   it('migra tudo e gera a mesma árvore (frames ±1 pt em 16x9 e 4x3)', async () => {
-    const original = resolve(import.meta.dirname, '../../examples/agent-test/broken-original.tsx');
+    // Cópia congelada (M17): usa os layouts/componentes de tests/examples/legacy, não o DS.
+    const original = resolve(import.meta.dirname, '../examples/legacy/broken-original.tsx');
     const result = migrateSource(ts, original, readFileSync(original, 'utf8'));
     expect(result.skipped).toEqual([]);
     expect(result.changes).toBeGreaterThan(0);
-    const dir = mkdtempSync(join(resolve(import.meta.dirname, '../../examples/agent-test'), 'tmp-lint-'));
-    const migrated = join(dir, 'broken.tsx');
-    // Mesmo nível de pasta não: os imports relativos do deck sobem um nível a mais.
-    writeFileSync(migrated, result.source.replaceAll("'../", "'../../"));
+    // Na mesma pasta do original: os imports relativos continuam valendo.
+    const dir = resolve(import.meta.dirname, '../examples/legacy');
+    const migrated = join(dir, `tmp-migrated-${process.pid}.tsx`);
+    writeFileSync(migrated, result.source);
     try {
       const load = async (file: string) => ((await import(pathToFileURL(file).href)) as { default: DeckDefinition }).default;
       const [before, after] = await Promise.all([original, migrated].map(async (file) => render(await load(file), { sizes: ['16x9', '4x3'], preview: false, includePositioned: true })));
@@ -84,7 +85,7 @@ describe('--fix em broken-original.tsx', () => {
         a.forEach(([, ...frame], i) => frame.forEach((value, k) => expect(Math.abs(value - (b[i]![k + 1] as number))).toBeLessThanOrEqual(1)));
       });
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(migrated, { force: true });
     }
   }, 60000);
 });

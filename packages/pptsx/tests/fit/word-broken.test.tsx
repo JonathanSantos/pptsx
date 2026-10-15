@@ -16,7 +16,7 @@ import { resolveDeck } from '../../src/resolve/index.ts';
 import { createContext, resolveSize } from '../../src/sizes.ts';
 import { createFontRegistry, createFontkitMeasurer } from '../../src/text/index.ts';
 import { DEFAULT_FONTS } from '../../src/fonts/index.ts';
-import { KpiRow } from '../../examples/components/index.ts';
+import { KpiRow } from '../examples/frozen/components/KpiRow.tsx';
 import { SIZE_16X9, SIZE_4X3 } from '../helpers/nodes.ts';
 import { allMemberPaths, memberPaths } from '../helpers/diagnostics.ts';
 

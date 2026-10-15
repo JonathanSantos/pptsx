@@ -1,0 +1,98 @@
+{
+  "lado-a-lado": {
+    "16x9": [
+      {
+        "path": "Slide > TwoColumn",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 357
+      },
+      {
+        "path": "Slide > TwoColumn > Text",
+        "x": 24,
+        "y": 24,
+        "width": 321,
+        "height": 357
+      },
+      {
+        "path": "Slide > TwoColumn > Box",
+        "x": 375,
+        "y": 24,
+        "width": 321,
+        "height": 357
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > TwoColumn",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 492
+      },
+      {
+        "path": "Slide > TwoColumn > Text",
+        "x": 24,
+        "y": 24,
+        "width": 321,
+        "height": 492
+      },
+      {
+        "path": "Slide > TwoColumn > Box",
+        "x": 375,
+        "y": 24,
+        "width": 321,
+        "height": 492
+      }
+    ]
+  },
+  "empilhado": {
+    "16x9": [
+      {
+        "path": "Slide > TwoColumn",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 357
+      },
+      {
+        "path": "Slide > TwoColumn > Text",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 23
+      },
+      {
+        "path": "Slide > TwoColumn > Box",
+        "x": 24,
+        "y": 67,
+        "width": 672,
+        "height": 314
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > TwoColumn",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 492
+      },
+      {
+        "path": "Slide > TwoColumn > Text",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 23
+      },
+      {
+        "path": "Slide > TwoColumn > Box",
+        "x": 24,
+        "y": 67,
+        "width": 672,
+        "height": 449
+      }
+    ]
+  }
+}

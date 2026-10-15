@@ -13,7 +13,8 @@ export { isResponsive, mapResponsive, pickResponsive } from './core/responsive.t
 export { resolveTheme } from './resolve/index.ts';
 export { toHexColor } from './resolve/colors.ts';
 export { buildOverview, type OverviewItem } from './preview/overview.ts';
-export { defaultFontFiles } from './fonts/index.ts';
+export { defaultFontFaces, defaultFontFiles } from './fonts/index.ts';
+export { createContext, resolveSize } from './sizes.ts';
 export { defineConfig } from './config.ts';
 export type { PptsxConfig, TsxSlidesConfig } from './config.ts';
 
@@ -30,6 +31,10 @@ export type {
   ResolvedDeck,
   ResolvedText,
   ResolvedBox,
+  ResolvedShape,
+  ResolvedImage,
+  ResolvedChart,
+  ResolvedTable,
   PositionedNode,
   PositionedSlide,
   PositionedDeck,

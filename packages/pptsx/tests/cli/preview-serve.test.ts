@@ -37,7 +37,7 @@ describe('preview --serve', () => {
   };
 
   it('serve a página, o estado com frames, o SVG de cada slide e os diagnósticos', async () => {
-    const server = await start('examples/demo.tsx');
+    const server = await start('examples/overflow.tsx');
     try {
       const page = await fetch(server.url());
       expect(page.headers.get('content-type')).toContain('text/html');

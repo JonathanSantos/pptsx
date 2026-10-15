@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import m9 from '../../examples/agent-test/m9-deck.tsx';
-import charts from '../../examples/charts.tsx';
-import demo from '../../examples/demo.tsx';
 import hello from '../../examples/hello.tsx';
 import layoutTest from '../../examples/layout-test.tsx';
-import longList from '../../examples/long-list.tsx';
-import showcase from '../../examples/showcase.tsx';
 import type { DeckDefinition, SizePresetName } from '../../src/core/types.ts';
 import { EXAMPLES_DIR, cssFit, slideDiffs, type BaselineNode } from '../helpers/css-fit.tsx';
 import baseline from './__fixtures__/css-positioned.json' with { type: 'json' };
@@ -14,6 +9,7 @@ import baseline from './__fixtures__/css-positioned.json' with { type: 'json' };
  * M11: os decks de examples/ escritos em CSS (M11-F) × `css-positioned.json`, a referência de
  * posições daqui para frente: mesmos nós, frames ±1 pt, mesmo size e linhas, mesmos diagnósticos.
  * A paridade com o motor pré-M11 fica em engine-parity (decks legados, props antigas).
+ * M17: os decks do DS de exemplo (demo, long-list, charts, showcase, m9) saíram com o ds-base (packages/ds-base/tests).
  */
 
 interface BaselineDiagnostic {
@@ -31,11 +27,6 @@ const keyOf = (d: BaselineDiagnostic): string => `${d.severity} ${d.code} s${d.s
 const DECKS: readonly (readonly [string, DeckDefinition, string])[] = [
   ['hello', hello, EXAMPLES_DIR],
   ['layout-test', layoutTest, EXAMPLES_DIR],
-  ['demo', demo, EXAMPLES_DIR],
-  ['long-list', longList, EXAMPLES_DIR],
-  ['charts', charts, EXAMPLES_DIR],
-  ['agent-test/m9-deck', m9, `${EXAMPLES_DIR}agent-test/`],
-  ['showcase', showcase, EXAMPLES_DIR],
 ];
 
 const SIZES: readonly SizePresetName[] = ['16x9', '4x3', 'wide'];

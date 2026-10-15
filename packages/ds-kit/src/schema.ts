@@ -31,13 +31,27 @@ const loadTs = async (candidates: readonly string[] = ['typescript', 'typescript
   return loadTs(rest);
 };
 
+const FALLBACK = (ts: Ts): import('typescript-api').CompilerOptions => ({
+  strict: true, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler,
+  allowImportingTsExtensions: true, noEmit: true, jsx: ts.JsxEmit.ReactJSX, jsxImportSource: 'pptsx', skipLibCheck: true,
+});
+
+/** As opções do tsconfig mais próximo do arquivo (paths do monorepo, jsx); sem tsconfig, um padrão. */
+const compilerOptionsFor = (ts: Ts, file: string): import('typescript-api').CompilerOptions => {
+  const config = ts.findConfigFile(file.replace(/[^/\\]+$/, ''), ts.sys.fileExists, 'tsconfig.json');
+  if (config === undefined) return FALLBACK(ts);
+  const read = ts.readConfigFile(config, ts.sys.readFile);
+  const parsed = ts.parseJsonConfigFileContent(read.config, ts.sys, config.replace(/[^/\\]+$/, ''));
+  return { ...parsed.options, noEmit: true };
+};
+
 /**
  * Props de cada componente exportado de `file` (o tipo do 1º parâmetro), por nome de export.
  * `names` restringe; sem ele, todo export que é função de um parâmetro objeto.
  */
 export const schemaOf = async (file: string, names?: readonly string[]): Promise<Readonly<Record<string, ComponentSchema>>> => {
   const ts = await loadTs();
-  const program = ts.createProgram([file], { strict: true, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler, allowImportingTsExtensions: true, noEmit: true, jsx: ts.JsxEmit.ReactJSX, jsxImportSource: 'pptsx', skipLibCheck: true });
+  const program = ts.createProgram([file], compilerOptionsFor(ts, file));
   const checker = program.getTypeChecker();
   const source = program.getSourceFile(file);
   if (source === undefined) throw new Error(`schemaOf: ${file} não encontrado`);
@@ -47,7 +61,9 @@ export const schemaOf = async (file: string, names?: readonly string[]): Promise
   return Object.fromEntries(
     exports
       .filter((symbol) => names === undefined || names.includes(symbol.name))
-      .flatMap((symbol) => {
+      .flatMap((exported) => {
+        // `export { X } from './x.ts'` chega como alias: o tipo é o do símbolo de origem.
+        const symbol = (exported.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(exported) : exported;
         const type = checker.getTypeOfSymbolAtLocation(symbol, source);
         const [signature] = type.getCallSignatures();
         const [param] = signature?.getParameters() ?? [];
@@ -62,7 +78,7 @@ export const schemaOf = async (file: string, names?: readonly string[]): Promise
           }),
         );
         const required = props.filter((prop) => (prop.flags & ts.SymbolFlags.Optional) === 0).map((prop) => prop.name).sort();
-        return [[symbol.name, { type: 'object' as const, properties, required }]];
+        return [[exported.name, { type: 'object' as const, properties, required }]];
       }),
   );
 };

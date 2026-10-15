@@ -55,5 +55,8 @@ export {
 } from './system.ts';
 export { eotOf, fsTypeOf, isEmbeddable, isTrueTypeFont } from './eot.ts';
 
+/** M17: as faces padrão (Liberation Sans registrada como Arial), para uma config somar às suas. */
+export const defaultFontFaces = (): readonly FileFontFace[] => DEFAULT_FONTS;
+
 /** M17: arquivos das faces padrão (Liberation Sans, métricas de Arial), para quem rasteriza fora do render. */
 export const defaultFontFiles = (): readonly string[] => DEFAULT_FONTS.flatMap((face) => (face.file === undefined ? [] : [face.file]));

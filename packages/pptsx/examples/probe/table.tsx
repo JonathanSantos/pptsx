@@ -1,8 +1,19 @@
-import { Box, Deck, Table, defineDeck, type TableColumn } from 'pptsx';
-import { tokens } from '../tokens.ts';
-import { ContentLayout } from '../layouts/index.ts';
+import { Box, Deck, Slide, Table, Text, defineDeck, type Children, type TableColumn } from 'pptsx';
 
-const { color, font } = tokens;
+// M17: o núcleo não tem marca; o slide de conteúdo e as cores que este probe usava (do DS de exemplo)
+// estão aqui em primitivas, com os mesmos valores, para as fixtures de diagnóstico não mudarem.
+const color = { white: '#FFFFFF', ink: '#1B2A4A', brand: '#1B2A4A', accent: '#2F6FED', surface: '#F4F6FA', muted: '#5B6680' } as const;
+const font = { h1: 32, small: 14, caption: 11 } as const;
+const space = { page: 40, gap: 20 } as const;
+
+function ContentLayout({ title, children }: { readonly title: string; readonly children?: Children }) {
+  return (
+    <Slide backgroundColor={color.white} padding={space.page} gap={space.gap * 1.5} color={color.ink}>
+      <Text fontSize={font.h1} fontWeight="bold" minSize={24} borderLeft={`6px solid ${color.accent}`} paddingLeft={14}>{title}</Text>
+      <Box flex={1} justifyContent="flex-start">{children}</Box>
+    </Slide>
+  );
+}
 
 // Deck de sondagem do M10: os três desfechos do ajuste de uma Table que não cabe.
 // As mesmas 13 linhas (cabeçalho + 12) num Box de altura fixa, para o resultado não

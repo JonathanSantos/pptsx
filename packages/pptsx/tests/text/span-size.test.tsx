@@ -35,7 +35,7 @@ describe('M13-7 — medição com corpo por trecho', () => {
   });
 });
 
-const inter = (file: string) => fileURLToPath(new URL(`../../fonts/inter/${file}`, import.meta.url));
+const inter = (file: string) => fileURLToPath(new URL(`../fixtures/fonts/inter/${file}`, import.meta.url));
 const FONTS: readonly FontFace[] = [...DEFAULT_FONTS, { family: 'Inter', weight: 'regular', file: inter('Inter-Regular.ttf') }];
 
 describe('M13-7 — emissão e preview', () => {
