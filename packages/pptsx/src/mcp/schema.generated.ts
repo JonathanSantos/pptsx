@@ -42,8 +42,8 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "background": {
-        "type": "string | { readonly image: string; } | ResponsiveValue<string | { readonly image: string; }>",
-        "description": "Cor hex ou caminho de imagem."
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
@@ -352,6 +352,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
@@ -672,6 +676,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
@@ -1007,6 +1015,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
+      },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
@@ -1326,6 +1338,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
@@ -1707,6 +1723,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
+      },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
@@ -2064,6 +2084,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
+      },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
@@ -2415,6 +2439,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
+      },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
@@ -2747,6 +2775,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
@@ -3118,6 +3150,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"

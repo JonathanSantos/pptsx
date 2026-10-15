@@ -10,6 +10,7 @@ export { defineRule, colorsFromTokens, fontsFromTheme, maxChildren, onlyOnSlide,
 export { createDs, componentGuides, guideOf, metaOfComponent, schemaFromMeta, type CatalogCase, type Ds, type DsInput, type GuidePart } from './ds.ts';
 export { catalog, compareFrames, type CatalogDiff, type CatalogOptions, type CatalogResult, type ComponentFixture, type FrameFixture } from './catalog.ts';
 export { schemaOf, type ComponentSchema } from './schema.ts';
+export { dsSkillFiles, packageNameNear, writeDsSkill, type DsSkillOptions } from './skill.ts';
 export { dsNameOf, dsScaffoldFiles, initDs, tsconfigExtendsFor, type DsInitOptions, type DsInitResult, type DsScaffoldFile } from './scaffold.ts';
 // Do núcleo, para o DS importar tudo de um lugar.
 export { defineComponent, defineDs, defineLayout, type ComponentMeta, type DsManifest, type LintRule } from 'pptsx';

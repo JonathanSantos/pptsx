@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { INIT_USAGE, parseInitCli, runInit } from './cli/init.ts';
 import { MIGRATION_SOURCES, migrateTree, migrationSummaryOf } from './cli/migrate.ts';
+import { SKILL_USAGE, parseSkillCli, runSkill } from './cli/skill.ts';
 import { standaloneRuntime } from './standalone.ts';
 import { defaultImportModule, type ImportModule, type ImportOptions } from './cli/loader.ts';
 import { assertDeckTsconfig } from './cli/tsconfig.ts';
@@ -27,6 +28,7 @@ export const USAGE = [
   '     pptsx preview <deck.tsx> --serve [--port 4321] [--size 16x9,4x3,wide] [--lang pt-BR] [--line-breaks forced|auto]',
   '     pptsx lint <deck.tsx> [--fix] [--json] [--size 16x9,4x3]',
   '     pptsx lint --from 0.x <pasta|arquivo> [--json]   (migra as props da 0.x em todos os .ts/.tsx)',
+  `     ${SKILL_USAGE.replace(/^uso: /, '')}`,
 ].join('\n');
 
 /** Dependências de IO trocáveis (testes): observação de arquivos e o sinal que encerra o --watch. */
@@ -593,6 +595,7 @@ const dispatch = async (argv: readonly string[], cwd: string, deps: CliDeps): Pr
   if (commandOf(argv) === 'init') return runInit(parseInitCli(argv, cwd), cwd);
   if (commandOf(argv) === 'preview') return previewServe(parsePreviewCli(argv, cwd), cwd, deps);
   if (commandOf(argv) === 'lint') return runLint(parseLintCli(argv, cwd), cwd, deps);
+  if (commandOf(argv) === 'skill') return runSkill(parseSkillCli(argv, cwd), cwd);
   const args = parseCli(argv, cwd);
   return args.watch ? watchBuild(args, cwd, deps) : build(args, cwd, deps);
 };

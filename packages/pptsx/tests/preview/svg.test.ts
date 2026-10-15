@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { slideToSvg, type SvgOptions } from '../../src/preview/index.ts';
-import type { PositionedNode, PositionedSlide, SlideProps, TextLayout } from '../../src/core/types.ts';
-import { SIZE_16X9, SIZE_4X3, pBox, pImage, pShape, pSlide, pText, rect, singleRunLines } from '../helpers/nodes.ts';
+import type { PositionedNode, PositionedSlide, TextLayout } from '../../src/core/types.ts';
+import { SIZE_16X9, SIZE_4X3, pBox, pImage, pShape, pSlide, pText, rect, singleRunLines, type TestSlideProps } from '../helpers/nodes.ts';
 import { makePng } from '../helpers/png.ts';
 import { findElements, isDashed, isRed, num, rootSvg, styleOf, textOf } from '../helpers/svg.ts';
 
@@ -18,7 +18,7 @@ const options = (over: Partial<SvgOptions> = {}): SvgOptions => ({
   ...over,
 });
 
-const svgOf = (children: readonly PositionedNode[], props: Omit<SlideProps, 'children'> = {}, over: Partial<SvgOptions> = {}) =>
+const svgOf = (children: readonly PositionedNode[], props: TestSlideProps = {}, over: Partial<SvgOptions> = {}) =>
   slideToSvg(pSlide(children, props), SIZE_16X9, options(over));
 
 const textLayout = (lines: readonly string[], over: Partial<TextLayout> = {}): TextLayout => ({

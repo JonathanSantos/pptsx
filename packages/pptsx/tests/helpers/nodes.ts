@@ -42,6 +42,9 @@ import { DEFAULTS, tableHeaderOf, tableStyleOf } from '../../src/core/defaults.t
 import { boxOf, legacyCssOf, nodePropsOf } from './css.ts';
 import { tableGridOf } from '../../src/resolve/index.ts';
 
+/** Props de slide na língua interna dos testes: `background` cor ou `{ image }` (o autor usa CSS desde a 1.0). */
+export type TestSlideProps = Omit<SlideProps, 'children'> & { readonly background?: string | { readonly image: string } };
+
 export const SIZE_16X9: SlideSize = { name: '16x9', width: 720, height: 405 };
 export const SIZE_4X3: SlideSize = { name: '4x3', width: 720, height: 540 };
 
@@ -49,7 +52,7 @@ export const SIZE_4X3: SlideSize = { name: '4x3', width: 720, height: 540 };
 
 export const rSlide = (
   children: readonly ResolvedNode[] = [],
-  props: Omit<SlideProps, 'children'> = {},
+  props: TestSlideProps = {},
   path = 'Slide',
 ): ResolvedSlide => ({ kind: 'slide', path, sourceSlide: 1, css: legacyCssOf('slide', props), props: nodePropsOf('slide', props), children });
 
@@ -171,7 +174,7 @@ const placed = (kind: Parameters<typeof legacyCssOf>[0], props: object) => {
 
 export const pSlide = (
   children: readonly PositionedNode[] = [],
-  props: Omit<SlideProps, 'children'> = {},
+  props: TestSlideProps = {},
   size: SlideSize = SIZE_16X9,
 ): PositionedSlide => ({
   kind: 'slide',

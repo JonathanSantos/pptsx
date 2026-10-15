@@ -17,6 +17,8 @@ export { defaultFontFaces, defaultFontFiles } from './fonts/index.ts';
 export { createContext, resolveSize } from './sizes.ts';
 export { defineConfig } from './config.ts';
 export type { PptsxConfig, TsxSlidesConfig } from './config.ts';
+// M18-8: a skill para agentes (o `pptsx-ds skill` do kit monta a de um DS com isto).
+export { createSkillFiles, skillNameOf, writeSkill, type CreateSkillOptions, type SkillDs, type SkillFile } from './skill/index.ts';
 
 /** Identidade tipada: só existe para o arquivo do deck ganhar inferência de ctx. */
 export const defineDeck = (fn: DeckDefinition): DeckDefinition => fn;

@@ -41,18 +41,17 @@ const attributeOf = (name: string, value: unknown): string | undefined => {
   return `${name}={${JSON.stringify(value)}}`;
 };
 
-const componentSlide = (component: DsDeckComponent, slideProps: string): string => {
+/** O componente em JSX com as props de um caso do catálogo (o deck do `init --ds` e o ds.md da skill). */
+export const componentUsageOf = (component: DsDeckComponent): string => {
   const attributes = Object.entries(component.props).flatMap(([name, value]) => {
     const attribute = attributeOf(name, value);
     return attribute === undefined ? [] : [attribute];
   });
-  return [
-    `    <Slide ${slideProps}>`,
-    `      <Text fontSize={24} fontWeight="bold">${component.name}</Text>`,
-    `      <${component.name}${attributes.length === 0 ? '' : ` ${attributes.join(' ')}`} />`,
-    '    </Slide>',
-  ].join('\n');
+  return `<${component.name}${attributes.length === 0 ? '' : ` ${attributes.join(' ')}`} />`;
 };
+
+const componentSlide = (component: DsDeckComponent, slideProps: string): string =>
+  [`    <Slide ${slideProps}>`, `      <Text fontSize={24} fontWeight="bold">${component.name}</Text>`, `      ${componentUsageOf(component)}`, '    </Slide>'].join('\n');
 
 // Fundo e texto vêm do tema do DS (as regras de cor do DS aceitam o que está nos tokens).
 const slidePropsOf = (theme: Theme | undefined): string => {

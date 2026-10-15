@@ -329,7 +329,7 @@ describe('responsive props — types', () => {
   it('accepts responsive values on regular props', () => {
     const value: Responsive<number> = { base: 1, tall: 2, wide: 3, '4x3': 4, 'custom-10x7.5': 5 };
     const element = (
-      <Slide padding={{ base: 10, tall: { top: 4 } }} background={{ base: '#ffffff', tall: { image: 'x.png' } }}>
+      <Slide padding={{ base: 10, tall: { top: 4 } }} background={{ base: '#ffffff', tall: 'url(x.png)' }}>
         <Box paginate={{ base: false, tall: true }} width={{ base: '50%', tall: '100%' }} />
         <Text fontSize={value}>x</Text>
       </Slide>

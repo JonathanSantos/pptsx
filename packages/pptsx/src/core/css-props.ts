@@ -100,6 +100,8 @@ export interface CssBoxProps {
   readonly outlineWidth?: CssLengthInput;
   readonly backgroundColor?: Color;
   readonly backgroundImage?: string;
+  /** Shorthand: uma cor ou `url(…)`. */
+  readonly background?: string;
   readonly boxShadow?: string;
   readonly opacity?: Num;
   readonly transform?: string;

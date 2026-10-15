@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // pptsx-ds: comandos do @pptsx/ds-kit. `init <pasta> [--name] [--force]` cria um DS novo;
-// `catalog <módulo-do-ds> [--out dir] [--size 16x9,4x3] [--check] [--fixtures dir] [--pptx]` renderiza os casos.
+// `catalog <módulo-do-ds> [--out dir] [--size 16x9,4x3] [--check] [--fixtures dir] [--pptx]` renderiza os casos;
+// `skill <módulo-do-ds> --out <pasta> [--name] [--import-from pacote]` gera a skill do DS para agentes.
 // O módulo do DS é .ts/.tsx (export default createDs(...)): o tsx transpila com o tsconfig mais próximo dele.
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -11,6 +12,7 @@ import { register } from 'tsx/esm/api';
 const USAGE = [
   'uso: pptsx-ds init <pasta> [--name nome] [--force]',
   '     pptsx-ds catalog <ds.ts> [--out dist/catalog] [--size 16x9,4x3] [--check] [--fixtures dir] [--pptx]',
+  '     pptsx-ds skill <ds.ts> --out <pasta> [--name nome] [--import-from pacote] [--release-url base]',
 ].join('\n');
 
 const nearestTsconfig = (dir) => {
@@ -25,11 +27,11 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
     out: { type: 'string' }, size: { type: 'string' }, check: { type: 'boolean', default: false }, fixtures: { type: 'string' }, pptx: { type: 'boolean', default: false },
-    name: { type: 'string' }, force: { type: 'boolean', default: false },
+    name: { type: 'string' }, force: { type: 'boolean', default: false }, 'import-from': { type: 'string' }, 'release-url': { type: 'string' },
   },
 });
 const [command, target] = positionals;
-if (!['catalog', 'init'].includes(command) || target === undefined) {
+if (!['catalog', 'init', 'skill'].includes(command) || target === undefined || (command === 'skill' && values.out === undefined)) {
   console.error(USAGE);
   process.exit(2);
 }
@@ -58,6 +60,17 @@ const ds = module.default ?? module.ds;
 if (!ds || !Array.isArray(ds.implementations)) {
   console.error(`${target}: exporte default createDs({ ... }) do @pptsx/ds-kit`);
   process.exit(2);
+}
+if (command === 'skill') {
+  const options = {
+    ...(values.name === undefined ? {} : { name: values.name }),
+    ...(values['import-from'] === undefined ? {} : { importFrom: values['import-from'] }),
+    ...(values['release-url'] === undefined ? {} : { releaseBase: values['release-url'] }),
+  };
+  const result = kit.writeDsSkill(values.out, ds, file, options);
+  console.log(`Skill ${result.name} (${ds.name}) em ${resolve(values.out)}: ${result.files.length} arquivos`);
+  console.log(`  .claude/skills/${result.name}/ e .github/skills/${result.name}/ (SKILL.md, references/ds.md, scripts/pptsx.mjs), .vscode/mcp.json, .mcp.json`);
+  process.exit(0);
 }
 const out = values.out === undefined ? undefined : resolve(values.out);
 const result = await kit.catalog({

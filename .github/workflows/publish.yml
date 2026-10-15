@@ -37,8 +37,15 @@ jobs:
         run: npm publish --workspaces --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # M18-8: as skills saem do repo na hora (guia, props, SHA256 do bundle desta tag), nunca escritas à mão.
+      - name: Skills (pptsx e ds-base)
+        run: |
+          node packages/pptsx/bin/pptsx.mjs skill --out dist/skill
+          node packages/ds-kit/bin/pptsx-ds.mjs skill packages/ds-base/src/ds.ts --out dist/skill-ds-base
+          (cd dist/skill/.claude/skills && zip -r ../../../pptsx-skill.zip pptsx)
+          (cd dist/skill-ds-base/.claude/skills && zip -r ../../../ds-base-skill.zip pptsx-ds-base)
       # M18-7: o pptsx.mjs (Node 20+, sem node_modules) e o SHA256SUMS que o script da skill confere.
-      - name: Release com o bundle
-        run: gh release create "$GITHUB_REF_NAME" packages/pptsx/dist/standalone/pptsx.mjs packages/pptsx/dist/standalone/SHA256SUMS --generate-notes
+      - name: Release com o bundle e as skills
+        run: gh release create "$GITHUB_REF_NAME" packages/pptsx/dist/standalone/pptsx.mjs packages/pptsx/dist/standalone/SHA256SUMS dist/pptsx-skill.zip dist/ds-base-skill.zip --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}

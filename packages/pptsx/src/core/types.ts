@@ -181,8 +181,6 @@ export interface DeckProps {
 }
 
 export interface SlideProps extends ContainerProps {
-  /** Cor hex ou caminho de imagem. */
-  readonly background?: Color | { readonly image: string };
   /** Notas do apresentador. M15: rich text (`B`/`I`/`Span`, links externos; `\n` = parágrafo) além de string. */
   readonly notes?: string | TextChildren;
   /** M15: slide oculto (pulado na apresentação; continua no arquivo). Padrão false. */

@@ -122,7 +122,7 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 | primitiva | props próprias (além das CSS acima) | filhos |
 |---|---|---|
 | `Deck` | `footer?` (conteúdo repetido em todo slide, inclusive nas partes paginadas; ver §4 "Número de slide e rodapé"), `sections?: { title, from }[]` (seções do arquivo; ver "Arquivo para editar") | só `Slide` |
-| `Slide` | `backgroundColor`, `backgroundImage="url(…)"` (ou `background={{ image: 'foto.png' }}`), `notes?` (texto ou rich text: `<>Fale da <B>meta</B>.</>`), `hidden?` (slide oculto) | primitivas/componentes |
+| `Slide` | `backgroundColor`, `backgroundImage="url(…)"`, `notes?` (texto ou rich text: `<>Fale da <B>meta</B>.</>`), `hidden?` (slide oculto) | primitivas/componentes |
 | `Box` | `paginate?: boolean` (ver "Paginação"), `shape?` (geometria do fundo/borda, ver "Diagramas"), `href?` (link na caixa inteira), `placeholder?` (§5 "Layout do arquivo") | primitivas/componentes |
 | `Text` | `fit`, `minSize`, `maxLines`, `nowrap`/`whiteSpace="nowrap"`, `href`, `paginate` (§4), `placeholder?` (§5) | strings/números e `Span`/`B`/`I`/`Sup`/`Sub` |
 | `Span` | `fontWeight`, `fontStyle`, `color`, `textDecoration`, `fontSize`, `fontFamily`, `verticalAlign` (`'super' \| 'sub'`), `href` (**sem** `lineHeight`: é do Text) | strings/números e outros `Span`/`B`/`I`/`Sup`/`Sub`; **só dentro de `Text`** |
