@@ -26,7 +26,7 @@ import type { Expanded, ExpandedPrimitive } from './expand.ts';
 import { legacyPropsOf } from './legacy.ts';
 import { normalizeProps } from './normalize.ts';
 import type { Normalized } from './normalize.ts';
-import { assertPaginateInFlow, assertSinglePaginate, assertTextPaginate } from './paginate.ts';
+import { assertPaginateInFlow, assertSinglePaginate, assertTablePaginate, assertTextPaginate } from './paginate.ts';
 import { resolvePropsOf } from './props.ts';
 import { pathGeometryOf } from './path.ts';
 import { resolveConnector, slideIdsOf, withMissing } from './connector.ts';
@@ -172,6 +172,7 @@ const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized, env:
   assertNoChildren(item, path);
   const props = legacyPropsOf('table', n);
   assertValidTable(props, path);
+  assertTablePaginate(props, path);
   const { grid, headerCount, rows } = tableGridOf(props, path, env);
   return { kind: 'table', path, props, css: n.css, rows, grid, headerCount };
 };

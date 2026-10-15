@@ -1,5 +1,5 @@
 import { DEFAULTS } from '../core/defaults.ts';
-import type { Diagnostic, DiagnosticCode, PositionedNode, PositionedText, ResolvedBox, ResolvedNode, ResolvedSlide, ResolvedText, TextRun } from '../core/types.ts';
+import type { Diagnostic, DiagnosticCode, PositionedNode, PositionedText, ResolvedBox, ResolvedNode, ResolvedSlide, ResolvedTable, ResolvedText, TextRun } from '../core/types.ts';
 import { cutLineOf, offsetAfterLines, splitRunsAt, withRuns } from './text-split.ts';
 import { paginationLimit, slideContinued, withPaginationStop } from './diagnostics.ts';
 import type { DiagnosticContext } from './diagnostics.ts';
@@ -219,6 +219,103 @@ const paginateText = (input: FitInput, text: ResolvedText): readonly FitResult[]
   return parts.map(({ result }, index) => (index === 0 ? { ...result, diagnostics: [notice, ...result.diagnostics] } : result));
 };
 
+// ───────────── M14-4: Table paginate (as linhas de dados continuam no próximo slide) ─────────────
+
+const paginatedTableOf = (nodes: readonly ResolvedNode[]): ResolvedTable | undefined =>
+  nodes.reduce<ResolvedTable | undefined>((found, node) => {
+    if (found !== undefined) return found;
+    if (node.kind === 'table' && node.props.paginate === true) return node;
+    return node.kind === 'box' ? paginatedTableOf(node.children) : undefined;
+  }, undefined);
+
+const replaceTable = (nodes: readonly ResolvedNode[], table: ResolvedTable): readonly ResolvedNode[] =>
+  nodes.map((node) => {
+    if (node.path === table.path) return table;
+    return node.kind === 'box' ? { ...node, children: replaceTable(node.children, table) } : node;
+  });
+
+const TABLE_BREAKS: ReadonlySet<DiagnosticCode> = new Set(['table-overflow', 'box-overflow', 'out-of-slide']);
+
+/**
+ * Cortes válidos depois de k linhas de dados: nenhum rowSpan que começa antes de k termina depois.
+ * `cuts[k]` = true quando dá para cortar ali.
+ */
+export const tableCutsOf = (table: ResolvedTable): readonly boolean[] => {
+  const data = table.grid.slice(table.headerCount);
+  const reach = data.map((row, r) => Math.max(r + 1, ...row.map((cell) => (cell.covered ? r + 1 : r + cell.rowSpan))));
+  return Array.from({ length: data.length + 1 }, (_, k) => k === 0 || reach.slice(0, k).every((end) => end <= k));
+};
+
+/** A tabela só com as linhas de dados [from, to); o cabeçalho vai quando `withHeader`. */
+const tableSlice = (table: ResolvedTable, from: number, to: number, withHeader: boolean): ResolvedTable => {
+  const header = withHeader ? table.grid.slice(0, table.headerCount) : [];
+  const data = table.grid.slice(table.headerCount + from, table.headerCount + to);
+  return { ...table, grid: [...header, ...data], headerCount: header.length, rows: table.rows.slice(from, to) };
+};
+
+interface TablePaging {
+  readonly input: FitInput;
+  readonly table: ResolvedTable;
+  readonly cuts: readonly boolean[];
+  readonly repeatHeader: boolean;
+}
+
+const tableInput = (paging: TablePaging, from: number, to: number, partIndex: number): FitInput => {
+  const slice = tableSlice(paging.table, from, to, partIndex === 0 || paging.repeatHeader);
+  return {
+    ...paging.input,
+    slide: { ...paging.input.slide, children: replaceTable(paging.input.slide.children, slice) },
+    slideIndex: paging.input.slideIndex + partIndex,
+  };
+};
+
+const tableFits = (result: FitResult, path: string): boolean =>
+  !result.diagnostics.some((diagnostic) => TABLE_BREAKS.has(diagnostic.code) && pathsOf(diagnostic).some((scope) => isWithin(path, scope)));
+
+/** Maior corte válido em (from, to) cujas linhas cabem; undefined = nem o menor cabe. */
+const largestTableFit = (paging: TablePaging, from: number, partIndex: number, low: number, high: number, best: number | undefined): number | undefined => {
+  if (low > high) return best;
+  const middle = Math.ceil((low + high) / 2);
+  // Desce até um corte válido (não parte rowSpan); se não há nenhum em [low, middle], tenta a metade de cima.
+  const valid = Array.from({ length: middle - low + 1 }, (_, i) => middle - i).find((k) => paging.cuts[k] === true);
+  if (valid === undefined) return largestTableFit(paging, from, partIndex, middle + 1, high, best);
+  const result = fitSlideFrozen(tableInput(paging, from, valid, partIndex), paging.table.path);
+  return tableFits(result, paging.table.path)
+    ? largestTableFit(paging, from, partIndex, middle + 1, high, valid)
+    : largestTableFit(paging, from, partIndex, low, valid - 1, best);
+};
+
+interface TablePart {
+  readonly result: FitResult;
+  readonly rows: number;
+}
+
+const tablePartsFrom = (paging: TablePaging, from: number, partIndex: number): readonly TablePart[] => {
+  const total = paging.table.rows.length;
+  const path = paging.table.path;
+  const whole = fitSlideFrozen(tableInput(paging, from, total, partIndex), path);
+  if (tableFits(whole, path)) return [{ result: whole, rows: total - from }];
+  // No limite de partes (ou se nem a 1ª linha cabe), o resto fica numa parte só, com o fit normal (pode encolher).
+  const lastPart = (): readonly TablePart[] => [{ result: fitSlide(tableInput(paging, from, total, partIndex)), rows: total - from }];
+  if (partIndex + 1 >= MAX_PARTS) return lastPart();
+  const cut = largestTableFit(paging, from, partIndex, from + 1, total - 1, undefined);
+  if (cut === undefined) return lastPart();
+  const part = { result: fitSlideFrozen(tableInput(paging, from, cut, partIndex), path), rows: cut - from };
+  return [part, ...tablePartsFrom(paging, cut, partIndex + 1)];
+};
+
+const paginateTable = (input: FitInput, table: ResolvedTable): readonly FitResult[] => {
+  const paging: TablePaging = { input, table, cuts: tableCutsOf(table), repeatHeader: table.props.repeatHeader !== false };
+  const parts = tablePartsFrom(paging, 0, 0);
+  if (parts.length === 1) return parts.map((part) => part.result);
+  const notice = slideContinued({ size: input.size.name, slide: input.slideIndex + 1 }, table.path, {
+    sourceSlide: input.slide.sourceSlide,
+    items: parts.map((part) => part.rows),
+    kind: 'table',
+  });
+  return parts.map(({ result }, index) => (index === 0 ? { ...result, diagnostics: [notice, ...result.diagnostics] } : result));
+};
+
 /**
  * Ajuste de um slide do autor, que pode virar várias partes. Sem nó paginate é o
  * `fitSlide` de sempre; com ele (Box: itens; Text: linhas), uma parte só quando tudo cabe (ou nada cabe).
@@ -226,6 +323,8 @@ const paginateText = (input: FitInput, text: ResolvedText): readonly FitResult[]
 export const paginateSlide = (input: FitInput): readonly FitResult[] => {
   const text = paginatedTextOf(input.slide.children);
   if (text !== undefined) return paginateText(input, text);
+  const table = paginatedTableOf(input.slide.children);
+  if (table !== undefined) return paginateTable(input, table);
   const box = paginatedBoxOf(input.slide.children);
   if (box === undefined) return [fitSlide(input)];
   const paging: Paging = { input, box, flow: box.children.filter((child) => !isAbsolute(child)) };

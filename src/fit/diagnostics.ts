@@ -389,16 +389,18 @@ const describeParts = (items: readonly number[], unit: string): string => {
 export const slideContinued = (
   ctx: DiagnosticContext,
   path: string,
-  pagination: { readonly sourceSlide: number; readonly items: readonly number[]; readonly kind?: 'box' | 'text' },
+  pagination: { readonly sourceSlide: number; readonly items: readonly number[]; readonly kind?: 'box' | 'text' | 'table' },
 ): Diagnostic => {
   const text = pagination.kind === 'text';
-  const advice = text ? 'reduza o fontSize do texto ou encurte-o' : 'reduza o fontSize dos itens ou o conteúdo';
+  const table = pagination.kind === 'table';
+  const advice = text ? 'reduza o fontSize do texto ou encurte-o' : table ? 'reduza o fontSize da tabela ou o cellPadding' : 'reduza o fontSize dos itens ou o conteúdo';
+  const unit = text ? 'linhas' : table ? 'linhas da tabela' : 'itens';
   return make(ctx, {
     severity: 'info',
     code: 'slide-continued',
     path,
-    message: `Slide ${pagination.sourceSlide} do autor virou ${pagination.items.length} slides (${describeParts(pagination.items, text ? 'linhas' : 'itens')}). Para caber em menos slides, ${advice}.`,
-    data: { parts: pagination.items.length, sourceSlide: pagination.sourceSlide, ...(text ? { kind: 'text' as const } : {}) },
+    message: `Slide ${pagination.sourceSlide} do autor virou ${pagination.items.length} slides (${describeParts(pagination.items, unit)}). Para caber em menos slides, ${advice}.`,
+    data: { parts: pagination.items.length, sourceSlide: pagination.sourceSlide, ...(pagination.kind === undefined || pagination.kind === 'box' ? {} : { kind: pagination.kind }) },
   });
 };
 
