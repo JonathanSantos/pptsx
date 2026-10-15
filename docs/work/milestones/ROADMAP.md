@@ -16,7 +16,7 @@ Origem: `docs/work/reports/REVIEW-2026-10-13.md`. Cada marco segue o fluxo de `d
 | [M15](M15.md) | Arquivo e tema: cores e fontes do tema, seções, slide oculto, notas formatadas, propriedades, masters opt-in | Arquivo editável de verdade no PowerPoint | sequencial |
 | [M16](M16.md) | Dívidas do motor, visão única do nó, servidor MCP, preview ao vivo, lint/codemod, CI; candidata a 1.0 | Prepara a 1.0 e muda o canal de uso (agentes sem shell) | sequencial |
 | [M17](M17.md) | Extração: ganchos para DS no núcleo (`defineComponent`, regras de lint, `renderFragment`, MCP agregador, `defineDs`), workspaces, `@pptsx/ds-kit` e `@pptsx/ds-base`; núcleo sem marca | pptsx vira base para DS nascerem sem hackear | sequencial |
-| [M18](M18.md) | Redondo antes de liberar: variantes tipadas, schema automático e `lint` no MCP, catálogo em `.pptx`, scaffolds `pptsx-ds init`/`init --ds`, CI em matriz e empacotamento, núcleo 1.0 sem aliases, guia do kit reescrito, lista do dono | Publicar `pptsx` 1.0.0, `ds-kit` e `ds-base` 0.2.0 | sequencial |
+| [M18](M18.md) | Redondo antes de liberar: variantes tipadas, schema automático e `lint` no MCP, catálogo em `.pptx`, scaffolds, CI em matriz e empacotamento, núcleo 1.0 sem aliases, **bundle de arquivo único (build secundário) e skill para Claude e Copilot/VS Code**, guia do kit reescrito, lista do dono | Publicar `pptsx` 1.0.0, `ds-kit` e `ds-base` 0.2.0, com skill e bundle na release | sequencial |
 
 ```
 M6 ‖ M7  ─▶  M8  ─▶  M9  ─▶  M10  ─▶  M11  ─▶  M12  ─▶  M13  ─▶  M14  ─▶  M15  ─▶  M16  ─▶  M17  ─▶  M18
