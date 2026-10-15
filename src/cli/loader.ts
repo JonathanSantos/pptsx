@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { register } from 'tsx/esm/api';
+import { nearestTsconfigOf } from './tsconfig.ts';
 
 export interface UserModule {
   readonly default?: unknown;
@@ -29,13 +30,19 @@ const tsconfigFor = (cwd: string): string => {
   return join(packageRoot, inRepo ? 'tsconfig.json' : 'tsconfig.deck.json');
 };
 
+/**
+ * M16 (M9-E): o tsconfig que compila um arquivo do usuário é o mais próximo da pasta dele (o mesmo que
+ * `assertDeckTsconfig` valida); sem nenhum acima, o do cwd/pacote.
+ */
+export const tsconfigForFile = (file: string, cwd: string): string => nearestTsconfigOf(dirname(resolve(file))) ?? tsconfigFor(cwd);
+
 let namespaceCounter = 0;
 
 // O `?v=` só furaria o cache do arquivo de entrada; o namespace do tsx recarrega o grafo inteiro
 // (componentes, layouts, tokens). O hook sai logo após o import: o grafo já foi avaliado.
-const importFresh = async (file: string, cwd: string): Promise<UserModule> => {
+const importFresh = async (file: string, tsconfig: string): Promise<UserModule> => {
   namespaceCounter += 1;
-  const api = register({ namespace: `pptsx-${Date.now()}-${namespaceCounter}`, tsconfig: tsconfigFor(cwd) });
+  const api = register({ namespace: `pptsx-${Date.now()}-${namespaceCounter}`, tsconfig });
   try {
     return (await api.import(pathToFileURL(file).href, import.meta.url)) as UserModule;
   } finally {
@@ -43,6 +50,13 @@ const importFresh = async (file: string, cwd: string): Promise<UserModule> => {
   }
 };
 
-/** Padrão: `import()` normal (sem custo) ou, com `fresh`, um namespace novo do tsx. */
-export const defaultImportModule: ImportModule = (file, { fresh, cwd }) =>
-  fresh ? importFresh(file, cwd) : (import(pathToFileURL(file).href) as Promise<UserModule>);
+/**
+ * Padrão: `import()` normal (sem custo, compilado com o tsconfig do cwd pelo register global) ou um
+ * namespace novo do tsx — com `fresh`, ou quando o arquivo tem tsconfig próprio diferente do do cwd
+ * (deck fora do cwd com `jsxImportSource` próprio dava "React is not defined").
+ */
+export const defaultImportModule: ImportModule = (file, { fresh, cwd }) => {
+  const tsconfig = tsconfigForFile(file, cwd);
+  if (fresh || resolve(tsconfig) !== resolve(tsconfigFor(cwd))) return importFresh(file, tsconfig);
+  return import(pathToFileURL(file).href) as Promise<UserModule>;
+};
