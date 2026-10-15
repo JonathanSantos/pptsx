@@ -9,7 +9,7 @@
 <p align="center">
   <img alt="TypeScript ESM" src="https://img.shields.io/badge/TypeScript-ESM-2F6FED?logo=typescript&logoColor=white">
   <img alt="Node 20+" src="https://img.shields.io/badge/Node-%E2%89%A5%2020-1B2A4A?logo=nodedotjs&logoColor=white">
-  <img alt="Testes: 1650" src="https://img.shields.io/badge/testes-1650%20passando-1E9E6A">
+  <img alt="Testes: 1892" src="https://img.shields.io/badge/testes-1892%20passando-1E9E6A">
   <img alt="Calibração no Keynote: 34/34" src="https://img.shields.io/badge/Keynote-34%2F34%20linhas-5B6680">
   <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-F4F6FA?labelColor=5B6680&color=E8EEFC">
 </p>
@@ -711,6 +711,38 @@ A `Table` é medida pela engine: colunas com `width` ficam fixas e as outras seg
 
 ---
 
+## Dados: 12 gráficos e tabelas ricas
+
+Além de barras, linhas e pizza, o `Chart` tem barra horizontal, empilhadas (vertical, horizontal e 100 %), área e área empilhada, rosca, dispersão e combo barra + linha com eixo secundário. Eixos (`xAxis`/`yAxis`/`y2Axis`: título, mínimo, máximo, passo, formato do Excel, grade), legenda em quatro posições e rótulos de valor com formato. Tudo nativo: no PowerPoint ou no Keynote, os dados abrem na planilha do gráfico.
+
+```tsx
+<Chart kind="combo" flex={1} markers
+  yAxis={{ title: 'R$ mi' }} y2Axis={{ format: '0%', min: 0, max: 0.25, step: 0.05 }}
+  data={{ categories: ['T1', 'T2', 'T3', 'T4'], series: [
+    { name: 'Receita (R$ mi)', values: [36, 41, 46, 52], as: 'bar' },
+    { name: 'Margem', values: [0.12, 0.14, 0.15, 0.18], as: 'line', axis: 'secondary' }] }} />
+```
+
+<p align="center"><img src="docs/readme/dados-graficos.png" width="960" alt="Nove slides de gráficos: barra horizontal, barras empilhadas, empilhada horizontal, empilhada 100 %, área e área empilhada, linha suavizada, rosca, dispersão e combo barra mais linha"></p>
+
+Na `Table`, a célula pode ser um objeto: merges (`colSpan`/`rowSpan`, como no HTML), fundo, cor, peso, alinhamento vertical, rich text (`children: <><B>Normal</B>, sem incidentes</>`) e ícone. `headerRows` monta cabeçalhos de dois níveis, `cell()` calcula o estilo pelo valor e `paginate` continua uma tabela longa nos slides seguintes com o cabeçalho repetido, sem cortar um `rowSpan` no meio.
+
+```tsx
+<Table cell={({ col, value, header }) =>
+    !header && col === 4 && typeof value === 'number' && value < 0
+      ? { text: `${String(value).replace('.', ',')}%`, color: '#B91C1C', fill: '#FEE2E2', fontWeight: 'bold' } : undefined}
+  columns={[{ header: 'Linha' }, { header: 'Produto' }, { header: '2025', align: 'right' }, { header: '2026', align: 'right' }, { header: 'Δ', align: 'right' }]}
+  rows={[
+    [{ text: 'Grãos', rowSpan: 3, fill: '#EEF2FF' }, 'Soja', '41,2', '44,0', 6.8],
+    ['Milho', '30,5', '28,1', -7.9],
+    ['Trigo', '8,3', '9,1', 9.6],
+  ]} />
+```
+
+<p align="center"><img src="docs/readme/dados-tabelas.png" width="960" alt="Seis slides de tabelas: cabeçalho de dois níveis mesclado, rowSpan com variação colorida, ícones e rich text, e uma tabela de 40 linhas continuada em três slides com o cabeçalho repetido"></p>
+
+Os dois decks: [`examples/dados/graficos.tsx`](examples/dados/graficos.tsx) e [`examples/dados/tabelas.tsx`](examples/dados/tabelas.tsx), conferidos no Keynote. O ícone de célula sai como forma sobre a tabela (`table-cell-icon` avisa); o resto é a tabela nativa.
+
 ## Texto: pesos, notas, links e continuação
 
 - **Pesos de verdade:** `fontWeight={300}`, `600`… escolhem a face registrada mais próxima (regra do CSS); fora de 400/700 o `.pptx` leva o nome da face (`Inter SemiBold`), que o PowerPoint e o Keynote usam quando a fonte está instalada ou embutida. Peso sem face avisa (`font-weight-fallback`).
@@ -906,7 +938,7 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 | `opacity`, `rotate`, `translate`, `zIndex` (ordem de desenho) | | `borderRadius` com bordas diferentes por lado (o fundo arredonda, as linhas saem retas) |
 | `backgroundImage: url()` (cover), `Image` com `objectFit` | | |
 | fonte, tamanho, peso (faces 100–900), itálico, cor, alinhamento, `textTransform`, `textDecoration`, sobrescrito, tamanho/fonte e link por trecho, `letterSpacing`, número de slide (campo) | | `auto-fill`, áreas nomeadas e `[linhas]` no grid; `gridAutoFlow` diferente de `row` |
-| `Chart` (bar, line, pie) e `Table` | | `whiteSpace` além de `normal`/`nowrap`; `objectFit` além de `contain`/`cover` |
+| `Chart` (12 kinds) e `Table` (merges, estilo por célula, paginate) | | `whiteSpace` além de `normal`/`nowrap`; `objectFit` além de `contain`/`cover` |
 | 24 formas (`Shape kind`, `Box shape`), `Path` (custGeom), `Icon` vetorial, `Connector` com pontas | `Icon` com gradiente/máscara/`transform` sai como imagem (`icon-rasterized`, info) | borda por lado ou raio num `Box shape` que não é rect; fundo/borda num `Icon` |
 
 </details>
@@ -921,7 +953,8 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 - **Quebras forçadas por padrão.** Quem editar o texto no PowerPoint herda as quebras manuais; `lineBreaks: 'auto'` troca isso por possíveis diferenças de quebra (ver [acima](#por-que-as-quebras-de-linha-são-forçadas)).
 - **Rich text por trecho** muda peso, itálico, cor, decoração, tamanho, fonte, sobrescrito e link; a entrelinha vale para o `Text` inteiro.
 - **Keynote e campos:** o número de slide sai como campo nativo; o Keynote apaga texto no mesmo parágrafo de um campo, por isso `n / total` sai em duas caixas encostadas.
-- **`Table` não pagina** e não tem `truncate`: encolhe ou vira `table-overflow`. `Chart` e `Table` não giram.
+- **`Table`** não tem `truncate`: encolhe, pagina (`paginate`) ou vira `table-overflow`. Ícone de célula é uma forma sobre a tabela, não parte dela. `Chart` e `Table` não giram.
+- **Gráficos fora do escopo:** 3D, radar, bolha, cascata, treemap, linhas de tendência e barras de erro.
 - **O gráfico do PNG é uma aproximação**: PowerPoint e Keynote redesenham o gráfico nativo dentro do mesmo frame.
 - **Conectores não desviam de obstáculos** nem se religam ao mover um nó no PowerPoint: são linhas calculadas no build entre os lados escolhidos.
 
@@ -943,7 +976,7 @@ O [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md) é o único documento de que um a
 ## Desenvolvimento
 
 ```sh
-npm test               # vitest (1650 testes)
+npm test               # vitest (1892 testes)
 npm run typecheck      # tsc
 npm run build          # compila src/ para dist/ (JS + .d.ts)
 npm run test:package   # npm pack → projeto vazio → init → build (lento)

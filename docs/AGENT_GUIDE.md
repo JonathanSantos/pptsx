@@ -111,14 +111,43 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 | `Path` | `d` (obrigatório; `M L H V C S Q T A Z` do SVG), `viewBox?: [w, h]` (padrão: a caixa do `d`), `fill`, `stroke`, `strokeWidth` (pt), `lineCap`, `lineJoin` (`'miter' \| 'round' \| 'bevel'`), `lineStyle` | nenhum |
 | `Icon` | `src` (obrigatório; `.svg`), `size?` (altura em pt, padrão 24), `color?` (padrão: a cor de texto herdada), `recolor?` (padrão `true`: preto também vira `color`), `render?: 'auto' \| 'shape' \| 'image'` | nenhum |
 | `Connector` | `from`, `to` (ids, obrigatórios), `fromSide`/`toSide` (`'top' \| 'right' \| 'bottom' \| 'left' \| 'auto'`), `route` (`'straight' \| 'elbow'`), `startArrow`/`endArrow` (padrão: só `triangle` no fim), `stroke`, `strokeWidth` (1,5), `lineStyle`, `label`, `labelStyle={{ fontSize, color, background, font }}` (padrões: 12 pt, `#333333`, sem fundo, a fonte herdada do pai) | nenhum (só props; **não aceita CSS**) |
-| `Chart` | `kind: 'bar' \| 'line' \| 'pie'` e `data: { categories: string[], series: { name, values: number[] }[] }` (obrigatórios), `colors?` (por série; na pizza por fatia), `legend?` (padrão: só com 2+ séries; pizza sempre), `showValues?` (padrão `false`), `title?`, `size?` (12, tamanho dos rótulos) | nenhum |
-| `Table` | `columns: { header, width?, align? }[]` e `rows: (string \| number)[][]` (obrigatórios), `header?: { fill?, color?, weight? } \| false` (padrão: negrito sem fundo), `stripe?` (fundo da 2ª, 4ª… linha), `border?` (**cor da grade**, 0,5 pt; sem = sem grade), `cellPadding?` (4 pt), `minSize?`, `fit?: 'shrink' \| 'error'`; texto por `fontSize` (14), `fontFamily`, `color`, `lineHeight` | nenhum |
+| `Chart` | `kind` (12, ver "Gráficos") e `data: { categories: string[], series: { name, values: number[], color?, as?, axis? }[] }` (obrigatórios; scatter: `series: { name, points: [x, y][] }[]`, sem `categories`), `colors?` (por série; na pizza/rosca por fatia), `legend?: boolean \| { position: 'bottom' \| 'top' \| 'left' \| 'right' }` (padrão: só com 2+ séries; pizza/rosca sempre), `labels?: boolean \| { format?, position?: 'outside' \| 'inside' \| 'center' }` (`showValues` = `labels`), `xAxis?`/`yAxis?`/`y2Axis?: { title?, min?, max?, step?, format?, grid?, hidden? }`, `holeSize?` (rosca, 10–90, padrão 50), `smooth?`, `markers?` (linha), `title?`, `size?` (12, tamanho dos rótulos) | nenhum |
+| `Table` | `columns: { header, width?, align?, valign? }[]` e `rows` (obrigatórios; célula = `string \| number \| { text?, children?, colSpan?, rowSpan?, fill?, color?, fontWeight?, fontStyle?, align?, valign?, icon? }`, ver "Tabelas"), `headerRows?` (linhas de cabeçalho acima da de `columns`), `cell?: (ctx) => estilo` (estilo por célula calculado), `header?: { fill?, color?, weight? } \| false` (padrão: negrito sem fundo), `stripe?` (fundo da 2ª, 4ª… linha de dados), `border?` (**cor da grade**, 0,5 pt; sem = sem grade), `cellPadding?` (4 pt), `valign?` (padrão `'top'`), `paginate?`, `repeatHeader?` (padrão `true`), `minSize?`, `fit?: 'shrink' \| 'error'`; texto por `fontSize` (14), `fontFamily`, `color`, `lineHeight` | nenhum |
 
 - `Box` sem fundo nem borda é invisível (só agrupa). Com `backgroundColor`/`border` vira retângulo (arredondado com `borderRadius`).
 - Para barra, divisória ou marcador, prefira **borda** a um nó: título com barra = `<Text borderLeft="6px solid #2F6FED" paddingLeft={14}>`; divisória = `borderBottom` no bloco de cima. `Shape` fica para elipses, linhas diagonais e formas soltas. `Shape` sem tamanho tem 0 no eixo principal e estica no cruzado.
 - `Image` com só `width` (ou só `height`) mantém a proporção. Com `flex={1}` e sem tamanho, ocupa a área toda e `objectFit` decide (`contain` mostra tudo, `cover` preenche e recorta). Sem tamanho nem flex: tamanho natural (px × 0.75 pt).
-- `Chart` é **nativo** (editável no PowerPoint/Keynote) e **não tem tamanho próprio**: dê `flex={1}`, `width`/`height`, ou ponha numa célula de grid (estica nela); senão é erro de estrutura. `values` são números (`38.2`); o PowerPoint formata com a vírgula do idioma. `pie` aceita **uma** série.
-- `Table` é **nativa** e medida pela engine: a largura vem do layout (numa coluna, a largura toda), a altura é a soma das linhas (cada linha = célula mais alta + 2 × `cellPadding`, arredondada a 0,5 pt). Colunas com `width` em pt ficam fixas, em `'%'` são fração da tabela; **sem `width` seguem o conteúdo** (como `table-layout: auto`). `align` vale para a coluna inteira. Encolhe como **uma unidade** junto com os `Text` do slide; não há `truncate`: ou encolhe ou é `table-overflow`. Não pagina.
+- `Chart` é **nativo** (editável no PowerPoint/Keynote) e **não tem tamanho próprio**: dê `flex={1}`, `width`/`height`, ou ponha numa célula de grid (estica nela); senão é erro de estrutura. `values` são números (`38.2`); o PowerPoint formata com a vírgula do idioma. `pie`/`doughnut` aceitam **uma** série.
+- `Table` é **nativa** e medida pela engine: a largura vem do layout (numa coluna, a largura toda), a altura é a soma das linhas (cada linha = célula mais alta + 2 × `cellPadding`, arredondada a 0,5 pt). Colunas com `width` em pt ficam fixas, em `'%'` são fração da tabela; **sem `width` seguem o conteúdo** (como `table-layout: auto`). `align`/`valign` da coluna valem para todas as células dela (a célula pode trocar). Encolhe como **uma unidade** junto com os `Text` do slide; não há `truncate`: ou encolhe, ou pagina (`paginate`), ou é `table-overflow`.
+
+### Gráficos (`Chart kind`)
+
+| kind | quando usar | dados |
+|---|---|---|
+| `bar` | comparar categorias (poucas, rótulos curtos) | `categories` + séries |
+| `barH` | ranking ou rótulos longos (a 1ª categoria fica **embaixo**, como no PowerPoint: ordene do menor para o maior se quer o maior no topo) | idem |
+| `stackedBar` / `stackedBarH` | composição de um total por categoria | idem, 2+ séries |
+| `stackedBar100` | participação (%) por categoria; o PPTX normaliza cada categoria, os valores **não** precisam somar 100; eixo sai em % | idem |
+| `line` | tendência no tempo (`smooth`, `markers`) | idem |
+| `area` / `stackedArea` | volume no tempo (sobreposto / somado) | idem |
+| `pie` / `doughnut` | partes de um todo, ≤ 6 fatias (`holeSize` na rosca) | **uma** série |
+| `scatter` | relação entre duas medidas | `series: [{ name, points: [[x, y], …] }]`, sem `categories` |
+| `combo` | duas grandezas na mesma categoria (receita em barra + margem em linha) | cada série com `as: 'bar' \| 'line'` e `axis: 'secondary'` para o eixo da direita |
+
+- **Eixos:** `xAxis` é o de categorias (no scatter, o X numérico); `yAxis` o de valores; `y2Axis` o secundário do combo. `format` é código do Excel (`'0%'`, `'#,##0'`, `'0.0'`); valores em fração (`0.18`) com `format: '0%'` saem "18%". `hidden: true` some com o eixo; `grid: false` tira as linhas de grade.
+- **Rótulos:** `labels` (ou `showValues`) mostra os valores; `position` vale por família (barra: fora/dentro/centro; empilhada: centro; área/rosca ignoram).
+- **Cor por série:** `series[i].color` vence `colors[i]`. **Cor do texto** (rótulos, eixos, legenda, título) é o `color` do Chart, herdado do pai: rótulo `center`/`inside` numa série escura some — dê `color` claro ao Chart, rótulos `outside` ou séries claras.
+- PowerPoint/Keynote redesenham o gráfico: as marcas automáticas dos eixos podem diferir do preview. Fixe `min`/`max`/`step` se importam.
+
+### Tabelas (células, merges, `cell()`, paginate)
+
+- **Célula como objeto:** `{ text: 'Sul', fill: '#EEF2FF', fontWeight: 'bold' }`; rich text com `children: <><B>Normal</B>, sem incidentes</>` (`B`/`I`/`Span`/`Sup`/`Sub`; `children` vence `text`); `icon: { src: 'x.svg', color?, size? }` no início da célula (a célula com ícone fica numa linha só).
+- **Merges:** `colSpan`/`rowSpan` como no HTML: a célula ocupa as seguintes, e as linhas de baixo **omitem** as células cobertas (`['Grãos' rowSpan 3, 'Soja', …], ['Milho', …]`). Merge que sai da tabela, se sobrepõe ou deixa a linha com células de mais/de menos é erro de estrutura com a linha citada.
+- **`align` da coluna vale também para o título dela** (cabeçalho à direita numa coluna numérica); para trocar só o título, use `headerRows` ou `cell()` com `header`.
+- **Altura:** a tabela tem a altura das linhas, não estica com `flex`; num slide com tabela curta, aumente `fontSize`/`cellPadding` (por breakpoint) em vez de deixar o vazio.
+- **Cabeçalho de dois níveis:** `headerRows={[[{ text: 'Região', rowSpan: 2 }, { text: '2025', colSpan: 2 }, { text: '2026', colSpan: 2 }]]}` em cima e `columns` com os subtítulos; a coluna coberta pelo `rowSpan` fica com `header: ''`.
+- **Estilo calculado:** `cell={({ row, col, value, header }) => …}` devolve `{ fill?, color?, fontWeight?, text?, … }` ou `undefined`. `row` é o índice da linha de **dados** (0 = 1ª). Precedência: cabeçalho/zebra → `cell()` → o que a célula declara. Valor numérico na célula + `cell()` que devolve `text` formatado = cor e formatação pelo número.
+- **`paginate`:** linhas de dados que não cabem continuam em clones do slide, com o cabeçalho repetido (`repeatHeader={false}` só na 1ª parte). O corte nunca cai dentro de um `rowSpan` (o grupo vai inteiro para a parte seguinte). A tabela não encolhe enquanto pagina; dê área com `flex={1}` numa coluna. Um nó paginate por slide (Box, Text **ou** Table); não em `position="absolute"`.
 
 ### Diagramas: formas, `Path`, `Icon` e `Connector`
 
@@ -171,7 +200,7 @@ Baseline de cada filho: `Text` = 1ª linha; `Box` = a do 1º filho em fluxo; `Im
 
 `<Box paginate>` divide os **filhos em fluxo** do Box entre slides quando não cabem: a 1ª parte leva os primeiros itens que cabem, e o resto continua num **clone do slide** (mesmo título, fundo, decoração e `notes`). É a saída para lista longa sem encolher a fonte.
 
-- **Um por slide** (dois → erro de estrutura `Só um <Box paginate> por slide; encontrados 2`; um Box e um `Text paginate` também contam), e **não** em `position="absolute"`. Para **texto corrido** que continua no próximo slide, use `<Text paginate>` (§4). Use numa coluna: numa row a divisão é por colunas estreitas.
+- **Um por slide** (dois → erro de estrutura `Só um <Box paginate> por slide; encontrados 2`; um Box e um `Text paginate` ou `Table paginate` também contam), e **não** em `position="absolute"`. Para **texto corrido** que continua no próximo slide, use `<Text paginate>` (§4). Use numa coluna: numa row a divisão é por colunas estreitas.
 - Enquanto pagina, os `Text` dentro do Box **não encolhem**; o resto do slide encolhe normalmente. Coube tudo → nada muda.
 - Os paths dos itens **não mudam** nas partes: o 8º item é `Box[7]` na parte 2 também.
 - Cada parte é um slide no `.pptx`, no overview e nos diagnósticos; a 1ª recebe `slide-continued` (info) com `data.parts`.
@@ -462,7 +491,7 @@ Com os 12 itens de `examples/long-list.tsx`, 16:9 vira 3 slides com o mesmo tít
 </ContentLayout>
 ```
 
-Prefira `Chart` a um PNG de gráfico: quem recebe o `.pptx` edita os dados. `kind="line"` para tendência, `kind="pie"` com uma série para composição. Mais em `examples/charts.tsx`.
+Prefira `Chart` a um PNG de gráfico: quem recebe o `.pptx` edita os dados. `kind="line"` para tendência, `kind="pie"` com uma série para composição; os 12 kinds em §3 "Gráficos" e `examples/dados/graficos.tsx`.
 
 ### 6.9 Tabela de resultados
 
@@ -479,7 +508,7 @@ Prefira `Chart` a um PNG de gráfico: quem recebe o `.pptx` edita os dados. `kin
 </ContentLayout>
 ```
 
-A 1ª coluna fica com 40%; as outras dividem o resto pelo conteúdo. Números como string para manter a vírgula e o sinal; a cor do texto vem do Slide. Mais de ~10 linhas num 16:9: divida em dois slides.
+A 1ª coluna fica com 40%; as outras dividem o resto pelo conteúdo. Números como string para manter a vírgula e o sinal; a cor do texto vem do Slide. Mais de ~10 linhas num 16:9: `paginate` (6.19) ou divida em dois slides.
 
 ### 6.10 Esconder ou trocar por breakpoint
 
@@ -613,6 +642,62 @@ const SECOES = [{ titulo: 'O ano em resumo', slide: 2 }, { titulo: 'Notas', slid
 
 As três receitas estão em `examples/texto/receitas.tsx`.
 
+### 6.17 Dashboard: empilhado + tabela colorida por valor
+
+```tsx
+import type { TableCellContext, TableCellSpec } from 'pptsx';
+
+const delta = ({ col, value, header }: TableCellContext): Partial<TableCellSpec> | undefined => {
+  if (header || col !== 3 || typeof value !== 'number') return undefined;
+  const text = `${value > 0 ? '+' : ''}${value.toFixed(1).replace('.', ',')}%`;
+  return value < 0 ? { text, color: '#B91C1C', fill: '#FEE2E2', fontWeight: 'bold' } : { text, color: '#047857' };
+};
+
+<Slide padding="28 36" gap={14} color="#1B2A4A">
+  <Text fontSize={24} fontWeight="bold">Vendas por canal</Text>
+  <Box display="grid" gridTemplateColumns={{ base: 'repeat(2, minmax(0, 1fr))', tall: '1fr' }} gap={20} flex={1}>
+    <Chart kind="stackedBar" legend={{ position: 'top' }} yAxis={{ title: 'R$ mi' }} labels={{ position: 'center' }}
+      data={{ categories: ['T1', 'T2', 'T3', 'T4'], series: [
+        { name: 'Varejo', values: [18, 20, 22, 26] }, { name: 'Online', values: [6, 8, 9, 12] }] }} />
+    <Table fontSize={13} header={{ fill: '#1B2A4A', color: '#FFFFFF' }} border="#CBD5E1" valign="middle" cell={delta}
+      columns={[{ header: 'Canal' }, { header: '2025', align: 'right' }, { header: '2026', align: 'right' }, { header: 'Δ', align: 'right' }]}
+      rows={[['Varejo', '80,0', '86,0', 7.5], ['Online', '38,0', '35,0', -7.9]]} />
+  </Box>
+</Slide>
+```
+
+O Δ entra como **número** (o `cell()` decide cor e formato pelo valor) e sai como texto com vírgula.
+
+### 6.18 Dispersão com duas séries; tabela com cabeçalho duplo
+
+```tsx
+<Chart kind="scatter" flex={1} xAxis={{ title: 'área (m²)', min: 100 }} yAxis={{ title: 'receita (R$ mi)' }}
+  data={{ series: [
+    { name: 'Rua', points: [[120, 3.1], [180, 4.0], [240, 4.6], [300, 5.8]] },
+    { name: 'Shopping', points: [[150, 4.2], [210, 5.1], [270, 6.4]] }] }} />
+
+<Table fontSize={13} header={{ fill: '#1B2A4A', color: '#FFFFFF' }} border="#CBD5E1" stripe="#F4F6FA"
+  headerRows={[[{ text: 'Região', rowSpan: 2, valign: 'middle' }, { text: '2025', colSpan: 2, align: 'center' }, { text: '2026', colSpan: 2, align: 'center' }]]}
+  columns={[{ header: '', width: '28%' }, { header: 'R$ mi', align: 'right' }, { header: 'part.', align: 'right' }, { header: 'R$ mi', align: 'right' }, { header: 'part.', align: 'right' }]}
+  rows={[['Sudeste', '88,4', '42%', '96,1', '43%'], ['Sul', '42,1', '20%', '44,8', '20%'],
+         [{ children: <B>Total</B> }, { children: <B>210,4</B> }, '100%', { children: <B>224,1</B> }, '100%']]} />
+```
+
+Para uma linha de tendência no scatter, passe-a como outra série de pontos (os dois extremos da reta).
+
+### 6.19 Tabela longa → `paginate`
+
+```tsx
+<Slide padding="28 36 32" gap={12}>
+  <Text fontSize={24} fontWeight="bold">Lançamentos do período</Text>
+  <Table paginate flex={1} fontSize={12} header={{ fill: '#1B2A4A', color: '#FFFFFF' }} stripe="#F4F6FA" border="#CBD5E1"
+    columns={[{ header: 'Data', width: '12%' }, { header: 'Descrição' }, { header: 'Valor (R$)', align: 'right', width: '16%' }]}
+    rows={lancamentos} />
+</Slide>
+```
+
+40 linhas viram 4 slides em 16:9 (12/12/12/4) e 3 em 4:3, com título e cabeçalho repetidos; o `slide-continued` diz as linhas por parte.
+
 ## 7. CLI e fluxo de trabalho
 
 **(a) Dentro deste repo** (como na §2): rode na raiz; o deck fica em `examples/agent-test/`, importa `pptsx` sem build e pode usar tokens, layouts e componentes de `examples/`.
@@ -683,13 +768,14 @@ Campos de `data` (opcionais): `overflowPt`/`overflowPct`, `fromSize`/`toSize`, `
 | `text-shrunk` | info | o texto (ou a tabela inteira) foi reduzido e coube | nada; se ficou pequeno, encurte ou dê área |
 | `text-overflow` | error | `shrink` chegou em `minSize` e não cabe, `fit="error"` estourou, ou a área é 0 pt. `data.axis: "width"`: `nowrap` mais largo que a área | com `causedBy`: corrija a causa. Senão: encurte; dê área (`flex={1}` no contêiner, menos padding/gap/borda); baixe `minSize`; divida o slide; `fit="truncate"`. Numa célula de grid de altura fixa: track `auto` |
 | `text-word-broken` | warning | palavra mais larga que a linha, partida por caractere | abrevie ("R$ 52,4 mi"); dê largura; `size="sm"` no `KpiCard`. Tabela: `width` maior na coluna citada |
-| `table-overflow` | error | a `Table` não cabe nem no `minSize`; `data.shownRows` de `data.totalRows` cabem | menos linhas, texto mais curto, mais área |
+| `table-overflow` | error | a `Table` não cabe nem no `minSize`; `data.shownRows` de `data.totalRows` cabem | `paginate` na Table, menos linhas, texto mais curto, mais área |
+| `table-cell-icon` | info | a tabela tem ícone em célula: o ícone sai como forma **sobre** a tabela (não acompanha se a tabela for movida no PowerPoint) | nada; se a tabela vai ser editada, tire o ícone |
 | `text-illegible` | warning | o shrink desceu abaixo de 10 pt (só com `minSize` < 10) | encurte ou dê área |
 | `text-truncated` | warning | `truncate`/`maxLines` cortou com `…` | se não era a intenção: encurte ou aumente a área |
 | `box-overflow` | error | filhos em fluxo (tamanhos fixos, margens, gap, padding, borda) somam mais que a área de conteúdo; linhas do wrap que não cabem; item maior que a sua **célula de grid** | reduza fixos/gap/margens; `flexShrink` volta a 1; troque fixos por `flex`/`%`; no grid, track `auto` ou `minmax(auto, …)`; no wrap, dê altura ou menos itens |
 | `out-of-slide` | error | nó **em fluxo** fora do slide | reduza; use `%`/`flex`; decoração → `position="absolute"` |
 | `css-not-emitted` | warning | propriedade CSS sem de/para no PPTX (`overflow: hidden`, gradiente, `filter`, `scale`/`skew`, sombra `inset`/`spread`/múltipla, sombra sem fundo, raio por canto, raio com bordas diferentes por lado, track fora do subconjunto, rotate em Chart/Table, propriedade desconhecida). O preview também não desenha | remova ou troque por uma suportada (§3); se o efeito é dispensável, ignore |
-| `slide-continued` | info | um `Box paginate` (itens) ou `Text paginate` (`data.kind: "text"`, linhas) virou `data.parts` slides | nada; partes desequilibradas → `fontSize`/`gap` responsivos |
+| `slide-continued` | info | um `Box paginate` (itens), `Text paginate` (`data.kind: "text"`, linhas) ou `Table paginate` (`data.kind: "table"`, linhas da tabela) virou `data.parts` slides | nada; partes desequilibradas → `fontSize`/`gap` responsivos |
 | `font-weight-fallback` | warning | `fontWeight` sem face registrada a até 100; `data.requestedWeight` / `data.usedWeight` | registre a face desse peso em `fonts` ou use um peso que existe |
 | `link-target-missing` | error | `href="slide:N"` com N maior que os slides do `<Deck>`; o link não sai | corrija o N (número do `<Slide>` no seu Deck, a partir de 1) |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi | arquivo com mais resolução ou área menor |
@@ -813,6 +899,13 @@ Só um nó paginate (<Box paginate> ou <Text paginate>) por slide; encontrados 2
 - **`slide:N` é o slide do seu `<Deck>`**, não o do arquivo gerado (a paginação desloca os números; a engine traduz).
 - **`Text paginate` não encolhe**: se a fonte ficar grande demais, diminua `fontSize`; e ele precisa de altura (`flex={1}` numa coluna).
 - **Rodapé por cima do corpo**: o `footer` não ocupa espaço; sem `padding` inferior no Slide, o texto do corpo passa por baixo dele.
+- **`stackedBar100` não precisa somar 100**: o PPTX calcula a participação; passe os valores absolutos.
+- **`barH` inverte a ordem**: a 1ª categoria fica embaixo. Para o maior no topo, ordene do menor para o maior.
+- **Linha coberta por merge não repete a célula**: com `rowSpan: 3`, as duas linhas de baixo têm uma célula a menos; repetir dá "tem N células para M colunas".
+- **Merge não cruza parte**: com `Table paginate`, um `rowSpan` nunca é cortado; um grupo grande vai inteiro para o slide seguinte e pode deixar a parte anterior curta.
+- **Ícone na célula não é parte da tabela** (`table-cell-icon`): é uma forma por cima; e a célula com ícone não quebra linha.
+- **Rótulo escuro em série escura**: os rótulos do gráfico usam a cor de texto herdada (sem diagnóstico); confira no PNG.
+- **`cell()` recebe o valor cru**: `typeof value === 'number'` só se a célula foi escrita como número; devolva `text` para formatar.
 - **Diagrama com `position="absolute"`** funciona, mas não se adapta a 4:3; prefira grid com `placeItems="center"` e tamanhos fixos nos nós.
 
 ## Apêndice — Migração das props antigas → CSS
