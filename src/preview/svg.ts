@@ -10,11 +10,14 @@ import type {
   Pt,
   Rect,
   ShapeKind,
+  ShapeProps,
   StrokeProps,
   TextAlign,
   TextLayout,
   TextRun,
 } from '../core/types.ts';
+import { arrowHeadSvg, arrowInsetOf, dashArrayOf, insetPoint, type Point } from './arrows.ts';
+import { shapeGeometryOf, type ShapeGeometry } from './shapes.ts';
 import { element, escapeXml, type Attrs } from './xml.ts';
 
 /**
@@ -30,6 +33,9 @@ const DEBUG_TEXT_OVERFLOW = { color: '#FF0000', width: 1 } as const;
 
 /** roundRect sem radius no pptx usa a geometria padrão do preset (adj 16667 = 16,667% do menor lado). */
 const PPTX_DEFAULT_ROUND_RATIO = 0.16667;
+
+/** `lighten` do OOXML clareia a cor ~40 %: um véu branco com esta opacidade chega perto. */
+const LIGHTEN_OPACITY = 0.4;
 
 /** Diferenças menores que isso são ruído de ponto flutuante do layout. */
 const OVERFLOW_EPSILON = 0.01;
@@ -51,10 +57,16 @@ export const cornerRadiusOf = (radius: Pt | undefined, frame: Rect): Pt => {
 
 type ShapeBuilder = (frame: Rect, props: StrokeProps & { readonly radius?: Pt }) => string;
 
+const pillRadiusOf = (frame: Rect): Pt => Math.min(frame.width, frame.height) / 2;
+
 const shapeBuilders: Readonly<Partial<Record<ShapeKind, ShapeBuilder>>> = {
   rect: (frame, props) => element('rect', { ...rectAttrs(frame), ...paintAttrs(props) }),
   roundRect: (frame, props) => {
     const r = cornerRadiusOf(props.radius, frame);
+    return element('rect', { ...rectAttrs(frame), rx: r, ry: r, ...paintAttrs(props) });
+  },
+  pill: (frame, props) => {
+    const r = pillRadiusOf(frame);
     return element('rect', { ...rectAttrs(frame), rx: r, ry: r, ...paintAttrs(props) });
   },
   ellipse: (frame, props) =>
@@ -65,19 +77,109 @@ const shapeBuilders: Readonly<Partial<Record<ShapeKind, ShapeBuilder>>> = {
       ry: frame.height / 2,
       ...paintAttrs(props),
     }),
-  line: (frame, props) =>
-    element('line', {
-      x1: frame.x,
-      y1: frame.y,
-      x2: frame.x + frame.width,
-      y2: frame.y + frame.height,
-      stroke: props.stroke ?? DEFAULTS.lineStroke,
-      'stroke-width': props.strokeWidth ?? DEFAULTS.strokeWidth,
-    }),
 };
 
-export const shapeSvg = (node: PositionedShape): string =>
-  (shapeBuilders[node.props.kind] ?? shapeBuilders.rect!)(node.frame, { ...node.props, stroke: strokeColorOf(node.props) });
+/** Face clareada (tampa do cilindro: `fill="lighten"` do OOXML) como um véu branco translúcido. */
+const lightenSvg = (geometry: ShapeGeometry, fill: Color | undefined): string =>
+  geometry.lighten === undefined || fill === undefined ? '' : element('path', { d: geometry.lighten, fill: '#FFFFFF', 'fill-opacity': LIGHTEN_OPACITY });
+
+/** M12: geometria preset em <path>; com traço próprio (cilindro, colchetes) o fill e o traço saem separados. */
+const presetSvg = (kind: ShapeKind, frame: Rect, props: StrokeProps): string => {
+  const geometry = shapeGeometryOf(kind, frame);
+  if (geometry === undefined) return element('rect', { ...rectAttrs(frame), ...paintAttrs(props) });
+  if (geometry.stroke === undefined) return element('path', { d: geometry.fill, ...paintAttrs(props) });
+  return (
+    element('path', { d: geometry.fill, ...paintAttrs({ fill: props.fill }) }) +
+    lightenSvg(geometry, props.fill) +
+    element('path', { d: geometry.stroke, ...paintAttrs({ stroke: props.stroke, strokeWidth: props.strokeWidth }) })
+  );
+};
+
+/** Desenho do contorno de uma kind no frame (sem flip, traço ou setas). */
+export const shapeOutlineSvg = (kind: ShapeKind, frame: Rect, props: StrokeProps & { readonly radius?: Pt }): string =>
+  (shapeBuilders[kind] ?? ((f: Rect, p: StrokeProps) => presetSvg(kind, f, p)))(frame, props);
+
+/**
+ * M12: uma kind (não rect) desenhada com atributos prontos — fundo, borda ou contorno de um Box
+ * com `shape`. `part` escolhe o contorno preenchido ou o traço próprio (cilindro, colchetes).
+ */
+export const kindSvg = (kind: ShapeKind, frame: Rect, attrs: Attrs, part: 'fill' | 'stroke'): string => {
+  if (kind === 'ellipse') {
+    return element('ellipse', { cx: frame.x + frame.width / 2, cy: frame.y + frame.height / 2, rx: frame.width / 2, ry: frame.height / 2, ...attrs });
+  }
+  if (kind === 'pill') {
+    const r = pillRadiusOf(frame);
+    return element('rect', { ...rectAttrs(frame), rx: r, ry: r, ...attrs });
+  }
+  const geometry = shapeGeometryOf(kind, frame);
+  if (geometry === undefined) return element('rect', { ...rectAttrs(frame), ...attrs });
+  if (part === 'stroke') return element('path', { d: geometry.stroke ?? geometry.fill, ...attrs });
+  const fill = attrs.fill === 'none' ? undefined : (attrs.fill as Color | undefined);
+  return element('path', { d: geometry.fill, ...attrs }) + lightenSvg(geometry, fill);
+};
+
+/** Extremos da linha: da quina sup. esq. à inf. dir. do frame, espelhados por flipH/flipV (como o PPTX). */
+const lineEndsOf = (frame: Rect, flipH: boolean, flipV: boolean): readonly [Point, Point] => {
+  const left = frame.x;
+  const right = frame.x + frame.width;
+  const top = frame.y;
+  const bottom = frame.y + frame.height;
+  return [
+    { x: flipH ? right : left, y: flipV ? bottom : top },
+    { x: flipH ? left : right, y: flipV ? top : bottom },
+  ];
+};
+
+const lineSvg = (node: PositionedShape, stroke: string): string => {
+  const { props } = node;
+  const width = props.strokeWidth ?? DEFAULTS.strokeWidth;
+  const [start, end] = lineEndsOf(node.frame, props.flipH === true, props.flipV === true);
+  const from = insetPoint(start, end, arrowInsetOf(props.startArrow, width));
+  const to = insetPoint(end, start, arrowInsetOf(props.endArrow, width));
+  return (
+    element('line', {
+      x1: from.x,
+      y1: from.y,
+      x2: to.x,
+      y2: to.y,
+      stroke,
+      'stroke-width': width,
+      'stroke-dasharray': dashArrayOf(props.lineStyle, width, props.lineCap === 'round'),
+      'stroke-linecap': props.lineCap === 'round' ? 'round' : undefined,
+    }) +
+    arrowHeadSvg(props.startArrow, start, end, width, stroke) +
+    arrowHeadSvg(props.endArrow, end, start, width, stroke)
+  );
+};
+
+/** Espelho em torno do centro do frame (flipH/flipV do PPTX). */
+const flipTransformOf = (frame: Rect, flipH: boolean, flipV: boolean): string | undefined => {
+  if (!flipH && !flipV) return undefined;
+  const cx = frame.x + frame.width / 2;
+  const cy = frame.y + frame.height / 2;
+  return `translate(${cx} ${cy}) scale(${flipH ? -1 : 1} ${flipV ? -1 : 1}) translate(${-cx} ${-cy})`;
+};
+
+/** Traço tracejado e ponta arredondada valem para o contorno inteiro (<g> herda para os filhos). */
+const strokeStyleAttrs = (props: ShapeProps): Attrs => {
+  const width = props.strokeWidth ?? DEFAULTS.strokeWidth;
+  return {
+    'stroke-dasharray': dashArrayOf(props.lineStyle, width, props.lineCap === 'round'),
+    'stroke-linecap': props.lineCap === 'round' ? 'round' : undefined,
+  };
+};
+
+export const shapeSvg = (node: PositionedShape): string => {
+  const { props, frame } = node;
+  const stroke = strokeColorOf(props);
+  if (props.kind === 'line') return lineSvg(node, stroke ?? DEFAULTS.lineStroke);
+  const body = shapeOutlineSvg(props.kind, frame, { ...props, stroke });
+  const transform = flipTransformOf(frame, props.flipH === true, props.flipV === true);
+  const style = strokeStyleAttrs(props);
+  const styled = Object.values(style).some((value) => value !== undefined);
+  if (transform === undefined && !styled) return body;
+  return element('g', { transform, ...style }, body);
+};
 
 export const ANCHORS: Readonly<Record<TextAlign, { readonly anchor: string; readonly offset: number }>> = {
   left: { anchor: 'start', offset: 0 },

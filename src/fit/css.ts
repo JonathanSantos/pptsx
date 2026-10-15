@@ -1,4 +1,4 @@
-import { uniformBorderOf } from '../emit/index.ts';
+import { boxShapeOf, uniformBorderOf } from '../emit/index.ts';
 import type { CssStyle, Diagnostic, NotEmitted, PositionedDeck, PositionedNode, PositionedSlide } from '../core/types.ts';
 import { groupDiagnostics } from './group.ts';
 
@@ -15,6 +15,20 @@ const SIDES = ['top', 'right', 'bottom', 'left'] as const;
 const hasSideBorders = (css: CssStyle): boolean =>
   SIDES.some((side) => css.border[side].width > 0 && css.border[side].style !== 'none') && uniformBorderOf(css) === undefined;
 
+/** M12: Box com `shape` (não rect): o raio e as bordas por lado não têm de/para na geometria da forma. */
+const boxShapeNotes = (node: PositionedNode): readonly NotEmitted[] => {
+  const { css } = node;
+  const shape = boxShapeOf(node);
+  return [
+    ...(css.borderRadius !== undefined && css.borderRadius > 0
+      ? [{ property: 'borderRadius', value: String(css.borderRadius), reason: `a forma "${shape}" tem geometria própria; o raio só vale em rect/roundRect` }]
+      : []),
+    ...(hasSideBorders(css)
+      ? [{ property: 'border', value: 'por lado', reason: `a forma "${shape}" só tem contorno inteiro; use uma borda igual nos quatro lados` }]
+      : []),
+  ];
+};
+
 const contextualOf = (node: PositionedNode): readonly NotEmitted[] => {
   const { css } = node;
   const notes: NotEmitted[] = [];
@@ -24,9 +38,10 @@ const contextualOf = (node: PositionedNode): readonly NotEmitted[] => {
   if (css.boxShadow !== undefined && css.backgroundColor === undefined && node.kind !== 'shape') {
     notes.push({ property: 'boxShadow', value: 'sombra', reason: 'sem backgroundColor a forma não tem preenchimento e a sombra não aparece no PPTX' });
   }
-  if (css.borderRadius !== undefined && css.borderRadius > 0 && hasSideBorders(css)) {
+  if (css.borderRadius !== undefined && css.borderRadius > 0 && hasSideBorders(css) && boxShapeOf(node) === 'rect') {
     notes.push({ property: 'borderRadius', value: String(css.borderRadius), reason: 'com bordas diferentes por lado, as linhas das bordas saem retas (o fundo continua arredondado)' });
   }
+  if (boxShapeOf(node) !== 'rect') notes.push(...boxShapeNotes(node));
   if (css.rotate !== 0 && (node.kind === 'chart' || node.kind === 'table')) {
     notes.push({ property: 'rotate', value: String(css.rotate), reason: `${node.kind === 'chart' ? 'gráfico' : 'tabela'} nativo não gira no PPTX` });
   }

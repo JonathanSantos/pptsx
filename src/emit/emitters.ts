@@ -45,7 +45,7 @@ const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: Emi
     slide.addImage(paintedImageOf(imageOf(content, ctx.baseDir), content.frame, item));
   },
   shape: (node, slide, _ctx, item) => {
-    addShape(slide, paintedShapeOf(shapeOf(node), node, item));
+    addShape(slide, paintedShapeOf(shapeOf(node), node, item, { cap: node.props.lineCap }));
   },
   // Gráfico e tabela nativos não giram nem têm opacidade no PPTX (o fit avisa com css-not-emitted).
   // addChart/addTable mutam dados e opções em profundidade (labels, bordas, unidades): cópia funda.

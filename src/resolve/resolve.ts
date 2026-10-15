@@ -22,6 +22,7 @@ import type { Normalized } from './normalize.ts';
 import { assertPaginateInFlow, assertSinglePaginate } from './paginate.ts';
 import { resolvePropsOf } from './props.ts';
 import { runsOf } from './runs.ts';
+import { assertBoxShape, assertValidShape } from './shape.ts';
 import type { RunStyle } from './runs.ts';
 
 /**
@@ -116,6 +117,13 @@ const resolveChart = (item: ExpandedPrimitive, path: string, n: Normalized, pare
   return { kind: 'chart', path, props, css: n.css };
 };
 
+const resolveShape = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
+  assertNoChildren(item, path);
+  const props = legacyPropsOf('shape', n);
+  assertValidShape(props, path);
+  return { kind: 'shape', path, props, css: n.css };
+};
+
 const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
   assertNoChildren(item, path);
   const props = legacyPropsOf('table', n);
@@ -126,6 +134,7 @@ const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized): Res
 const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: ResponsiveContext): ResolvedNode => {
   const props = legacyPropsOf('box', n);
   assertPaginateInFlow(props, path);
+  assertBoxShape(props, path);
   const children = resolveChildren(item.element.props.children, path, ctx, parentOf(n));
   return { kind: 'box', path, props, css: n.css, children };
 };
@@ -141,8 +150,7 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveConte
       assertNoChildren(item, path);
       return { kind: 'image', path, props: legacyPropsOf('image', n), css: n.css };
     case 'shape':
-      assertNoChildren(item, path);
-      return { kind: 'shape', path, props: legacyPropsOf('shape', n), css: n.css };
+      return resolveShape(item, path, n);
     case 'chart':
       return resolveChart(item, path, n, parent);
     case 'table':

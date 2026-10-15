@@ -2,6 +2,7 @@ import { DEFAULTS } from '../core/defaults.ts';
 import type { PrimitiveKind } from '../core/types.ts';
 import { hexListOf, hexOf, withHexFields } from './colors.ts';
 import { finiteNumber, INVALID, pass, reject } from './draft.ts';
+import { InvalidPropError } from './errors.ts';
 import type { Handler } from './draft.ts';
 import { backgroundColor, borderRadius } from './paint-handlers.ts';
 import { SHAPE_CSS } from './shape-handlers.ts';
@@ -55,9 +56,16 @@ const CONTAINER_LEGACY: Readonly<Record<string, Handler>> = {
   justify: css('justifyContent'),
 };
 
+/** M12: `id` de qualquer nó (alvo de Connector): string não vazia. */
+const nodeId: Handler = (draft, value, key) => {
+  if (typeof value !== 'string' || value.trim() === '') throw new InvalidPropError(key, value, 'use um texto não vazio, único no slide');
+  return pass('id')(draft, value, key);
+};
+
 const ITEM_LEGACY: Readonly<Record<string, Handler>> = {
   grow: legacyGrow,
   shrink: css('flexShrink'),
+  id: nodeId,
 };
 
 const TEXT_LEGACY: Readonly<Record<string, Handler>> = {
@@ -86,12 +94,13 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     strokeWidth: legacyStrokeWidth,
     radius: borderRadius,
     paginate: pass('paginate'),
+    shape: pass('shape'),
   },
   text: { ...ITEM_LEGACY, ...TEXT_LEGACY },
   image: { ...ITEM_LEGACY, src: pass('src'), fit: pass('fit'), objectFit },
   shape: {
     ...ITEM_LEGACY,
-    ...passAll(['kind', 'strokeWidth', 'radius']),
+    ...passAll(['kind', 'strokeWidth', 'radius', 'flipH', 'flipV', 'lineStyle', 'lineCap', 'startArrow', 'endArrow']),
     ...passColors(['fill', 'stroke']),
     ...SHAPE_CSS,
     // Shape: o fundo CSS é o preenchimento da forma (a forma não tem caixa separada).

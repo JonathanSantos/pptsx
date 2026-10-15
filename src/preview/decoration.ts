@@ -1,5 +1,6 @@
-import type { BorderSide, BorderStyle, CssStyle, PositionedNode, Rect } from '../core/types.ts';
+import type { BorderSide, BorderStyle, CssStyle, PositionedNode, Rect, ShapeKind } from '../core/types.ts';
 import {
+  boxShapeOf,
   hasBackgroundImage,
   insetRadiusOf,
   insetRect,
@@ -7,8 +8,8 @@ import {
   uniformBorderOf,
   visibleSidesOf,
 } from '../emit/decoration.ts';
-import { cornerRadiusOf, imageElementSvg, rectAttrs } from './svg.ts';
-import { element } from './xml.ts';
+import { cornerRadiusOf, imageElementSvg, kindSvg, rectAttrs } from './svg.ts';
+import { element, type Attrs } from './xml.ts';
 
 /**
  * Pintura CSS da caixa em SVG (M11): as mesmas decisões de src/emit/decoration.ts (fundo,
@@ -63,33 +64,37 @@ const sideLineSvg = (segment: Rect, border: BorderSide): string =>
     ...strokeAttrs(border),
   });
 
-const backgroundSvg = (css: CssStyle, frame: Rect, filterId: string): string => {
+/** Rect (com o raio do CSS) ou, num Box com `shape`, a geometria da kind (M12). */
+const boxPartSvg = (kind: ShapeKind, rect: Rect, radius: number | undefined, attrs: Attrs, part: 'fill' | 'stroke'): string =>
+  kind === 'rect' ? element('rect', { ...rectAttrs(rect), ...radiusAttrs(radius, rect), ...attrs }) : kindSvg(kind, rect, attrs, part);
+
+const backgroundSvg = (css: CssStyle, frame: Rect, filterId: string, kind: ShapeKind): string => {
   const fill = css.backgroundColor === undefined || css.backgroundAlpha === 0 ? 'none' : css.backgroundColor;
   if (fill === 'none' && css.boxShadow === undefined) return '';
-  return element('rect', {
-    ...rectAttrs(frame),
-    ...radiusAttrs(css.borderRadius, frame),
+  return boxPartSvg(kind, frame, css.borderRadius, {
     fill,
     'fill-opacity': css.backgroundAlpha === 1 ? undefined : css.backgroundAlpha,
     filter: css.boxShadow === undefined ? undefined : `url(#${filterId})`,
-  });
+  }, 'fill');
 };
 
-const bordersSvg = (css: CssStyle, frame: Rect): string => {
+const bordersSvg = (css: CssStyle, frame: Rect, kind: ShapeKind): string => {
   const uniform = uniformBorderOf(css);
   if (uniform !== undefined) {
     const inner = insetRect(frame, uniform.width / 2);
-    return element('rect', { ...rectAttrs(inner), ...radiusAttrs(insetRadiusOf(css.borderRadius, uniform), frame), fill: 'none', ...strokeAttrs(uniform) });
+    return boxPartSvg(kind, inner, insetRadiusOf(css.borderRadius, uniform), { fill: 'none', ...strokeAttrs(uniform) }, 'stroke');
   }
+  // Bordas por lado só existem no retângulo (numa forma, o fit avisa com css-not-emitted).
+  if (kind !== 'rect') return '';
   return visibleSidesOf(css)
     .map((side) => sideLineSvg(sideSegmentOf(frame, side, css.border[side].width), css.border[side]))
     .join('');
 };
 
-const outlineSvg = (css: CssStyle, frame: Rect): string =>
+const outlineSvg = (css: CssStyle, frame: Rect, kind: ShapeKind): string =>
   css.outline === undefined
     ? ''
-    : element('rect', { ...rectAttrs(frame), ...radiusAttrs(css.borderRadius, frame), fill: 'none', stroke: css.outline.color, 'stroke-width': css.outline.width });
+    : boxPartSvg(kind, frame, css.borderRadius, { fill: 'none', stroke: css.outline.color, 'stroke-width': css.outline.width }, 'stroke');
 
 /** Sombra, fundo, imagem de fundo (cover), bordas e contorno, nessa ordem (a do emissor). */
 export const decorationSvg = (node: PositionedNode, loadImage: (src: string) => string, index: number): string => {
@@ -97,5 +102,6 @@ export const decorationSvg = (node: PositionedNode, loadImage: (src: string) => 
   const filterId = `shadow-${index}`;
   const src = hasBackgroundImage(node) ? css.backgroundImage : undefined;
   const image = src === undefined ? '' : imageElementSvg(frame, loadImage(src), 'cover', `bg-${index}`);
-  return shadowFilter(css, filterId) + backgroundSvg(css, frame, filterId) + image + bordersSvg(css, frame) + outlineSvg(css, frame);
+  const kind = boxShapeOf(node);
+  return shadowFilter(css, filterId) + backgroundSvg(css, frame, filterId, kind) + image + bordersSvg(css, frame, kind) + outlineSvg(css, frame, kind);
 };

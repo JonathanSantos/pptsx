@@ -2,8 +2,9 @@ import { basename } from 'node:path';
 import type * as Pptx from './pptx.ts';
 import { resolveAssetPath } from '../core/assets.ts';
 import { DEFAULTS } from '../core/defaults.ts';
-import type { BorderSide, BorderStyle, CssStyle, PositionedNode, Rect, Shadow, Side } from '../core/types.ts';
-import { hexOf, positionOf, rectRadiusOf, type ShapeSpec } from './options.ts';
+import type { BorderSide, BorderStyle, CssStyle, PositionedNode, Rect, Shadow, ShapeKind, Side } from '../core/types.ts';
+import { geometryOf as shapeGeometryOf, hexOf, positionOf, rectRadiusOf, type ShapeSpec } from './options.ts';
+import { lineMarkerOf, type LineEnds } from './line-style.ts';
 import { placementOf, type PaintItem, type Rotation } from './paint.ts';
 
 /**
@@ -89,11 +90,22 @@ const fillOf = (css: CssStyle, opacity: number): { readonly fill?: Pptx.ShapeFil
 const lineOf = (side: BorderSide, opacity: number): Pptx.ShapeLineProps =>
   withTransparency({ color: hexOf(side.color), width: side.width, dashType: DASH_TYPES[side.style] }, side.alpha, opacity);
 
-const geometryOf = (radius: number | undefined, rect: Rect): { readonly shape: Pptx.ShapeName; readonly rectRadius?: number } =>
-  radius !== undefined && radius > 0 ? { shape: 'roundRect', rectRadius: rectRadiusOf(radius, rect) } : { shape: 'rect' };
+/**
+ * M12: kind do fundo da caixa. Sem `shape` (ou rect/roundRect) vale o raio, como antes; as demais
+ * kinds ignoram o raio (o fit avisa com css-not-emitted).
+ */
+export const boxShapeOf = (node: PositionedNode): ShapeKind => {
+  const shape = node.kind === 'box' ? node.props.shape : undefined;
+  return shape === undefined || shape === 'rect' || shape === 'roundRect' ? 'rect' : shape;
+};
+
+const geometryFor = (kind: ShapeKind, radius: number | undefined, rect: Rect): { readonly shape: Pptx.ShapeName; readonly rectRadius?: number } => {
+  if (kind !== 'rect') return shapeGeometryOf(kind, radius, rect);
+  return radius !== undefined && radius > 0 ? { shape: 'roundRect', rectRadius: rectRadiusOf(radius, rect) } : { shape: 'rect' };
+};
 
 const shapeSpec = (rect: Rect, item: PaintItem, radius: number | undefined, options: Pptx.ShapeProps): ShapeSpec => {
-  const { shape, rectRadius } = geometryOf(radius, rect);
+  const { shape, rectRadius } = geometryFor(item.node.kind === 'box' ? boxShapeOf(item.node) : 'rect', radius, rect);
   return {
     shape,
     options: { ...placedOf(rect, item.rotations), ...(rectRadius === undefined ? {} : { rectRadius }), ...options },
@@ -172,7 +184,9 @@ export const decorationOf = (node: PositionedNode, item: PaintItem): Decoration 
   const sides =
     uniform !== undefined
       ? [shapeSpec(insetRect(node.frame, uniform.width / 2), item, css.borderRadius, { line: lineOf(uniform, item.opacity) })]
-      : visibleSidesOf(css).map((side) => sideLineOf(node.frame, side, css.border[side], item));
+      : boxShapeOf(node) !== 'rect'
+        ? []
+        : visibleSidesOf(css).map((side) => sideLineOf(node.frame, side, css.border[side], item));
   if (background.length === 0 && sides.length === 0 && extra.length === 0) return EMPTY;
   return { under: background, over: [...sides, ...extra] };
 };
@@ -213,8 +227,8 @@ export const paintedImageOf = (image: Pptx.ImageProps, content: Rect, item: Pain
 const withOpacity = <T extends object>(props: T | undefined, opacity: number): T | undefined =>
   props === undefined ? undefined : { ...props, ...transparencyOption(opacity) };
 
-/** Shape: geometria da engine (options.ts) com posição girada, opacidade e sombra. */
-export const paintedShapeOf = (spec: ShapeSpec, node: PositionedNode, item: PaintItem): ShapeSpec => {
+/** Shape: geometria da engine (options.ts) com posição girada, opacidade, sombra e a marca de cap/join. */
+export const paintedShapeOf = (spec: ShapeSpec, node: PositionedNode, item: PaintItem, ends: LineEnds = {}): ShapeSpec => {
   const fill = withOpacity(spec.options.fill, item.opacity);
   const line = withOpacity(spec.options.line, item.opacity);
   return {
@@ -225,6 +239,7 @@ export const paintedShapeOf = (spec: ShapeSpec, node: PositionedNode, item: Pain
       ...(fill ? { fill } : {}),
       ...(line ? { line } : {}),
       ...shadowOptions(node.css, item.opacity),
+      ...lineMarkerOf(ends, item.index),
     },
   };
 };

@@ -42,7 +42,7 @@ const emitSlide = (pptx: Presentation, slide: PositionedSlide, options: EmitOpti
 
 export type { EmbeddedFont } from './embed.ts';
 export { paintOrderOf, placementOf, type PaintItem, type Placement, type Rotation } from './paint.ts';
-export { decorationOf, uniformBorderOf, type Decoration } from './decoration.ts';
+export { boxShapeOf, decorationOf, uniformBorderOf, type Decoration } from './decoration.ts';
 export { ACTIVE_LINE_SPACING, LINE_SPACING_CALIBRATION, type LineSpacingStrategy } from './calibration.ts';
 
 export const emitPptx = async (deck: PositionedDeck, options: EmitOptions): Promise<Buffer> => {

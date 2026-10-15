@@ -11,10 +11,12 @@ import type {
   PositionedText,
   Rect,
   ShapeKind,
+  ShapeProps,
   StrokeProps,
 } from '../core/types.ts';
 import { ptToInches } from '../sizes.ts';
 import { ACTIVE_LINE_SPACING, lineSpacingOf, type LineSpacingStrategy } from './calibration.ts';
+import { dashOf } from './line-style.ts';
 import { hexOf, textRunsOfNode } from './runs.ts';
 
 /**
@@ -64,6 +66,18 @@ const lineOf = (props: StrokeProps): Pptx.ShapeLineProps | undefined => {
   return { color: hexOf(props.stroke), width: props.strokeWidth ?? DEFAULTS.strokeWidth };
 };
 
+/** Pontas de seta (só em line; o resolve garante): omitidas quando 'none'. */
+const arrowsOf = (props: ShapeProps): Pick<Pptx.ShapeLineProps, 'beginArrowType' | 'endArrowType'> => ({
+  ...(props.startArrow === undefined || props.startArrow === 'none' ? {} : { beginArrowType: props.startArrow }),
+  ...(props.endArrow === undefined || props.endArrow === 'none' ? {} : { endArrowType: props.endArrow }),
+});
+
+/** Linha do contorno da forma: cor/espessura, tracejado e setas. */
+const shapeLineOf = (props: ShapeProps): Pptx.ShapeLineProps | undefined => {
+  const line = lineOf(props);
+  return line === undefined ? undefined : { ...line, ...dashOf(props.lineStyle), ...arrowsOf(props) };
+};
+
 /**
  * pptxgenjs v4 interpreta rectRadius em POLEGADAS (adj = r·EMU·100000 / min(w,h)),
  * apesar do .d.ts dizer 0–1. Limitamos a metade do menor lado, que é o máximo
@@ -72,27 +86,38 @@ const lineOf = (props: StrokeProps): Pptx.ShapeLineProps | undefined => {
 export const rectRadiusOf = (radius: number, frame: Rect): number =>
   ptToInches(Math.min(radius, Math.min(frame.width, frame.height) / 2));
 
-const geometryOf = (kind: ShapeKind, radius: number | undefined, frame: Rect) => {
-  if (kind !== 'roundRect' || !radius || radius <= 0) return {};
-  return { rectRadius: rectRadiusOf(radius, frame) };
+/**
+ * Geometria do prstGeom: `roundRect` leva o raio do autor; `pill` é um roundRect com raio = metade
+ * do menor lado (adj 50000). As demais kinds saem sem avLst (os ajustes padrão do OOXML).
+ */
+export const geometryOf = (kind: ShapeKind, radius: number | undefined, frame: Rect): { readonly shape: Pptx.ShapeName; readonly rectRadius?: number } => {
+  const shape = shapeNameOf(kind);
+  if (kind === 'pill') return { shape, rectRadius: rectRadiusOf(Math.min(frame.width, frame.height) / 2, frame) };
+  if (kind !== 'roundRect' || !radius || radius <= 0) return { shape };
+  return { shape, rectRadius: rectRadiusOf(radius, frame) };
 };
 
-const shapeSpecOf = (kind: ShapeKind, props: StrokeProps & { readonly radius?: number }, frame: Rect): ShapeSpec => {
-  const line = lineOf(props);
+const flipsOf = (props: ShapeProps): Pick<Pptx.ShapeProps, 'flipH' | 'flipV'> => ({
+  ...(props.flipH === true ? { flipH: true } : {}),
+  ...(props.flipV === true ? { flipV: true } : {}),
+});
+
+/** Shape 'line' usa o próprio frame: pptxgenjs desenha da quina sup. esq. à inf. dir. (flip espelha). */
+export const shapeOf = (node: PositionedShape): ShapeSpec => {
+  const props = { ...node.props, stroke: strokeColorOf(node.props) };
+  const line = shapeLineOf(props);
+  const { shape, rectRadius } = geometryOf(props.kind, props.radius, node.frame);
   return {
-    shape: shapeNameOf(kind),
+    shape,
     options: {
-      ...positionOf(frame),
+      ...positionOf(node.frame),
       ...fillOf(props.fill),
       ...(line ? { line } : {}),
-      ...geometryOf(kind, props.radius, frame),
+      ...(rectRadius === undefined ? {} : { rectRadius }),
+      ...flipsOf(props),
     },
   };
 };
-
-/** Shape 'line' usa o próprio frame: pptxgenjs desenha da quina sup. esq. à inf. dir. */
-export const shapeOf = (node: PositionedShape): ShapeSpec =>
-  shapeSpecOf(node.props.kind, { ...node.props, stroke: strokeColorOf(node.props) }, node.frame);
 
 export const textOf = (
   node: PositionedText,
