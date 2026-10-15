@@ -3,7 +3,7 @@ import { DEFAULTS, weightValueOf } from '../core/defaults.ts';
 import type { FontWeight, Pt, RunFace, TextLayout, TextMeasureInput, TextMeasurer } from '../core/types.ts';
 import { brokenWordsOf } from './broken.ts';
 import { createEstimateMeasurer } from './estimate.ts';
-import { lineBoxOf, runSizeOf, spacingOf, type LineBox } from './leading.ts';
+import { hasRunMetrics, lineBoxesOf, lineBoxOf, runSizeOf, spacingOf, withLineBoxes, type LineBox } from './leading.ts';
 import { layoutText } from './lines.ts';
 import type { MeasureRun } from './pieces.ts';
 import type { FaceMatch, FontRegistry } from './registry.ts';
@@ -142,11 +142,13 @@ export const createFontkitMeasurer = (registry: FontRegistry, options: FontkitMe
   return (input) => {
     const { family, size, weight, italic } = input.style;
     const runs = runsOfInput(input);
-    const matches = runs.map((run) => registry.match(family, run.weight, run.italic));
+    // M13-7: cada run pode ter a própria família (Span fontFamily).
+    const familyOfRun = (index: number): string => runs[index]?.family ?? family;
+    const matches = runs.map((run, index) => registry.match(familyOfRun(index), run.weight, run.italic));
     const found = matches.map((match) => match?.font);
     const fonts = found.filter((font): font is Font => font !== undefined);
     if (fonts.length !== found.length) return { ...estimate(input), fontMissing: true };
-    const faces = matches.map((match, index) => runFaceOf(family, match!, runs[index]!.weight));
+    const faces = matches.map((match, index) => runFaceOf(familyOfRun(index), match!, runs[index]!.weight));
     const [firstFont] = fonts;
     // A altura da linha é única e vem da face do estilo; se só as faces dos runs existem
     // (ex.: <Text font="X"><B>…</B></Text> com X só em bold), usa-se a do primeiro run.
@@ -155,6 +157,11 @@ export const createFontkitMeasurer = (registry: FontRegistry, options: FontkitMe
     const spacing = input.letterSpacing ?? 0;
     const widths = fonts.map((font, index) => measureWidthOf(unitWidthOf(font), font.unitsPerEm, runSizeOf(runs[index], size), spacing));
     const measure: MeasureRun = (text, run) => widths[run]?.(text) ?? 0;
-    return { ...measureWithFonts(metricsFont, measure, input, safety), faces };
+    const layout = measureWithFonts(metricsFont, measure, input, safety);
+    if (!hasRunMetrics(runs)) return { ...layout, faces };
+    const boxOf = (font: Font, runSize: number): LineBox => lineBoxOf(naturalLineBox(metricsOf(font), runSize), runSize, input.style.lineHeight);
+    const base = boxOf(metricsFont, size);
+    const runBoxes = fonts.map((font, index) => boxOf(font, runs[index]?.size ?? size));
+    return { ...withLineBoxes(layout, lineBoxesOf(layout.lineRuns, runBoxes, base)), faces };
   };
 };

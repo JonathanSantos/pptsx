@@ -244,7 +244,8 @@ export interface TextProps extends FlexItemProps, TextStyleProps {
 
 /**
  * M8 — trecho inline dentro de Text. `B` e `I` são Span com weight/italic fixos.
- * size, font e lineHeight NÃO são por run: a linha tem altura única.
+ * M13-7: `fontSize`/`fontFamily` por Span (CssSpanProps) mudam a altura da linha em que o trecho
+ * cai (line box do CSS: a maior ascendente e a maior descendente da linha); `lineHeight` continua do Text.
  */
 export interface SpanProps {
   readonly weight?: FontWeight;
@@ -776,6 +777,9 @@ export interface TextRun {
   readonly verticalAlign?: VerticalAlign;
   /** M13: hyperlink do trecho, já traduzido para o deck de saída no fim do fit (`slide:N` de saída). */
   readonly href?: string;
+  /** M13-7: corpo (pt) e família do trecho; ausentes = os do Text. */
+  readonly size?: Pt;
+  readonly family?: string;
 }
 
 export interface ResolvedText extends ResolvedBase<'text', Omit<TextProps, 'children'>> {
@@ -964,6 +968,13 @@ export interface TextLayout {
   readonly fontMissing: boolean;
   /** M13: face de cada run (mesmo índice de `runs`); ausente na estimativa (sem fonte real). */
   readonly faces?: readonly RunFace[];
+  /**
+   * M13-7: altura e ascendente de cada linha quando algum run muda corpo ou família (a linha tem a
+   * maior ascendente e a maior descendente dos runs dela). Ausentes = todas as linhas iguais a
+   * `lineHeight`/`ascent`. Com elas, `lineHeight`/`ascent` são os da 1ª linha e `height` é a soma.
+   */
+  readonly lineHeights?: readonly Pt[];
+  readonly ascents?: readonly Pt[];
 }
 
 /** Strategy: estimativa (M2) ou fontkit (M3). Função pura. */

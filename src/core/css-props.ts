@@ -147,6 +147,10 @@ export type CssTablePropsAuthor = ResponsiveProps<Omit<TableProps, keyof Css | '
   readonly border?: Responsive<Color>;
 };
 export interface CssSpanProps extends SpanProps {
+  /** M13-7: corpo do trecho (a linha cresce para caber). */
+  readonly fontSize?: CssLengthInput;
+  /** M13-7: família do trecho (registrada em `fonts`, como a do Text). */
+  readonly fontFamily?: string;
   /** M13: pesos numéricos 100–900 usam a face registrada mais próxima. */
   readonly fontWeight?: 'normal' | 'bold' | 'regular' | Num;
   readonly fontStyle?: 'normal' | 'italic';

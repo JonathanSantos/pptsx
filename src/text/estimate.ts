@@ -1,6 +1,6 @@
 import type { TextLayout, TextMeasureInput, TextMeasurer, TextRun } from '../core/types.ts';
 import { brokenWordsOf } from './broken.ts';
-import { lineBoxOf, runSizeOf, spacingOf } from './leading.ts';
+import { hasRunMetrics, lineBoxesOf, lineBoxOf, runSizeOf, spacingOf, withLineBoxes } from './leading.ts';
 import { runsOfInput } from './source.ts';
 import { layoutText } from './lines.ts';
 import type { MeasureRun } from './pieces.ts';
@@ -22,7 +22,8 @@ const measureEstimate = (input: TextMeasureInput): TextLayout => {
   // A linha "natural" da estimativa faz o papel da face: 'normal' = 1.2 × size com baseline em 0.9 × size.
   const natural = { lineHeight: LINE_HEIGHT_RATIO * size, ascent: ASCENT_RATIO * size };
   const { lineHeight, ascent } = lineBoxOf(natural, size, input.style.lineHeight);
-  return {
+  const runs = runsOfInput(input);
+  const layout = {
     lines: laid.lines,
     paragraphs: laid.paragraphs,
     lineRuns: laid.lineRuns,
@@ -36,6 +37,9 @@ const measureEstimate = (input: TextMeasureInput): TextLayout => {
     truncated: laid.truncated,
     fontMissing: false,
   };
+  if (!hasRunMetrics(runs)) return layout;
+  const boxOf = (runSize: number) => lineBoxOf({ lineHeight: LINE_HEIGHT_RATIO * runSize, ascent: ASCENT_RATIO * runSize }, runSize, input.style.lineHeight);
+  return withLineBoxes(layout, lineBoxesOf(laid.lineRuns, runs.map((run) => boxOf(run.size ?? size)), boxOf(size)));
 };
 
 export const createEstimateMeasurer = (): TextMeasurer => measureEstimate;

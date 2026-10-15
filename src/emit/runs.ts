@@ -35,6 +35,8 @@ export interface RunStyle {
   readonly verticalAlign?: VerticalAlign;
   /** M13: link do trecho (já traduzido para o deck de saída). */
   readonly href?: string;
+  /** M13-7: corpo do trecho quando difere do Text. */
+  readonly size?: number;
 }
 
 /** Pedaço de texto com estilo: vira um <a:r>. */
@@ -78,6 +80,7 @@ const runStyleOf = (run: TextRun, face: RunFace | undefined, family: string): Ru
   lineThrough: run.lineThrough ?? false,
   ...(run.verticalAlign === undefined || run.verticalAlign === 'baseline' ? {} : { verticalAlign: run.verticalAlign }),
   ...(run.href === undefined ? {} : { href: run.href }),
+  ...(run.size === undefined ? {} : { size: run.size }),
 });
 
 // Guards: árvores montadas antes do M8 (ou à mão) podem não ter runs/lineRuns;
@@ -112,7 +115,8 @@ const sameStyle = (a: RunStyle, b: RunStyle): boolean =>
   a.lineThrough === b.lineThrough &&
   a.typeface === b.typeface &&
   a.verticalAlign === b.verticalAlign &&
-  a.href === b.href;
+  a.href === b.href &&
+  a.size === b.size;
 
 /** Funde pedaços vizinhos com o mesmo estilo (ex.: um run que atravessou linhas). */
 export const mergeAdjacent = (line: StyledLine): StyledLine =>
@@ -239,6 +243,7 @@ const pptxRunOf = (piece: StyledText, softBreakBefore: boolean, breakLine: boole
     ...(piece.style.typeface === undefined ? {} : { fontFace: piece.style.typeface }),
     ...baselineOf(piece.style.verticalAlign),
     ...hyperlinkOf(piece.style.href),
+    ...(piece.style.size === undefined ? {} : { fontSize: piece.style.size }),
     // M11: decoração (Span e textDecoration) só quando ligada; a caixa nunca leva underline/strike.
     ...(piece.style.underline ? { underline: { style: 'sng' as const } } : {}),
     ...(piece.style.lineThrough ? { strike: 'sngStrike' as const } : {}),
@@ -264,21 +269,40 @@ const lineOrEmpty = (line: StyledLine, base: RunStyle): StyledLine => (line.leng
 
 const paragraphOrEmpty = (paragraph: StyledParagraph): StyledParagraph => (paragraph.length === 0 ? [[]] : paragraph);
 
-/** softBreakBefore só no 1º run de cada linha depois da 1ª; breakLine só no último run do parágrafo. */
-export const pptxRunsOf = (paragraphs: readonly StyledParagraph[], base: RunStyle): Pptx.TextProps[] =>
+/**
+ * softBreakBefore só no 1º run de cada linha depois da 1ª; breakLine só no último run do parágrafo.
+ * M13-7: `spacings[p]` (pt) vai no 1º run do parágrafo p como `lineSpacing` (o pPr do parágrafo).
+ */
+export const pptxRunsOf = (paragraphs: readonly StyledParagraph[], base: RunStyle, spacings?: readonly number[]): Pptx.TextProps[] =>
   paragraphs.flatMap((paragraph, paragraphIndex) => {
     const closesParagraph = paragraphIndex < paragraphs.length - 1;
     const lines = paragraphOrEmpty(paragraph).map((line) => lineOrEmpty(line, base));
+    const spacing = spacings?.[paragraphIndex];
     return lines.flatMap((line, lineIndex) =>
-      line.map((piece, pieceIndex) =>
-        pptxRunOf(
+      line.map((piece, pieceIndex) => {
+        const run = pptxRunOf(
           piece,
           lineIndex > 0 && pieceIndex === 0,
           closesParagraph && lineIndex === lines.length - 1 && pieceIndex === line.length - 1,
-        ),
-      ),
+        );
+        return spacing === undefined || lineIndex > 0 || pieceIndex > 0 ? run : { ...run, options: { ...run.options, lineSpacing: spacing } };
+      }),
     );
   });
+
+/**
+ * M13-7: linhas de alturas diferentes. 'forced': cada linha vira um parágrafo com o próprio
+ * `spcPts` (o PPTX só tem espaçamento por parágrafo). 'auto': o parágrafo do autor com a maior
+ * altura das linhas dele (o renderizador quebra, não dá para ser exato por linha).
+ */
+const perLineOf = (node: PositionedText, lineBreaks: LineBreaks, paragraphs: readonly StyledParagraph[]): { readonly paragraphs: readonly StyledParagraph[]; readonly spacings?: readonly number[] } => {
+  const heights = node.text.lineHeights;
+  if (heights === undefined) return { paragraphs };
+  if (lineBreaks === 'forced') return { paragraphs: paragraphs.flatMap((paragraph) => paragraph.map((line) => [line])), spacings: heights };
+  const ends = node.text.paragraphs.reduce<readonly number[]>((acc, lines) => [...acc, (acc[acc.length - 1] ?? 0) + lines.length], []);
+  const spacings = ends.map((end, index) => Math.max(...heights.slice(ends[index - 1] ?? 0, end)));
+  return { paragraphs, spacings };
+};
 
 const PARAGRAPH_STRATEGIES: Readonly<Record<LineBreaks, (node: PositionedText, base: RunStyle) => readonly StyledParagraph[]>> = {
   forced: computedParagraphsOf,
@@ -287,5 +311,6 @@ const PARAGRAPH_STRATEGIES: Readonly<Record<LineBreaks, (node: PositionedText, b
 
 export const textRunsOfNode = (node: PositionedText, lineBreaks: LineBreaks = DEFAULTS.lineBreaks): Pptx.TextProps[] => {
   const base = baseStyleOf(node);
-  return pptxRunsOf(PARAGRAPH_STRATEGIES[lineBreaks](node, base), base);
+  const { paragraphs, spacings } = perLineOf(node, lineBreaks, PARAGRAPH_STRATEGIES[lineBreaks](node, base));
+  return pptxRunsOf(paragraphs, base, spacings);
 };

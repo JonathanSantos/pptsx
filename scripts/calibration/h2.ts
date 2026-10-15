@@ -51,13 +51,17 @@ const samplesOf = (slides: readonly { readonly children: readonly AnyNode[] }[])
 const normalize = (line: string): string => line.replace(/[\s\u00A0]+/g, '');
 
 /**
- * M13: o PDFKit lê o sobrescrito/subscrito fora do retângulo da linha (o glifo sai deslocado);
- * a comparação é de onde a linha termina, então esses trechos saem das linhas da engine.
+ * M13: o leitor (pdflines.swift) só pega glifos no corpo do Text e na linha de base: sobrescrito/
+ * subscrito e trechos de outro corpo (Span fontSize, M13-7) ficam de fora dos dois lados. A
+ * comparação é de onde cada linha termina, então esses trechos saem das linhas da engine.
  */
+const isComparable = (text: PositionedText, run: number): boolean => {
+  const style = text.runs[run];
+  return (style?.verticalAlign ?? 'baseline') === 'baseline' && (style?.size === undefined || style.size === text.text.fontSize);
+};
+
 const baselineLinesOf = (text: PositionedText): readonly string[] =>
-  text.text.lineRuns.map((pieces) =>
-    pieces.filter((piece) => (text.runs[piece.run]?.verticalAlign ?? 'baseline') === 'baseline').map((piece) => piece.text).join(''),
-  );
+  text.text.lineRuns.map((pieces) => pieces.filter((piece) => isComparable(text, piece.run)).map((piece) => piece.text).join(''));
 
 const keyOf = (page: number, text: PositionedText): string => `${page}|${text.path}`;
 

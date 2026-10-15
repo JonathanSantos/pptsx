@@ -7,7 +7,7 @@ import { parseFontWeight, parsePt } from './values.ts';
 /** Handlers das propriedades de texto (as herdadas descem pelo `draft.text`). */
 
 /** Primeira família de uma lista CSS, sem aspas ('"Inter", Arial' → 'Inter'). */
-const parseFontFamily = (value: unknown): string | undefined => {
+export const parseFontFamily = (value: unknown): string | undefined => {
   if (typeof value !== 'string' || value.trim() === '') return undefined;
   const [first = ''] = value.split(',');
   return first.trim().replace(/^['"]|['"]$/g, '');

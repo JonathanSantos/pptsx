@@ -213,6 +213,8 @@ interface SvgRunStyle {
   readonly verticalAlign?: VerticalAlign;
   /** M13: trecho com link: PowerPoint e Keynote sublinham (com a cor do texto). */
   readonly href?: string;
+  /** M13-7: corpo do trecho quando difere do Text. */
+  readonly size?: Pt;
 }
 
 const textDecorationOf = (style: SvgRunStyle): string | undefined => {
@@ -243,8 +245,11 @@ const verticalAttrs = (align: VerticalAlign | undefined, size: Pt): Attrs => {
   return { 'font-size': size * DEFAULTS.text.superscriptRatio, 'baseline-shift': (percent / DEFAULTS.css.percentBase) * size };
 };
 
-const tspanOf = (text: string, style: SvgRunStyle, size: Pt): string =>
-  element('tspan', { ...runStyleAttrs(style), ...verticalAttrs(style.verticalAlign, size), 'xml:space': 'preserve' }, escapeXml(text));
+const tspanOf = (text: string, style: SvgRunStyle, size: Pt): string => {
+  const own = style.size ?? size;
+  const sized = style.size === undefined ? {} : { 'font-size': own };
+  return element('tspan', { ...runStyleAttrs(style), ...sized, ...verticalAttrs(style.verticalAlign, own), 'xml:space': 'preserve' }, escapeXml(text));
+};
 
 /** M13: a face que o medidor usou decide o peso e, fora de 400/700, a família do tspan. */
 const withFace = (style: SvgRunStyle, face: RunFace | undefined, baseFamily: string): SvgRunStyle => {
@@ -263,6 +268,13 @@ const lineTspansOf = (node: PositionedText, base: SvgRunStyle, baseFamily: strin
   return lineRuns.map((pieces) =>
     pieces.map((piece) => tspanOf(piece.text, withFace(runs[piece.run] ?? base, faces?.[piece.run], baseFamily), size)).join(''),
   );
+};
+
+/** M13-7: baseline da linha i a partir do topo; com alturas por linha, a soma das anteriores + a ascendente dela. */
+const baselineOf = (layout: TextLayout, index: number, lineHeight: Pt, ascent: Pt): Pt => {
+  const { lineHeights, ascents } = layout;
+  if (lineHeights === undefined || ascents === undefined) return index * lineHeight + ascent;
+  return lineHeights.slice(0, index).reduce((sum, height) => sum + height, 0) + (ascents[index] ?? ascent);
 };
 
 /**
@@ -286,7 +298,7 @@ export const textSvg = (node: PositionedText, options: TextSvgOptions = {}): str
     'xml:space': 'preserve',
   };
   return lineTspansOf(node, base, baseFamily)
-    .map((tspans, i) => element('text', { ...common, y: node.frame.y + i * lineHeight + ascent }, tspans))
+    .map((tspans, i) => element('text', { ...common, y: node.frame.y + baselineOf(node.text, i, lineHeight, ascent) }, tspans))
     .join('');
 };
 

@@ -131,6 +131,28 @@ const placed: readonly Placed[] = [
     body: text(12, <>A água H<Sub>2</Sub>O e o gás CO<Sub>2</Sub> aparecem no relatório de impacto ambiental anual.</>) },
   { slide: 6, row: 2, id: 'R33', size: 18, width: 260, note: 'notas de rodapé',
     body: text(18, <>Receita recorde<Sup>1</Sup> e margem estável<Sup>2</Sup> no trimestre, segundo a auditoria.</>) },
+
+  // ── Slide 7, M13-7 (go/no-go): corpo por trecho, 12 e 28 pt na mesma linha
+  { slide: 7, row: 1, id: 'R34', size: 12, width: 220, note: '12 com um 28 no meio',
+    body: text(12, <>A receita chegou a <Span fontSize={28}>R$ 52 mi</Span> no trimestre, puxada pelo varejo e pelo atacado.</>) },
+  { slide: 7, row: 2, id: 'R35', size: 28, width: 300, note: '28 com um 12 no meio',
+    body: text(28, <>Margem de <Span fontSize={12}>(ajustada, sem itens não recorrentes)</Span> 18,4% no ano.</>) },
+  { slide: 7, row: 1, id: 'R36', size: 12, width: 160, note: '28 abre a linha',
+    body: text(12, <><Span fontSize={28}>94%</Span> dos clientes renovaram o contrato no ciclo anual.</>) },
+  { slide: 7, row: 1, id: 'R37', size: 12, width: 240, note: '28 fecha o texto',
+    body: text(12, <>Meta de crescimento para o próximo exercício: <Span fontSize={28}>+15%</Span></>) },
+  { slide: 7, row: 2, id: 'R38', size: 12, width: 200, note: '28 em negrito cruza a quebra',
+    body: text(12, <>Destaque do ano: <Span fontSize={28} fontWeight="bold">recorde de vendas</Span> em todas as regiões.</>) },
+  { slide: 8, row: 1, id: 'R39', size: 28, width: 260, note: 'dois 12 em linhas diferentes',
+    body: text(28, <>Receita <Span fontSize={12}>em R$ mi</Span> de 52,4 e lucro <Span fontSize={12}>em R$ mi</Span> de 9,1.</>) },
+  { slide: 8, row: 1, id: 'R40', size: 12, width: 220, note: 'parágrafos: 28 só no 2º',
+    body: text(12, <>Primeiro parágrafo todo em doze pontos, para comparar.{'\n'}Segundo com <Span fontSize={28}>destaque</Span> no meio da frase longa.</>) },
+  { slide: 8, row: 2, id: 'R41', size: 12, width: 200, note: '28 colorido, center',
+    body: text(12, <>Satisfação de <Span fontSize={28} color={GREEN}>4,8</Span> numa escala de 5 pontos, a melhor da série.</>, { textAlign: 'center' }) },
+  { slide: 8, row: 2, id: 'R42', size: 12, width: 180, note: 'lh 1.3 com 28',
+    body: text(12, <>Prazo médio caiu para <Span fontSize={28}>3 dias</Span> úteis em todas as unidades atendidas.</>, { lineHeight: 1.3 }) },
+  { slide: 8, row: 2, id: 'R43', size: 18, width: 240, note: '18 com 12 e 28',
+    body: text(18, <>Base <Span fontSize={12}>pequena</Span> e <Span fontSize={28}>grande</Span> na mesma linha do relatório anual.</>) },
 ];
 
 /** Metadados planos para o agente de calibração cruzar com o renderizador real. */
@@ -151,6 +173,8 @@ const SECTION_TITLES: Readonly<Record<number, string>> = {
   4: 'NBSP e nowrap',
   5: 'Parágrafos, reticência e herança de estilo',
   6: 'alignItems="baseline" e sobrescrito/subscrito',
+  7: 'Corpo por trecho: 12 e 28 pt na mesma linha (M13-7)',
+  8: 'Corpo por trecho: parágrafos, center, entrelinha (M13-7)',
 };
 
 const SLIDES = Object.keys(SECTION_TITLES).map(Number);

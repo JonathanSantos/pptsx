@@ -5,7 +5,8 @@ import { hexOf } from './colors.ts';
 import { InvalidPropError, ResolveError } from './errors.ts';
 import { expandChild } from './expand.ts';
 import type { Expanded } from './expand.ts';
-import { parseFontWeight } from './values.ts';
+import { parseFontWeight, parsePt } from './values.ts';
+import { parseFontFamily } from './text-handlers.ts';
 import { parseHref } from './href.ts';
 
 /**
@@ -37,8 +38,25 @@ const overrideStyle = (style: RunStyle, span: CssSpanProps): RunStyle => ({
   underline: decorationOf(span.textDecoration, 'underline') ?? style.underline ?? false,
   lineThrough: decorationOf(span.textDecoration, 'line-through') ?? style.lineThrough ?? false,
   ...verticalAlignOf(span.verticalAlign ?? style.verticalAlign),
+  ...sizeOf(span.fontSize, style.size),
+  ...familyOf(span.fontFamily, style.family),
   ...hrefOf(span.href, style.href),
 });
+
+/** M13-7: corpo do Span (pt, '14px'); herdado de um Span de fora. */
+const sizeOf = (own: unknown, inherited: number | undefined): Pick<TextRun, 'size'> => {
+  if (own === undefined) return inherited === undefined ? {} : { size: inherited };
+  const size = parsePt(own);
+  if (size === undefined || size <= 0) throw new InvalidPropError('fontSize', own, 'use um tamanho positivo em pt (número ou "14px")');
+  return { size };
+};
+
+const familyOf = (own: unknown, inherited: string | undefined): Pick<TextRun, 'family'> => {
+  if (own === undefined) return inherited === undefined ? {} : { family: inherited };
+  const family = parseFontFamily(own);
+  if (family === undefined) throw new InvalidPropError('fontFamily', own, 'use o nome de uma família registrada');
+  return { family };
+};
 
 /** O href do Span vence o herdado (do Text ou de um Span de fora). */
 const hrefOf = (own: unknown, inherited: string | undefined): Pick<TextRun, 'href'> => {
@@ -71,7 +89,9 @@ const sameStyle = (a: RunStyle, b: RunStyle): boolean =>
   (a.underline ?? false) === (b.underline ?? false) &&
   (a.lineThrough ?? false) === (b.lineThrough ?? false) &&
   (a.verticalAlign ?? 'baseline') === (b.verticalAlign ?? 'baseline') &&
-  a.href === b.href;
+  a.href === b.href &&
+  a.size === b.size &&
+  a.family === b.family;
 
 const collectRuns = (children: TextChildren, style: RunStyle, path: string): readonly TextRun[] =>
   expandChild(children).flatMap((item: Expanded): readonly TextRun[] => {
