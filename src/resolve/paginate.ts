@@ -12,18 +12,32 @@ export const assertPaginateInFlow = (props: ResolvedBoxProps, path: string): voi
   );
 };
 
-/** Paths dos Box com paginate, em ordem de documento (pré-ordem). */
-const paginatedPathsOf = (nodes: readonly ResolvedNode[]): readonly string[] =>
-  nodes.flatMap((node): readonly string[] => {
+interface Paginated {
+  readonly path: string;
+  readonly kind: 'box' | 'text';
+}
+
+/** Box e Text (M13) com paginate, em ordem de documento (pré-ordem). */
+const paginatedOf = (nodes: readonly ResolvedNode[]): readonly Paginated[] =>
+  nodes.flatMap((node): readonly Paginated[] => {
+    if (node.kind === 'text') return node.props.paginate === true ? [{ path: node.path, kind: 'text' }] : [];
     if (node.kind !== 'box') return [];
-    const own = node.props.paginate === true ? [node.path] : [];
-    return [...own, ...paginatedPathsOf(node.children)];
+    const own: readonly Paginated[] = node.props.paginate === true ? [{ path: node.path, kind: 'box' }] : [];
+    return [...own, ...paginatedOf(node.children)];
   });
 
-// O fit divide o slide por um único Box; dois tornariam a divisão ambígua.
+// O fit divide o slide por um único nó; dois tornariam a divisão ambígua.
 export const assertSinglePaginate = (slide: ResolvedSlide): void => {
-  const paths = paginatedPathsOf(slide.children);
-  const [, second] = paths;
+  const found = paginatedOf(slide.children);
+  const [, second] = found;
   if (second === undefined) return;
-  throw new ResolveError(`Só um <Box paginate> por slide; encontrados ${paths.length}`, second);
+  const what = found.every((item) => item.kind === 'box') ? '<Box paginate>' : 'nó paginate (<Box paginate> ou <Text paginate>)';
+  throw new ResolveError(`Só um ${what} por slide; encontrados ${found.length}`, second.path);
+};
+
+/** M13: Text paginate em absoluto ou com maxLines não tem para onde continuar. */
+export const assertTextPaginate = (props: { readonly paginate?: boolean; readonly position?: string; readonly maxLines?: number }, path: string): void => {
+  if (props.paginate !== true) return;
+  if (props.position === 'absolute') throw new ResolveError('<Text paginate> não pode ter position="absolute": só texto em fluxo continua no próximo slide', path);
+  if (props.maxLines !== undefined) throw new ResolveError('<Text paginate> não combina com maxLines: o texto continua no próximo slide em vez de ser cortado', path);
 };

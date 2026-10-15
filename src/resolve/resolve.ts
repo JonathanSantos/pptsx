@@ -21,7 +21,7 @@ import type { Expanded, ExpandedPrimitive } from './expand.ts';
 import { legacyPropsOf } from './legacy.ts';
 import { normalizeProps } from './normalize.ts';
 import type { Normalized } from './normalize.ts';
-import { assertPaginateInFlow, assertSinglePaginate } from './paginate.ts';
+import { assertPaginateInFlow, assertSinglePaginate, assertTextPaginate } from './paginate.ts';
 import { resolvePropsOf } from './props.ts';
 import { pathGeometryOf } from './path.ts';
 import { resolveConnector, slideIdsOf, withMissing } from './connector.ts';
@@ -115,7 +115,9 @@ const resolveText = (item: ExpandedPrimitive, path: string, n: Normalized): Reso
   const children = item.element.props.children as TextChildren;
   const runs = runsOf(children, baseRunStyleOf(n), n.css.textTransform, path);
   const content = runs.map((run) => run.text).join('');
-  return { kind: 'text', path, props: legacyPropsOf('text', n), css: n.css, content, runs };
+  const props = legacyPropsOf('text', n);
+  assertTextPaginate(props, path);
+  return { kind: 'text', path, props, css: n.css, content, runs };
 };
 
 const resolveChart = (item: ExpandedPrimitive, path: string, n: Normalized, parent: ParentInfo): ResolvedNode => {

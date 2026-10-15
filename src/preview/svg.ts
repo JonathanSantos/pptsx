@@ -211,10 +211,12 @@ interface SvgRunStyle {
   readonly family?: string;
   /** M13: sobrescrito/subscrito. */
   readonly verticalAlign?: VerticalAlign;
+  /** M13: trecho com link: PowerPoint e Keynote sublinham (com a cor do texto). */
+  readonly href?: string;
 }
 
 const textDecorationOf = (style: SvgRunStyle): string | undefined => {
-  const parts = [style.underline ? 'underline' : '', style.lineThrough ? 'line-through' : ''].filter(Boolean);
+  const parts = [style.underline || style.href !== undefined ? 'underline' : '', style.lineThrough ? 'line-through' : ''].filter(Boolean);
   return parts.length === 0 ? undefined : parts.join(' ');
 };
 

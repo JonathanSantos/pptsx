@@ -371,24 +371,27 @@ export const imageUpscaled = (
 
 const ordinal = (index: number): string => `${index + 1}º`;
 
-/** "3 de 12 itens no 1º, 5 no 2º, 4 no 3º" */
-const describeParts = (items: readonly number[]): string => {
+/** "3 de 12 itens no 1º, 5 no 2º, 4 no 3º" (ou linhas, num Text paginate) */
+const describeParts = (items: readonly number[], unit: string): string => {
   const total = items.reduce((sum, count) => sum + count, 0);
-  return items.map((count, index) => (index === 0 ? `${count} de ${total} itens no 1º` : `${count} no ${ordinal(index)}`)).join(', ');
+  return items.map((count, index) => (index === 0 ? `${count} de ${total} ${unit} no 1º` : `${count} no ${ordinal(index)}`)).join(', ');
 };
 
 export const slideContinued = (
   ctx: DiagnosticContext,
   path: string,
-  pagination: { readonly sourceSlide: number; readonly items: readonly number[] },
-): Diagnostic =>
-  make(ctx, {
+  pagination: { readonly sourceSlide: number; readonly items: readonly number[]; readonly kind?: 'box' | 'text' },
+): Diagnostic => {
+  const text = pagination.kind === 'text';
+  const advice = text ? 'reduza o fontSize do texto ou encurte-o' : 'reduza o fontSize dos itens ou o conteúdo';
+  return make(ctx, {
     severity: 'info',
     code: 'slide-continued',
     path,
-    message: `Slide ${pagination.sourceSlide} do autor virou ${pagination.items.length} slides (${describeParts(pagination.items)}). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo.`,
-    data: { parts: pagination.items.length, sourceSlide: pagination.sourceSlide },
+    message: `Slide ${pagination.sourceSlide} do autor virou ${pagination.items.length} slides (${describeParts(pagination.items, text ? 'linhas' : 'itens')}). Para caber em menos slides, ${advice}.`,
+    data: { parts: pagination.items.length, sourceSlide: pagination.sourceSlide, ...(text ? { kind: 'text' as const } : {}) },
   });
+};
 
 const paginationStop = (maxParts: number): string =>
   ` A paginação parou em ${maxParts} partes; divida o conteúdo em mais de um slide no deck.`;
