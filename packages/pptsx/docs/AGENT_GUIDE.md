@@ -12,13 +12,11 @@ Este é o único documento de que você precisa para (1) escrever slides novos e
 
 ## 2. Esqueleto de um deck
 
-Arquivo em `examples/agent-test/<nome>.tsx` (dentro deste repo; projeto próprio com `npm install pptsx`: ver §7). Imports de `pptsx` (primitivas) e, se quiser, dos exemplos prontos:
+Arquivo em `packages/ds-base/examples/agent-test/<nome>.tsx` (dentro deste repo; projeto próprio com `npm install pptsx`: ver §7). Imports de `pptsx` (primitivas) e, se quiser, do DS de exemplo `@pptsx/ds-base` (§5):
 
 ```tsx
 import { Box, Deck, Slide, Text, defineDeck } from 'pptsx';
-import { tokens } from '../tokens.ts';
-import { ContentLayout, CoverLayout } from '../layouts/index.ts';
-import { Bullets } from '../components/index.ts';
+import { Bullets, ContentLayout, CoverLayout, tokens } from '@pptsx/ds-base';
 
 const { color, font, space } = tokens;
 
@@ -95,7 +93,7 @@ export default defineConfig({
 });
 ```
 
-- **De onde vem a paleta:** dentro deste repo, `import { themeOf } from '../theme.ts'` (em `examples/`) monta o tema a partir de `tokens` (`dark1` = ink, `light1` = white, `dark2` = muted, `light2` = surface, `accent1` = accent, `accent2` = positive, `accent3` = negative, `accent4` = accentSoft, `accent5` = brandDark). Imports na config são relativos ao arquivo da config. Projeto próprio: escreva o objeto `theme` à mão.
+- **De onde vem a paleta:** dentro deste repo, `import { theme } from '@pptsx/ds-base'` é o tema pronto do DS de exemplo, montado com `themeOf(tokens, mapa)` do `@pptsx/ds-kit` a partir de `tokens` (`dark1` = ink, `light1` = white, `dark2` = muted, `light2` = surface, `accent1` = accent, `accent2` = positive, `accent3` = negative, `accent4` = accentSoft, `accent5` = brandDark). Imports na config são relativos ao arquivo da config. Projeto próprio: escreva o objeto `theme` à mão.
 - **Tema:** 12 cores possíveis (`dark1`, `light1`, `dark2`, `light2`, `accent1`…`accent6`, `hyperlink`, `followedHyperlink`); as que você não der ficam com as do Office. Toda cor do deck **igual** (mesmo hex) a uma cor declarada sai como cor do tema: no seletor de cores aparece a paleta e trocar `accent1` repinta tudo que usa `accent1` (formas, textos, gráficos). Cor diferente (mesmo que parecida) continua fixa. Dois slots com o mesmo hex: vale o acento (accent1…6 antes de dark/light); não declare o mesmo hex duas vezes. No XML, `dark1`/`light1`/`dark2`/`light2` aparecem como `tx1`/`bg1`/`tx2`/`bg2` (é o mesmo slot). `fonts.heading`/`fonts.body`: textos nessas famílias saem como fontes do tema (a medição não muda; a família precisa estar registrada em `fonts` como qualquer outra, Arial já está).
 - **Propriedades:** sem `document.title`, a CLI usa o nome do arquivo do deck (`deck.tsx` → "deck"): dê `title` quando o nome do arquivo não serve.
 - **Seções** (painel de slides do PowerPoint): `<Deck sections={[{ title: 'Abertura', from: 1 }, { title: 'Resultados', from: 3 }]}>`. `from` é o número do `<Slide>` no seu Deck (base 1), crescente, títulos únicos; a paginação é traduzida. Slides antes da 1ª seção vão numa "Seção padrão". O overview mostra o nome da seção sob o 1º slide dela.
@@ -346,28 +344,33 @@ export default defineConfig({
 
 - Sem `file`, a engine procura a família nas pastas de fontes do sistema. Não achou: a CLI imprime `▲ fontes não encontradas no sistema: Inter bold` (no `--json`, `fontsMissing`) e todo `Text` que usa a face recebe `font-missing` (error).
 - Itálico sem face `italic: true` registrada é medido com a face reta.
-- **Pesos:** registre cada peso como uma face (`{ family: 'Inter', weight: 300, file: … }`, `weight: 600`…; `'regular'` = 400 e `'bold'` = 700). `fontWeight` escolhe a face mais próxima pela regra do CSS (500 tenta 400; 600 tenta 700 antes de descer). Fora de 400/700 o `.pptx` usa o nome da própria face (`Inter SemiBold`): aparece certo onde a fonte está **instalada** ou embutida (`--embed-fonts`, só PowerPoint); sem ela, o renderizador cai para a família base. Peso sem face a até 100 → `font-weight-fallback` (warning) e o texto sai com a face mais próxima. Exemplo: `examples/texto/pesos.tsx`.
+- **Pesos:** registre cada peso como uma face (`{ family: 'Inter', weight: 300, file: … }`, `weight: 600`…; `'regular'` = 400 e `'bold'` = 700). `fontWeight` escolhe a face mais próxima pela regra do CSS (500 tenta 400; 600 tenta 700 antes de descer). Fora de 400/700 o `.pptx` usa o nome da própria face (`Inter SemiBold`): aparece certo onde a fonte está **instalada** ou embutida (`--embed-fonts`, só PowerPoint); sem ela, o renderizador cai para a família base. Peso sem face a até 100 → `font-weight-fallback` (warning) e o texto sai com a face mais próxima. Exemplo: `packages/ds-base/examples/texto/pesos.tsx`.
 - `--embed-fonts` (§7) embute as faces no `.pptx`, mas **só o PowerPoint usa** (o Keynote ignora). Só TrueType de uma face (`.ttf`) com licença que permite embed; o resto gera `font-not-embeddable`.
 
-## 5. Tokens, layouts e componentes prontos
+## 5. Design systems: componentes, tokens e tema ficam fora do núcleo
 
-`examples/tokens.ts` → `import { tokens } from '../tokens.ts'`:
+O pptsx é a base, como o React é a base de bibliotecas de componentes: **o núcleo não tem marca**. Tokens, tema, layouts de slide e componentes vivem num design system (DS), num pacote à parte, ligado ao núcleo só pela API pública. O repositório traz um DS de exemplo, o **`@pptsx/ds-base`** (tokens, `theme`, `CoverLayout`/`ContentLayout`/`ClosingLayout`, `Bullets`, `KpiCard`, `KpiRow`, `TwoColumn`), e o **`@pptsx/ds-kit`**, as ferramentas para criar um DS.
 
-| grupo | valores |
+**Usar um DS:** `import { ContentLayout, KpiRow, tokens } from '@pptsx/ds-base'`. O guia do DS (props, tamanhos, armadilhas de cada componente) está no MCP — `guide({ source: '@pptsx/ds-base' })` e `schema({ source: '@pptsx/ds-base', primitive: 'KpiCard' })` — e em `packages/ds-base/guide/`. Registre o DS na config para as regras dele entrarem no `pptsx lint`:
+
+```ts
+// pptsx.config.ts
+import { defineConfig } from 'pptsx';
+import { ds, theme } from '@pptsx/ds-base';
+export default defineConfig({ ds: [ds], theme });
+```
+
+**Como um DS se liga ao núcleo** (o que um DS próprio usa):
+
+| gancho | o que faz |
 |---|---|
-| `tokens.color` | `brand #1B2A4A`, `brandDark #101B33`, `accent #2F6FED`, `accentSoft #E8EEFC`, `ink #1B2A4A`, `muted #5B6680`, `surface #F4F6FA`, `white #FFFFFF`, `positive #1E9E6A`, `negative #D64545` |
-| `tokens.font` | `display 44`, `h1 32`, `h2 24`, `body 20`, `small 14`, `caption 11` |
-| `tokens.space` | `page 40`, `gap 20`, `tight 10` |
+| `defineComponent({ name, ds?, tags?, catalog? }, fn, defaults?)` | o nome vai no path (`Slide > KpiCard[0]`) mesmo com função anônima; o `meta` chega ao nó resolvido (`node.component`), onde regras e o catálogo o leem |
+| `mapResponsive(valor, fn)` | deriva props de um valor responsivo chave a chave (`mapResponsive(size, (s) => s * 0.7)`): o componente segue o breakpoint sem receber `ctx`. Para decidir **estrutura** (quantos filhos), receba `ctx` e use `ctx.pick` |
+| `LintRule { id, severity, check(node, ctx) }` | regra do DS no `pptsx lint` (`ctx.component`, `ctx.slide`, `ctx.path`, `ctx.theme`); entra por `lint: { rules }` ou pelo `ds` da config |
+| `renderFragment(<Componente …/>, { size })` | o componente isolado num slide (frames, SVG, PNG), sem gravar nada — a base do catálogo |
+| `defineDs({ name, components, rules, guide, schema, theme })` | o manifesto: o lint lê as regras, o MCP o guia e o schema (`pptsx-mcp --ds <pacote>` ou `ds` na config) |
 
-Layouts (`'../layouts/index.ts'`) — cada um **devolve um `<Slide>`**, então é filho direto de `<Deck>`:
-
-| layout | props | o que faz |
-|---|---|---|
-| `CoverLayout` | `title; subtitle?; caption?; ctx?` | fundo `brand`, círculo decorativo (`zIndex={-1}`) no canto superior direito, bloco de título empurrado para baixo com `marginTop="auto"`: título `display` bold branco (shrink, minSize 32), subtítulo `h2` (truncate, 2 linhas); `caption` = linha pequena no topo |
-| `ContentLayout` | `title; justify?: 'start' \| 'center'; notes? (texto ou rich text); hidden?; children` | fundo branco, padding `page`, cor `ink` herdada por todo o conteúdo, título `h1` bold com barra (`borderLeft`), corpo `Box flex={1}` (coluna) com os children. `justify="center"` centraliza conteúdo curto na altura que sobra |
-| `ClosingLayout` | `title; subtitle?; contact?; ctx?` | fundo `brand`, texto centralizado (`textAlign` herdado), subtítulo com no máximo 80% da largura, círculo no canto inferior esquerdo |
-
-Passe `ctx={ctx}` para `CoverLayout`/`ClosingLayout`: o círculo é dimensionado pela altura do slide e continua redondo em 16:9, 4:3 e wide.
+O `@pptsx/ds-kit` monta isso: `defineTokens`, `themeOf(tokens, mapa)` (com aviso de contraste WCAG), `createVariants` (variantes responsivas), `slot`/`Slots`, `defineRule` e regras prontas (`colorsFromTokens`, `fontsFromTheme`, `maxChildren`, `onlyOnSlide`), `createDs` e o catálogo (`pptsx-ds catalog ds.ts --out … --fixtures …`; `--check` compara com as fixtures). Página do kit: `packages/ds-kit/README.md`.
 
 ### Layout do arquivo (`defineLayout`, `placeholder`)
 
@@ -394,42 +397,11 @@ export const Conteudo = defineLayout('Conteúdo', {
 - `fixed` (logotipo, faixa, assinatura) sai no layout do master, atrás do conteúdo; `background` (cor ou `{ image }`) é o fundo do layout.
 - Sem `defineLayout`, o arquivo fica como antes (sem layouts próprios). Nome do layout único no deck.
 
-Componentes (`'../components/index.ts'`):
-
-| componente | props | o que faz |
-|---|---|---|
-| `Bullets` | `items: readonly TextChildren[]` (string ou rich text); `size?` (fontSize, padrão `font.body`); `gap?` (padrão `0.7 × size`); `paginate?` | coluna de itens: marcador elipse 8×8 (centrado na 1ª linha por `marginTop`) + Text `flex={1}` (shrink, minSize 14). A cor vem de quem envolve |
-| `TwoColumn` | `left; right` (qualquer elemento); `stacked?: boolean` (padrão false); `ratio?: number` (fração da esquerda, padrão 0.5) | grid que ocupa o resto do corpo. Lado a lado: colunas `ratio` / `1 − ratio`, itens esticam na célula (um `Chart` ocupa a coluna). `stacked`: `left` com a altura do conteúdo em cima, `right` com o resto. Empilhe em 4:3 com `stacked={{ base: false, tall: true }}` |
-| `KpiCard` | `label; value; delta?; trend?: 'up' \| 'down'; sentiment?: 'positive' \| 'negative' \| 'neutral'; size?: 'sm' \| 'md' \| 'lg'; inlineDelta?` | cartão `surface` arredondado (`flex={1}`): label muted, valor bold grande, delta. **`trend` só define a seta**; **`sentiment` define a cor** (padrão: up → positive, down → negative). `inlineDelta`: delta ao lado do valor, alinhado pela baseline (só com delta curto) |
-| `KpiRow` | `items: readonly KpiCardProps[]; size?` | grid de uma linha, uma coluna `minmax(0, 1fr)` por cartão (larguras iguais); `size` vale para todos (o de um item vence) |
-
-Aceitam valor responsivo: `Bullets.size`/`gap`, `TwoColumn.stacked`, `KpiCard.size`/`KpiRow.size`. Os componentes não recebem `ctx`: o que depende do valor é derivado **chave a chave** com `mapResponsive` (exportado de `'../components/index.ts'`), que mantém as mesmas chaves e escolhe o mesmo breakpoint. Faça igual no seu componente: `mapResponsive(size, (s) => s * 0.7)`. Precisa decidir **estrutura** (quantos filhos)? Receba `ctx` e use `ctx.pick`.
-
-Os tipos são exportados de `'../components/index.ts'` (`KpiCardProps`, `KpiSize`…). Para dados fora do JSX, anote o tipo: `const kpis: readonly KpiCardProps[] = [...]`.
-
-Tamanhos do `KpiCard` (pt):
-
-| `size` | padding | label e delta | valor (minSize) | quando usar |
-|---|---|---|---|---|
-| `'sm'` | 14 | 12 | 32 (22) | 4+ cartões, valores longos ("1.284.392") |
-| `'md'` (padrão) | 20 | 14 | 44 (28) | 2–3 cartões em 16:9/4:3 |
-| `'lg'` | 20 | 16 | 56 (36) | 3 cartões com área sobrando (wide, 4:3). Corpo do `ContentLayout`: 640 pt em 16:9 e 4:3, 880 pt em wide |
-
-```tsx
-<ContentLayout title="Indicadores">
-  <KpiRow size="sm" items={[
-    { label: 'Receita (R$ mi)', value: '4,2', delta: '+18%', trend: 'up' },
-    { label: 'Churn', value: '2,1%', delta: '−0,4 pp', trend: 'down', sentiment: 'positive' },
-    { label: 'Chamados', value: '1.240', delta: '+22%', trend: 'up', sentiment: 'negative' },
-    { label: 'NPS', value: '64' },
-  ]} />
-</ContentLayout>
-<ClosingLayout ctx={ctx} title="Obrigado" subtitle="Perguntas?" contact="time@empresa.com" />
-```
-
 ## 6. Receitas
 
-Trechos filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape`, `Chart`, `Table`, `Span`, `Sup`, `Sub`, `SlideNumber`, `Path`, `Icon`, `Connector` de `'pptsx'` quando usados). Vitrine completa de CSS: `examples/showcase.tsx`.
+Trechos filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape`, `Chart`, `Table`, `Span`, `Sup`, `Sub`, `SlideNumber`, `Path`, `Icon`, `Connector` de `'pptsx'` quando usados). Vitrine completa de CSS: `packages/ds-base/examples/showcase.tsx`.
+
+As receitas usam o DS de exemplo (`ContentLayout`, `CoverLayout`, `ClosingLayout`, `Bullets`, `KpiRow`, `KpiCard`, `TwoColumn`, `tokens`) — `import { … } from '@pptsx/ds-base'`; as props de cada um estão no guia do DS (`guide({ source: '@pptsx/ds-base' })`). Com outro DS, troque os componentes; as primitivas e o CSS são os mesmos.
 
 ### 6.1 Conteúdo com bullets, só primitivas
 
@@ -528,7 +500,7 @@ Cada `Text` com padding e fundo vira uma pílula da largura do conteúdo; o que 
 <ClosingLayout ctx={ctx} title="Obrigado" />
 ```
 
-Com os 12 itens de `examples/long-list.tsx`, 16:9 vira 3 slides com o mesmo título (4 itens cada) e 4:3 vira 2 (6 cada). O encerramento passa a ser o slide 4 (ou 3) da saída. Leia `data.parts` e a mensagem do `slide-continued`; prefira isso a baixar `minSize` até a lista caber.
+Com os 12 itens de `packages/ds-base/examples/long-list.tsx`, 16:9 vira 3 slides com o mesmo título (4 itens cada) e 4:3 vira 2 (6 cada). O encerramento passa a ser o slide 4 (ou 3) da saída. Leia `data.parts` e a mensagem do `slide-continued`; prefira isso a baixar `minSize` até a lista caber.
 
 ### 6.8 Gráfico nativo
 
@@ -540,7 +512,7 @@ Com os 12 itens de `examples/long-list.tsx`, 16:9 vira 3 slides com o mesmo tít
 </ContentLayout>
 ```
 
-Prefira `Chart` a um PNG de gráfico: quem recebe o `.pptx` edita os dados. `kind="line"` para tendência, `kind="pie"` com uma série para composição; os 12 kinds em §3 "Gráficos" e `examples/dados/graficos.tsx`.
+Prefira `Chart` a um PNG de gráfico: quem recebe o `.pptx` edita os dados. `kind="line"` para tendência, `kind="pie"` com uma série para composição; os 12 kinds em §3 "Gráficos" e `packages/ds-base/examples/dados/graficos.tsx`.
 
 ### 6.9 Tabela de resultados
 
@@ -629,7 +601,7 @@ const Card = ({ id, icon, title }: { id: string; icon: string; title: string }) 
 </Slide>
 ```
 
-Agrupamento = Box com `border="… dashed …"`. `columnGap` largo deixa espaço para a dobra do cotovelo. Exemplo maior: `examples/diagrams/arquitetura.tsx`.
+Agrupamento = Box com `border="… dashed …"`. `columnGap` largo deixa espaço para a dobra do cotovelo. Exemplo maior: `packages/ds-base/examples/diagrams/arquitetura.tsx`.
 
 ### 6.13 Linha do tempo com setas
 
@@ -667,7 +639,7 @@ Seta solta sem nós: `<Shape kind="line" width={80} height={0} strokeWidth={2} e
 </Deck>
 ```
 
-O texto que não cabe continua nos slides seguintes, com o mesmo título e o rodapé numerado (`1 / 4`, `2 / 4`…). Parágrafos separados por `'\n'`. Exemplo completo: `examples/texto/relatorio.tsx`.
+O texto que não cabe continua nos slides seguintes, com o mesmo título e o rodapé numerado (`1 / 4`, `2 / 4`…). Parágrafos separados por `'\n'`. Exemplo completo: `packages/ds-base/examples/texto/relatorio.tsx`.
 
 ### 6.15 Nota de rodapé
 
@@ -689,7 +661,7 @@ const SECOES = [{ titulo: 'O ano em resumo', slide: 2 }, { titulo: 'Notas', slid
 </Box>
 ```
 
-As três receitas estão em `examples/texto/receitas.tsx`.
+As três receitas estão em `packages/ds-base/examples/texto/receitas.tsx`.
 
 ### 6.17 Dashboard: empilhado + tabela colorida por valor
 
@@ -753,15 +725,13 @@ Para uma linha de tendência no scatter, passe-a como outra série de pontos (os
 
 `pptsx lint deck.tsx` aponta props antigas e outros riscos antes do build; `pptsx lint deck.tsx --fix` migra as props antigas para CSS sem mudar o layout.
 
-**(a) Dentro deste repo** (como na §2): rode na raiz; o deck fica em `examples/agent-test/`, importa `pptsx` sem build e pode usar tokens, layouts e componentes de `examples/`.
+**(a) Dentro deste repo** (monorepo; como na §2): rode na raiz do repositório. Um deck que usa o DS de exemplo fica em `packages/ds-base/examples/agent-test/` (o tsconfig de lá resolve `pptsx` e `@pptsx/ds-base` sem build); um deck só de primitivas pode ficar em `packages/pptsx/examples/agent-test/`.
 
 ```
-node bin/pptsx.mjs build examples/agent-test/meu-deck.tsx --size 16x9,4x3,wide --out dist/agent-test --json
+node packages/pptsx/bin/pptsx.mjs build packages/ds-base/examples/agent-test/meu-deck.tsx --size 16x9,4x3,wide --out dist/agent-test --json
 ```
 
-`npx tsx src/cli.ts build …` é equivalente.
-
-**(b) Projeto próprio:** `npm install pptsx` e `npx pptsx init` numa pasta (cria `deck.tsx`, `tsconfig.json`, `pptsx.config.ts`, `assets/`, `.gitignore` e põe `"type": "module"` no `package.json`). Imports `from 'pptsx'`; imagens relativas ao deck (`'./assets/foto.png'`). Tokens, layouts e componentes da §5 **não** vêm no pacote: use primitivas ou copie-os de `examples/`.
+**(b) Projeto próprio:** `npm install pptsx` e `npx pptsx init` numa pasta (cria `deck.tsx`, `tsconfig.json`, `pptsx.config.ts`, `assets/`, `.gitignore` e põe `"type": "module"` no `package.json`). Imports `from 'pptsx'`; imagens relativas ao deck (`'./assets/foto.png'`). Tokens, layouts e componentes **não** vêm no núcleo: use primitivas, instale um DS (`npm install @pptsx/ds-base @pptsx/ds-kit`) ou crie o seu com o `@pptsx/ds-kit` (§5).
 
 ```
 npx pptsx build deck.tsx --size 16x9,4x3 --json
@@ -953,7 +923,7 @@ Só um nó paginate (<Box paginate> ou <Text paginate>) por slide; encontrados 2
 - **`slide:N` é o slide do seu `<Deck>`**, não o do arquivo gerado (a paginação desloca os números; a engine traduz).
 - **`Text paginate` não encolhe**: se a fonte ficar grande demais, diminua `fontSize`; e ele precisa de altura (`flex={1}` numa coluna).
 - **Rodapé por cima do corpo**: o `footer` não ocupa espaço; sem `padding` inferior no Slide, o texto do corpo passa por baixo dele.
-- **Cor do tema só com hex exato**: `#2F6FED` no tema e `#2F6FEE` no slide não casam (fica hex fixo). Use os mesmos tokens no tema e no deck (`theme: themeOf(tokens)`).
+- **Cor do tema só com hex exato**: `#2F6FED` no tema e `#2F6FEE` no slide não casam (fica hex fixo). Use os mesmos tokens no tema e no deck (`themeOf(tokens, mapa)` do `@pptsx/ds-kit`).
 - **Tema na config, não no deck**: `theme` e `document` vêm do `pptsx.config.ts` da pasta onde o build roda (ou de `render({ theme })`).
 - **Placeholder vem do 1º uso**: o layout guarda posição e estilo do 1º slide que o usa; num tamanho em que o 1º slide tem título maior, o layout também tem.
 - **Master não faz layout**: o PowerPoint não reposiciona nada pelo placeholder quando o texto muda; a engine já calculou cada slide.

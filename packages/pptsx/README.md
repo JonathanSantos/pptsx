@@ -40,43 +40,43 @@
 
 ## Galeria
 
-Seis decks em [`examples/gallery/`](examples/gallery/), cada um com paleta, tipografia e um elemento de assinatura próprios; o comentário no topo de cada arquivo diz o que foi escolhido e por quê. A fonte é só Arial: o caráter vem de escala, peso, `letterSpacing`, caixa alta e composição. Todos saem sem `warning` em 16:9 e 4:3, e em cada montagem o slide da direita é o 4:3.
+Seis decks em [`@pptsx/ds-base/examples/gallery/`](../ds-base/examples/gallery/) (a galeria é do DS de exemplo: o núcleo não tem marca), cada um com paleta, tipografia e um elemento de assinatura próprios; o comentário no topo de cada arquivo diz o que foi escolhido e por quê. A fonte é só Arial: o caráter vem de escala, peso, `letterSpacing`, caixa alta e composição. Todos saem sem `warning` em 16:9 e 4:3, e em cada montagem o slide da direita é o 4:3.
 
 ### Safra 2025/26 · relatório anual de uma cooperativa
 
 <p align="center"><img src="docs/readme/gallery/safra.png" width="960" alt="Capa vinho com mosaico de talhões verdes e amarelos girado, mapa de calor de chuva por mês e núcleo com a célula da estiagem destacada, e o slide 4:3 das sobras com uma barra proporcional"></p>
 
-O mosaico da capa é um grid com `span` girado −14° atrás do título (`zIndex={-1}`); a chuva é um mapa de calor de 13 colunas de grid; as sobras são uma barra de `Box` com `flex` igual ao percentual. Também tem barras e tabela nativas. [`safra.tsx`](examples/gallery/safra.tsx)
+O mosaico da capa é um grid com `span` girado −14° atrás do título (`zIndex={-1}`); a chuva é um mapa de calor de 13 colunas de grid; as sobras são uma barra de `Box` com `flex` igual ao percentual. Também tem barras e tabela nativas. [`safra.tsx`](../ds-base/examples/gallery/safra.tsx)
 
 ### Tara T1 · pitch de hardware
 
 <p align="center"><img src="docs/readme/gallery/tara.png" width="960" alt="Capa com uma balança azul desenhada em formas, girada e com sombra, comparação em colunas com a do produto destacada, e a ficha técnica 4:3 com nove visores LCD"></p>
 
-O aparelho da capa é um `Box` girado com `boxShadow`; chapa, saco e visor giram junto. O visor LCD volta em todo número do pitch, a comparação é um grid com a coluna do produto em relevo, e em 4:3 a ficha técnica mostra 9 itens em vez de 6 (`ctx.pick`). [`tara.tsx`](examples/gallery/tara.tsx)
+O aparelho da capa é um `Box` girado com `boxShadow`; chapa, saco e visor giram junto. O visor LCD volta em todo número do pitch, a comparação é um grid com a coluna do produto em relevo, e em 4:3 a ficha técnica mostra 9 itens em vez de 6 (`ctx.pick`). [`tara.tsx`](../ds-base/examples/gallery/tara.tsx)
 
 ### Lanterna · programa de um festival de curtas
 
 <p align="center"><img src="docs/readme/gallery/lanterna.png" width="960" alt="Capa ameixa com o título LANTERNA espaçado em amarelo e furos de película no topo e na base, grade de sessões de cinco dias, e o slide 4:3 com o número 48 e pílulas das mostras"></p>
 
-Furos de película em `flex` no topo e na base de todo slide, halo do projetor em elipses com `opacity`, título com `letterSpacing` largo e um selo girado 90°. A grade tem 6 colunas de grid e uma borda esquerda por mostra; as mostras são pílulas com `flexWrap`. [`lanterna.tsx`](examples/gallery/lanterna.tsx)
+Furos de película em `flex` no topo e na base de todo slide, halo do projetor em elipses com `opacity`, título com `letterSpacing` largo e um selo girado 90°. A grade tem 6 colunas de grid e uma borda esquerda por mostra; as mostras são pílulas com `flexWrap`. [`lanterna.tsx`](../ds-base/examples/gallery/lanterna.tsx)
 
 ### Reservatórios · painel semanal de saneamento
 
 <p align="center"><img src="docs/readme/gallery/reservatorios.png" width="960" alt="Seis reservatórios com o nível de água em azul e um em vermelho abaixo da linha tracejada de mínimo, indicadores com sombra e dois gráficos, e o slide 4:3 com a tabela de prazos e o SLA"></p>
 
-Cada reservatório é um `Box` com o nível em `height` percentual, a linha de mínimo é uma borda tracejada e o número fica por cima com `zIndex`. KPIs com sombra, linha e barras em células de grid, tabela zebrada; em 4:3 o cartão do SLA desce para baixo da tabela. [`reservatorios.tsx`](examples/gallery/reservatorios.tsx)
+Cada reservatório é um `Box` com o nível em `height` percentual, a linha de mínimo é uma borda tracejada e o número fica por cima com `zIndex`. KPIs com sombra, linha e barras em células de grid, tabela zebrada; em 4:3 o cartão do SLA desce para baixo da tabela. [`reservatorios.tsx`](../ds-base/examples/gallery/reservatorios.tsx)
 
 ### Marés · aula de ciências
 
 <p align="center"><img src="docs/readme/gallery/mares.png" width="960" alt="Capa azul-escura com a Terra e o envelope de água, diagrama da Terra e da Lua com os pontos A, B e C e setas de força, e o slide 4:3 com quatro passos e números grandes translúcidos"></p>
 
-Terra, envelope de água e Lua são `Shape`s posicionados numa caixa de tamanho fixo; o envelope gira na direção da Lua. As setas de força são `Box` + "►", com o comprimento como dado. Passos com o número em `opacity`, maré de um dia em gráfico de linha. [`mares.tsx`](examples/gallery/mares.tsx)
+Terra, envelope de água e Lua são `Shape`s posicionados numa caixa de tamanho fixo; o envelope gira na direção da Lua. As setas de força são `Box` + "►", com o comprimento como dado. Passos com o número em `opacity`, maré de um dia em gráfico de linha. [`mares.tsx`](../ds-base/examples/gallery/mares.tsx)
 
 ### Retro do Q3 · retrospectiva de time
 
 <p align="center"><img src="docs/readme/gallery/retro.png" width="960" alt="Capa com adesivos coloridos girados e com sombra, quadro com três colunas de adesivos e votos em pontos vermelhos, e o slide 4:3 com as dez ações num slide só"></p>
 
-Adesivos são `Box` levemente girados (`rotate`), com sombra; votos são elipses. Linha do tempo em `borderLeft` com pontos absolutos, citações com `<I>` e `<Span>`. As 10 ações usam `paginate`: viram dois slides em 16:9 e cabem num só em 4:3. [`retro.tsx`](examples/gallery/retro.tsx)
+Adesivos são `Box` levemente girados (`rotate`), com sombra; votos são elipses. Linha do tempo em `borderLeft` com pontos absolutos, citações com `<I>` e `<Span>`. As 10 ações usam `paginate`: viram dois slides em 16:9 e cabem num só em 4:3. [`retro.tsx`](../ds-base/examples/gallery/retro.tsx)
 
 ### Como um elemento é feito
 
@@ -103,7 +103,7 @@ No `.pptx`, isso são três formas e uma caixa de texto editáveis. Exportado pe
 
 <p align="center"><img src="docs/readme/gallery/keynote.png" width="960" alt="A capa do pitch Tara lado a lado: preview da engine e exportação do Keynote, praticamente idênticas"></p>
 
-Para construir um deck da galeria: `npx tsx src/cli.ts build examples/gallery/safra.tsx --size 16x9,4x3 --out dist/gallery`.
+Para construir um deck da galeria (na raiz do monorepo): `node packages/pptsx/bin/pptsx.mjs build packages/ds-base/examples/gallery/safra.tsx --size 16x9,4x3 --out dist/gallery`.
 
 ---
 
@@ -591,7 +591,7 @@ items.slice(0, ctx.pick({ base: 4, tall: 6 }))
 title={ctx.pick({ base: 'Receita', wide: 'Receita recorrente mensal' })}
 ```
 
-Na [`examples/demo.tsx`](examples/demo.tsx), o componente `TwoColumn` recebe `stacked={{ base: false, tall: true }}`: lado a lado em 16:9, empilhado em 4:3, com o gráfico ocupando a altura que sobra.
+Na [`ds-base/examples/demo.tsx`](../ds-base/examples/demo.tsx), o componente `TwoColumn` recebe `stacked={{ base: false, tall: true }}`: lado a lado em 16:9, empilhado em 4:3, com o gráfico ocupando a altura que sobra.
 
 <p align="center"><img src="docs/readme/demo-twocolumn.png" width="900" alt="Slide de receita em 16:9 com bullets e gráfico lado a lado, e em 4:3 com o gráfico embaixo dos bullets"></p>
 
@@ -673,7 +673,7 @@ const quarters = ['Q4', 'Q1', 'Q2', 'Q3'];
 
 <p align="center"><img src="docs/readme/j-graficos.png" width="720" alt="Três gráficos lado a lado: barras, duas linhas e pizza de quatro fatias"></p>
 
-Os três tipos ocupando o corpo inteiro do slide ([`examples/charts.tsx`](examples/charts.tsx)):
+Os três tipos ocupando o corpo inteiro do slide ([`ds-base/examples/charts.tsx`](../ds-base/examples/charts.tsx)):
 
 <p align="center"><img src="docs/readme/charts.png" width="960" alt="Três slides: barras de realizado contra meta, linhas de latência e pizza de receita por área"></p>
 
@@ -741,7 +741,7 @@ Na `Table`, a célula pode ser um objeto: merges (`colSpan`/`rowSpan`, como no H
 
 <p align="center"><img src="docs/readme/dados-tabelas.png" width="960" alt="Seis slides de tabelas: cabeçalho de dois níveis mesclado, rowSpan com variação colorida, ícones e rich text, e uma tabela de 40 linhas continuada em três slides com o cabeçalho repetido"></p>
 
-Os dois decks: [`examples/dados/graficos.tsx`](examples/dados/graficos.tsx) e [`examples/dados/tabelas.tsx`](examples/dados/tabelas.tsx), conferidos no Keynote. O ícone de célula sai como forma sobre a tabela (`table-cell-icon` avisa); o resto é a tabela nativa.
+Os dois decks: [`ds-base/examples/dados/graficos.tsx`](../ds-base/examples/dados/graficos.tsx) e [`ds-base/examples/dados/tabelas.tsx`](../ds-base/examples/dados/tabelas.tsx), conferidos no Keynote. O ícone de célula sai como forma sobre a tabela (`table-cell-icon` avisa); o resto é a tabela nativa.
 
 ## Texto: pesos, notas, links e continuação
 
@@ -766,11 +766,11 @@ Os dois decks: [`examples/dados/graficos.tsx`](examples/dados/graficos.tsx) e [`
 </Deck>
 ```
 
-[`examples/texto/relatorio.tsx`](examples/texto/relatorio.tsx): 3 slides do autor viram 6 (o corpo continua em 4 partes), notas em sobrescrito com link para o slide de notas, Inter 300/600 e "n / 6" em todos:
+[`ds-base/examples/texto/relatorio.tsx`](../ds-base/examples/texto/relatorio.tsx): 3 slides do autor viram 6 (o corpo continua em 4 partes), notas em sobrescrito com link para o slide de notas, Inter 300/600 e "n / 6" em todos:
 
 <p align="center"><img src="docs/readme/texto-relatorio.png" width="960" alt="Overview de seis slides: capa, quatro partes do texto corrido com o mesmo título e o slide de notas, todos com rodapé e número de slide"></p>
 
-[`examples/texto/pesos.tsx`](examples/texto/pesos.tsx), com a Inter em 300/400/600/700 (OFL, em `fonts/inter/`):
+[`ds-base/examples/texto/pesos.tsx`](../ds-base/examples/texto/pesos.tsx), com a Inter em 300/400/600/700 (OFL, em `packages/ds-base/fonts/inter/`):
 
 <p align="center"><img src="docs/readme/texto-pesos.png" width="720" alt="A frase Relatório anual 2026 em Inter light, regular, semibold e bold, e um parágrafo com trechos em semibold e light"></p>
 
@@ -808,7 +808,7 @@ const Step = ({ id, shape, color, children }) => (
 
 <p align="center"><img src="docs/readme/diagramas-fluxo.png" width="720" alt="Fluxograma: Início, Receber pedido, Validar dados, losango Dados ok? com saídas sim para Processar e não para Corrigir cadastro, que volta a Validar por uma linha tracejada e vai a Fim por cancelar"></p>
 
-[`examples/diagrams/arquitetura.tsx`](examples/diagrams/arquitetura.tsx): grupos com borda tracejada, cartões com ícones SVG nativos e conectores em cotovelo.
+[`ds-base/examples/diagrams/arquitetura.tsx`](../ds-base/examples/diagrams/arquitetura.tsx): grupos com borda tracejada, cartões com ícones SVG nativos e conectores em cotovelo.
 
 <p align="center"><img src="docs/readme/diagramas-arquitetura.png" width="720" alt="Três grupos tracejados, Clientes, Nuvem e Dados, com cartões de ícone e nome ligados por setas em cotovelo"></p>
 
@@ -857,7 +857,7 @@ const Conteudo = defineLayout('Conteúdo', { placeholders: ['title', 'body'], fi
 
 <p align="center"><img src="docs/readme/arquivo-overview.png" width="960" alt="Overview de quatro slides com a seção sob o primeiro slide de cada uma (Abertura, Resultados, Anexos) e o quarto slide esmaecido com a marca oculto"></p>
 
-O deck completo é [`examples/arquivo/arquivo.tsx`](examples/arquivo/arquivo.tsx) (rode o build dentro de `examples/arquivo/`, onde está o `pptsx.config.ts`). No Keynote, os layouts "Capa" e "Conteúdo" aparecem como masters, o slide oculto é pulado e a faixa e a assinatura vêm do master.
+O deck completo é [`ds-base/examples/arquivo/arquivo.tsx`](../ds-base/examples/arquivo/arquivo.tsx) (rode o build dentro de `packages/ds-base/examples/arquivo/`, onde está o `pptsx.config.ts`). No Keynote, os layouts "Capa" e "Conteúdo" aparecem como masters, o slide oculto é pulado e a faixa e a assinatura vêm do master.
 
 ## CLI
 
@@ -1003,7 +1003,7 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 ## Validação
 
 - **Testes:** 1854 com `vitest` (unitários, layout calculado à mão, oráculo do grid contra o Chrome, XML emitido, preview).
-- **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30. Da galeria, `tara` (16:9) e `safra` (4:3) foram exportados e conferidos slide a slide: grupo girado com sombra, grid girado atrás do texto, mapa de calor, tabela e barra proporcional saem como no preview; só os gráficos são redesenhados pelo Keynote, como esperado. Os decks de diagramas (`examples/diagrams/`: formas, Path, ícones, fluxo e arquitetura) batem com o preview em ±1 pt nos nós; o relatório de texto corrido e os pesos da Inter (`examples/texto/`) saem com as mesmas linhas, e a calibração rica (com sobrescrito e corpo por trecho) bate 43/43.
+- **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30. Da galeria, `tara` (16:9) e `safra` (4:3) foram exportados e conferidos slide a slide: grupo girado com sombra, grid girado atrás do texto, mapa de calor, tabela e barra proporcional saem como no preview; só os gráficos são redesenhados pelo Keynote, como esperado. Os decks de diagramas (`examples/diagrams/` e a arquitetura do `ds-base`) batem com o preview em ±1 pt nos nós; o relatório de texto corrido e os pesos da Inter (`ds-base/examples/texto/`) saem com as mesmas linhas, e a calibração rica (com sobrescrito e corpo por trecho) bate 43/43.
 - **PowerPoint e Google Slides:** ainda não validados; a conferência no PowerPoint está com o dono do projeto. O XML é corrigido nos pontos em que o PowerPoint pediria "reparar".
 
 ### Preview ao vivo
@@ -1013,6 +1013,23 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 ### Migração das props antigas
 
 As props de antes do CSS (`direction`, `grow`, `fill` do Box, `size`/`weight` do Text…) ainda funcionam, mas saem na 1.0. `pptsx lint deck.tsx` aponta cada uma com a troca (e também CSS sem de/para no PPTX, `lineHeight` alto para o Keynote, `1fr` solto em grid e cores fora do tema); `pptsx lint deck.tsx --fix` reescreve o arquivo do deck sem mudar o layout (`stroke` vira `outline`, que também não ocupa espaço) e avisa, com a linha, o que precisa de mão (valor calculado numa prop cujo valor muda, como `justify={j}`). O `--fix` usa a API do TypeScript 5/6 (`npm install -D typescript-api@npm:typescript@6` se o projeto estiver no TypeScript 7).
+
+## Design systems em cima do pptsx
+
+O núcleo faz render e **não tem marca**: primitivas, layout, ajuste, diagnósticos, arquivo PPTX, CLI e MCP. Tokens, tema, layouts e componentes vivem num design system, em outro pacote, ligado ao núcleo só pela API pública — como o React é a base das bibliotecas de componentes.
+
+```
+pptsx (núcleo) ◀── @pptsx/ds-kit (ferramentas de DS) ◀── @pptsx/ds-base, o seu DS…
+```
+
+| gancho no núcleo | para quê |
+|---|---|
+| `defineComponent(meta, fn, defaults?)` | identidade do componente: o nome no path e o `meta` (`ds`, `tags`, `catalog`…) no nó resolvido |
+| `LintRule` + `lint.rules`/`ds` na config | regras do DS no `pptsx lint`, com o path e o componente de cada nó |
+| `renderFragment(elemento, { size })` | um componente isolado num slide (frames, SVG, PNG): a base do catálogo |
+| `defineDs(manifest)` + `ds` na config / `pptsx-mcp --ds` | o guia e o schema de props do DS no MCP (`guide`/`schema` com `source`) |
+
+O [`@pptsx/ds-kit`](../ds-kit/README.md) traz o resto (tokens, `themeOf`, variantes responsivas, slots, regras prontas, catálogo com fixtures, `createDs`); o [`@pptsx/ds-base`](../ds-base/README.md) é um DS completo de exemplo — de onde vêm a galeria e as imagens desta página.
 
 ## Para agentes
 
@@ -1053,12 +1070,12 @@ O [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md) é o único documento de que um a
 ## Desenvolvimento
 
 ```sh
-npm test               # vitest (1967 testes)
+npm test               # vitest (só o núcleo; na raiz do monorepo, os três pacotes)
 npm run typecheck      # tsc
 npm run build          # compila src/ para dist/ (JS + .d.ts)
 npm run test:package   # npm pack → projeto vazio → init → build (lento)
-node bin/pptsx.mjs build examples/demo.tsx --size 16x9,4x3,wide --out dist/
-node bin/pptsx.mjs build examples/gallery/lanterna.tsx --size 16x9,4x3 --out dist/gallery
+node bin/pptsx.mjs build examples/hello.tsx --size 16x9,4x3,wide --out dist/
+node bin/pptsx.mjs build ../ds-base/examples/demo.tsx --size 16x9,4x3 --out dist/
 scripts/keynote-export.sh dist/demo.16x9.pptx dist/keynote/   # exporta os slides pelo Keynote (macOS)
 ```
 
@@ -1075,13 +1092,12 @@ npx tsx --tsconfig docs/readme/decks/tsconfig.json src/cli.ts build docs/readme/
 |---|---|
 | `gallery/*.tsx` | seis decks com identidade própria ([Galeria](#galeria)): relatório agrícola, pitch de hardware, festival de cinema, painel operacional, aula de ciências e retrospectiva |
 | `demo.tsx` | deck completo com layouts e componentes: grid de KPIs, duas colunas que empilham em 4:3, gráfico e tabela nativos, sem nenhum `if` sobre o tamanho |
-| `showcase.tsx` | vitrine do CSS: grid com `span` e `2 / -1`, wrap, `marginTop="auto"`, `zIndex`, herança, bordas por lado, sombra, `rotate`, `opacity`, `display` responsivo |
-| `long-list.tsx` | lista de 12 itens paginada (3 slides em 16:9, 2 em 4:3) |
-| `charts.tsx` | os três gráficos nativos |
 | `hello.tsx`, `layout-test.tsx` | posicionamento absoluto; flex, imagens (`objectFit`) e alinhamentos |
 | `overflow.tsx`, `probe/*.tsx` | slides lotados de propósito: cada um termina com o diagnóstico esperado (exit 1) |
 | `calibration.tsx`, `calibration-rich.tsx` | grades de calibração da medição de texto |
-| `layouts/`, `components/`, `tokens.ts` | `CoverLayout`, `ContentLayout`, `ClosingLayout`; `Bullets`, `KpiCard`, `KpiRow`, `TwoColumn` |
+| `diagrams/` | formas, fluxograma, ícones, `Path` e as receitas de diagrama do guia |
+
+Os decks com marca (a demo, a vitrine, a galeria, `texto/`, `dados/`, `arquivo/`, a arquitetura) e os layouts/componentes/tokens ficam no DS de exemplo, [`@pptsx/ds-base`](../ds-base/README.md).
 
 </details>
 
