@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { register as registerHooks } from 'node:module';
 import { register } from 'tsx/esm/api';
 import { nearestTsconfigOf } from './tsconfig.ts';
 
@@ -36,18 +37,41 @@ const tsconfigFor = (cwd: string): string => {
  */
 export const tsconfigForFile = (file: string, cwd: string): string => nearestTsconfigOf(dirname(resolve(file))) ?? tsconfigFor(cwd);
 
-let namespaceCounter = 0;
+/** Raízes do motor (fonte e build do pacote): nunca recarregadas pelo `?pptsx-fresh`. */
+const ENGINE_ROOTS = [pathToFileURL(join(packageRoot, 'src')).href + '/', pathToFileURL(join(packageRoot, 'dist')).href + '/'];
 
-// O `?v=` só furaria o cache do arquivo de entrada; o namespace do tsx recarrega o grafo inteiro
-// (componentes, layouts, tokens). O hook sai logo após o import: o grafo já foi avaliado.
+const freshHooks = { registered: false };
+
+// M16 (M7-B): o `?pptsx-fresh=N` da entrada desce pelo grafo só nos arquivos do usuário (bin/fresh-hooks.mjs).
+const ensureFreshHooks = (): void => {
+  if (freshHooks.registered) return;
+  registerHooks(new URL('../../bin/fresh-hooks.mjs', import.meta.url), { data: { engineRoots: ENGINE_ROOTS } });
+  freshHooks.registered = true;
+};
+
+const createNamespace = (name: string, tsconfig: string) => register({ namespace: name, tsconfig });
+type Namespace = ReturnType<typeof createNamespace>;
+
+// Um namespace do tsx por tsconfig, reaproveitado: um namespace novo por rebuild recarregaria o motor
+// inteiro (cada namespace tem cache próprio) e a memória do --watch crescia ~12 MB por build.
+const namespaces = new Map<string, Namespace>();
+
+const namespaceFor = (tsconfig: string): Namespace => {
+  const existing = namespaces.get(tsconfig);
+  if (existing !== undefined) return existing;
+  const created = createNamespace(`pptsx-${namespaces.size + 1}`, tsconfig);
+  namespaces.set(tsconfig, created);
+  return created;
+};
+
+const freshCounter = { value: 0 };
+
 const importFresh = async (file: string, tsconfig: string): Promise<UserModule> => {
-  namespaceCounter += 1;
-  const api = register({ namespace: `pptsx-${Date.now()}-${namespaceCounter}`, tsconfig });
-  try {
-    return (await api.import(pathToFileURL(file).href, import.meta.url)) as UserModule;
-  } finally {
-    await api.unregister();
-  }
+  ensureFreshHooks();
+  freshCounter.value += 1;
+  const url = new URL(pathToFileURL(file).href);
+  url.searchParams.set('pptsx-fresh', String(freshCounter.value));
+  return (await namespaceFor(tsconfig).import(url.href, import.meta.url)) as UserModule;
 };
 
 /**
