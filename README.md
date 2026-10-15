@@ -711,6 +711,50 @@ A `Table` é medida pela engine: colunas com `width` ficam fixas e as outras seg
 
 ---
 
+## Diagramas
+
+Fluxogramas, arquiteturas e linhas do tempo saem **nativos**: cada nó, seta e ícone é um objeto que dá para mover, recolorir e editar no PowerPoint/Keynote.
+
+- `<Box shape="diamond">` dá à caixa a geometria de uma das 24 formas curadas (losango, hexágono, paralelogramo, pílula, cilindro…); o texto continua dentro do padding e o layout não muda.
+- `<Connector from="a" to="b">` liga dois nós pelo `id` **depois** do layout: reta ou em cotovelo (`route="elbow"`), pontas nativas, rótulo com fundo.
+- `<Icon src="user.svg">` transforma um SVG simples em formas nativas (com gradiente ou máscara, vira imagem e avisa). `<Path d="…">` desenha qualquer geometria com o `d` do SVG.
+
+```tsx
+const Step = ({ id, shape, color, children }) => (
+  <Box id={id} shape={shape} width={130} height={46} backgroundColor={color}
+    justifyContent="center" alignItems="center" padding="0 20">
+    <Text fontSize={12} color="#FFFFFF" textAlign="center">{children}</Text>
+  </Box>
+);
+
+<Slide padding="24 32" gap={16}>
+  <Box display="grid" gridTemplateColumns="repeat(4, 1fr)" gridTemplateRows="1fr 1fr" placeItems="center" flex={1}>
+    <Step id="inicio" shape="pill" color="#1B2A4A">Pedido chega</Step>
+    <Step id="ok" shape="diamond" color="#F59E0B">Estoque?</Step>
+    …
+  </Box>
+  <Connector from="inicio" to="ok" />
+  <Connector from="ok" to="comprar" label="não" labelStyle={{ background: '#FFFFFF' }} />
+  <Connector from="comprar" to="enviar" fromSide="right" toSide="bottom" route="elbow" />
+</Slide>
+```
+
+[`examples/diagrams/fluxo.tsx`](examples/diagrams/fluxo.tsx): 7 nós de 5 formas, 8 conectores (3 em cotovelo) e rótulos, num grid que serve em 16:9 e 4:3.
+
+<p align="center"><img src="docs/readme/diagramas-fluxo.png" width="720" alt="Fluxograma: Início, Receber pedido, Validar dados, losango Dados ok? com saídas sim para Processar e não para Corrigir cadastro, que volta a Validar por uma linha tracejada e vai a Fim por cancelar"></p>
+
+[`examples/diagrams/arquitetura.tsx`](examples/diagrams/arquitetura.tsx): grupos com borda tracejada, cartões com ícones SVG nativos e conectores em cotovelo.
+
+<p align="center"><img src="docs/readme/diagramas-arquitetura.png" width="720" alt="Três grupos tracejados, Clientes, Nuvem e Dados, com cartões de ícone e nome ligados por setas em cotovelo"></p>
+
+As 24 formas ([`examples/diagrams/formas.tsx`](examples/diagrams/formas.tsx)) e os 12 ícones de exemplo em três cores e tamanhos ([`examples/diagrams/icones.tsx`](examples/diagrams/icones.tsx), MIT em `examples/assets/icons/`):
+
+<p align="center"><img src="docs/readme/diagramas-formas.png" width="480" alt="Grade com as 24 formas nativas e o nome de cada uma"> <img src="docs/readme/diagramas-icones.png" width="480" alt="Doze ícones de traço em três tamanhos e três cores, e seis cartões com ícone roxo"></p>
+
+O preview desenha cada forma com as fórmulas do OOXML; no Keynote os nós batem com o PNG em ±1 pt (relatório em [`docs/work/reports/M12.md`](docs/work/reports/M12.md)).
+
+---
+
 ## CLI
 
 ```
@@ -830,6 +874,7 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 | `backgroundImage: url()` (cover), `Image` com `objectFit` | | `fontWeight` 100–500 e 800–900 (sai regular ou bold) |
 | fonte, tamanho, peso, itálico, cor, alinhamento, `textTransform`, `textDecoration` por trecho, `letterSpacing` | | `auto-fill`, áreas nomeadas e `[linhas]` no grid; `gridAutoFlow` diferente de `row` |
 | `Chart` (bar, line, pie) e `Table` | | `whiteSpace` além de `normal`/`nowrap`; `objectFit` além de `contain`/`cover` |
+| 24 formas (`Shape kind`, `Box shape`), `Path` (custGeom), `Icon` vetorial, `Connector` com pontas | `Icon` com gradiente/máscara/`transform` sai como imagem (`icon-rasterized`, info) | borda por lado ou raio num `Box shape` que não é rect; fundo/borda num `Icon` |
 
 </details>
 
@@ -844,11 +889,12 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 - **Rich text por trecho** muda peso, itálico, cor e decoração; tamanho, fonte e entrelinha valem para o `Text` inteiro.
 - **`Table` não pagina** e não tem `truncate`: encolhe ou vira `table-overflow`. `Chart` e `Table` não giram.
 - **O gráfico do PNG é uma aproximação**: PowerPoint e Keynote redesenham o gráfico nativo dentro do mesmo frame.
+- **Conectores não desviam de obstáculos** nem se religam ao mover um nó no PowerPoint: são linhas calculadas no build entre os lados escolhidos.
 
 ## Validação
 
-- **Testes:** 1650 com `vitest` (unitários, layout calculado à mão, oráculo do grid contra o Chrome, XML emitido, preview).
-- **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30. Da galeria, `tara` (16:9) e `safra` (4:3) foram exportados e conferidos slide a slide: grupo girado com sombra, grid girado atrás do texto, mapa de calor, tabela e barra proporcional saem como no preview; só os gráficos são redesenhados pelo Keynote, como esperado.
+- **Testes:** 1795 com `vitest` (unitários, layout calculado à mão, oráculo do grid contra o Chrome, XML emitido, preview).
+- **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30. Da galeria, `tara` (16:9) e `safra` (4:3) foram exportados e conferidos slide a slide: grupo girado com sombra, grid girado atrás do texto, mapa de calor, tabela e barra proporcional saem como no preview; só os gráficos são redesenhados pelo Keynote, como esperado. Os decks de diagramas (`examples/diagrams/`: formas, Path, ícones, fluxo e arquitetura) batem com o preview em ±1 pt nos nós.
 - **PowerPoint e Google Slides:** ainda não validados; a conferência no PowerPoint está com o dono do projeto. O XML é corrigido nos pontos em que o PowerPoint pediria "reparar".
 
 ## Para agentes

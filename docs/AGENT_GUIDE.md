@@ -101,12 +101,15 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 |---|---|---|
 | `Deck` | — | só `Slide` |
 | `Slide` | `backgroundColor`, `backgroundImage="url(…)"` (ou `background={{ image: 'foto.png' }}`), `notes?: string` | primitivas/componentes |
-| `Box` | `paginate?: boolean` (ver "Paginação") | primitivas/componentes |
+| `Box` | `paginate?: boolean` (ver "Paginação"), `shape?` (geometria do fundo/borda, ver "Diagramas") | primitivas/componentes |
 | `Text` | `fit`, `minSize`, `maxLines`, `nowrap`/`whiteSpace="nowrap"` (§4) | strings/números e `Span`/`B`/`I` |
 | `Span` | `fontWeight`, `fontStyle`, `color`, `textDecoration` (**sem** `fontSize`/`fontFamily`/`lineHeight`: não compila) | strings/números e outros `Span`/`B`/`I`; **só dentro de `Text`** |
 | `B` / `I` | atalhos de `Span fontWeight="bold"` / `Span fontStyle="italic"` | como `Span` |
 | `Image` | `src: string` (obrigatório; relativo ao arquivo do deck), `objectFit?: 'contain' \| 'cover'` (padrão `'contain'`) | nenhum |
-| `Shape` | `kind: 'rect' \| 'roundRect' \| 'ellipse' \| 'line'` (obrigatório), `backgroundColor` (cor da forma), `stroke`/`strokeWidth` (linha da forma; `line` sem `stroke` é preta), `radius` (roundRect) | nenhum |
+| `Shape` | `kind` (obrigatório; 24 formas, ver "Diagramas"), `backgroundColor` (cor da forma), `stroke`/`strokeWidth` (linha da forma; `line` e `bracketPair` sem `stroke` saem pretas), `radius` (roundRect), `flipH`/`flipV`, `lineStyle` (`'solid' \| 'dashed' \| 'dotted'`), `lineCap` (`'flat' \| 'round'`), `startArrow`/`endArrow` (**só em `line`**: `'arrow' \| 'triangle' \| 'stealth' \| 'diamond' \| 'oval'`) | nenhum |
+| `Path` | `d` (obrigatório; `M L H V C S Q T A Z` do SVG), `viewBox?: [w, h]` (padrão: a caixa do `d`), `fill`, `stroke`, `strokeWidth` (pt), `lineCap`, `lineJoin` (`'miter' \| 'round' \| 'bevel'`), `lineStyle` | nenhum |
+| `Icon` | `src` (obrigatório; `.svg`), `size?` (altura em pt, padrão 24), `color?` (padrão: a cor de texto herdada), `recolor?` (padrão `true`: preto também vira `color`), `render?: 'auto' \| 'shape' \| 'image'` | nenhum |
+| `Connector` | `from`, `to` (ids, obrigatórios), `fromSide`/`toSide` (`'top' \| 'right' \| 'bottom' \| 'left' \| 'auto'`), `route` (`'straight' \| 'elbow'`), `startArrow`/`endArrow` (padrão: só `triangle` no fim), `stroke`, `strokeWidth` (1,5), `lineStyle`, `label`, `labelStyle={{ fontSize, color, background, font }}` (padrões: 12 pt, `#333333`, sem fundo, a fonte herdada do pai) | nenhum (só props; **não aceita CSS**) |
 | `Chart` | `kind: 'bar' \| 'line' \| 'pie'` e `data: { categories: string[], series: { name, values: number[] }[] }` (obrigatórios), `colors?` (por série; na pizza por fatia), `legend?` (padrão: só com 2+ séries; pizza sempre), `showValues?` (padrão `false`), `title?`, `size?` (12, tamanho dos rótulos) | nenhum |
 | `Table` | `columns: { header, width?, align? }[]` e `rows: (string \| number)[][]` (obrigatórios), `header?: { fill?, color?, weight? } \| false` (padrão: negrito sem fundo), `stripe?` (fundo da 2ª, 4ª… linha), `border?` (**cor da grade**, 0,5 pt; sem = sem grade), `cellPadding?` (4 pt), `minSize?`, `fit?: 'shrink' \| 'error'`; texto por `fontSize` (14), `fontFamily`, `color`, `lineHeight` | nenhum |
 
@@ -115,6 +118,32 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 - `Image` com só `width` (ou só `height`) mantém a proporção. Com `flex={1}` e sem tamanho, ocupa a área toda e `objectFit` decide (`contain` mostra tudo, `cover` preenche e recorta). Sem tamanho nem flex: tamanho natural (px × 0.75 pt).
 - `Chart` é **nativo** (editável no PowerPoint/Keynote) e **não tem tamanho próprio**: dê `flex={1}`, `width`/`height`, ou ponha numa célula de grid (estica nela); senão é erro de estrutura. `values` são números (`38.2`); o PowerPoint formata com a vírgula do idioma. `pie` aceita **uma** série.
 - `Table` é **nativa** e medida pela engine: a largura vem do layout (numa coluna, a largura toda), a altura é a soma das linhas (cada linha = célula mais alta + 2 × `cellPadding`, arredondada a 0,5 pt). Colunas com `width` em pt ficam fixas, em `'%'` são fração da tabela; **sem `width` seguem o conteúdo** (como `table-layout: auto`). `align` vale para a coluna inteira. Encolhe como **uma unidade** junto com os `Text` do slide; não há `truncate`: ou encolhe ou é `table-overflow`. Não pagina.
+
+### Diagramas: formas, `Path`, `Icon` e `Connector`
+
+Tudo sai **nativo e editável** no PowerPoint/Keynote: cada forma, traço de ícone e seta é um objeto.
+
+**`id`** (qualquer nó): nome para um `Connector` apontar. Único no slide (repetido = erro de estrutura).
+
+**Formas** (`<Shape kind>` solta, ou `<Box shape>` para a caixa ter essa geometria com filhos dentro):
+
+| kind | desenho | kind | desenho | kind | desenho |
+|---|---|---|---|---|---|
+| `rect` | ▭ | `pentagon` | ⬠ regular | `arrowDown` | ⇩ |
+| `roundRect` | ▢ (raio = `borderRadius`) | `hexagon` | ⬡ deitado | `doubleArrow` | ⇔ |
+| `ellipse` | ◯ | `octagon` | ⯃ | `pill` | ⬭ (raio = metade da altura) |
+| `triangle` | △ | `chevron` | 〉 seta de processo | `star` | ☆ 5 pontas |
+| `rightTriangle` | ◺ (ângulo reto embaixo à esquerda) | `arrowRight` | ⇨ (haste 50 % da altura) | `cloud` | ☁ |
+| `diamond` | ◇ decisão | `arrowLeft` | ⇦ | `callout` | 💬 retângulo com ponta **abaixo** do frame |
+| `parallelogram` | ▱ entrada/saída | `arrowUp` | ⇧ | `bracketPair` | ( ) só traço |
+| `trapezoid` | ⏢ (topo mais estreito) | `line` | ╲ quina a quina | `cylinder` | ⛁ banco de dados |
+
+- **`<Box shape="roundRect">`** sem `borderRadius` usa o arredondamento padrão do PowerPoint (~17 % do menor lado); com `borderRadius`, o raio dado. Num `pill`, losango etc. o `borderRadius` é ignorado com `css-not-emitted`.
+- **`<Box shape="diamond">`** desenha fundo, borda (uniforme) e sombra com a geometria; os filhos ficam no **retângulo** do padding, como em qualquer Box. Losango e hexágono têm cantos vazios: dê `padding` lateral (`'0 22'`) para o texto não encostar nas pontas. `borderRadius` só vale em `rect`/`roundRect`; borda por lado numa forma → `css-not-emitted`.
+- **`<Shape kind="line">`** vai da quina superior esquerda à inferior direita do frame (`height={0}` = horizontal); `flipH` inverte a diagonal e as pontas acompanham. Setas: `startArrow`/`endArrow`.
+- **`<Path d viewBox>`**: geometria livre. Sem `width`/`height` tem o tamanho do `viewBox` em pt; com um só, o outro pela proporção; com os dois, estica. Sem `fill` nem `stroke`, pinta de preto (como o SVG). Furo: desenhe o contorno interno no sentido **oposto** ao externo.
+- **`<Icon src="./icones/user.svg">`**: SVG só com `path/rect/circle/ellipse/line/polygon/polyline` e cores sólidas vira formas (um objeto por traço); com gradiente, máscara, `transform`, opacidade, texto, `<use>`, `<defs>`… vira **imagem** (`icon-rasterized`, info). `currentColor` (e preto) assumem `color`, que herda a cor do texto do pai: `<Box color="#2F6FED"><Icon …/></Box>`. Ícone não tem caixa: fundo/borda num `Icon` → `css-not-emitted`; envolva num `Box`. Ícones prontos (MIT): `examples/assets/icons/`.
+- **`<Connector from="a" to="b">`**: calculado **depois** do layout, por cima de todos os nós; não ocupa espaço nem empurra nada. Pode ficar em qualquer lugar do slide (fora dos Box costuma ser mais legível). Âncora = meio do lado; `auto` (padrão) escolhe o par de lados mais próximo. `route="elbow"`: lados opostos → 3 segmentos com a dobra no meio; lados de eixos diferentes (`right` → `top`) → um L; lados **iguais** (`bottom` → `bottom`, laço de volta) → a dobra sai 16 pt para fora dos dois nós; cotovelo alinhado vira reta. Padrão `route="straight"`; linha `#333333` de 1,5 pt (não herda a cor do texto). Não conta no `gap` nem em nenhuma soma de layout. **Rótulo**: uma linha, centrado no meio do segmento mais longo, com 3 pt de respiro; num vão menor que o rótulo + ~20 pt a linha some atrás dele: deixe ≥ 40 pt entre nós com rótulo (no grid: largura da coluna − largura do nó). **Não desvia de obstáculos**: escolha `fromSide`/`toSide` para a linha não atravessar cartões.
 
 ### Ordem de pintura (`zIndex`)
 
@@ -284,7 +313,7 @@ Tamanhos do `KpiCard` (pt):
 
 ## 6. Receitas
 
-Trechos filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape`, `Chart`, `Table`, `Span` de `'pptsx'` quando usados). Vitrine completa de CSS: `examples/showcase.tsx`.
+Trechos filhos de `<Deck>` dentro de `defineDeck((ctx) => …)`, com os imports da §2 (mais `Image`, `Shape`, `Chart`, `Table`, `Span`, `Path`, `Icon`, `Connector` de `'pptsx'` quando usados). Vitrine completa de CSS: `examples/showcase.tsx`.
 
 ### 6.1 Conteúdo com bullets, só primitivas
 
@@ -423,6 +452,94 @@ A 1ª coluna fica com 40%; as outras dividem o resto pelo conteúdo. Números co
 
 `display="none"` tira o nó do layout e do PPTX naquele tamanho; os irmãos mantêm o índice no path. Para mudar quantos itens aparecem, `items.slice(0, ctx.pick({ base: 3, tall: 5 }))`.
 
+### 6.11 Fluxograma
+
+Nós num **grid** (não absolutos: o grid se adapta a 4:3), cada um com `id`; conectores depois.
+
+```tsx
+const Step = ({ id, shape, color, children }: { id: string; shape: 'pill' | 'roundRect' | 'diamond' | 'parallelogram'; color: string; children: string }) => (
+  <Box id={id} shape={shape} width={shape === 'diamond' ? 120 : 130} height={shape === 'diamond' ? 80 : 46} backgroundColor={color}
+    justifyContent="center" alignItems="center" padding={shape === 'parallelogram' ? '0 20' : '0 8'}>
+    <Text fontSize={12} color="#FFFFFF" textAlign="center">{children}</Text>
+  </Box>
+);
+
+<Slide padding="24 32" gap={16}>
+  <Text fontSize={24} fontWeight="bold">Como um pedido é atendido</Text>
+  <Box display="grid" gridTemplateColumns="repeat(4, 1fr)" gridTemplateRows="1fr 1fr" placeItems="center" flex={1}>
+    <Step id="inicio" shape="pill" color="#1B2A4A">Pedido chega</Step>
+    <Step id="validar" shape="roundRect" color="#2F6FED">Validar</Step>
+    <Step id="ok" shape="diamond" color="#F59E0B">Estoque?</Step>
+    <Step id="enviar" shape="roundRect" color="#10B981">Enviar</Step>
+    <Box gridColumn={3} gridRow={2}><Step id="comprar" shape="parallelogram" color="#EF4444">Comprar</Step></Box>
+  </Box>
+  <Connector from="inicio" to="validar" />
+  <Connector from="validar" to="ok" />
+  <Connector from="ok" to="enviar" label="sim" labelStyle={{ background: '#FFFFFF' }} />
+  <Connector from="ok" to="comprar" label="não" labelStyle={{ background: '#FFFFFF' }} />
+  <Connector from="comprar" to="enviar" fromSide="right" toSide="bottom" route="elbow" />
+</Slide>
+```
+
+Rótulo com `background` igual ao fundo do slide "corta" a linha atrás do texto. Exemplo maior: `examples/diagrams/fluxo.tsx`.
+
+### 6.12 Arquitetura com ícones
+
+```tsx
+const Card = ({ id, icon, title }: { id: string; icon: string; title: string }) => (
+  <Box id={id} display="flex" alignItems="center" gap={8} padding="8 12" backgroundColor="#FFFFFF" border="1px solid #CBD5E1" borderRadius={6}>
+    <Icon src={`../assets/icons/${icon}.svg`} size={20} color="#2F6FED" flexShrink={0} />
+    <Text fontSize={12} fontWeight="bold">{title}</Text>
+  </Box>
+);
+
+<Slide padding="24 32" gap={16} backgroundColor="#F8FAFC">
+  <Text fontSize={24} fontWeight="bold">Arquitetura</Text>
+  <Box display="grid" gridTemplateColumns="1fr 1fr" columnGap={60} alignItems="center" flex={1}>
+    <Box border="1.5px dashed #2F6FED" borderRadius={10} padding={12} gap={10}>
+      <Text fontSize={11} fontWeight="bold" color="#2F6FED">CLIENTES</Text>
+      <Card id="web" icon="globe" title="Site" />
+      <Card id="app" icon="user" title="App" />
+    </Box>
+    <Box border="1.5px dashed #10B981" borderRadius={10} padding={12} gap={10}>
+      <Text fontSize={11} fontWeight="bold" color="#10B981">BACKEND</Text>
+      <Card id="api" icon="server" title="API" />
+      <Card id="db" icon="database" title="Banco" />
+    </Box>
+  </Box>
+  <Connector from="web" to="api" route="elbow" />
+  <Connector from="app" to="api" route="elbow" />
+  <Connector from="api" to="db" />
+</Slide>
+```
+
+Agrupamento = Box com `border="… dashed …"`. `columnGap` largo deixa espaço para a dobra do cotovelo. Exemplo maior: `examples/diagrams/arquitetura.tsx`.
+
+### 6.13 Linha do tempo com setas
+
+```tsx
+const STEPS = [
+  { id: 'q1', label: 'Q1', text: 'Piloto em 2 lojas' },
+  { id: 'q2', label: 'Q2', text: 'Rede sul' },
+  { id: 'q3', label: 'Q3', text: 'Rede nacional' },
+  { id: 'q4', label: 'Q4', text: 'App próprio' },
+];
+
+<Box display="flex" justifyContent="space-between" alignItems="flex-start">
+  {STEPS.map((step) => (
+    <Box alignItems="center" gap={8} width={130}>
+      <Box id={step.id} shape="ellipse" width={48} height={48} backgroundColor="#2F6FED" justifyContent="center" alignItems="center">
+        <Text fontSize={14} fontWeight="bold" color="#FFFFFF">{step.label}</Text>
+      </Box>
+      <Text fontSize={13} textAlign="center">{step.text}</Text>
+    </Box>
+  ))}
+</Box>
+{STEPS.slice(1).map((step, index) => <Connector from={STEPS[index]!.id} to={step.id} strokeWidth={2} stroke="#94A3B8" />)}
+```
+
+Seta solta sem nós: `<Shape kind="line" width={80} height={0} strokeWidth={2} endArrow="triangle" />`, `<Shape kind="arrowRight" width={40} height={20} />` (seta cheia) ou um `Path` (`d="M0 12 L16 12 M10 6 L16 12 L10 18"` com `lineCap="round"`). As três receitas estão em `examples/diagrams/receitas.tsx`.
+
 ## 7. CLI e fluxo de trabalho
 
 **(a) Dentro deste repo** (como na §2): rode na raiz; o deck fica em `examples/agent-test/`, importa `pptsx` sem build e pode usar tokens, layouts e componentes de `examples/`.
@@ -502,6 +619,10 @@ Campos de `data` (opcionais): `overflowPt`/`overflowPct`, `fromSize`/`toSize`, `
 | `slide-continued` | info | um `Box paginate` virou `data.parts` slides | nada; partes desequilibradas → `fontSize`/`gap` responsivos |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi | arquivo com mais resolução ou área menor |
 | `font-missing` | error | família não registrada ou não achada; único diagnóstico desse Text | tire `fontFamily` (Arial), registre a face ou instale |
+| `connector-target-missing` | error | `from`/`to` de um `Connector` sem nó com esse `id` no slide (a mensagem lista os ids do slide); o conector não sai | ponha `id` no nó certo ou corrija o nome |
+| `connector-omitted` | info | com `paginate`, as duas pontas caíram em slides diferentes; o conector não sai | tire um dos nós do Box paginate ou encurte a lista |
+| `icon-rasterized` | info | o SVG do `Icon` saiu como imagem (motivo na mensagem: gradiente, `transform`, `<defs>`, opacidade, texto…) ou `render="image"` | aceite, ou simplifique o SVG para só formas e cores sólidas |
+| `path-invalid` | error | o `d` de um `Path` tem comando fora de `M L H V C S Q T A Z` ou número malformado; nada é desenhado | corrija o `d` (a mensagem diz o trecho) |
 | `font-not-embeddable` | warning | com `--embed-fonts`: face não embutível (`.ttc`, `.otf` CFF, licença) | `.ttf` de uma face com licença de embed |
 
 Mensagens reais:
@@ -544,6 +665,10 @@ Texto "Olá" fora de <Text>; envolva o conteúdo em <Text> (em Slide > Box)
 <Chart> precisa de width, height ou grow: um gráfico não tem tamanho próprio (em Slide > Chart)
 <Chart>: a série "Receita" tem 3 valores para 4 categorias
 <Table>: a linha 3 tem 3 células para 4 colunas
+id "a" repetido no slide (já usado em Slide > Box); ids têm que ser únicos por slide (em Slide > Text)
+<Shape kind="rect">: startArrow/endArrow só valem em kind="line"; para seta cheia use kind="arrowRight" ou <Connector>
+<Connector> não aceita "backgroundColor": ele não é uma caixa (use from, to, fromSide, …)
+<Icon>: não consegui ler "./icones/x.svg" (…)
 ```
 
 ### O overview PNG
@@ -597,6 +722,13 @@ Texto "Olá" fora de <Text>; envolva o conteúdo em <Text> (em Slide > Box)
 - **Caminhos de imagem** são relativos ao arquivo do deck: de `examples/agent-test/`, `'../assets/chart.png'`.
 - **O gráfico real não é o do PNG**: PowerPoint e Keynote redesenham o gráfico dentro do frame. Não ajuste números pelo PNG.
 - **Vírgula decimal**: no `Chart`, `values` são números (`52.4`); na `Table`, células são texto (`'52,4'`).
+- **Conector não desvia de obstáculos**: com `auto`, uma linha pode atravessar um cartão no meio do caminho. Escolha `fromSide`/`toSide` (e `route="elbow"`) olhando o PNG; dois conectores do mesmo lado saem do mesmo ponto.
+- **`Connector` não é caixa**: nada de `margin`, `position`, `backgroundColor` nele (erro de estrutura). Ele também não tem `id`.
+- **`id` repetido** no mesmo slide é erro (cuidado com `.map` que gera ids iguais: use `id={item.key}`). Em slides diferentes, pode repetir.
+- **Texto dentro de `Box shape`** fica no retângulo do padding, não na forma: losango, hexágono e paralelogramo precisam de `padding` lateral; `callout` tem a ponta **fora** do frame (deixe espaço embaixo).
+- **Ícone com gradiente vira imagem** (`icon-rasterized`): não muda de cor nem é editável. Para recolorir, o SVG precisa usar `currentColor` ou preto.
+- **`Path` com arco (`A`)** é aproximado por cúbicas (erro < 0,1 % do raio): invisível, mas o PowerPoint mostra pontos de Bézier ao editar.
+- **Diagrama com `position="absolute"`** funciona, mas não se adapta a 4:3; prefira grid com `placeItems="center"` e tamanhos fixos nos nós.
 
 ## Apêndice — Migração das props antigas → CSS
 
