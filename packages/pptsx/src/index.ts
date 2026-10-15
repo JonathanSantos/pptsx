@@ -109,6 +109,8 @@ export type {
   TableCellContext,
   TableCellIcon,
   ComponentMeta,
+  ComponentCatalogCase,
+  ComponentMetaFor,
   DeckSection,
   DocumentProperties,
   LayoutComponent,

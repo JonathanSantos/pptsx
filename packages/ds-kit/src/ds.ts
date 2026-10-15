@@ -1,4 +1,4 @@
-import { COMPONENT_META, defineDs, type Component, type ComponentMeta, type DsManifest, type LintRule, type Theme } from 'pptsx';
+import { COMPONENT_META, defineDs, type Component, type ComponentCatalogCase, type ComponentMeta, type DsManifest, type LintRule, type Theme } from 'pptsx';
 import { checkTheme } from './theme.ts';
 
 /**
@@ -7,13 +7,8 @@ import { checkTheme } from './theme.ts';
  * markdown; o tema passa pelo `checkTheme` (os avisos ficam em `warnings`).
  */
 
-/** Um caso do catálogo: nome e props. Fica em `meta.catalog` do `defineComponent`. */
-export interface CatalogCase {
-  readonly name: string;
-  readonly props: Readonly<Record<string, unknown>>;
-  /** O componente preenche o corpo do slide (`renderFragment({ fill: true })`); padrão: tamanho natural. */
-  readonly fill?: boolean;
-}
+/** Um caso do catálogo (o do núcleo): nome, props do componente e `fill?`. Fica em `meta.catalog`. */
+export type CatalogCase<P = Readonly<Record<string, unknown>>> = ComponentCatalogCase<P>;
 
 export interface DsInput {
   readonly name: string;

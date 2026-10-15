@@ -873,6 +873,16 @@ export interface ComponentMeta {
   readonly [key: string]: unknown;
 }
 
+/** M18: um caso do catálogo de um componente (props de exemplo); `fill` = o componente preenche o corpo. */
+export interface ComponentCatalogCase<P> {
+  readonly name: string;
+  readonly props: P;
+  readonly fill?: boolean;
+}
+
+/** M18: o meta de `defineComponent` com `catalog` tipado pelas props do componente. */
+export type ComponentMetaFor<P> = ComponentMeta & { readonly catalog?: readonly ComponentCatalogCase<P>[] };
+
 /** Componente do usuário: função pura (props) => elemento. Sem hooks, sem estado. */
 export type Component<P = any> = ((props: P) => Child) & { readonly [COMPONENT_META]?: ComponentMeta };
 

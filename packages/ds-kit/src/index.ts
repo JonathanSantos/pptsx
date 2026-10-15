@@ -4,7 +4,7 @@
  */
 export { defineTokens, colorsOf, type TokenSource, type TokenTree, type Tokens } from './tokens.ts';
 export { themeOf, checkTheme, contrastOf, AA_TEXT, AA_LARGE, type ThemeMap } from './theme.ts';
-export { createVariants, type VariantConfig, type VariantDefs, type VariantSelection } from './variants.ts';
+export { createVariants, type PropsFor, type VariantConfig, type VariantDefs, type VariantProps, type VariantSelection, type VariantTarget } from './variants.ts';
 export { slot, filledSlots, type Slots } from './slots.ts';
 export { defineRule, colorsFromTokens, fontsFromTheme, maxChildren, onlyOnSlide, paintedColorsOf } from './rules.ts';
 export { createDs, guideOf, metaOfComponent, type CatalogCase, type Ds, type DsInput, type GuidePart } from './ds.ts';

@@ -36,13 +36,17 @@ const SIZES: Readonly<Record<KpiSize, KpiMetrics>> = {
   lg: { padding: space.gap, gap: space.tight * 1.2, label: font.small + 2, value: font.display + 12, minValue: 36 },
 };
 
-/** Variantes de tamanho: as medidas do cartão (padding, gap, corpo do label) e as do valor. */
+/** Uma opção por tamanho, a partir das medidas. */
+const perSize = <T,>(pick: (metrics: KpiMetrics) => T): Readonly<Record<KpiSize, T>> => ({ sm: pick(SIZES.sm), md: pick(SIZES.md), lg: pick(SIZES.lg) });
+
+/** Variantes de tamanho: as medidas do cartão (padding, gap, corpo do label) e as do valor (um Text). */
 const cardBySize = createVariants({
-  variants: { size: Object.fromEntries(Object.entries(SIZES).map(([key, m]) => [key, { padding: m.padding, gap: m.gap, fontSize: m.label }])) as Record<KpiSize, { padding: number; gap: number; fontSize: number }> },
+  variants: { size: perSize((m) => ({ padding: m.padding, gap: m.gap, fontSize: m.label })) },
   defaults: { size: 'md' },
 });
 const valueBySize = createVariants({
-  variants: { size: Object.fromEntries(Object.entries(SIZES).map(([key, m]) => [key, { fontSize: m.value, minSize: m.minValue }])) as Record<KpiSize, { fontSize: number; minSize: number }> },
+  for: 'text',
+  variants: { size: perSize((m) => ({ fontSize: m.value, minSize: m.minValue })) },
   defaults: { size: 'md' },
 });
 
@@ -68,8 +72,8 @@ const trendMark = (trend: KpiTrend | undefined): string =>
  */
 function KpiCardView({ label, value, delta, trend, sentiment, size = 'md', inlineDelta = false }: KpiCardProps) {
   // As variantes derivam de size chave a chave: um size responsivo continua responsivo até a primitiva.
-  const card = cardBySize({ size }) as { padding: Responsive<number>; gap: Responsive<number>; fontSize: Responsive<number> };
-  const valueStyle = valueBySize({ size }) as { fontSize: Responsive<number>; minSize: Responsive<number> };
+  const card = cardBySize({ size });
+  const valueStyle = valueBySize({ size });
   const gap = card.gap;
   const valueText = (
     <Text fontSize={valueStyle.fontSize} fontWeight="bold" color={color.ink} minSize={valueStyle.minSize}>{value}</Text>

@@ -1,5 +1,5 @@
 import { COMPONENT_META, LAYOUT_DEFINITION, PRIMITIVE_KIND } from '../core/types.ts';
-import type { AuthorPropsMap, Child, Component, ComponentMeta, LayoutComponent, LayoutOptions, Primitive, PrimitiveKind, SlideElement } from '../core/types.ts';
+import type { AuthorPropsMap, Child, Component, ComponentMeta, ComponentMetaFor, LayoutComponent, LayoutOptions, Primitive, PrimitiveKind, SlideElement } from '../core/types.ts';
 import { jsx } from '../jsx/jsx-runtime.ts';
 
 const capitalize = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
@@ -68,7 +68,7 @@ export const defineLayout = <P>(name: string, options: LayoutOptions, component:
  * chega ao nó resolvido em `component`, onde regras de lint e o catálogo o leem. Sem variantes nem estilo:
  * isso é do DS. Função comum continua valendo como componente.
  */
-export function defineComponent<P extends object>(meta: string | ComponentMeta, fn: (props: P) => Child, defaults?: Partial<P>): Component<P> {
+export function defineComponent<P extends object>(meta: string | ComponentMetaFor<NoInfer<P>>, fn: (props: P) => Child, defaults?: Partial<NoInfer<P>>): Component<P> {
   const identity: ComponentMeta = Object.freeze(typeof meta === 'string' ? { name: meta } : { ...meta });
   if (typeof identity.name !== 'string' || identity.name.trim() === '') throw new Error('defineComponent: o nome do componente não pode ser vazio');
   const component = (props: P): Child => fn(defaults === undefined ? props : ({ ...defaults, ...props } as P));
