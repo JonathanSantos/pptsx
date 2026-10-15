@@ -22,10 +22,16 @@
       "types": "./dist/jsx/jsx-dev-runtime.d.ts",
       "import": "./dist/jsx/jsx-dev-runtime.js",
       "default": "./dist/jsx/jsx-dev-runtime.js"
+    },
+    "./mcp": {
+      "types": "./dist/mcp/index.d.ts",
+      "import": "./dist/mcp/index.js",
+      "default": "./dist/mcp/index.js"
     }
   },
   "bin": {
-    "pptsx": "./bin/pptsx.mjs"
+    "pptsx": "./bin/pptsx.mjs",
+    "pptsx-mcp": "./bin/pptsx-mcp.mjs"
   },
   "files": [
     "dist/**/*.js",
@@ -34,6 +40,7 @@
     "fonts/LiberationSans-*.ttf",
     "fonts/LICENSE",
     "tsconfig.deck.json",
+    "docs/AGENT_GUIDE.md",
     "README.md",
     "LICENSE"
   ],
@@ -44,7 +51,8 @@
     "build": "tsc -p tsconfig.build.json",
     "prepack": "npm run build",
     "test:package": "PPTSX_PACKAGE_TEST=1 vitest run tests/package",
-    "oracle:generate": "tsx tools/oracle/generate.ts"
+    "oracle:generate": "tsx tools/oracle/generate.ts",
+    "schema:generate": "tsx tools/schema/generate.ts"
   },
   "engines": {
     "node": ">=20"
@@ -62,11 +70,16 @@
     "@types/fontkit": "^2.0.9",
     "@types/node": "^26.6.5",
     "typescript": "^7.0.2",
+    "typescript-api": "npm:typescript@6.0.3",
     "vitest": "^5.0.4"
   },
   "overrides": {
     "pptxgenjs": {
       "image-size": "$image-size"
     }
+  },
+  "optionalDependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "zod": "4.6.7"
   }
 }

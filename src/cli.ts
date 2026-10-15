@@ -270,7 +270,7 @@ export const jsonErrorOf = (error: unknown): string => JSON.stringify({ error: e
 
 // ---------- IO ----------
 
-const loadDeck = async (deckPath: string, options: ImportOptions, importModule: ImportModule): Promise<DeckDefinition> => {
+export const loadDeck = async (deckPath: string, options: ImportOptions, importModule: ImportModule): Promise<DeckDefinition> => {
   if (!existsSync(deckPath)) throw new Error(`deck não encontrado: ${deckPath}`);
   assertDeckTsconfig(deckPath);
   const module = await importUserModule(deckPath, options, importModule);
@@ -286,7 +286,7 @@ const writeResult = (paths: OutputPaths, result: RenderResult): void => {
   writeFileSync(paths.overview, result.preview.overview);
 };
 
-interface BuildOutcome {
+export interface BuildOutcome {
   /** Lista completa (--json). */
   readonly files: readonly string[];
   /** Lista resumida (humanos). */
@@ -296,7 +296,7 @@ interface BuildOutcome {
 }
 
 /** Um build completo, gravando tudo em disco. `fresh` recarrega deck, config e o que eles importam. */
-const buildOnce = async (args: CliArgs, cwd: string, deps: CliDeps, fresh: boolean): Promise<BuildOutcome> => {
+export const buildOnce = async (args: CliArgs, cwd: string, deps: CliDeps, fresh: boolean): Promise<BuildOutcome> => {
   const importModule = deps.importModule ?? defaultImportModule;
   const config = await loadConfig(cwd, { fresh, cwd }, importModule);
   const deck = await loadDeck(args.deckPath, { fresh, cwd }, importModule);

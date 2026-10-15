@@ -143,12 +143,18 @@ const writeFile = (dir: string, file: ScaffoldFile): void => {
   writeFileSync(path, file.content);
 };
 
-export const runInit = (args: InitArgs, cwd: string): number => {
+/** Cria/atualiza os arquivos do projeto e devolve o plano; não imprime (o MCP usa por stdio). */
+export const applyInit = (args: Pick<InitArgs, 'dir' | 'force'>): InitPlan => {
   const dirName = basename(args.dir);
   const files = scaffoldFiles(dirName);
   const plan = planInit(files, readExisting(args.dir, files), args.force, join(args.dir, DECK_FILE), dirName);
   mkdirSync(args.dir, { recursive: true });
   plan.writes.forEach((file) => writeFile(args.dir, file));
+  return plan;
+};
+
+export const runInit = (args: InitArgs, cwd: string): number => {
+  const plan = applyInit(args);
   // No --json o stdout é só o JSON; o aviso vai para stderr para não se perder.
   if (args.json) plan.warnings.forEach((warning) => console.error(`▲ ${warning}`));
   console.log(args.json ? initJsonOf(args.dir, plan) : initSummaryOf(args.dir, plan, cwd));
