@@ -5,13 +5,17 @@ import type {
   Children,
   CssStyle,
   ResolvedConnector,
+  SlideNumberFormat,
+  SlideNumberProps,
+  TextProps,
   ResolvedDeck,
   ResolvedNode,
   ResolvedSlide,
   SlideElement,
   TextChildren,
 } from '../core/types.ts';
-import { primitiveName } from '../primitives/index.ts';
+import { Box, primitiveName } from '../primitives/index.ts';
+import { jsx } from '../jsx/jsx-runtime.ts';
 import { assertChartSize, assertValidChart, assertValidTable, normalizeRows } from './data.ts';
 import { ROOT_TEXT } from './draft.ts';
 import type { InheritedText } from './draft.ts';
@@ -149,6 +153,20 @@ const resolveIcon = (item: ExpandedPrimitive, path: string, n: Normalized, env: 
   return { kind: 'icon', path, props, css: n.css, viewBox, content };
 };
 
+const SLIDE_NUMBER_FORMATS: readonly SlideNumberFormat[] = ['n', 'n / total'];
+
+/** M13: Text de uma linha medido no pior caso; o número real entra depois da paginação (fit). */
+const resolveSlideNumber = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
+  assertNoChildren(item, path);
+  const props = legacyPropsOf('slideNumber', n) as Omit<SlideNumberProps, 'children'> & Omit<TextProps, 'children'>;
+  const format = props.format ?? 'n';
+  if (!SLIDE_NUMBER_FORMATS.includes(format)) throw new ResolveError(`<SlideNumber>: format ${JSON.stringify(format)} inválido; use "n" ou "n / total"`, path);
+  const { format: _format, ...textProps } = props;
+  const sample = format === 'n' ? DEFAULTS.text.slideNumberSample.n : DEFAULTS.text.slideNumberSample.total;
+  const runs = [{ ...baseRunStyleOf(n), text: sample }];
+  return { kind: 'text', path, props: { ...textProps, nowrap: true }, css: n.css, content: sample, runs, slideNumber: { format } };
+};
+
 const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
   assertNoChildren(item, path);
   const props = legacyPropsOf('table', n);
@@ -207,7 +225,7 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, p
     case 'icon':
       return resolveIcon(item, path, n, ctx.env);
     case 'slideNumber':
-      throw new ResolveError(`<${nameOf(item)}> ainda não está disponível`, path);
+      return resolveSlideNumber(item, path, n);
     case 'span':
       throw new ResolveError(SPAN_OUTSIDE_TEXT, path);
     case 'slide':
@@ -236,14 +254,26 @@ const resolveChildren = (
 
 const ROOT_PARENT: ParentInfo = { text: ROOT_TEXT, css: undefined };
 
+/**
+ * M13: o `footer` do Deck entra em cada slide como último filho, num invólucro absoluto do tamanho do
+ * slide com o conteúdo empurrado para a base. O componente tem nome próprio, então o path é
+ * `Slide > Footer > …` e os índices dos irmãos do autor não mudam.
+ */
+function Footer({ children }: { readonly children?: Children }): SlideElement {
+  return jsx(Box, { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', children });
+}
+
+const withFooter = (children: Children, footer: Children | undefined): Children =>
+  footer === undefined || footer === null || footer === false ? children : [children, jsx(Footer, { children: footer })];
+
 /** O slide é o primeiro segmento do path e não leva índice (o índice vai em Diagnostic.slide). */
-const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResolveScope): ResolvedSlide => {
+const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResolveScope, footer?: Children): ResolvedSlide => {
   if (item.kind !== 'slide') {
     throw new ResolveError(`Filhos de <Deck> têm que ser <Slide>; encontrado <${nameOf(item)}>`, item.segment);
   }
   const path = item.segment;
   const n = normalizedOf(item, path, ctx, ROOT_PARENT);
-  const { nodes, connectors } = resolveChildren(item.element.props.children, path, ctx, parentOf(n));
+  const { nodes, connectors } = resolveChildren(withFooter(item.element.props.children, footer), path, ctx, parentOf(n));
   const ids = slideIdsOf(nodes);
   const slide: ResolvedSlide = {
     kind: 'slide',
@@ -272,8 +302,9 @@ const expandRoot = (root: SlideElement): ExpandedPrimitive => {
 export const resolveDeck = (root: SlideElement, responsive: ResponsiveContext, env: ResolveEnv = createResolveEnv()): ResolvedDeck => {
   const ctx: ResolveScope = { ...responsive, env };
   const deck = expandRoot(root);
+  const footer = deck.element.props.footer as Children | undefined;
   const slides = onlyPrimitives(expandChild(deck.element.props.children), '').map((item, index) =>
-    resolveSlide(item, index, ctx),
+    resolveSlide(item, index, ctx, footer),
   );
   return { slides };
 };

@@ -787,7 +787,18 @@ export interface ResolvedText extends ResolvedBase<'text', Omit<TextProps, 'chil
    * M13: este Text é um SlideNumber. `content` é o pior caso até o fim do fit; depois da paginação
    * vira o número real (`slideIndex`/`slideTotal`), e o emissor grava o número como campo `slidenum`.
    */
-  readonly slideNumber?: { readonly format: SlideNumberFormat; readonly index?: number; readonly total?: number };
+  readonly slideNumber?: {
+    readonly format: SlideNumberFormat;
+    readonly index?: number;
+    readonly total?: number;
+    /**
+     * Larguras naturais (pt) do número e do rótulo inteiro, medidas no fit. O Keynote apaga todo
+     * texto que divide o parágrafo com o campo `slidenum`, então "n / total" sai em duas caixas
+     * (o campo e o " / total" logo depois dele) e o emissor precisa saber onde o número termina.
+     */
+    readonly numberWidth?: Pt;
+    readonly labelWidth?: Pt;
+  };
 }
 
 export type ResolvedImage = ResolvedBase<'image', ImageProps>;

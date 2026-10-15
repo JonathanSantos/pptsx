@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { applyLineMarkers } from './line-style.ts';
+import { applySlideNumberFields } from './slide-number.ts';
 import { renumberCharts } from './renumber.ts';
 
 const SLIDE_XML = /^ppt\/slides\/slide\d+\.xml$/;
@@ -54,7 +55,7 @@ type XmlFix = (xml: string) => string;
 
 /** Parte do pacote → correção a aplicar. */
 const fixOf = (name: string): XmlFix | undefined => {
-  if (SLIDE_XML.test(name)) return (xml) => applyLineMarkers(keepFirstParagraphProps(xml));
+  if (SLIDE_XML.test(name)) return (xml) => applySlideNumberFields(applyLineMarkers(keepFirstParagraphProps(xml)));
   if (name === PRESENTATION_XML) return reorderPresentationLists;
   return undefined;
 };

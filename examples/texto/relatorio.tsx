@@ -1,9 +1,10 @@
-import { B, Deck, Slide, Span, Sup, Text, defineDeck } from 'pptsx';
+import { B, Box, Deck, Slide, SlideNumber, Span, Sup, Text, defineDeck } from 'pptsx';
 
 // M13: relatório de texto corrido. O corpo é um único <Text paginate>: o que não cabe continua
 // num clone do slide (mesmo título), cortando em fim de parágrafo quando dá e sem deixar menos
 // de 2 linhas de um parágrafo sozinhas. Notas de rodapé em sobrescrito apontam (href) para o
-// slide de notas; pesos 300/600 da Inter (examples/texto/pptsx.config.ts).
+// slide de notas; pesos 300/600 da Inter (examples/texto/pptsx.config.ts). O rodapé do Deck se
+// repete em todo slide (inclusive nas partes) com o número "n / total" como campo nativo.
 
 const INK = '#0F172A';
 const MUTED = '#475569';
@@ -29,8 +30,15 @@ const BODY = (
   </>
 );
 
+const FOOTER = (
+  <Box display="flex" justifyContent="space-between" alignItems="baseline" padding="0 56 14" fontFamily="Inter" fontSize={10} color={MUTED}>
+    <Text fontWeight={300}>Cooperativa Safra · Relatório anual 2026</Text>
+    <SlideNumber format="n / total" fontWeight={600} />
+  </Box>
+);
+
 export default defineDeck(() => (
-  <Deck>
+  <Deck footer={FOOTER}>
     <Slide padding="48 56" gap={12} fontFamily="Inter" color={INK} justifyContent="center" backgroundColor="#F8FAFC">
       <Text fontSize={14} fontWeight={600} color={ACCENT} letterSpacing={2} textTransform="uppercase">Relatório anual</Text>
       <Text fontSize={44} fontWeight={700}>Safra 2026</Text>

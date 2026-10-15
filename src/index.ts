@@ -1,6 +1,6 @@
 import type { DeckDefinition } from './core/types.ts';
 
-export { Deck, Slide, Box, Text, Image, Shape, Span, B, I, Sup, Sub, Chart, Table, Path, Icon, Connector } from './primitives/index.ts';
+export { Deck, Slide, Box, Text, Image, Shape, Span, B, I, Sup, Sub, Chart, Table, Path, Icon, Connector, SlideNumber } from './primitives/index.ts';
 export { Fragment } from './jsx/jsx-runtime.ts';
 export { resolveDeck, ResolveError } from './resolve/index.ts';
 export { render } from './render.ts';

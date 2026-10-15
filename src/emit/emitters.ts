@@ -16,6 +16,7 @@ import {
 import { debugOutlineOf, iconImageOf, imageOf, shapeOf, textOf, type ShapeSpec } from './options.ts';
 import type { PaintItem } from './paint.ts';
 import { tableOf } from './table.ts';
+import { slideNumberBoxesOf } from './slide-number.ts';
 import { pathOf } from './vector.ts';
 import { hyperlinkOf } from './link.ts';
 import { iconDrawnRectOf, iconPngOf, iconShapesOf } from './icon.ts';
@@ -42,7 +43,10 @@ const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: Emi
   text: (node, slide, ctx, item) => {
     const content = contentOf(node);
     const { runs, options } = textOf(content, ctx.lineSpacing, ctx.lang, ctx.lineBreaks);
-    slide.addText(paintedRunsOf(runs, node.css, item.opacity), { ...options, ...placedOf(content.frame, item.rotations) });
+    // M13: "n / total" = o campo numa caixa e o resto noutra (o Keynote apaga texto junto do campo).
+    slideNumberBoxesOf(content, runs, options).forEach((box) =>
+      slide.addText(paintedRunsOf(box.runs, node.css, item.opacity), { ...box.options, ...placedOf(box.frame, item.rotations) }),
+    );
   },
   image: (node, slide, ctx, item) => {
     const content = contentOf(node);
