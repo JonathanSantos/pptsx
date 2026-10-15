@@ -61,10 +61,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -73,11 +91,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -344,10 +381,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -356,11 +411,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -658,10 +732,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -670,11 +762,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -975,10 +1086,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -987,11 +1116,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1268,10 +1416,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -1280,11 +1446,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1623,10 +1808,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -1635,11 +1838,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1953,10 +2175,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -1965,11 +2205,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -2281,10 +2540,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -2293,11 +2570,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -2583,10 +2879,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -2595,11 +2909,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -2926,10 +3259,28 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderBottom": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
       "borderRadius": {
@@ -2938,11 +3289,30 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "borderRight": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
       "borderStyle": {
         "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
       },
       "borderTop": {
         "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
       },
       "borderWidth": {
         "type": "string | number | ResponsiveValue<string | number>"

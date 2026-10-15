@@ -45,13 +45,14 @@ export const contrastOf = (a: string, b: string): number => {
 export const AA_TEXT = 4.5;
 export const AA_LARGE = 3;
 
-/** Avisos de contraste: texto (dark1/dark2) sobre o fundo (light1/light2) e acentos sobre light1. */
+/** Avisos de contraste (só entre slots declarados): texto (dark1/dark2) sobre fundo (light1/light2), 4,5:1; cada acento (accent1…6) sobre light1, 3:1. */
 export const checkTheme = (theme: Theme): readonly string[] => {
   const resolved = resolveTheme(theme);
   const c = resolved.colors;
+  const accents: readonly ThemeColorName[] = ['accent1', 'accent2', 'accent3', 'accent4', 'accent5', 'accent6'];
   const pairs: readonly (readonly [ThemeColorName, ThemeColorName, number])[] = [
-    ['dark1', 'light1', AA_TEXT], ['dark1', 'light2', AA_TEXT], ['dark2', 'light1', AA_TEXT],
-    ['accent1', 'light1', AA_LARGE], ['accent2', 'light1', AA_LARGE], ['accent3', 'light1', AA_LARGE],
+    ['dark1', 'light1', AA_TEXT], ['dark1', 'light2', AA_TEXT], ['dark2', 'light1', AA_TEXT], ['dark2', 'light2', AA_TEXT],
+    ...accents.map((accent): readonly [ThemeColorName, ThemeColorName, number] => [accent, 'light1', AA_LARGE]),
   ];
   return pairs
     .filter(([a, b]) => resolved.declared.includes(a) && resolved.declared.includes(b))

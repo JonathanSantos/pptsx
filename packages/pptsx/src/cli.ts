@@ -10,7 +10,7 @@ import { assertDeckTsconfig } from './cli/tsconfig.ts';
 import { createPreviewServer } from './cli/preview/server.ts';
 import { sizeStatesOf, type PreviewState } from './cli/preview/state.ts';
 import { createFsWatch, runWatchLoop, stampLine, timestampOf, watchPathsOf, type WatchFn } from './cli/watch.ts';
-import { configPathOf, importUserModule, isLineBreaks, lineBreaksErrorOf, loadConfig, type PptsxConfig } from './config.ts';
+import { configDirOf, configPathOf, importUserModule, isLineBreaks, lineBreaksErrorOf, loadConfig, type PptsxConfig } from './config.ts';
 import { DEFAULTS } from './core/defaults.ts';
 import type { DeckDefinition, Diagnostic, LineBreaks, RenderOptions, RenderResult, Severity, SizeSpec } from './core/types.ts';
 import { render } from './render.ts';
@@ -310,7 +310,7 @@ export interface BuildOutcome {
 /** Um build completo, gravando tudo em disco. `fresh` recarrega deck, config e o que eles importam. */
 export const buildOnce = async (args: CliArgs, cwd: string, deps: CliDeps, fresh: boolean): Promise<BuildOutcome> => {
   const importModule = deps.importModule ?? defaultImportModule;
-  const config = await loadConfig(cwd, { fresh, cwd }, importModule);
+  const config = await loadConfig(configDirOf(args.deckPath, cwd), { fresh, cwd }, importModule);
   const deck = await loadDeck(args.deckPath, { fresh, cwd }, importModule);
   const results = await render(deck, mergeOptions(args, config));
   const deckName = deckNameOf(args.deckPath);
@@ -379,7 +379,7 @@ const watchBuild = async (args: CliArgs, cwd: string, deps: CliDeps): Promise<nu
       reportWatchError(args, error, new Date());
     }
   };
-  const paths = watchPathsOf(args.deckPath, configPathOf(cwd));
+  const paths = watchPathsOf(args.deckPath, configPathOf(configDirOf(args.deckPath, cwd)));
   if (!args.json) console.log(stampLine(new Date(), `observando ${paths.join(', ')} (Ctrl-C para sair)`));
   const watch = deps.watch ?? createFsWatch([args.outDir]);
   await withStopSignal(deps.signal, (signal) => runWatchLoop({ paths, watch, signal, rebuild }));
@@ -432,7 +432,7 @@ const previewStateFrom = async (args: PreviewArgs, cwd: string, deps: CliDeps, v
   const builtAt = timestampOf(new Date());
   try {
     const importModule = deps.importModule ?? defaultImportModule;
-    const config = await loadConfig(cwd, { fresh: true, cwd }, importModule);
+    const config = await loadConfig(configDirOf(args.deckPath, cwd), { fresh: true, cwd }, importModule);
     const deck = await loadDeck(args.deckPath, { fresh: true, cwd }, importModule);
     const sizes = args.sizes ?? config.sizes ?? parseSizeList(DEFAULTS.previewServer.sizes.join(','));
     const results = await render(deck, { ...mergeOptions(previewBuildArgsOf(args, cwd), config), sizes, preview: false, includePositioned: true });
@@ -463,7 +463,7 @@ const previewServe = async (args: PreviewArgs, cwd: string, deps: CliDeps): Prom
     console.log(stampLine(new Date(), current.state.error === undefined ? summaryOf(current.state.sizes.flatMap((size) => size.diagnostics)).split('\n')[0]! : `erro: ${current.state.error}`));
     firstBuilt();
   };
-  const paths = watchPathsOf(args.deckPath, configPathOf(cwd));
+  const paths = watchPathsOf(args.deckPath, configPathOf(configDirOf(args.deckPath, cwd)));
   const watch = deps.watch ?? createFsWatch([]);
   try {
     await withStopSignal(deps.signal, async (signal) => {
@@ -526,7 +526,7 @@ const runLint = async (args: LintArgs, cwd: string, deps: CliDeps): Promise<numb
   const fix = args.fix ? await fixDeckFile(args.deckPath) : undefined;
   const importModule = deps.importModule ?? defaultImportModule;
   // Fresh: depois do --fix o deck reescrito tem que ser recarregado.
-  const config = await loadConfig(cwd, { fresh: true, cwd }, importModule);
+  const config = await loadConfig(configDirOf(args.deckPath, cwd), { fresh: true, cwd }, importModule);
   const deck = await loadDeck(args.deckPath, { fresh: true, cwd }, importModule);
   const findings = await lintDeck(deck, {
     sizes: args.sizes ?? config.sizes ?? ['16x9'],

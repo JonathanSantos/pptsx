@@ -1,0 +1,286 @@
+{
+  "marca": {
+    "16x9": [
+      {
+        "path": "Slide > Quote",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 67.5
+      },
+      {
+        "path": "Slide > Quote > Box[0]",
+        "x": 24,
+        "y": 24,
+        "width": 6,
+        "height": 67.5
+      },
+      {
+        "path": "Slide > Quote > Box[1]",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 67.5
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Text",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 36.8
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box",
+        "x": 50,
+        "y": 70.8,
+        "width": 646,
+        "height": 20.7
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box > Text",
+        "x": 50,
+        "y": 70.8,
+        "width": 151.61,
+        "height": 20.7
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > Quote",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 67.5
+      },
+      {
+        "path": "Slide > Quote > Box[0]",
+        "x": 24,
+        "y": 24,
+        "width": 6,
+        "height": 67.5
+      },
+      {
+        "path": "Slide > Quote > Box[1]",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 67.5
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Text",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 36.8
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box",
+        "x": 50,
+        "y": 70.8,
+        "width": 646,
+        "height": 20.7
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box > Text",
+        "x": 50,
+        "y": 70.8,
+        "width": 151.61,
+        "height": 20.7
+      }
+    ]
+  },
+  "acento": {
+    "16x9": [
+      {
+        "path": "Slide > Quote",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 104.29
+      },
+      {
+        "path": "Slide > Quote > Box[0]",
+        "x": 24,
+        "y": 24,
+        "width": 6,
+        "height": 104.29
+      },
+      {
+        "path": "Slide > Quote > Box[1]",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 104.29
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Text",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 73.59
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box",
+        "x": 50,
+        "y": 107.59,
+        "width": 646,
+        "height": 20.7
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box > Text",
+        "x": 50,
+        "y": 107.59,
+        "width": 177.39,
+        "height": 20.7
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > Quote",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 104.29
+      },
+      {
+        "path": "Slide > Quote > Box[0]",
+        "x": 24,
+        "y": 24,
+        "width": 6,
+        "height": 104.29
+      },
+      {
+        "path": "Slide > Quote > Box[1]",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 104.29
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Text",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 73.59
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box",
+        "x": 50,
+        "y": 107.59,
+        "width": 646,
+        "height": 20.7
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box > Text",
+        "x": 50,
+        "y": 107.59,
+        "width": 177.39,
+        "height": 20.7
+      }
+    ]
+  },
+  "com-avatar": {
+    "16x9": [
+      {
+        "path": "Slide > Quote",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 74.8
+      },
+      {
+        "path": "Slide > Quote > Box[0]",
+        "x": 24,
+        "y": 24,
+        "width": 6,
+        "height": 74.8
+      },
+      {
+        "path": "Slide > Quote > Box[1]",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 74.8
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Text",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 36.8
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box",
+        "x": 50,
+        "y": 70.8,
+        "width": 646,
+        "height": 28
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box > Box",
+        "x": 50,
+        "y": 70.8,
+        "width": 28,
+        "height": 28
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box > Text",
+        "x": 88,
+        "y": 74.45,
+        "width": 110.33,
+        "height": 20.7
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > Quote",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 74.8
+      },
+      {
+        "path": "Slide > Quote > Box[0]",
+        "x": 24,
+        "y": 24,
+        "width": 6,
+        "height": 74.8
+      },
+      {
+        "path": "Slide > Quote > Box[1]",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 74.8
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Text",
+        "x": 50,
+        "y": 24,
+        "width": 646,
+        "height": 36.8
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box",
+        "x": 50,
+        "y": 70.8,
+        "width": 646,
+        "height": 28
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box > Box",
+        "x": 50,
+        "y": 70.8,
+        "width": 28,
+        "height": 28
+      },
+      {
+        "path": "Slide > Quote > Box[1] > Box > Text",
+        "x": 88,
+        "y": 74.45,
+        "width": 110.33,
+        "height": 20.7
+      }
+    ]
+  }
+}

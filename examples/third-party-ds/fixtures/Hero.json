@@ -1,0 +1,126 @@
+{
+  "noite": {
+    "16x9": [
+      {
+        "path": "Slide > Hero",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 357
+      },
+      {
+        "path": "Slide > Hero > Box",
+        "x": 72,
+        "y": 129.05,
+        "width": 96,
+        "height": 8
+      },
+      {
+        "path": "Slide > Hero > Text[0]",
+        "x": 72,
+        "y": 157.05,
+        "width": 576,
+        "height": 62.09
+      },
+      {
+        "path": "Slide > Hero > Text[1]",
+        "x": 72,
+        "y": 239.15,
+        "width": 576,
+        "height": 36.8
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > Hero",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 492
+      },
+      {
+        "path": "Slide > Hero > Box",
+        "x": 72,
+        "y": 196.55,
+        "width": 96,
+        "height": 8
+      },
+      {
+        "path": "Slide > Hero > Text[0]",
+        "x": 72,
+        "y": 224.55,
+        "width": 576,
+        "height": 62.09
+      },
+      {
+        "path": "Slide > Hero > Text[1]",
+        "x": 72,
+        "y": 306.65,
+        "width": 576,
+        "height": 36.8
+      }
+    ]
+  },
+  "dia": {
+    "16x9": [
+      {
+        "path": "Slide > Hero",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 357
+      },
+      {
+        "path": "Slide > Hero > Box",
+        "x": 72,
+        "y": 129.05,
+        "width": 96,
+        "height": 8
+      },
+      {
+        "path": "Slide > Hero > Text[0]",
+        "x": 72,
+        "y": 157.05,
+        "width": 576,
+        "height": 62.09
+      },
+      {
+        "path": "Slide > Hero > Text[1]",
+        "x": 72,
+        "y": 239.15,
+        "width": 576,
+        "height": 36.8
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > Hero",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 492
+      },
+      {
+        "path": "Slide > Hero > Box",
+        "x": 72,
+        "y": 196.55,
+        "width": 96,
+        "height": 8
+      },
+      {
+        "path": "Slide > Hero > Text[0]",
+        "x": 72,
+        "y": 224.55,
+        "width": 576,
+        "height": 62.09
+      },
+      {
+        "path": "Slide > Hero > Text[1]",
+        "x": 72,
+        "y": 306.65,
+        "width": 576,
+        "height": 36.8
+      }
+    ]
+  }
+}

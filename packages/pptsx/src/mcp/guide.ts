@@ -31,11 +31,11 @@ const matches = (query: string) => (section: GuideSection): boolean => {
 };
 
 /** Sem consulta: o índice (títulos). Com consulta: a 1ª seção que casa, ou undefined. */
-export const guideLookup = (markdown: string, query?: string): { readonly text: string; readonly found: boolean } => {
+export const guideLookup = (markdown: string, query?: string, title = 'docs/AGENT_GUIDE.md'): { readonly text: string; readonly found: boolean } => {
   const sections = guideSectionsOf(markdown);
   if (query === undefined || query.trim() === '') {
     const index = sections.map((section) => `${section.level === 2 ? '' : '  '}- ${section.heading}`).join('\n');
-    return { text: `Seções do docs/AGENT_GUIDE.md (peça uma com guide({ section: "§8" }) ou por trecho do título):\n${index}`, found: true };
+    return { text: `Seções do ${title} (peça uma com section: "§8", "6.17" ou um trecho do título):\n${index}`, found: true };
   }
   const section = sections.find(matches(query));
   if (section === undefined) return { text: `Nenhuma seção do guia casa com "${query}". Chame guide() sem argumento para ver o índice.`, found: false };

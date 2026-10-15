@@ -1,5 +1,5 @@
 import { DEFAULTS } from '../core/defaults.ts';
-import type { BorderSide, CssFlexDirection, CssStyle, Display, GridPlacement, Len, MarginLen, PrimitiveKind, Sides } from '../core/types.ts';
+import type { BorderSide, CssFlexDirection, CssStyle, Display, GridPlacement, Len, MarginLen, NotEmitted, PrimitiveKind, Sides } from '../core/types.ts';
 import { KIND_HANDLERS } from './alias-handlers.ts';
 import { BOX_HANDLERS } from './box-handlers.ts';
 import { EMPTY_DRAFT, reject } from './draft.ts';
@@ -64,6 +64,20 @@ const borderSideOf = (draft: BorderDraft | undefined, currentColor: string): Bor
   const width = style === 'none' ? 0 : (draft.width ?? DEFAULTS.css.borderMediumWidth);
   return { width, style, color: draft.color ?? currentColor, alpha: draft.alpha ?? 1 };
 };
+
+const SIDE_NAMES = { top: 'Top', right: 'Right', bottom: 'Bottom', left: 'Left' } as const;
+
+/**
+ * M17: largura de borda sem estilo não desenha nada — é o CSS (o estilo padrão é `none`, e a largura
+ * computada vira 0) —, mas em silêncio parecia bug: `borderLeftWidth={6} borderLeftColor="…"`.
+ */
+const invisibleBorderNotes = (draft: Draft): readonly NotEmitted[] =>
+  (['top', 'right', 'bottom', 'left'] as const).flatMap((side) => {
+    const border = draft.border[side];
+    if (border === undefined || border.width === undefined || border.width <= 0 || (border.style ?? 'none') !== 'none') return [];
+    const name = SIDE_NAMES[side];
+    return [{ property: `border${name}Width`, value: String(border.width), reason: `sem border${name}Style a borda não aparece (o estilo padrão do CSS é none); use border${name}="${border.width}px solid <cor>" ou borderStyle="solid"` }];
+  });
 
 const sidesWith = <T>(partial: Partial<Sides<T>>, fallback: T): Sides<T> => ({
   top: partial.top ?? fallback,
@@ -133,7 +147,7 @@ const finalize = (kind: PrimitiveKind, draft: Draft, currentColor: string): CssS
   textDecoration: draft.textDecoration ?? { underline: false, lineThrough: false },
   letterSpacing: draft.text.letterSpacing ?? 0,
   textTransform: draft.text.textTransform ?? 'none',
-  notEmitted: draft.notEmitted,
+  notEmitted: [...draft.notEmitted, ...invisibleBorderNotes(draft)],
 });
 
 /** Herança CSS: o que o nó declara vence; o resto vem do pai. */

@@ -107,3 +107,17 @@ export const loadConfig = async (
   if (!isConfigObject(module.default)) throw new Error(`${file} precisa exportar default defineConfig({ ... })`);
   return resolveConfigPaths(validateConfig(module.default, file), dirname(file));
 };
+
+/**
+ * M17: a pasta da config de um deck — a do próprio deck ou a mais próxima acima que tem
+ * `pptsx.config.ts`; sem nenhuma, o cwd. Assim a config de um DS ou de uma pasta de exemplos vale
+ * rodando o build de qualquer lugar (antes, só a do cwd, e a de outra pasta sumia em silêncio).
+ */
+export const configDirOf = (deckPath: string, cwd: string): string => {
+  const search = (dir: string): string | undefined => {
+    if (existsSync(join(dir, CONFIG_FILE_NAME))) return dir;
+    const parent = dirname(dir);
+    return parent === dir ? undefined : search(parent);
+  };
+  return search(dirname(resolve(deckPath))) ?? cwd;
+};

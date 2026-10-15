@@ -26,3 +26,15 @@ describe('tsconfigForFile', () => {
     expect(tsconfigForFile(join(root, 'solto', 'deck.tsx'), cwd)).toBe(join(cwd, 'tsconfig.json'));
   });
 });
+
+describe('configDirOf (M17)', () => {
+  it('a config da pasta do deck (ou acima) vence o cwd; sem nenhuma, o cwd', async () => {
+    const { configDirOf } = await import('../../src/config.ts');
+    const root = mkdtempSync(join(tmpdir(), 'pptsx-config-'));
+    const ds = join(root, 'meu-ds');
+    mkdirSync(join(ds, 'decks'), { recursive: true });
+    writeFileSync(join(ds, 'pptsx.config.ts'), 'export default {};');
+    expect(configDirOf(join(ds, 'decks', 'deck.tsx'), root)).toBe(ds);
+    expect(configDirOf(join(root, 'solto', 'deck.tsx'), '/cwd')).toBe('/cwd');
+  });
+});

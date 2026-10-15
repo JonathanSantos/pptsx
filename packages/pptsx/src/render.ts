@@ -316,7 +316,9 @@ export interface FragmentResult {
  */
 export const renderFragment = async (element: SlideElement, options: FragmentOptions): Promise<FragmentResult> => {
   const widthPx = options.widthPx ?? DEFAULTS.preview.width;
-  const content = options.fill === true ? element : jsx(Box, { children: element });
+  // Uma coluna de grid: a largura toda, a altura do conteúdo, e um `flex={1}` do componente não estica
+  // nem colapsa (no grid o flex não vale; numa coluna flex de altura pelo conteúdo, base 0 colapsava).
+  const content = options.fill === true ? element : jsx(Box, { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', children: element });
   const deck: DeckDefinition = () => jsx(Deck, { children: jsx(Slide, { padding: options.padding ?? DEFAULTS.fragment.padding, children: content }) });
   const [result] = await render(deck, {
     sizes: [options.size],

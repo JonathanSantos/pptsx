@@ -6,28 +6,28 @@
         "x": 24,
         "y": 24,
         "width": 672,
-        "height": 40
+        "height": 142.79
       },
       {
         "path": "Slide > KpiCard > Text[0]",
         "x": 44,
         "y": 44,
         "width": 632,
-        "height": 0
+        "height": 16.1
       },
       {
         "path": "Slide > KpiCard > Text[1]",
         "x": 44,
-        "y": 54,
+        "y": 70.1,
         "width": 632,
-        "height": 0
+        "height": 50.6
       },
       {
         "path": "Slide > KpiCard > Text[2]",
         "x": 44,
-        "y": 64,
+        "y": 130.69,
         "width": 632,
-        "height": 0
+        "height": 16.1
       }
     ],
     "4x3": [
@@ -36,28 +36,28 @@
         "x": 24,
         "y": 24,
         "width": 672,
-        "height": 40
+        "height": 142.79
       },
       {
         "path": "Slide > KpiCard > Text[0]",
         "x": 44,
         "y": 44,
         "width": 632,
-        "height": 0
+        "height": 16.1
       },
       {
         "path": "Slide > KpiCard > Text[1]",
         "x": 44,
-        "y": 54,
+        "y": 70.1,
         "width": 632,
-        "height": 0
+        "height": 50.6
       },
       {
         "path": "Slide > KpiCard > Text[2]",
         "x": 44,
-        "y": 64,
+        "y": 130.69,
         "width": 632,
-        "height": 0
+        "height": 16.1
       }
     ]
   },
@@ -68,28 +68,28 @@
         "x": 24,
         "y": 24,
         "width": 672,
-        "height": 28
+        "height": 104.39
       },
       {
         "path": "Slide > KpiCard > Text[0]",
         "x": 38,
         "y": 38,
         "width": 644,
-        "height": 0
+        "height": 13.8
       },
       {
         "path": "Slide > KpiCard > Text[1]",
         "x": 38,
-        "y": 44,
+        "y": 57.8,
         "width": 644,
-        "height": 0
+        "height": 36.8
       },
       {
         "path": "Slide > KpiCard > Text[2]",
         "x": 38,
-        "y": 50,
+        "y": 100.6,
         "width": 644,
-        "height": 0
+        "height": 13.8
       }
     ],
     "4x3": [
@@ -98,28 +98,28 @@
         "x": 24,
         "y": 24,
         "width": 672,
-        "height": 28
+        "height": 104.39
       },
       {
         "path": "Slide > KpiCard > Text[0]",
         "x": 38,
         "y": 38,
         "width": 644,
-        "height": 0
+        "height": 13.8
       },
       {
         "path": "Slide > KpiCard > Text[1]",
         "x": 38,
-        "y": 44,
+        "y": 57.8,
         "width": 644,
-        "height": 0
+        "height": 36.8
       },
       {
         "path": "Slide > KpiCard > Text[2]",
         "x": 38,
-        "y": 50,
+        "y": 100.6,
         "width": 644,
-        "height": 0
+        "height": 13.8
       }
     ]
   },
@@ -130,35 +130,35 @@
         "x": 24,
         "y": 24,
         "width": 672,
-        "height": 40
+        "height": 134.79
       },
       {
         "path": "Slide > KpiCard > Text",
         "x": 44,
         "y": 44,
         "width": 632,
-        "height": 0
+        "height": 18.4
       },
       {
         "path": "Slide > KpiCard > Box",
         "x": 44,
-        "y": 56,
+        "y": 74.4,
         "width": 632,
-        "height": 0
+        "height": 64.39
       },
       {
         "path": "Slide > KpiCard > Box > Text[0]",
         "x": 44,
-        "y": 56,
-        "width": 310,
-        "height": 41.4
+        "y": 74.4,
+        "width": 64.22,
+        "height": 64.39
       },
       {
         "path": "Slide > KpiCard > Box > Text[1]",
-        "x": 366,
-        "y": 77.73,
-        "width": 310,
-        "height": 13.8
+        "x": 120.22,
+        "y": 110.61,
+        "width": 69.04,
+        "height": 18.4
       }
     ],
     "4x3": [
@@ -167,35 +167,35 @@
         "x": 24,
         "y": 24,
         "width": 672,
-        "height": 40
+        "height": 134.79
       },
       {
         "path": "Slide > KpiCard > Text",
         "x": 44,
         "y": 44,
         "width": 632,
-        "height": 0
+        "height": 18.4
       },
       {
         "path": "Slide > KpiCard > Box",
         "x": 44,
-        "y": 56,
+        "y": 74.4,
         "width": 632,
-        "height": 0
+        "height": 64.39
       },
       {
         "path": "Slide > KpiCard > Box > Text[0]",
         "x": 44,
-        "y": 56,
-        "width": 310,
-        "height": 41.4
+        "y": 74.4,
+        "width": 64.22,
+        "height": 64.39
       },
       {
         "path": "Slide > KpiCard > Box > Text[1]",
-        "x": 366,
-        "y": 77.73,
-        "width": 310,
-        "height": 13.8
+        "x": 120.22,
+        "y": 110.61,
+        "width": 69.04,
+        "height": 18.4
       }
     ]
   }

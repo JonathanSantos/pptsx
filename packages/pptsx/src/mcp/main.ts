@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { defaultImportModule } from '../cli/loader.ts';
 import { loadConfig } from '../config.ts';
@@ -24,7 +23,8 @@ const isManifest = (value: unknown): value is DsManifest =>
 /** M17: o pacote é resolvido a partir do cwd (onde o DS está instalado), não do pptsx. */
 export const importDs = async (specifier: string, cwd: string): Promise<DsManifest> => {
   const require = createRequire(join(cwd, 'noop.js'));
-  const module = (await import(pathToFileURL(require.resolve(specifier)).href)) as { readonly default?: unknown; readonly ds?: unknown };
+  // Um DS em .ts (no repo, ou ainda não compilado) é transpilado com o tsconfig da pasta dele (paths, jsx).
+  const module = (await defaultImportModule(require.resolve(specifier), { fresh: false, cwd })) as { readonly default?: unknown; readonly ds?: unknown };
   const manifest = module.default ?? module.ds;
   if (!isManifest(manifest)) throw new Error(`--ds ${specifier}: o pacote precisa exportar default (ou "ds") um defineDs({ ... })`);
   return manifest;

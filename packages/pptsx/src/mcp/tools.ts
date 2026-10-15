@@ -1,9 +1,9 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { buildOnce, exitCodeOf, loadDeck, mergeOptions, parseCli, summaryOf } from '../cli.ts';
 import { applyInit, initSummaryOf } from '../cli/init.ts';
 import { defaultImportModule, type ImportModule } from '../cli/loader.ts';
-import { CONFIG_FILE_NAME, loadConfig } from '../config.ts';
+import { configDirOf, loadConfig } from '../config.ts';
 import type { Diagnostic, LineBreaks } from '../core/types.ts';
 import { render } from '../render.ts';
 import { guideLookup } from './guide.ts';
@@ -39,15 +39,8 @@ const png = (data: Buffer): ToolContent => ({ type: 'image', data: data.toString
 
 const failure = (error: unknown): ToolResult => ({ content: [text(`Erro: ${error instanceof Error ? error.message : String(error)}`)], isError: true });
 
-/** A config (pptsx.config.ts) vale da pasta do deck para cima; sem nenhuma, a do cwd do servidor. */
-export const configDirOf = (deckPath: string, cwd: string): string => {
-  const search = (dir: string): string | undefined => {
-    if (existsSync(join(dir, CONFIG_FILE_NAME))) return dir;
-    const parent = dirname(dir);
-    return parent === dir ? undefined : search(parent);
-  };
-  return search(dirname(deckPath)) ?? cwd;
-};
+/** A config vale da pasta do deck para cima; sem nenhuma, a do cwd do servidor (o mesmo da CLI). */
+export { configDirOf } from '../config.ts';
 
 export interface BuildInput {
   readonly deck: string;
@@ -158,7 +151,7 @@ export const guideTool = (input: { readonly source?: string; readonly section?: 
     const ds = dsOf(ctx, source);
     if (ds === undefined) return unknownSource(source, ctx);
     if (ds.guide === undefined) return { content: [text(`O DS "${ds.name}" não registrou guia.`)], isError: true };
-    const { text: body, found } = guideLookup(ds.guide, input.section);
+    const { text: body, found } = guideLookup(ds.guide, input.section, `guia do DS "${ds.name}"`);
     return { content: [text(body)], ...(found ? {} : { isError: true }) };
   }
   const { text: body, found } = guideLookup(ctx.guideText?.() ?? readFileSync(GUIDE, 'utf8'), input.section);

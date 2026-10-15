@@ -4,6 +4,14 @@ Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Ve
 
 **Política para a 1.0:** as props antigas (aliases do M11: `direction`, `align`/`justify` de contêiner, `grow`, `shrink`, `fill`/`stroke`/`radius` do Box, `background` do Slide, `size`/`weight`/`italic`/`font`/`align` do Text, `fit` da Image) **saem na 1.0**. Desde a 0.6.0 o `pptsx lint` avisa cada uma e o `pptsx lint --fix` reescreve o deck. A 1.0 sai depois da validação do dono no PowerPoint (gráficos, tema, layouts, notas).
 
+## 0.7.0 — M17: núcleo concreto e ganchos para design systems
+
+- **Monorepo** (npm workspaces): o núcleo em `packages/pptsx`, mais `@pptsx/ds-kit` e `@pptsx/ds-base` (0.1.0, CHANGELOG próprio).
+- **Ganchos para DS:** `defineComponent(meta, fn, defaults?)` (nome no path mesmo com HOC/anônimo; `meta` no nó resolvido em `component`), `LintRule` pública e `lint: { rules, disable }`/`ds` na config, `renderFragment(elemento, { size, fill? })` (componente isolado: frames, SVG, PNG), `DsManifest`/`defineDs`, MCP agregador (`guide`/`schema` com `source`; `pptsx-mcp --ds <pacote>`).
+- **API pública para quem constrói em cima** (sem marca): `mapResponsive`/`isResponsive`/`pickResponsive`, `toHexColor`, `resolveTheme`, `lintDeck`, `buildOverview`, `defaultFontFaces`/`defaultFontFiles`, `createContext`/`resolveSize`, tipos da árvore resolvida e posicionada.
+- **Núcleo sem marca:** tokens, tema pronto, layouts, componentes, a demo, a galeria e os decks de texto/dados/arquitetura/arquivo foram para o `@pptsx/ds-base` (mesmos frames ±1 pt; XML da demo idêntico). Os exemplos do núcleo são só de primitivas; o guia do agente explica como um DS se liga.
+- **Mudanças incompatíveis:** `examples/tokens.ts`, `examples/theme.ts`, `examples/layouts/` e `examples/components/` não existem mais no núcleo — use `@pptsx/ds-base` (ou o seu DS). A fonte Inter saiu do pacote do núcleo (era só exemplo). `ResolvedNode.component` é campo novo na árvore.
+
 ## 0.6.0 — M16: dívidas do motor e DX
 
 - **`pptsx-mcp`**: servidor MCP (stdio) com `build`, `diagnose`, `preview`, `init`, `guide` (seções do guia do agente) e `schema` (props por primitiva, gerado dos tipos). SDK do MCP e `zod` são dependências opcionais; `exports['./mcp']`.

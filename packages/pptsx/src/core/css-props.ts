@@ -80,6 +80,19 @@ export interface CssBoxProps {
   readonly borderWidth?: Num | string;
   readonly borderColor?: Color;
   readonly borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+  /** M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS). */
+  readonly borderTopWidth?: Num | string;
+  readonly borderRightWidth?: Num | string;
+  readonly borderBottomWidth?: Num | string;
+  readonly borderLeftWidth?: Num | string;
+  readonly borderTopStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+  readonly borderRightStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+  readonly borderBottomStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+  readonly borderLeftStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+  readonly borderTopColor?: Color;
+  readonly borderRightColor?: Color;
+  readonly borderBottomColor?: Color;
+  readonly borderLeftColor?: Color;
   readonly borderRadius?: Num | string;
   /** Contorno que não ocupa espaço ('1px solid #ccc'; número = largura). Só sólido no PPTX. */
   readonly outline?: Num | string;

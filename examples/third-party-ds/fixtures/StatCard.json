@@ -1,0 +1,174 @@
+{
+  "neutro": {
+    "16x9": [
+      {
+        "path": "Slide > StatCard",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 129.64
+      },
+      {
+        "path": "Slide > StatCard > Text[0]",
+        "x": 42,
+        "y": 42,
+        "width": 636,
+        "height": 14.95
+      },
+      {
+        "path": "Slide > StatCard > Text[1]",
+        "x": 42,
+        "y": 62.95,
+        "width": 636,
+        "height": 46
+      },
+      {
+        "path": "Slide > StatCard > Text[2]",
+        "x": 42,
+        "y": 114.94,
+        "width": 636,
+        "height": 20.7
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > StatCard",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 129.64
+      },
+      {
+        "path": "Slide > StatCard > Text[0]",
+        "x": 42,
+        "y": 42,
+        "width": 636,
+        "height": 14.95
+      },
+      {
+        "path": "Slide > StatCard > Text[1]",
+        "x": 42,
+        "y": 62.95,
+        "width": 636,
+        "height": 46
+      },
+      {
+        "path": "Slide > StatCard > Text[2]",
+        "x": 42,
+        "y": 114.94,
+        "width": 636,
+        "height": 20.7
+      }
+    ]
+  },
+  "queda": {
+    "16x9": [
+      {
+        "path": "Slide > StatCard",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 129.64
+      },
+      {
+        "path": "Slide > StatCard > Text[0]",
+        "x": 42,
+        "y": 42,
+        "width": 636,
+        "height": 14.95
+      },
+      {
+        "path": "Slide > StatCard > Text[1]",
+        "x": 42,
+        "y": 62.95,
+        "width": 636,
+        "height": 46
+      },
+      {
+        "path": "Slide > StatCard > Text[2]",
+        "x": 42,
+        "y": 114.94,
+        "width": 636,
+        "height": 20.7
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > StatCard",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 129.64
+      },
+      {
+        "path": "Slide > StatCard > Text[0]",
+        "x": 42,
+        "y": 42,
+        "width": 636,
+        "height": 14.95
+      },
+      {
+        "path": "Slide > StatCard > Text[1]",
+        "x": 42,
+        "y": 62.95,
+        "width": 636,
+        "height": 46
+      },
+      {
+        "path": "Slide > StatCard > Text[2]",
+        "x": 42,
+        "y": 114.94,
+        "width": 636,
+        "height": 20.7
+      }
+    ]
+  },
+  "marca-lg": {
+    "16x9": [
+      {
+        "path": "Slide > StatCard",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 114.94
+      },
+      {
+        "path": "Slide > StatCard > Text[0]",
+        "x": 48,
+        "y": 48,
+        "width": 624,
+        "height": 14.95
+      },
+      {
+        "path": "Slide > StatCard > Text[1]",
+        "x": 48,
+        "y": 68.95,
+        "width": 624,
+        "height": 46
+      }
+    ],
+    "4x3": [
+      {
+        "path": "Slide > StatCard",
+        "x": 24,
+        "y": 24,
+        "width": 672,
+        "height": 114.94
+      },
+      {
+        "path": "Slide > StatCard > Text[0]",
+        "x": 48,
+        "y": 48,
+        "width": 624,
+        "height": 14.95
+      },
+      {
+        "path": "Slide > StatCard > Text[1]",
+        "x": 48,
+        "y": 68.95,
+        "width": 624,
+        "height": 46
+      }
+    ]
+  }
+}

@@ -36,3 +36,17 @@ describe('rotate herdado em Chart/Table', () => {
     expect(warnings[0]!.message).toContain('rotate: 3 não sai');
   });
 });
+
+describe('M17: largura de borda sem estilo', () => {
+  it('avisa com a troca sugerida; borda com estilo não avisa', () => {
+    const warnings = warningsOf(
+      <Slide>
+        <Box borderLeftWidth={6} borderLeftColor="#FF0000" padding={8}><Text>a</Text></Box>
+        <Box borderLeft="6px solid #FF0000" padding={8}><Text>b</Text></Box>
+      </Slide>,
+    );
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatchObject({ path: 'Slide > Box[0]' });
+    expect(warnings[0]!.message).toContain('borderLeftWidth: 6 não sai no PPTX: sem borderLeftStyle a borda não aparece');
+  });
+});

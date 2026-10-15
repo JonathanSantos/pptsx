@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext", "strict": true,
+    "allowImportingTsExtensions": true, "noEmit": true, "skipLibCheck": true,
+    "jsx": "react-jsx", "jsxImportSource": "pptsx",
+    "paths": {
+      "pptsx": ["../../packages/pptsx/src/index.ts"],
+      "pptsx/jsx-runtime": ["../../packages/pptsx/src/jsx/jsx-runtime.ts"],
+      "pptsx/jsx-dev-runtime": ["../../packages/pptsx/src/jsx/jsx-dev-runtime.ts"],
+      "@pptsx/ds-kit": ["../../packages/ds-kit/src/index.ts"]
+    }
+  },
+  "include": ["*.ts", "*.tsx"]
+}

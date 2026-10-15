@@ -41,3 +41,18 @@ Contratos em código: `src/core/types.ts` (tipos) e `src/core/defaults.ts` (padr
 - Preview nativo: `dist/<deck>.<size>.overview.png` e `dist/<deck>.<size>/slide-NN.png`.
 - Renderizador real: `scripts/keynote-export.sh dist/x.pptx dist/keynote/x` (abre o Keynote via AppleScript e exporta PNGs).
 - PowerPoint: só o dono valida (go/no-go do M3).
+
+## O que entra no núcleo (M17)
+
+O repositório é um monorepo: `packages/pptsx` (núcleo), `packages/ds-kit` (`@pptsx/ds-kit`) e `packages/ds-base` (`@pptsx/ds-base`).
+
+- **Critério:** se uma funcionalidade só faz sentido com uma marca, **não entra no núcleo**. Tokens, tema pronto, layouts de slide e componentes são de um DS. O núcleo tem primitivas, CSS, layout, ajuste, diagnósticos, arquivo PPTX (inclusive o *contrato* `Theme` e `defineLayout`, que são recursos do arquivo), CLI, lint da engine, preview, MCP e os ganchos.
+- **Gancho, não exceção:** se o núcleo precisa saber o nome de um componente para funcionar, falta um gancho genérico (`defineComponent`, `LintRule`, `renderFragment`, `defineDs`…). Um DS nunca importa `pptsx/src/...`; o que ele precisar e for genérico vira API pública do núcleo (como `mapResponsive`, `toHexColor`, `buildOverview` no M17).
+- **Ferramenta de DS** (útil para qualquer marca, mas não para o render) vai para o `ds-kit`.
+
+## Como um DS evolui
+
+- **Props de componente seguem semver** do pacote do DS: prop nova opcional = minor; prop removida, renomeada ou com padrão diferente = major. O `schema` gerado (`npm run schema` no `ds-base`) mostra a mudança no diff.
+- **As fixtures do catálogo são o contrato visual:** `pptsx-ds catalog ds.ts --check --fixtures fixtures` roda na CI; diferença acima de 1 pt falha. Mudança visual intencional = regravar as fixtures no mesmo commit, com a explicação no relatório (e, se for de comportamento, major).
+- **Regras de lint do DS** têm id com o prefixo do DS (`ds-base/…`); severidade mais alta ou regra nova que acusa decks existentes = minor com nota no CHANGELOG do DS.
+- O núcleo tem versão própria; um DS declara `pptsx` como peer (`>=` a versão cujos ganchos usa).

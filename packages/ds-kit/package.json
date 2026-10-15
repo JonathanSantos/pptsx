@@ -21,7 +21,8 @@
     "dist/**/*.d.ts",
     "bin",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "test": "vitest run",
@@ -40,6 +41,7 @@
     "tsx": "^4.23.15"
   },
   "devDependencies": {
-    "typescript-api": "npm:typescript@6.0.3"
+    "typescript-api": "npm:typescript@6.0.3",
+    "@types/node": "^26.6.5"
   }
 }

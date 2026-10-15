@@ -19,7 +19,8 @@
     "guide/*.md",
     "fonts/inter/*",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "test": "vitest run --passWithNoTests",
@@ -35,5 +36,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5"
   }
 }

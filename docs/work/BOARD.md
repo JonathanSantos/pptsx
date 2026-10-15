@@ -124,7 +124,11 @@ Legenda: ⬜ a fazer · 🔄 em andamento · ✅ feito · ⛔ bloqueado
 | M16 | M16-4 | `pptsx preview --serve`: SVG + diagnósticos + destaque por path, SSE < 1 s de ponta a ponta | ✅ |
 | M16 | M16-5 | `pptsx lint` e `--fix` por AST; broken-original migrado com os mesmos frames (±1 pt) | ✅ |
 | M16 | M16-6 | CI (GitHub Actions), CHANGELOG com a política da 1.0, README (MCP, preview ao vivo, migração), guia §7; versão 0.6.0 | ✅ |
-| M17 | M17-1…5 | ganchos no núcleo (defineComponent, LintRule, renderFragment, MCP agregador, defineDs), workspaces + @pptsx/ds-kit, @pptsx/ds-base extraído, núcleo sem marca, DS de terceiro pelo agente virgem (plano em M17.md) | ⬜ |
+| M17 | M17-1 | ganchos no núcleo: defineComponent, LintRule pública, renderFragment, DsManifest/defineDs, MCP agregador (source, --ds) | ✅ |
+| M17 | M17-2 | monorepo (npm workspaces, núcleo em packages/pptsx) e @pptsx/ds-kit (tokens, tema, variantes, slots, regras, catálogo, createDs, schemaOf) | ✅ |
+| M17 | M17-3 | @pptsx/ds-base extraído só pela API pública: 17 decks com os mesmos frames (±1 pt), catálogo com fixtures, regras de marca no lint | ✅ |
+| M17 | M17-4 | núcleo sem marca: exemplos só de primitivas, guia §5 sobre como um DS se liga, README com a topologia | ✅ |
+| M17 | M17-5 | DS de terceiro (Aurora) pelo agente virgem só com o guia do kit (2 builds); correções que ele achou (config da pasta do deck, borda sem estilo avisa, catálogo sem colapso); gate: pptsx 0.7.0, ds-kit/ds-base 0.1.0 | ✅ |
 
 Roadmap pós-MVP: `docs/work/milestones/ROADMAP.md` (origem: `docs/work/reports/REVIEW-2026-10-13.md`).
 
