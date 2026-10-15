@@ -43,7 +43,7 @@ import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
 import { createResolveEnv, resolveDeck, resolveTheme, type ResolveEnv } from './resolve/index.ts';
 import { createContext, resolveSize } from './sizes.ts';
 import { jsx } from './jsx/jsx-runtime.ts';
-import { Box, Deck, Slide } from './primitives/index.ts';
+import { Box, Deck, Slide, Text } from './primitives/index.ts';
 import { createFontkitMeasurer, createFontRegistry } from './text/index.ts';
 
 /** Tudo que é derivado das opções uma única vez e vale para todos os tamanhos. */
@@ -314,12 +314,31 @@ export interface FragmentResult {
  * componentes de um DS. O elemento vai dentro de um Slide em coluna com `padding`; um fragmento não
  * pagina (um `paginate` dentro dele é medido como no slide, mas só a 1ª parte volta).
  */
-export const renderFragment = async (element: SlideElement, options: FragmentOptions): Promise<FragmentResult> => {
-  const widthPx = options.widthPx ?? DEFAULTS.preview.width;
+export interface FragmentSlideOptions {
+  readonly padding?: number;
+  readonly fill?: boolean;
+  /** M18: rótulo pequeno no canto (absoluto, na margem): não muda a posição do elemento. */
+  readonly label?: string;
+}
+
+/**
+ * M18: o Slide de um fragmento, o mesmo do `renderFragment` — para montar um deck de catálogo com a
+ * mesma moldura dos PNGs e das fixtures. O elemento vem primeiro; o rótulo, depois e absoluto.
+ */
+export const fragmentSlide = (element: SlideElement, options: FragmentSlideOptions = {}): SlideElement => {
   // Uma coluna de grid: a largura toda, a altura do conteúdo, e um `flex={1}` do componente não estica
   // nem colapsa (no grid o flex não vale; numa coluna flex de altura pelo conteúdo, base 0 colapsava).
   const content = options.fill === true ? element : jsx(Box, { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', children: element });
-  const deck: DeckDefinition = () => jsx(Deck, { children: jsx(Slide, { padding: options.padding ?? DEFAULTS.fragment.padding, children: content }) });
+  const padding = options.padding ?? DEFAULTS.fragment.padding;
+  const label = options.label === undefined
+    ? null
+    : jsx(Text, { position: 'absolute', left: padding, top: DEFAULTS.fragment.labelTop, fontSize: DEFAULTS.fragment.labelSize, color: DEFAULTS.fragment.labelColor, nowrap: true, children: options.label });
+  return jsx(Slide, { padding, children: [content, label] });
+};
+
+export const renderFragment = async (element: SlideElement, options: FragmentOptions): Promise<FragmentResult> => {
+  const widthPx = options.widthPx ?? DEFAULTS.preview.width;
+  const deck: DeckDefinition = () => jsx(Deck, { children: fragmentSlide(element, { ...(options.padding === undefined ? {} : { padding: options.padding }), ...(options.fill === true ? { fill: true } : {}) }) });
   const [result] = await render(deck, {
     sizes: [options.size],
     includePositioned: true,

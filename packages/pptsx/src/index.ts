@@ -3,7 +3,7 @@ import type { DeckDefinition } from './core/types.ts';
 export { Deck, Slide, Box, Text, Image, Shape, Span, B, I, Sup, Sub, Chart, Table, Path, Icon, Connector, SlideNumber, defineLayout, defineComponent } from './primitives/index.ts';
 export { Fragment } from './jsx/jsx-runtime.ts';
 export { resolveDeck, ResolveError } from './resolve/index.ts';
-export { render, renderFragment, type FragmentOptions, type FragmentResult } from './render.ts';
+export { render, renderFragment, fragmentSlide, type FragmentOptions, type FragmentResult, type FragmentSlideOptions } from './render.ts';
 export { defineDs, type DsManifest } from './ds.ts';
 export type { LintContext, LintRule, RuleFinding } from './lint/rule.ts';
 export { lintDeck, type LintFinding, type LintCode, type LintOptions } from './lint/lint.ts';

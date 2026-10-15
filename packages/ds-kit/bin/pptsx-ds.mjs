@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { register } from 'tsx/esm/api';
 
-const USAGE = 'uso: pptsx-ds catalog <ds.ts> [--out dist/catalog] [--size 16x9,4x3] [--check] [--fixtures dir]';
+const USAGE = 'uso: pptsx-ds catalog <ds.ts> [--out dist/catalog] [--size 16x9,4x3] [--check] [--fixtures dir] [--pptx]';
 
 const nearestTsconfig = (dir) => {
   const file = join(dir, 'tsconfig.json');
@@ -19,7 +19,7 @@ const nearestTsconfig = (dir) => {
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
   allowPositionals: true,
-  options: { out: { type: 'string' }, size: { type: 'string' }, check: { type: 'boolean', default: false }, fixtures: { type: 'string' } },
+  options: { out: { type: 'string' }, size: { type: 'string' }, check: { type: 'boolean', default: false }, fixtures: { type: 'string' }, pptx: { type: 'boolean', default: false } },
 });
 const [command, target] = positionals;
 if (command !== 'catalog' || target === undefined) {
@@ -44,6 +44,7 @@ const result = await kit.catalog({
   ...(out === undefined ? {} : { out }),
   ...(values.fixtures === undefined ? {} : { fixtures: resolve(values.fixtures) }),
   check: values.check,
+  pptx: values.pptx,
   baseDir: dirname(file),
 });
 if (values.check) {

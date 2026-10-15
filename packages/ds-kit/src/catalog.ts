@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { buildOverview, COMPONENT_META, defaultFontFiles, renderFragment, type Component, type FontFace, type PositionedNode, type SizeSpec, type Theme } from 'pptsx';
+import { buildOverview, COMPONENT_META, Deck, defaultFontFiles, fragmentSlide, render, renderFragment, type Component, type FontFace, type PositionedNode, type SizeSpec, type Theme } from 'pptsx';
 import { jsx } from 'pptsx/jsx-runtime';
 import type { CatalogCase, Ds } from './ds.ts';
 
@@ -33,6 +33,8 @@ export interface CatalogOptions {
   readonly tolerance?: number;
   readonly fonts?: readonly FontFace[];
   readonly baseDir?: string;
+  /** M18: também um `.pptx` por componente e tamanho (um slide por caso), para olhar no PowerPoint/Keynote. */
+  readonly pptx?: boolean;
 }
 
 export interface CatalogDiff {
@@ -108,6 +110,8 @@ export const catalog = async (options: CatalogOptions): Promise<CatalogResult> =
       }
     }
     const fixtureFile = fixturesDir === undefined ? undefined : join(fixturesDir, `${name}.json`);
+    // O deck sai também com --check: conferir os frames e olhar o .pptx são coisas independentes.
+    if (options.pptx === true && options.out !== undefined) files.push(...(await catalogDecks(component, name, sizes, options)));
     if (options.check === true) {
       if (fixtureFile === undefined || !existsSync(fixtureFile)) {
         diffs.push({ component: name, case: '*', size: '*', message: `sem fixture (${fixtureFile ?? 'pasta não informada'}); rode o catálogo sem --check para gravar` });
@@ -142,4 +146,32 @@ export const catalog = async (options: CatalogOptions): Promise<CatalogResult> =
     }
   }
   return { components: components.map(nameOf), cases: count, files, diffs };
+};
+
+/**
+ * M18: o catálogo de um componente como deck — um slide por caso, com a mesma moldura do `renderFragment`
+ * (`fragmentSlide` do núcleo) e o nome do caso no canto. O `.pptx` é para olhar; o `--check` continua
+ * comparando os frames do preview.
+ */
+const catalogDecks = async (component: Component, name: string, sizes: readonly SizeSpec[], options: CatalogOptions): Promise<readonly string[]> => {
+  const cases = casesOf(component);
+  mkdirSync(options.out!, { recursive: true });
+  const written = await Promise.all(
+    sizes.map(async (size) => {
+      const [result] = await render(
+        () => jsx(Deck, { children: cases.map((item) => fragmentSlide(jsx(component, item.props), { ...(item.fill === true ? { fill: true } : {}), label: `${name} · ${item.name}` })) }),
+        {
+          sizes: [size],
+          preview: false,
+          ...(options.fonts === undefined ? {} : { fonts: options.fonts }),
+          ...(options.ds.theme === undefined ? {} : { theme: options.ds.theme }),
+          ...(options.baseDir === undefined ? {} : { baseDir: options.baseDir }),
+        },
+      );
+      const file = join(options.out!, `${name}.${result!.size}.pptx`);
+      writeFileSync(file, result!.buffer);
+      return file;
+    }),
+  );
+  return written;
 };
