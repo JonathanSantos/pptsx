@@ -27,6 +27,7 @@ export type TextPropsOptions = PptxTypes.default.TextPropsOptions;
 export type ImageProps = PptxTypes.default.ImageProps;
 export type BackgroundProps = PptxTypes.default.BackgroundProps;
 export type ChartName = PptxTypes.default.CHART_NAME;
+export type ChartMulti = PptxTypes.default.IChartMulti;
 export type ChartOptions = PptxTypes.default.IChartOpts;
 export type ChartSeriesData = PptxTypes.default.OptsChartData;
 export type TableRow = PptxTypes.default.TableRow;

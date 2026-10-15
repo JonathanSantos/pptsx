@@ -53,8 +53,18 @@ const PRESENTATION_XML = 'ppt/presentation.xml';
 
 type XmlFix = (xml: string) => string;
 
+const CHART_XML = /^ppt\/charts\/chart\d+\.xml$/;
+const EMPTY_POINT = /<c:pt idx="\d+"><c:v><\/c:v><\/c:pt>/g;
+
+/**
+ * M14: ponto sem valor (scatter com x que a série não tem) sai como `<c:v></c:v>`, que o Keynote lê
+ * como 0. No OOXML o ponto ausente é omitido do cache.
+ */
+export const dropEmptyChartPoints = (xml: string): string => xml.replace(EMPTY_POINT, '');
+
 /** Parte do pacote → correção a aplicar. */
 const fixOf = (name: string): XmlFix | undefined => {
+  if (CHART_XML.test(name)) return dropEmptyChartPoints;
   if (SLIDE_XML.test(name)) return (xml) => applySlideNumberFields(applyLineMarkers(keepFirstParagraphProps(xml)));
   if (name === PRESENTATION_XML) return reorderPresentationLists;
   return undefined;

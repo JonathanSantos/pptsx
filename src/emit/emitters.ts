@@ -59,7 +59,9 @@ const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: Emi
   // addChart/addTable mutam dados e opções em profundidade (labels, bordas, unidades): cópia funda.
   chart: (node, slide) => {
     const { type, data, options } = structuredClone(chartOf(contentOf(node)));
-    slide.addChart(type, data, options);
+    // Combo (camadas): o pptxgenjs lê o 2º argumento como as opções (os dados vêm em cada camada).
+    if (Array.isArray(type)) slide.addChart(type, options as never);
+    else slide.addChart(type, data, options);
   },
   table: (node, slide, ctx) => {
     const { rows, options } = structuredClone(tableOf(contentOf(node), ctx));

@@ -20,7 +20,7 @@ const CHART_KINDS: readonly ChartKind[] = [
 ];
 
 /** Kinds que o emissor e o preview já desenham (o M14-2 libera os demais). */
-const READY_KINDS: readonly ChartKind[] = ['bar', 'line', 'pie'];
+const READY_KINDS: readonly ChartKind[] = CHART_KINDS;
 
 const quoted = (values: readonly string[]): string => values.map((value) => `"${value}"`).join(', ');
 

@@ -140,12 +140,12 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
   },
   chart: {
     ...ITEM_LEGACY,
-    ...passAll(['kind', 'data', 'legend', 'showValues', 'title', 'font', 'size']),
+    ...passAll(['kind', 'data', 'legend', 'showValues', 'title', 'font', 'size', 'labels', 'xAxis', 'yAxis', 'y2Axis', 'holeSize', 'smooth', 'markers']),
     colors: passColor('colors', hexListOf),
   },
   table: {
     ...ITEM_LEGACY,
-    ...passAll(['columns', 'rows', 'cellPadding', 'fit', 'minSize', 'font', 'size', 'lineHeight']),
+    ...passAll(['columns', 'rows', 'cellPadding', 'fit', 'minSize', 'font', 'size', 'lineHeight', 'headerRows', 'cell', 'paginate', 'repeatHeader', 'valign']),
     ...passColors(['stripe', 'border']),
     header: passColor('header', headerColors),
   },
