@@ -104,9 +104,11 @@ describe('layout flex — row', () => {
     expect(child(slide, 0, 1).frame.width).toBeCloseTo(360);
   });
 
-  it('with an explicit main-axis size, grow adds to that size (size is the basis)', () => {
+  it('flexGrow with an explicit main-axis size adds to that size (basis auto = the size)', () => {
+    const sized120 = rBox({ width: 120 });
+    const grown = { ...sized120, css: { ...sized120.css, flexGrow: 1 } };
     const { slide } = layout([
-      rBox({ direction: 'row', height: 10 }, [rBox({ width: 120, grow: 1 }), rBox({ grow: 1 })]),
+      rBox({ direction: 'row', height: 10 }, [grown, rBox({ grow: 1 })]),
     ]);
     expect(child(slide, 0, 0).frame.width).toBeCloseTo(420);
     expect(child(slide, 0, 1).frame.width).toBeCloseTo(300);

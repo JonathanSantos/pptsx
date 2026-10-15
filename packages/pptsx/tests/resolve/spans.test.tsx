@@ -75,8 +75,8 @@ describe('resolve — runs from Span/B/I', () => {
 
   it('inherits weight/italic/color from the Text', () => {
     const node = textNode(
-      <Text color="#FF0000" italic>
-        a<Span weight="bold">b</Span>
+      <Text color="#FF0000" fontStyle="italic">
+        a<Span fontWeight="bold">b</Span>
       </Text>,
     );
     expect(node.runs).toEqual([
@@ -98,8 +98,8 @@ describe('resolve — runs from Span/B/I', () => {
 
   it('a Span can turn off italic/bold inherited from the Text', () => {
     const node = textNode(
-      <Text weight="bold" italic>
-        a<Span weight="regular" italic={false}>b</Span>
+      <Text fontWeight="bold" fontStyle="italic">
+        a<Span fontWeight="regular" fontStyle="normal">b</Span>
       </Text>,
     );
     expect(node.runs).toEqual([run('a', { weight: 'bold', italic: true }), run('b')]);
@@ -131,7 +131,7 @@ describe('resolve — runs from Span/B/I', () => {
 
   it('a B inside a bold Text is a single run', () => {
     const node = textNode(
-      <Text weight="bold">
+      <Text fontWeight="bold">
         x<B>y</B>z
       </Text>,
     );
@@ -139,7 +139,7 @@ describe('resolve — runs from Span/B/I', () => {
   });
 
   it('a Text without Span is a single run with the Text style', () => {
-    expect(textNode(<Text weight="bold">Olá</Text>).runs).toEqual([run('Olá', { weight: 'bold' })]);
+    expect(textNode(<Text fontWeight="bold">Olá</Text>).runs).toEqual([run('Olá', { weight: 'bold' })]);
   });
 
   it('keeps "\\n" inside the runs (content still separates paragraphs)', () => {
@@ -176,7 +176,7 @@ describe('resolve — runs from Span/B/I', () => {
   // M11: `props` é a visão da engine derivada do css (padrões preenchidos), sem runs.
   it('props of the resolved Text are the engine view (no runs inside props)', () => {
     const node = textNode(
-      <Text size={20}>
+      <Text fontSize={20}>
         a<B>b</B>
       </Text>,
     );

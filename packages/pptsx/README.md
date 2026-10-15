@@ -656,7 +656,7 @@ const quarters = ['Q4', 'Q1', 'Q2', 'Q3'];
   <Text fontSize={26} fontWeight="bold">Gráficos nativos e editáveis</Text>
   <Box display="grid" gap={16} flex={1}
     gridTemplateColumns="repeat(3, minmax(0, 1fr))">
-    <Chart kind="bar" title="Receita (R$ mi)" showValues
+    <Chart kind="bar" title="Receita (R$ mi)" labels
       colors={['#2F6FED']}
       data={{ categories: quarters,
         series: [{ name: 'Receita', values: [38.2, 41.5, 45.9, 52.4] }] }} />
@@ -868,6 +868,7 @@ pptsx build <deck.tsx> [flags]
 pptsx init [dir] [--ds <pacote|caminho>] [--force] [--json]
 pptsx preview <deck.tsx> --serve [--port 4321] [--size 16x9,4x3,wide]
 pptsx lint <deck.tsx> [--fix] [--json] [--size 16x9,4x3]
+pptsx lint --from 0.x <pasta|arquivo> [--json]
 ```
 
 | flag | padrão | o que faz |
@@ -1012,9 +1013,9 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 
 `pptsx preview deck.tsx --serve` abre um servidor local (`http://127.0.0.1:4321/`) com os slides em SVG e os diagnósticos ao lado. Salvar o deck (ou um componente, tokens, a config) recarrega a página em menos de 1 s; clicar num diagnóstico destaca o nó no slide; o seletor troca entre 16:9, 4:3 e wide, e a caixa *debug* mostra contornos e estouros. Um erro de sintaxe ou de estrutura aparece no topo, sobre o último resultado bom.
 
-### Migração das props antigas
+### Migrando de 0.x
 
-As props de antes do CSS (`direction`, `grow`, `fill` do Box, `size`/`weight` do Text…) ainda funcionam, mas saem na 1.0. `pptsx lint deck.tsx` aponta cada uma com a troca (e também CSS sem de/para no PPTX, `lineHeight` alto para o Keynote, `1fr` solto em grid e cores fora do tema); `pptsx lint deck.tsx --fix` reescreve o arquivo do deck sem mudar o layout (`stroke` vira `outline`, que também não ocupa espaço) e avisa, com a linha, o que precisa de mão (valor calculado numa prop cujo valor muda, como `justify={j}`). O `--fix` usa a API do TypeScript 5/6 (`npm install -D typescript-api@npm:typescript@6` se o projeto estiver no TypeScript 7).
+Na 1.0 as props de antes do CSS (`direction`, `grow`, `fill` do Box, `size`/`weight` do Text, `showValues` do Chart…) foram removidas: o build para com a troca (`Prop "size" de <Text>: removida na 1.0; troque por fontSize`). `pptsx lint --from 0.x src/` reescreve todos os `.ts`/`.tsx` da pasta (deck, componentes, layouts) e `pptsx lint deck.tsx --fix` só o deck, sem mudar o layout (`stroke` vira `outline`, que também não ocupa espaço; `grow={0}` vira `flexGrow={0}`, não `flex={0}`). O que depende do valor (`justify={prop}`, `grow={expressão}`) fica, com aviso e linha. A tabela completa está no guia do agente (apêndice "Migrando de 0.x"). O codemod usa a API do TypeScript 5/6 (`npm install -D typescript-api@npm:typescript@6` se o projeto estiver no TypeScript 7). `pptsx lint deck.tsx` também aponta CSS sem de/para no PPTX, `lineHeight` alto para o Keynote, `1fr` solto em grid e cores fora do tema.
 
 ## Design systems em cima do pptsx
 

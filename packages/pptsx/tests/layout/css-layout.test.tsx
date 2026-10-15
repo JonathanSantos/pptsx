@@ -156,7 +156,7 @@ describe('flex', () => {
   it('legacy names (direction, align, justify) are aliases', () => {
     const slide = slideOf(
       <Slide>
-        <Box direction="row" justify="between" align="center" height={40}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" height={40}>
           <Box width={10} height={10} />
           <Box width={10} height={10} />
         </Box>

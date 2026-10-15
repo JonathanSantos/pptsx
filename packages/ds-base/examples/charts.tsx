@@ -25,7 +25,7 @@ export default defineDeck(() => (
         }}
         colors={[color.accent, color.muted]}
         legend
-        showValues
+        labels
         flex={1}
       />
     </ContentLayout>
@@ -53,7 +53,7 @@ export default defineDeck(() => (
           categories: ['Varejo', 'Crédito', 'Seguros', 'Outros'],
           series: [{ name: 'Receita nova', values: [4.0, 0.6, 0.7, 1.2] }],
         }}
-        showValues
+        labels
         flex={1}
       />
     </ContentLayout>

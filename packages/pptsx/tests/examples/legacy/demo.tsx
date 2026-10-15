@@ -72,8 +72,8 @@ export default defineDeck((ctx) => (
             kind="bar"
             data={revenue}
             colors={[color.accent]}
-            showValues
-            grow={1}
+            labels
+            flex={1}
           />
         }
       />
@@ -90,9 +90,9 @@ export default defineDeck((ctx) => (
             { label: 'NPS interno', value: '62', delta: '−4 pts vs Q2', trend: 'down' },
           ]}
         />
-        <Box direction="row" gap={space.tight + 4} maxWidth="80%">
-          <Shape kind="rect" width={4} fill={color.accent} shrink={0} />
-          <Text size={{ base: font.small + 2, tall: font.body - 2, wide: font.body - 2 }} color={color.ink} grow={1}>
+        <Box display="flex" gap={space.tight + 4} maxWidth="80%">
+          <Shape kind="rect" width={4} fill={color.accent} flexShrink={0} />
+          <Text fontSize={{ base: font.small + 2, tall: font.body - 2, wide: font.body - 2 }} color={color.ink} flex={1}>
             O NPS caiu na migração dos pipelines; um time de suporte dedicado às áreas usuárias começa
             em <B>novembro</B>.
           </Text>
@@ -109,7 +109,7 @@ export default defineDeck((ctx) => (
           { header: 'Δ', align: 'right' },
         ]}
         rows={revenueByArea}
-        size={{ base: font.small, tall: font.small + 2, wide: font.small + 2 }}
+        fontSize={{ base: font.small, tall: font.small + 2, wide: font.small + 2 }}
         color={color.ink}
         header={{ fill: color.brand, color: color.white }}
         stripe={color.surface}

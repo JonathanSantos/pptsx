@@ -79,9 +79,9 @@ const env = {
 };
 
 const centered = (
-  <Slide align="center" justify="center" gap={16}>
-    <Text size={60} weight="bold">Obrigado</Text>
-    <Text size={24}>Até a próxima</Text>
+  <Slide alignItems="center" justifyContent="center" gap={16}>
+    <Text fontSize={60} fontWeight="bold">Obrigado</Text>
+    <Text fontSize={24}>Até a próxima</Text>
   </Slide>
 );
 

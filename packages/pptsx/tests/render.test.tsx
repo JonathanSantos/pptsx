@@ -14,23 +14,23 @@ import { expectFrame } from './helpers/positioned.ts';
 
 /** Integração: deck JSX pequeno → render() em dois tamanhos. */
 const Title = (props: { readonly children: string }) => (
-  <Text size={32} weight="bold">
+  <Text fontSize={32} fontWeight="bold">
     {props.children}
   </Text>
 );
 
 const deck = defineDeck((ctx: DeckContext) => (
   <Deck>
-    <Slide padding={36} background="#FFFFFF">
+    <Slide padding={36} backgroundColor="#FFFFFF">
       <Title>Título com acentuação</Title>
-      <Text size={18}>{`Tamanho ${ctx.name}: texto que pode quebrar em mais de uma linha dependendo da largura.`}</Text>
+      <Text fontSize={18}>{`Tamanho ${ctx.name}: texto que pode quebrar em mais de uma linha dependendo da largura.`}</Text>
     </Slide>
-    <Slide padding={36} direction="row" gap={20}>
-      <Box grow={1} fill="#EEEEEE" padding={10}>
+    <Slide padding={36} flexDirection="row" gap={20}>
+      <Box flex={1} backgroundColor="#EEEEEE" padding={10}>
         <Text>Coluna A</Text>
       </Box>
-      <Box grow={1} fill="#DDDDDD" padding={10}>
-        <Text italic>Coluna B</Text>
+      <Box flex={1} backgroundColor="#DDDDDD" padding={10}>
+        <Text fontStyle="italic">Coluna B</Text>
       </Box>
     </Slide>
   </Deck>
@@ -137,7 +137,7 @@ const urlDeck = defineDeck(() => (
   <Deck>
     <Slide padding={36}>
       <Box width={110}>
-        <Text size={18}>{URL_CONTENT}</Text>
+        <Text fontSize={18}>{URL_CONTENT}</Text>
       </Box>
     </Slide>
   </Deck>
@@ -196,7 +196,7 @@ const fontDeck = (family: string, weight: 'regular' | 'bold' = 'regular') =>
     <Deck>
       <Slide padding={36}>
         <Text>Arial padrão</Text>
-        <Text font={family} weight={weight}>
+        <Text fontFamily={family} fontWeight={weight}>
           Texto na outra fonte
         </Text>
       </Slide>
@@ -297,7 +297,7 @@ describe('render — rich text end to end (M8)', () => {
   const richDeck = defineDeck(() => (
     <Deck>
       <Slide padding={36}>
-        <Text size={20}>
+        <Text fontSize={20}>
           Receita <B>subiu</B> 14%
         </Text>
       </Slide>

@@ -94,7 +94,7 @@ describe('box decoration', () => {
   it('legacy stroke stays a single shape on the frame', () => {
     const slide = slideOf(
       <Slide>
-        <Box width={100} height={50} fill="#EEEEEE" stroke="#000000" strokeWidth={2} radius={6} />
+        <Box width={100} height={50} backgroundColor="#EEEEEE" outline="2px solid #000000" borderRadius={6} />
       </Slide>,
     );
     const { under } = decorationOf(slide.children[0]!, itemOf(slide, 'Slide > Box'));

@@ -15,11 +15,11 @@ const paths = (nodes: readonly ResolvedNode[]): string[] =>
 const responsive = defineDeck((ctx: DeckContext) => (
   <Deck>
     <Slide padding={30}>
-      <Box direction={ctx.aspect < 1.5 ? 'column' : 'row'} gap={16} grow={1}>
+      <Box display="flex" flexDirection={ctx.aspect < 1.5 ? 'column' : 'row'} gap={16} flex={1}>
         <Text>Esquerda</Text>
         <Text>Direita</Text>
       </Box>
-      {ctx.aspect < 1.5 ? <Text size={12}>Rodapé só no 4:3</Text> : null}
+      {ctx.aspect < 1.5 ? <Text fontSize={12}>Rodapé só no 4:3</Text> : null}
     </Slide>
   </Deck>
 ));
@@ -54,7 +54,7 @@ describe('ctx — scale', () => {
     const deck = defineDeck((ctx: DeckContext) => (
       <Deck>
         <Slide>
-          <Text size={Math.round(20 * ctx.scale)}>Escala</Text>
+          <Text fontSize={Math.round(20 * ctx.scale)}>Escala</Text>
         </Slide>
       </Deck>
     ));
@@ -109,7 +109,7 @@ describe('RenderOptions.lang', () => {
     <Deck>
       <Slide padding={30}>
         <Text>Olá</Text>
-        <Text weight="bold">Mundo</Text>
+        <Text fontWeight="bold">Mundo</Text>
       </Slide>
     </Deck>
   ));

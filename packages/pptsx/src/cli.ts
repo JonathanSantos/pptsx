@@ -5,6 +5,7 @@ import type { AddressInfo } from 'node:net';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { INIT_USAGE, parseInitCli, runInit } from './cli/init.ts';
+import { MIGRATION_SOURCES, migrateTree, migrationSummaryOf } from './cli/migrate.ts';
 import { defaultImportModule, type ImportModule, type ImportOptions } from './cli/loader.ts';
 import { assertDeckTsconfig } from './cli/tsconfig.ts';
 import { createPreviewServer } from './cli/preview/server.ts';
@@ -24,6 +25,7 @@ export const USAGE = [
   `     ${INIT_USAGE.replace(/^uso: /, '')}`,
   '     pptsx preview <deck.tsx> --serve [--port 4321] [--size 16x9,4x3,wide] [--lang pt-BR] [--line-breaks forced|auto]',
   '     pptsx lint <deck.tsx> [--fix] [--json] [--size 16x9,4x3]',
+  '     pptsx lint --from 0.x <pasta|arquivo> [--json]   (migra as props da 0.x em todos os .ts/.tsx)',
 ].join('\n');
 
 /** Dependências de IO trocáveis (testes): observação de arquivos e o sinal que encerra o --watch. */
@@ -489,17 +491,34 @@ export interface LintArgs {
   readonly fix: boolean;
   readonly json: boolean;
   readonly sizes?: readonly SizeSpec[];
+  /** M18-6: migração de uma pasta inteira (`--from 0.x`); `deckPath` é a pasta ou o arquivo. */
+  readonly from?: (typeof MIGRATION_SOURCES)[number];
 }
 
 export const parseLintCli = (argv: readonly string[], cwd: string = process.cwd()): LintArgs => {
   const { values, positionals } = parseArgs({
     args: [...argv],
     allowPositionals: true,
-    options: { fix: { type: 'boolean', default: false }, json: { type: 'boolean', default: false }, size: { type: 'string' } },
+    options: { fix: { type: 'boolean', default: false }, json: { type: 'boolean', default: false }, size: { type: 'string' }, from: { type: 'string' } },
   });
   const [, deckPath] = positionals;
   if (!deckPath) throw new Error(USAGE);
-  return { deckPath: resolve(cwd, deckPath), fix: values.fix, json: values.json, sizes: values.size === undefined ? undefined : parseSizeList(values.size) };
+  const from = values.from;
+  if (from !== undefined && !(MIGRATION_SOURCES as readonly string[]).includes(from)) throw new Error(`--from ${from}: só ${MIGRATION_SOURCES.join(', ')} (pptsx lint --from 0.x <pasta>)`);
+  return {
+    deckPath: resolve(cwd, deckPath),
+    fix: values.fix,
+    json: values.json,
+    sizes: values.size === undefined ? undefined : parseSizeList(values.size),
+    ...(from === undefined ? {} : { from: from as (typeof MIGRATION_SOURCES)[number] }),
+  };
+};
+
+const runMigration = async (args: LintArgs): Promise<number> => {
+  if (!existsSync(args.deckPath)) throw new Error(`não encontrado: ${args.deckPath}`);
+  const files = await migrateTree(args.deckPath);
+  console.log(args.json ? JSON.stringify({ migrated: files }, null, 2) : migrationSummaryOf(args.deckPath, files));
+  return 0;
 };
 
 interface FixReport {
@@ -522,6 +541,7 @@ const fixLinesOf = (fix: FixReport): readonly string[] => [
 ];
 
 const runLint = async (args: LintArgs, cwd: string, deps: CliDeps): Promise<number> => {
+  if (args.from !== undefined) return runMigration(args);
   if (!existsSync(args.deckPath)) throw new Error(`deck não encontrado: ${args.deckPath}`);
   const fix = args.fix ? await fixDeckFile(args.deckPath) : undefined;
   const importModule = deps.importModule ?? defaultImportModule;

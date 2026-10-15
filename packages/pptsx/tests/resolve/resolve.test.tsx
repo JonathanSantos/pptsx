@@ -42,15 +42,15 @@ const expectResolveError = (root: SlideElement): ResolveError => {
 
 describe('resolveDeck — full tree', () => {
   const Title = (props: { text: string }) => (
-    <Text size={40} weight="bold">
+    <Text fontSize={40} fontWeight="bold">
       {props.text}
     </Text>
   );
   const CoverLayout = (props: { title: string; subtitle: string }) => (
-    <Slide background="#112233" notes="speaker notes">
-      <Box position="absolute" left={10} top={20} width={300} height={100} fill="#ffffff">
+    <Slide backgroundColor="#112233" notes="speaker notes">
+      <Box position="absolute" left={10} top={20} width={300} height={100} backgroundColor="#ffffff">
         <Title text={props.title} />
-        <Text size={20}>{props.subtitle}</Text>
+        <Text fontSize={20}>{props.subtitle}</Text>
       </Box>
     </Slide>
   );
@@ -139,7 +139,7 @@ describe('resolveDeck — expansion', () => {
     let received: unknown;
     const Wrapper = (props: { color: string; children?: Child }) => {
       received = props;
-      return <Box fill={props.color}>{props.children}</Box>;
+      return <Box backgroundColor={props.color}>{props.children}</Box>;
     };
     const resolved = resolveDeck(
       <Deck>
@@ -316,9 +316,9 @@ describe('resolveDeck — props', () => {
     const slide = firstSlide(
       resolveDeck(
         <Deck>
-          <Slide direction="row" gap={4}>
-            <Box padding={8} fill="#000000">
-              <Text size={12}>x</Text>
+          <Slide flexDirection="row" gap={4}>
+            <Box padding={8} backgroundColor="#000000">
+              <Text fontSize={12}>x</Text>
             </Box>
           </Slide>
         </Deck>,

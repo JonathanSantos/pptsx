@@ -59,18 +59,18 @@ export function KpiCard({ label, value, delta, trend, sentiment, size = 'md', in
   const metric = (key: keyof KpiMetrics): Responsive<number> => mapResponsive(size, (k) => SIZES[k][key]);
   const s = { padding: metric('padding'), gap: metric('gap'), label: metric('label'), value: metric('value'), minValue: metric('minValue') };
   const deltaColor = SENTIMENT_COLOR[sentiment ?? defaultSentiment(trend)];
-  const valueText = <Text size={s.value} weight="bold" color={color.ink} minSize={s.minValue}>{value}</Text>;
+  const valueText = <Text fontSize={s.value} fontWeight="bold" color={color.ink} minSize={s.minValue}>{value}</Text>;
   const deltaText = delta ? (
-    <Text size={s.label} weight="bold" color={deltaColor}>{trendMark(trend) + delta}</Text>
+    <Text fontSize={s.label} fontWeight="bold" color={deltaColor}>{trendMark(trend) + delta}</Text>
   ) : null;
   // baseline: a 1ª linha da variação pequena senta na mesma linha de base do valor grande,
   // sem calcular deslocamento a partir dos tamanhos (que mudam quando o fit encolhe o valor).
   const body = inlineDelta && deltaText ? (
-    <Box direction="row" align="baseline" gap={s.gap}>{valueText}{deltaText}</Box>
+    <Box display="flex" alignItems="baseline" gap={s.gap}>{valueText}{deltaText}</Box>
   ) : [valueText, deltaText];
   return (
-    <Box grow={1} fill={color.surface} radius={8} padding={s.padding} gap={s.gap}>
-      <Text size={s.label} color={color.muted}>{label}</Text>
+    <Box flex={1} backgroundColor={color.surface} borderRadius={8} padding={s.padding} gap={s.gap}>
+      <Text fontSize={s.label} color={color.muted}>{label}</Text>
       {body}
     </Box>
   );

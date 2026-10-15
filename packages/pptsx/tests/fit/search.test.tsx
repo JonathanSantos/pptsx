@@ -30,7 +30,7 @@ describe('binary search — 44 pt title with minSize 20 in a 30 pt box', () => {
   const slide = () => (
     <Slide padding={40}>
       <Box height={30}>
-        <Text size={44} minSize={20}>
+        <Text fontSize={44} minSize={20}>
           {TITLE}
         </Text>
       </Box>
@@ -70,7 +70,7 @@ describe('binary search — fits at an intermediate size', () => {
   const slide = () => (
     <Slide padding={40}>
       <Box height={height()}>
-        <Text size={44} minSize={20}>
+        <Text fontSize={44} minSize={20}>
           Título
         </Text>
       </Box>
@@ -104,10 +104,10 @@ describe('binary search — fits at an intermediate size', () => {
 describe('binary search — a scope moves down together by the same delta', () => {
   const Card = ({ title, body }: { title: number; body: number }) => (
     <Box height={120}>
-      <Text size={title} fit="shrink">
+      <Text fontSize={title} fit="shrink">
         Resultado do trimestre
       </Text>
-      <Text size={body} fit="shrink">
+      <Text fontSize={body} fit="shrink">
         {'Receita cresceu acima da meta em todas as regiões, com margem estável e custo controlado. '.repeat(3)}
       </Text>
     </Box>
@@ -148,7 +148,7 @@ describe('binary search — a wide word goes straight to the size where it fits'
   const oneWord = (props: { minSize?: number }) => (
     <Slide>
       <Box width={COLUMN}>
-        <Text size={24} {...props}>
+        <Text fontSize={24} {...props}>
           {WORD}
         </Text>
       </Box>

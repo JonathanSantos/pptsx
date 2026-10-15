@@ -37,11 +37,11 @@ export default defineDeck(() => (
     </ContentLayout>
 
     <ContentLayout title="Linha do tempo">
-      <Box direction="row" gap={24}>
+      <Box display="flex" gap={24}>
         {['Planejamento', 'Migração', 'Validação', 'Desligamento'].map((phase, i) => (
-          <Box width={200} shrink={0} padding={16} gap={6} fill={color.surface} radius={8}>
-            <Text size={font.small} weight="bold" color={color.accent}>Etapa {i + 1}</Text>
-            <Text size={font.h2} weight="bold" color={color.ink} fit="error">{phase}</Text>
+          <Box width={200} flexShrink={0} padding={16} gap={6} backgroundColor={color.surface} borderRadius={8}>
+            <Text fontSize={font.small} fontWeight="bold" color={color.accent}>Etapa {i + 1}</Text>
+            <Text fontSize={font.h2} fontWeight="bold" color={color.ink} fit="error">{phase}</Text>
           </Box>
         ))}
       </Box>

@@ -183,7 +183,7 @@ export default defineDeck((ctx: DeckContext) => (
           </Box>
           <Box backgroundColor={C.branco} borderRadius={10} padding={12} boxShadow="0 2px 8px rgba(11,31,51,0.12)">
             <Chart
-              kind="bar" flex={1} size={9} color={C.noite} title="Perdas por zona (%)" showValues
+              kind="bar" flex={1} size={9} color={C.noite} title="Perdas por zona (%)" labels
               colors={[C.alerta]}
               data={{ categories: ['Norte', 'Sul', 'Oeste', 'Centro'], series: [{ name: 'Perdas', values: [27.8, 38.6, 29.1, 30.2] }] }}
             />

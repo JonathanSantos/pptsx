@@ -24,15 +24,15 @@ export function CoverLayout({ title, subtitle, caption, ctx }: CoverLayoutProps)
     <Slide background={color.brand}>
       <Shape kind="ellipse" position="absolute" right={-diameter * 0.25} top={-diameter * 0.35}
         width={diameter} height={diameter} fill={color.brandDark} />
-      <Box grow={1} justify={caption ? 'between' : 'end'} padding={{ top: space.page * 1.25, bottom: space.page * 1.5, left: space.page * 1.5, right: space.page * 1.5 }}>
+      <Box flex={1} justifyContent={caption ? "space-between" : "flex-end"} padding={{ top: space.page * 1.25, bottom: space.page * 1.5, left: space.page * 1.5, right: space.page * 1.5 }}>
         {caption ? (
-          <Text size={font.small} weight="bold" color={color.accentSoft} maxWidth="55%">{caption}</Text>
+          <Text fontSize={font.small} fontWeight="bold" color={color.accentSoft} maxWidth="55%">{caption}</Text>
         ) : null}
         <Box gap={space.gap}>
-          <Shape kind="rect" width={56} height={6} fill={color.accent} shrink={0} />
-          <Text size={font.display} weight="bold" color={color.white} fit="shrink" minSize={32}>{title}</Text>
+          <Shape kind="rect" width={56} height={6} fill={color.accent} flexShrink={0} />
+          <Text fontSize={font.display} fontWeight="bold" color={color.white} fit="shrink" minSize={32}>{title}</Text>
           {subtitle ? (
-            <Text size={font.h2} color={color.accentSoft} fit="truncate" maxLines={2}>{subtitle}</Text>
+            <Text fontSize={font.h2} color={color.accentSoft} fit="truncate" maxLines={2}>{subtitle}</Text>
           ) : null}
         </Box>
       </Box>

@@ -21,18 +21,18 @@ const { color, font, space } = tokens;
 export function ClosingLayout({ title, subtitle, contact, ctx }: ClosingLayoutProps) {
   const diameter = circleDiameter(ctx, 0.75);
   return (
-    <Slide background={color.brand} padding={space.page * 1.5} justify="center" gap={space.gap}>
+    <Slide background={color.brand} padding={space.page * 1.5} justifyContent="center" gap={space.gap}>
       <Shape kind="ellipse" position="absolute" left={-diameter * 0.4} bottom={-diameter * 0.4}
         width={diameter} height={diameter} fill={color.brandDark} />
-      <Text size={font.display} weight="bold" color={color.white} align="center" minSize={32}>{title}</Text>
-      <Shape kind="rect" width={56} height={6} fill={color.accent} alignSelf="center" shrink={0} />
+      <Text fontSize={font.display} fontWeight="bold" color={color.white} textAlign="center" minSize={32}>{title}</Text>
+      <Shape kind="rect" width={56} height={6} fill={color.accent} alignSelf="center" flexShrink={0} />
       {subtitle ? (
-        <Text size={font.h2} color={color.accentSoft} align="center" fit="truncate" maxLines={2}
+        <Text fontSize={font.h2} color={color.accentSoft} textAlign="center" fit="truncate" maxLines={2}
           width="80%" alignSelf="center">{subtitle}</Text>
       ) : null}
       {contact ? (
         <Box padding={{ top: space.tight }}>
-          <Text size={font.small} color={color.accentSoft} align="center">{contact}</Text>
+          <Text fontSize={font.small} color={color.accentSoft} textAlign="center">{contact}</Text>
         </Box>
       ) : null}
     </Slide>

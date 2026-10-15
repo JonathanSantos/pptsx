@@ -19,17 +19,17 @@ const PHASES = ['Planejamento', 'Migração', 'Validação', 'Desligamento'] as 
 // Marco da linha do tempo: círculo numerado + nome; a linha que liga os
 // círculos é decoração absoluta no contêiner (Timeline).
 const PhaseStep = ({ step, name }: { step: number; name: string }) => (
-  <Box grow={1} gap={8} align="center">
-    <Box width={44} height={44} shrink={0} radius={22} fill={color.accent} justify="center" align="center">
-      <Text size={font.body} weight="bold" color={color.white} align="center">{step}</Text>
+  <Box flex={1} gap={8} alignItems="center">
+    <Box width={44} height={44} flexShrink={0} borderRadius={22} backgroundColor={color.accent} justifyContent="center" alignItems="center">
+      <Text fontSize={font.body} fontWeight="bold" color={color.white} textAlign="center">{step}</Text>
     </Box>
-    <Text size={font.small} weight="bold" color={color.accent} align="center">Etapa {step}</Text>
-    <Text size={font.body} weight="bold" color={color.ink} align="center">{name}</Text>
+    <Text fontSize={font.small} fontWeight="bold" color={color.accent} textAlign="center">Etapa {step}</Text>
+    <Text fontSize={font.body} fontWeight="bold" color={color.ink} textAlign="center">{name}</Text>
   </Box>
 );
 
 const Timeline = ({ phases }: { phases: readonly string[] }) => (
-  <Box direction="row" gap={space.tight}>
+  <Box display="flex" gap={space.tight}>
     <Shape kind="rect" position="absolute" left="12%" top={21} width="76%" height={2} fill={color.accent} />
     {phases.map((phase, i) => (
       <PhaseStep step={i + 1} name={phase} />

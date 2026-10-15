@@ -30,9 +30,9 @@ describe('layout — align="baseline" in a row', () => {
   it('Shape 8×8 + Text 24 pt: the shape bottom sits on the text baseline', () => {
     const slide = rowOf(
       <Slide padding={40}>
-        <Box direction="row" align="baseline" gap={6}>
+        <Box display="flex" alignItems="baseline" gap={6}>
           <Shape kind="ellipse" width={8} height={8} fill="#000000" />
-          <Text size={24}>Receita</Text>
+          <Text fontSize={24}>Receita</Text>
         </Box>
       </Slide>,
     );
@@ -47,9 +47,9 @@ describe('layout — align="baseline" in a row', () => {
   it('alignSelf="baseline" on the children does the same', () => {
     const slide = rowOf(
       <Slide padding={40}>
-        <Box direction="row" align="start" gap={6}>
+        <Box display="flex" alignItems="flex-start" gap={6}>
           <Shape kind="rect" width={8} height={8} alignSelf="baseline" />
-          <Text size={24} alignSelf="baseline">
+          <Text fontSize={24} alignSelf="baseline">
             Receita
           </Text>
         </Box>
@@ -61,9 +61,9 @@ describe('layout — align="baseline" in a row', () => {
   it('two Texts of different sizes share the baseline', () => {
     const slide = rowOf(
       <Slide padding={40}>
-        <Box direction="row" align="baseline" gap={6}>
-          <Text size={12}>pequeno</Text>
-          <Text size={36}>Grande</Text>
+        <Box display="flex" alignItems="baseline" gap={6}>
+          <Text fontSize={12}>pequeno</Text>
+          <Text fontSize={36}>Grande</Text>
         </Box>
       </Slide>,
     );
@@ -73,9 +73,9 @@ describe('layout — align="baseline" in a row', () => {
   it('a multi-line Text aligns by its first line', () => {
     const slide = rowOf(
       <Slide padding={40}>
-        <Box direction="row" align="baseline" gap={6}>
+        <Box display="flex" alignItems="baseline" gap={6}>
           <Shape kind="ellipse" width={8} height={8} />
-          <Text size={24} width={120}>
+          <Text fontSize={24} width={120}>
             uma frase que quebra em várias linhas
           </Text>
         </Box>
@@ -89,11 +89,11 @@ describe('layout — align="baseline" in a row', () => {
   it('a Box with a Text inside aligns by the baseline of its first child', () => {
     const slide = rowOf(
       <Slide padding={40}>
-        <Box direction="row" align="baseline" gap={6}>
+        <Box display="flex" alignItems="baseline" gap={6}>
           <Shape kind="rect" width={8} height={8} />
           <Box padding={{ top: 10 }}>
-            <Text size={24}>Dentro</Text>
-            <Text size={12}>segunda</Text>
+            <Text fontSize={24}>Dentro</Text>
+            <Text fontSize={12}>segunda</Text>
           </Box>
         </Box>
       </Slide>,
@@ -105,9 +105,9 @@ describe('layout — align="baseline" in a row', () => {
   it('an Image aligns by its bottom edge', () => {
     const slide = rowOf(
       <Slide padding={40}>
-        <Box direction="row" align="baseline" gap={6}>
+        <Box display="flex" alignItems="baseline" gap={6}>
           <Image src="x.png" width={40} height={20} />
-          <Text size={24}>Legenda</Text>
+          <Text fontSize={24}>Legenda</Text>
         </Box>
       </Slide>,
     );
@@ -117,9 +117,9 @@ describe('layout — align="baseline" in a row', () => {
   it('keeps the Text measured as usual (frame height = text height)', () => {
     const slide = rowOf(
       <Slide padding={40}>
-        <Box direction="row" align="baseline">
+        <Box display="flex" alignItems="baseline">
           <Shape kind="rect" width={8} height={8} />
-          <Text size={24}>Receita</Text>
+          <Text fontSize={24}>Receita</Text>
         </Box>
       </Slide>,
     );
@@ -131,9 +131,9 @@ describe('layout — align="baseline" in a row', () => {
 describe('layout — align="baseline" in a column behaves as start', () => {
   const column = (align: 'baseline' | 'start') => (
     <Slide padding={40}>
-      <Box direction="column" align={align}>
+      <Box flexDirection="column" alignItems={align === 'baseline' ? 'baseline' : 'flex-start'}>
         <Shape kind="rect" width={8} height={8} />
-        <Text size={24}>Receita</Text>
+        <Text fontSize={24}>Receita</Text>
       </Box>
     </Slide>
   );
@@ -146,8 +146,8 @@ describe('layout — align="baseline" in a column behaves as start', () => {
   it('alignSelf="baseline" in a column is start too', () => {
     const slide = rowOf(
       <Slide padding={40}>
-        <Box direction="column">
-          <Text size={24} alignSelf="baseline">
+        <Box flexDirection="column">
+          <Text fontSize={24} alignSelf="baseline">
             curto
           </Text>
         </Box>
@@ -182,9 +182,9 @@ describe('layout — baseline row keeps the wrapped Text height (M8)', () => {
   it('Shape shrink 0 + Text grow 1: Text takes the rest of the row with 2 lines of height', () => {
     const slide = (
       <Slide padding={40}>
-        <Box direction="row" align="baseline" gap={GAP} width={300}>
-          <Shape kind="ellipse" width={8} height={8} shrink={0} />
-          <Text size={20} grow={1}>
+        <Box display="flex" alignItems="baseline" gap={GAP} width={300}>
+          <Shape kind="ellipse" width={8} height={8} flexShrink={0} />
+          <Text fontSize={20} flex={1}>
             {PHRASE}
           </Text>
         </Box>
@@ -199,9 +199,9 @@ describe('layout — baseline row keeps the wrapped Text height (M8)', () => {
   it('variant: Text with width={300}', () => {
     expectPreserved(
       <Slide padding={40}>
-        <Box direction="row" align="baseline" gap={GAP} width={500}>
-          <Shape kind="ellipse" width={8} height={8} shrink={0} />
-          <Text size={20} width={300}>
+        <Box display="flex" alignItems="baseline" gap={GAP} width={500}>
+          <Shape kind="ellipse" width={8} height={8} flexShrink={0} />
+          <Text fontSize={20} width={300}>
             {PHRASE}
           </Text>
         </Box>
@@ -213,12 +213,12 @@ describe('layout — baseline row keeps the wrapped Text height (M8)', () => {
   it('variant: two Texts with grow={1}', () => {
     expectPreserved(
       <Slide padding={40}>
-        <Box direction="row" align="baseline" gap={GAP} width={500}>
-          <Shape kind="ellipse" width={8} height={8} shrink={0} />
-          <Text size={20} grow={1}>
+        <Box display="flex" alignItems="baseline" gap={GAP} width={500}>
+          <Shape kind="ellipse" width={8} height={8} flexShrink={0} />
+          <Text fontSize={20} flex={1}>
             {PHRASE}
           </Text>
-          <Text size={20} grow={1}>
+          <Text fontSize={20} flex={1}>
             {PHRASE}
           </Text>
         </Box>
@@ -233,10 +233,10 @@ describe('layout — baseline row keeps the wrapped Text height (M8)', () => {
   it('variant: <Box grow={1}><Text/></Box>', () => {
     expectPreserved(
       <Slide padding={40}>
-        <Box direction="row" align="baseline" gap={GAP} width={300}>
-          <Shape kind="ellipse" width={8} height={8} shrink={0} />
-          <Box grow={1}>
-            <Text size={20}>{PHRASE}</Text>
+        <Box display="flex" alignItems="baseline" gap={GAP} width={300}>
+          <Shape kind="ellipse" width={8} height={8} flexShrink={0} />
+          <Box flex={1}>
+            <Text fontSize={20}>{PHRASE}</Text>
           </Box>
         </Box>
       </Slide>,

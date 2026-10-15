@@ -33,11 +33,11 @@ export const SlideNumber = definePrimitive('slideNumber');
 
 // Componentes (não primitivas): props do autor vêm depois, então vencem o padrão.
 export function B(props: AuthorPropsMap['span']): SlideElement {
-  return jsx(Span, { weight: 'bold', ...props });
+  return jsx(Span, { fontWeight: 'bold', ...props });
 }
 
 export function I(props: AuthorPropsMap['span']): SlideElement {
-  return jsx(Span, { italic: true, ...props });
+  return jsx(Span, { fontStyle: 'italic', ...props });
 }
 
 /** M13: sobrescrito (m², nota¹). */

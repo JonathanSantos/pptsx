@@ -70,7 +70,7 @@ export default defineDeck((ctx) => (
             kind="bar"
             data={revenue}
             colors={[color.accent]}
-            showValues
+            labels
           />
         }
       />

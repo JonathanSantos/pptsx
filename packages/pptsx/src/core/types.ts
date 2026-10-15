@@ -534,9 +534,7 @@ export interface ChartProps extends FlexItemProps {
   readonly colors?: readonly Color[];
   /** Padrão: `series.length > 1` (pie/doughnut: true). M14: objeto escolhe a posição (padrão 'bottom'). */
   readonly legend?: boolean | { readonly position: ChartLegendPosition };
-  /** Rótulos de valor sobre as barras/pontos/fatias; padrão false (alias antigo de `labels`). */
-  readonly showValues?: boolean;
-  /** M14: rótulos de valor com formato e posição; vence `showValues`. */
+  /** M14: rótulos de valor sobre as barras/pontos/fatias (true, ou formato e posição); padrão false. */
   readonly labels?: boolean | ChartLabels;
   /** M14: eixo de categorias (no barH, o vertical), eixo de valores e o secundário (combo). */
   readonly xAxis?: ChartAxis;
@@ -700,11 +698,10 @@ export type CssAlignContent = CssJustify | 'stretch';
 export type CssPlace = 'start' | 'center' | 'end' | 'stretch';
 
 /**
- * De onde vem o flex-basis: 'author' (flexBasis/flex 'a b c'), 'flex' (`flex: n` → 0, salvo
- * Text/Table em column, que emula o min-height:auto do browser) ou 'grow' (açúcar antigo
- * `grow={n}`: a regra da engine, basis 0 só sem tamanho no eixo principal).
+ * De onde vem o flex-basis: 'author' (flexBasis/flex 'a b c') ou 'flex' (`flex: n` → 0, salvo
+ * Text/Table em column, que emula o min-height:auto do browser).
  */
-export type BasisSource = 'none' | 'author' | 'flex' | 'grow';
+export type BasisSource = 'none' | 'author' | 'flex';
 
 export interface TextDecoration {
   readonly underline: boolean;
@@ -827,7 +824,7 @@ export interface PrimitivePropsMap {
 
 /**
  * M11: o que o AUTOR escreve no JSX — CSS em camelCase (ver core/css-props.ts), mais as props da
- * engine (fit, minSize, src, data…) e os nomes antigos como alias. Toda prop aceita Responsive<X>.
+ * engine (fit, minSize, src, data…). Toda prop aceita Responsive<X>.
  */
 export interface AuthorPropsMap {
   readonly deck: DeckProps;

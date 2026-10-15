@@ -40,11 +40,11 @@ export function Bullets({ items, size = font.body, gap, paginate = false }: Bull
   return (
     <Box gap={gap ?? mapResponsive(size, (s) => s * 0.7)} paginate={paginate}>
       {items.map((item) => (
-        <Box direction="row" gap={space.tight + 4} align="start">
-          <Box padding={markerPadding} shrink={0}>
+        <Box display="flex" gap={space.tight + 4} alignItems="flex-start">
+          <Box padding={markerPadding} flexShrink={0}>
             <Shape kind="ellipse" width={8} height={8} fill={color.accent} />
           </Box>
-          <Text size={size} minSize={14} grow={1} color={color.ink}>{item}</Text>
+          <Text fontSize={size} minSize={14} flex={1} color={color.ink}>{item}</Text>
         </Box>
       ))}
     </Box>

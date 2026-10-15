@@ -42,7 +42,7 @@ const item = (i: number, lines = 2) => (
 const listSlide = (lineCounts: readonly number[], extra?: SlideElement) => (
   <Slide padding={24} gap={20} notes="Notas do apresentador">
     <Text>Título da lista</Text>
-    <Box paginate grow={1} gap={20}>
+    <Box paginate flex={1} gap={20}>
       <Shape kind="rect" position="absolute" left={0} top={0} width={4} height="100%" fill="#cccccc" />
       {lineCounts.map((lines, i) => item(i, lines))}
     </Box>
@@ -180,12 +180,12 @@ describe('fitDeck — texts inside P do not shrink while paginating', () => {
   const slide = (count: number, paginate = true) => (
     <Slide padding={24} gap={16}>
       <Box height={44}>
-        <Text size={40}>{LONG_TITLE}</Text>
+        <Text fontSize={40}>{LONG_TITLE}</Text>
       </Box>
-      <Box paginate={paginate} grow={1} gap={12}>
+      <Box paginate={paginate} flex={1} gap={12}>
         {Array.from({ length: count }, (_, i) => (
           <Box>
-            <Text size={20}>{`${i + 1}. ${LONG_ITEM}`}</Text>
+            <Text fontSize={20}>{`${i + 1}. ${LONG_ITEM}`}</Text>
           </Box>
         ))}
       </Box>
@@ -399,11 +399,11 @@ describe('render — paginated slide end to end', () => {
         <Text>Capa</Text>
       </Slide>
       <Slide padding={24} gap={16} notes="Notas da lista">
-        <Text size={32}>Lista longa</Text>
-        <Box paginate grow={1} gap={12}>
+        <Text fontSize={32}>Lista longa</Text>
+        <Box paginate flex={1} gap={12}>
           {Array.from({ length: 12 }, (_, i) => (
             <Box>
-              <Text size={20}>{`${i + 1}. ${ITEM}`}</Text>
+              <Text fontSize={20}>{`${i + 1}. ${ITEM}`}</Text>
             </Box>
           ))}
         </Box>

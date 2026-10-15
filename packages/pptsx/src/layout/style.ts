@@ -5,7 +5,7 @@ import {
   PositionType,
   Wrap,
 } from 'yoga-layout';
-import { DEFAULTS, PT_PER_PX } from '../core/defaults.ts';
+import { PT_PER_PX } from '../core/defaults.ts';
 import type {
   CssAlign,
   CssAlignContent,
@@ -143,7 +143,6 @@ export const toContainerStyle = (css: CssStyle): YogaStyle => {
   };
 };
 
-const MAIN_SIZE: Readonly<Record<FlexDirection, 'width' | 'height'>> = { row: 'width', column: 'height' };
 
 /**
  * flex-basis conforme a origem (ver BasisSource em types.ts). Text/Table numa column não
@@ -159,9 +158,6 @@ const flexBasisOf = (css: CssStyle, parent: ParentLayout, contentLeaf: boolean):
       return css.flexBasis;
     case 'flex':
       return contentInColumn ? undefined : css.flexBasis;
-    case 'grow':
-      if (css.flexGrow <= 0 || css[MAIN_SIZE[parent.direction]] !== undefined || contentInColumn) return undefined;
-      return DEFAULTS.item.growBasis;
   }
 };
 

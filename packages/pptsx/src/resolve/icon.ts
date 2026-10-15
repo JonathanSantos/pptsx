@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolveAssetPath } from '../core/assets.ts';
 import { DEFAULTS } from '../core/defaults.ts';
 import type {
-  PrimitiveKind, IconContent, IconProps, Rect } from '../core/types.ts';
+  IconContent, IconProps, Rect } from '../core/types.ts';
 import { ResolveError } from './errors.ts';
 import { assertOneOf } from './shape.ts';
 import { readIcon } from './svg-icon.ts';
@@ -15,8 +15,6 @@ import { readIcon } from './svg-icon.ts';
 export interface ResolveEnv {
   /** Conteúdo (texto) de um asset do deck, ex.: o SVG de um Icon. */
   readonly readAsset: (src: string) => string;
-  /** M16-5: vê as props cruas de cada primitiva com o path (o `pptsx lint` acha as props antigas aqui). */
-  readonly observe?: (kind: PrimitiveKind, path: string, props: Readonly<Record<string, unknown>>) => void;
 }
 
 export const createResolveEnv = (baseDir: string = process.cwd()): ResolveEnv => ({

@@ -12,19 +12,19 @@ const phases = [
 ];
 
 const PhaseColumn = ({ q, title, items, last, itemSize }: { q: string; title: string; items: string[]; last: boolean; itemSize: number }) => (
-  <Box grow={1} gap={10}>
-    <Box direction="row" align="center" gap={6}>
-      <Box width={40} height={22} shrink={0} fill={color.accent} radius={11} align="center" justify="center">
-        <Text size={font.caption} weight="bold" color={color.white} align="center">{q}</Text>
+  <Box flex={1} gap={10}>
+    <Box display="flex" alignItems="center" gap={6}>
+      <Box width={40} height={22} flexShrink={0} backgroundColor={color.accent} borderRadius={11} alignItems="center" justifyContent="center">
+        <Text fontSize={font.caption} fontWeight="bold" color={color.white} textAlign="center">{q}</Text>
       </Box>
-      <Shape kind="rect" height={2} grow={1} fill={last ? color.white : color.accent} />
+      <Shape kind="rect" height={2} flex={1} fill={last ? color.white : color.accent} />
     </Box>
-    <Box grow={1} fill={color.surface} radius={8} padding={14} gap={8}>
-      <Text size={font.body} weight="bold" color={color.ink}>{title}</Text>
+    <Box flex={1} backgroundColor={color.surface} borderRadius={8} padding={14} gap={8}>
+      <Text fontSize={font.body} fontWeight="bold" color={color.ink}>{title}</Text>
       {items.map((item) => (
-        <Box direction="row" gap={6} align="start">
-          <Text size={itemSize} color={color.accent} shrink={0}>•</Text>
-          <Text size={itemSize} minSize={11} color={color.muted} grow={1}>{item}</Text>
+        <Box display="flex" gap={6} alignItems="flex-start">
+          <Text fontSize={itemSize} color={color.accent} flexShrink={0}>•</Text>
+          <Text fontSize={itemSize} minSize={11} color={color.muted} flex={1}>{item}</Text>
         </Box>
       ))}
     </Box>
@@ -40,16 +40,16 @@ const comparisons = [
 const CompareCard = ({ label, tone, field, compact }: { label: string; tone: 'before' | 'after'; field: 'before' | 'after'; compact: boolean }) => {
   const accent = tone === 'before' ? color.negative : color.positive;
   return (
-    <Box grow={1} fill={tone === 'before' ? color.surface : color.accentSoft} radius={8} padding={16} gap={12}>
-      <Box direction="row" align="center" gap={8}>
-        <Shape kind="ellipse" width={12} height={12} shrink={0} fill={accent} />
-        <Text size={font.h2} weight="bold" color={color.ink} grow={1}>{label}</Text>
+    <Box flex={1} backgroundColor={tone === 'before' ? color.surface : color.accentSoft} borderRadius={8} padding={16} gap={12}>
+      <Box display="flex" alignItems="center" gap={8}>
+        <Shape kind="ellipse" width={12} height={12} flexShrink={0} fill={accent} />
+        <Text fontSize={font.h2} fontWeight="bold" color={color.ink} flex={1}>{label}</Text>
       </Box>
       <Box gap={12}>
         {comparisons.map((c) => (
-          <Box direction={compact ? 'row' : 'column'} align={compact ? 'center' : 'stretch'} gap={compact ? 12 : 2}>
-            <Text size={font.caption} color={color.muted} width={compact ? 170 : undefined} shrink={0}>{c.aspect.toUpperCase()}</Text>
-            <Text size={18} minSize={13} weight="bold" color={color.ink} grow={compact ? 1 : 0}>{c[field]}</Text>
+          <Box display="flex" flexDirection={compact ? 'row' : 'column'} alignItems={compact ? "center" : "stretch"} gap={compact ? 12 : 2}>
+            <Text fontSize={font.caption} color={color.muted} width={compact ? 170 : undefined} flexShrink={0}>{c.aspect.toUpperCase()}</Text>
+            <Text fontSize={18} minSize={13} fontWeight="bold" color={color.ink} flex={compact ? 1 : "0 1 auto"}>{c[field]}</Text>
           </Box>
         ))}
       </Box>
@@ -60,7 +60,7 @@ const CompareCard = ({ label, tone, field, compact }: { label: string; tone: 'be
 export default defineDeck((ctx) => (
   <Deck>
     <ContentLayout title="Roadmap da plataforma de dados 2027">
-      <Box direction="row" gap={12} grow={1}>
+      <Box display="flex" gap={12} flex={1}>
         {phases.map((p, i) => (
           <PhaseColumn q={p.q} title={p.title} items={p.items} last={i === phases.length - 1} itemSize={ctx.aspect < 1.5 ? 18 : font.small} />
         ))}
@@ -68,7 +68,7 @@ export default defineDeck((ctx) => (
     </ContentLayout>
 
     <ContentLayout title="Antes × Depois">
-      <Box direction={ctx.aspect < 1.5 ? 'column' : 'row'} gap={space.gap} grow={1}>
+      <Box display="flex" flexDirection={ctx.aspect < 1.5 ? 'column' : 'row'} gap={space.gap} flex={1}>
         <CompareCard label="Antes" tone="before" field="before" compact={ctx.aspect < 1.5} />
         <CompareCard label="Depois (fim de 2027)" tone="after" field="after" compact={ctx.aspect < 1.5} />
       </Box>

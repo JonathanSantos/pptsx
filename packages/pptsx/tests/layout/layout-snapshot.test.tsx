@@ -11,31 +11,31 @@ import { child, expectFrame, frameTree } from '../helpers/positioned.ts';
 const RESOLVE_CTX = createContext(resolveSize('16x9'));
 
 const Title = ({ children }: { children: string }) => (
-  <Text size={40} weight="bold">
+  <Text fontSize={40} fontWeight="bold">
     {children}
   </Text>
 );
 
 const Card = ({ label }: { label: string }) => (
-  <Box grow={1} padding={10} gap={5} fill="#eeeeee">
-    <Text size={14}>{label}</Text>
+  <Box flex={1} padding={10} gap={5} backgroundColor="#eeeeee">
+    <Text fontSize={14}>{label}</Text>
     <Shape kind="rect" width={40} height={4} fill="#3366cc" />
   </Box>
 );
 
 const deck = (
   <Deck>
-    <Slide padding={36} gap={16} background="#ffffff">
+    <Slide padding={36} gap={16} backgroundColor="#ffffff">
       <Shape kind="rect" position="absolute" left={0} top={0} width="100%" height={8} fill="#3366cc" />
       <Title>Quarterly review</Title>
-      <Box direction="row" gap={20} grow={1}>
+      <Box display="flex" gap={20} flex={1}>
         <Card label="Revenue" />
         <Card label="Costs" />
         <Card label="Margin" />
       </Box>
-      <Box direction="row" justify="between" align="center" height={30}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" height={30}>
         <Image src="logo.png" height={30} />
-        <Text size={12}>Page 1</Text>
+        <Text fontSize={12}>Page 1</Text>
       </Box>
     </Slide>
   </Deck>

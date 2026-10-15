@@ -2,7 +2,8 @@ import type { CssSpanProps } from '../core/css-props.ts';
 import { DEFAULTS } from '../core/defaults.ts';
 import type { FontWeight, TextChildren, TextRun, TextTransform, VerticalAlign } from '../core/types.ts';
 import { hexOf } from './colors.ts';
-import { InvalidPropError, ResolveError } from './errors.ts';
+import { InvalidPropError, RemovedPropError, ResolveError } from './errors.ts';
+import { aliasRuleOf, suggestionOf } from './removed-props.ts';
 import { expandChild } from './expand.ts';
 import type { Expanded } from './expand.ts';
 import { parseFontWeight, parsePt } from './values.ts';
@@ -11,7 +12,7 @@ import { parseHref } from './href.ts';
 
 /**
  * Runs de um Text: cada trecho de texto vira um run com o estilo do caminho até ele. O estilo
- * base vem da cascata; o Span aceita weight/italic e fontWeight/fontStyle/textDecoration; o
+ * base vem da cascata; o Span aceita fontWeight/fontStyle/textDecoration (weight/italic saíram na 1.0); o
  * textTransform é aplicado antes de medir (o PPTX recebe o texto já transformado).
  */
 
@@ -19,13 +20,19 @@ export type RunStyle = Omit<TextRun, 'text'>;
 
 const TEXT_CHILD_ERROR = '<Text> só aceita strings, números e <Span>/<B>/<I> como filhos';
 
-const spanWeightOf = (span: CssSpanProps): FontWeight | undefined => {
-  const raw = span.weight ?? span.fontWeight;
-  return raw === undefined ? undefined : parseFontWeight(raw);
-};
+const spanWeightOf = (span: CssSpanProps): FontWeight | undefined =>
+  span.fontWeight === undefined ? undefined : parseFontWeight(span.fontWeight);
 
 const spanItalicOf = (span: CssSpanProps): boolean | undefined =>
-  span.italic ?? (span.fontStyle === undefined ? undefined : span.fontStyle === 'italic');
+  span.fontStyle === undefined ? undefined : span.fontStyle === 'italic';
+
+/** M18-6: `weight`/`italic` da 0.x no Span viram erro com a troca. */
+const assertNoRemovedProps = (span: CssSpanProps): void => {
+  Object.entries(span).forEach(([prop, value]) => {
+    const rule = value === undefined ? undefined : aliasRuleOf('span', prop);
+    if (rule !== undefined) throw new RemovedPropError(prop, value, suggestionOf(rule, value));
+  });
+};
 
 const decorationOf = (value: string | undefined, token: string): boolean | undefined =>
   value === undefined ? undefined : value.split(/\s+/).includes(token);
@@ -75,10 +82,11 @@ const verticalAlignOf = (value: unknown): Pick<TextRun, 'verticalAlign'> => {
 
 const spanStyleOf = (style: RunStyle, span: CssSpanProps, path: string): RunStyle => {
   try {
+    assertNoRemovedProps(span);
     return overrideStyle(style, span);
   } catch (error) {
     if (!(error instanceof InvalidPropError)) throw error;
-    throw new ResolveError(`Prop "${error.property}" de <Span>: ${error.message}`, path);
+    throw new ResolveError(`Prop "${error.property}" de <Span>: ${error.message}`, path, error instanceof RemovedPropError);
   }
 };
 

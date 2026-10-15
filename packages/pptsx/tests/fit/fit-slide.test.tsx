@@ -71,7 +71,7 @@ const longText = (times: number) => Array.from({ length: times }, () => LOREM).j
 // ───────────── componentes ─────────────
 
 const Header = ({ title }: { title: string }) => (
-  <Text size={36} weight="bold" shrink={0}>
+  <Text fontSize={36} fontWeight="bold" flexShrink={0}>
     {title}
   </Text>
 );
@@ -81,9 +81,9 @@ const BULLET_COUNT = 12;
 const bulletItems = Array.from({ length: BULLET_COUNT }, (_, i) => `Item ${i + 1} da lista`);
 
 const Bullets = ({ items, size = BULLET_SIZE }: { items: readonly string[]; size?: number }) => (
-  <Box grow={1}>
+  <Box flex={1}>
     {items.map((item) => (
-      <Text size={size} fit="shrink">
+      <Text fontSize={size} fit="shrink">
         {item}
       </Text>
     ))}
@@ -183,7 +183,7 @@ describe('fitSlide — shrink cannot fit', () => {
   const slide = (size: number, extra: Record<string, unknown> = {}) => (
     <Slide padding={40}>
       <Box height={60}>
-        <Text size={size} {...extra}>
+        <Text fontSize={size} {...extra}>
           {longText(3)}
         </Text>
       </Box>
@@ -226,7 +226,7 @@ describe('fitSlide — binary search reaches the size that fits (M6)', () => {
   const slide = () => (
     <Slide padding={40}>
       <Box height={height()}>
-        <Text size={60} minSize={10}>
+        <Text fontSize={60} minSize={10}>
           Texto
         </Text>
       </Box>
@@ -254,7 +254,7 @@ describe('fitSlide — truncate policy', () => {
   const slide = () => (
     <Slide padding={40}>
       <Box height={60}>
-        <Text size={18} fit="truncate">
+        <Text fontSize={18} fit="truncate">
           {longText(3)}
         </Text>
       </Box>
@@ -279,7 +279,7 @@ describe('fitSlide — truncate policy', () => {
   it('explicit maxLines that cuts → text-truncated warning', () => {
     const r = fit(
       <Slide padding={40}>
-        <Text size={18} maxLines={1}>
+        <Text fontSize={18} maxLines={1}>
           {LOREM}
         </Text>
       </Slide>,
@@ -296,7 +296,7 @@ describe('fitSlide — truncate policy', () => {
   it('maxLines that does not cut → no diagnostic', () => {
     const r = fit(
       <Slide padding={40}>
-        <Text size={18} maxLines={3}>
+        <Text fontSize={18} maxLines={3}>
           curto
         </Text>
       </Slide>,
@@ -310,7 +310,7 @@ describe('fitSlide — error policy', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={60}>
-          <Text size={24} fit="error">
+          <Text fontSize={24} fit="error">
             {longText(3)}
           </Text>
         </Box>
@@ -332,10 +332,10 @@ describe('fitSlide — error policy', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={60}>
-          <Text size={24} fit="error">
+          <Text fontSize={24} fit="error">
             {LOREM}
           </Text>
-          <Text size={24}>{LOREM}</Text>
+          <Text fontSize={24}>{LOREM}</Text>
         </Box>
       </Slide>,
     );
@@ -348,8 +348,8 @@ describe('fitSlide — box, slide, decoration', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={100}>
-          <Shape kind="rect" height={80} shrink={0} />
-          <Shape kind="rect" height={80} shrink={0} />
+          <Shape kind="rect" height={80} flexShrink={0} />
+          <Shape kind="rect" height={80} flexShrink={0} />
         </Box>
       </Slide>,
     );
@@ -378,8 +378,8 @@ describe('fitSlide — box, slide, decoration', () => {
   it('Box with a fixed child that leaves the slide → 1 box-overflow and 0 out-of-slide', () => {
     const r = fit(
       <Slide padding={40}>
-        <Box direction="row" width={200} height={60}>
-          <Shape kind="rect" width={800} height={50} shrink={0} />
+        <Box display="flex" width={200} height={60}>
+          <Shape kind="rect" width={800} height={50} flexShrink={0} />
         </Box>
       </Slide>,
     );
@@ -416,7 +416,7 @@ describe('fitSlide — font and image', () => {
   it('font-missing error for an unregistered family', () => {
     const r = fit(
       <Slide padding={40}>
-        <Text font="Família Inexistente">Olá</Text>
+        <Text fontFamily="Família Inexistente">Olá</Text>
       </Slide>,
     );
     const errs = byCode(r, 'font-missing');
@@ -456,7 +456,7 @@ describe('fitSlide — Diagnostic fields', () => {
       ...fit(
         <Slide padding={40}>
           <Box height={60}>
-            <Text size={24}>{longText(3)}</Text>
+            <Text fontSize={24}>{longText(3)}</Text>
           </Box>
         </Slide>,
         { size: SIZE_4X3, slideIndex: 2 },
@@ -482,7 +482,7 @@ describe('fitSlide — Diagnostic fields', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={60}>
-          <Text size={24}>{longText(3)}</Text>
+          <Text fontSize={24}>{longText(3)}</Text>
         </Box>
       </Slide>,
     );
@@ -496,8 +496,8 @@ describe('fitSlide — Diagnostic fields', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={100}>
-          <Shape kind="rect" height={80} shrink={0} />
-          <Shape kind="rect" height={80} shrink={0} />
+          <Shape kind="rect" height={80} flexShrink={0} />
+          <Shape kind="rect" height={80} flexShrink={0} />
         </Box>
       </Slide>,
     );
@@ -511,9 +511,9 @@ describe('fitSlide — Diagnostic fields', () => {
   it('box-overflow message (horizontal) cites the axis, the children sum and the content area', () => {
     const r = fit(
       <Slide padding={40}>
-        <Box direction="row" width={200} height={60}>
-          <Shape kind="rect" width={150} height={50} shrink={0} />
-          <Shape kind="rect" width={150} height={50} shrink={0} />
+        <Box display="flex" width={200} height={60}>
+          <Shape kind="rect" width={150} height={50} flexShrink={0} />
+          <Shape kind="rect" width={150} height={50} flexShrink={0} />
         </Box>
       </Slide>,
     );
@@ -544,7 +544,7 @@ describe('fitSlide — Diagnostic fields', () => {
   it('out-of-slide message cites the bottom side', () => {
     const r = fit(
       <Slide>
-        <Shape kind="rect" width={100} height={500} shrink={0} />
+        <Shape kind="rect" width={100} height={500} flexShrink={0} />
       </Slide>,
     );
     const d = byCode(r, 'out-of-slide')[0]!;
@@ -558,7 +558,7 @@ describe('fitSlide — Diagnostic fields', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={60}>
-          <Text size={18} fit="truncate">
+          <Text fontSize={18} fit="truncate">
             {longText(3)}
           </Text>
         </Box>

@@ -179,7 +179,7 @@ describe('fit — minSize and fit policy', () => {
 describe('fit — table shrinks with the texts of its scope', () => {
   const Panel = (props: { height: number }) => (
     <Box height={props.height}>
-      <Text size={20}>Resultados do trimestre</Text>
+      <Text fontSize={20}>Resultados do trimestre</Text>
       <Table columns={COLUMNS} rows={rowsOf(10)} />
     </Box>
   );
@@ -204,7 +204,7 @@ describe('fit — table shrinks with the texts of its scope', () => {
     const r = fit(
       <Slide>
         <Box height={200}>
-          <Text size={20}>Título</Text>
+          <Text fontSize={20}>Título</Text>
           <Table columns={COLUMNS} rows={rowsOf(20)} />
         </Box>
       </Slide>,
@@ -217,7 +217,7 @@ describe('fit — table shrinks with the texts of its scope', () => {
     const r = fit(
       <Slide>
         {/* shrink 0: o Yoga não espreme o título, então ele não estoura por conta própria */}
-        <Text size={30} shrink={0}>
+        <Text fontSize={30} flexShrink={0}>
           Título
         </Text>
         <Table columns={COLUMNS} rows={rowsOf(20)} />
@@ -232,7 +232,7 @@ describe('fit — table shrinks with the texts of its scope', () => {
 // ───────────── fonte ausente e palavra partida ─────────────
 
 describe('fit — font missing in table cells', () => {
-  const result = lazy(() => fit(boxed(200, { font: 'Fonte Inexistente' })));
+  const result = lazy(() => fit(boxed(200, { fontFamily: 'Fonte Inexistente' } as Partial<TableProps>)));
 
   it('only font-missing, once, on the table path', () => {
     const ds = atPath(result(), TABLE);

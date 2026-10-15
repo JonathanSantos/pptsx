@@ -66,7 +66,7 @@ describe('lineHeight in the pptx XML', () => {
   it('a Table with a numeric lineHeight measures and writes 24 pt lines', async () => {
     const el = (
       <Slide alignItems="flex-start">
-        <Table columns={[{ header: 'A' }, { header: 'B' }]} rows={[['x', 'y']]} size={20} lineHeight={1.2} width={400} />
+        <Table columns={[{ header: 'A' }, { header: 'B' }]} rows={[['x', 'y']]} fontSize={20} lineHeight={1.2} width={400} />
       </Slide>
     );
     const table = fitSlideOf(el).children[0] as PositionedTable;

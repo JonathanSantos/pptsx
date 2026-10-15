@@ -1,14 +1,11 @@
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import typescript from 'typescript-api';
 import { describe, expect, it } from 'vitest';
 import { migrateSource } from '../../src/lint/codemod.ts';
 
 // O default do pacote CJS e o namespace tipado são o mesmo objeto em tempo de execução.
 const ts = typescript as unknown as Parameters<typeof migrateSource>[0];
-import { render } from '../../src/render.ts';
-import type { DeckDefinition, PositionedNode } from '../../src/core/types.ts';
 
 // M16-5: o codemod do `pptsx lint --fix`.
 const head = "import { Box, Slide, Text, Image, Span, Table } from 'pptsx';\n";
@@ -24,13 +21,20 @@ describe('migrateSource — cada alias', () => {
     ['<Box align="start" justify="between" />', '<Box alignItems="flex-start" justifyContent="space-between" />'],
     ['<Text align="center">x</Text>', '<Text textAlign="center">x</Text>'],
     ['<Box grow={1} shrink={0} />', '<Box flex={1} flexShrink={0} />'],
+    // grow={0} era basis auto; flex={0} do CSS zeraria o item.
+    ['<Box grow={0} />', '<Box flexGrow={0} />'],
+    ['<Text grow={compact ? 1 : 0}>x</Text>', '<Text flex={compact ? 1 : "0 1 auto"}>x</Text>'],
+    ['<Box direction={d} />', '<Box display="flex" flexDirection={d} />'],
+    ['<Box stroke={c} strokeWidth={2} />', '<Box outline={`2px solid ${c}`} />'],
+    ["<Box justify={x ? 'between' : 'end'} />", '<Box justifyContent={x ? "space-between" : "flex-end"} />'],
+    ['<Slide background={color.white} />', '<Slide background={color.white} />'],
     ['<Box fill="#FFF" radius={8} />', '<Box backgroundColor="#FFF" borderRadius={8} />'],
     ['<Box stroke="#CCC" strokeWidth={2} />', '<Box outline="2px solid #CCC" />'],
     ['<Box stroke="#CCC" />', '<Box outline="1px solid #CCC" />'],
     ['<Slide background="#112233" />', '<Slide backgroundColor="#112233" />'],
     ["<Slide background={{ image: 'a.png' }} />", '<Slide backgroundImage="url(a.png)" />'],
     ['<Text size={20} weight="bold" italic font="Inter">x</Text>', '<Text fontSize={20} fontWeight="bold" fontStyle="italic" fontFamily="Inter">x</Text>'],
-    ['<Text italic={false}>x</Text>', '<Text>x</Text>'],
+    ['<Text italic={false}>x</Text>', '<Text fontStyle="normal">x</Text>'],
     ['<Span weight="bold">x</Span>', '<Span fontWeight="bold">x</Span>'],
     ['<Image src="a.png" fit="cover" />', '<Image src="a.png" objectFit="cover" />'],
     ['<Table size={12} columns={c} rows={r} />', '<Table fontSize={12} columns={c} rows={r} />'],
@@ -47,6 +51,16 @@ describe('migrateSource — cada alias', () => {
     expect(migrateSource(ts, 'deck.tsx', source)).toEqual({ source, changes: 0, skipped: [] });
   });
 
+  it('grow em expressão fica, com aviso (o valor decide entre flex={n} e flexGrow={0})', () => {
+    expect(fix('<Box grow={g} />').skipped).toEqual([expect.objectContaining({ prop: 'grow', reason: expect.stringContaining('flex="0 1 auto"') })]);
+  });
+
+  it('isPptsxModule: primitivas de outro módulo (os testes do repo importam de src/)', () => {
+    const source = "import { Box } from '../../src/index.ts';\n<Box fill=\"#fff\" />";
+    expect(migrateSource(ts, 'deck.tsx', source).changes).toBe(0);
+    expect(migrateSource(ts, 'deck.tsx', source, { isPptsxModule: (spec) => spec.endsWith('src/index.ts') }).source).toContain('backgroundColor="#fff"');
+  });
+
   it('respeita o nome local do import (Box as Caixa)', () => {
     expect(migrateSource(ts, 'deck.tsx', "import { Box as Caixa } from 'pptsx';\n<Caixa fill=\"#fff\" />").source).toContain('<Caixa backgroundColor="#fff" />');
   });
@@ -61,31 +75,32 @@ describe('migrateSource — cada alias', () => {
   });
 });
 
-const framesOf = (nodes: readonly PositionedNode[]): readonly (readonly [string, number, number, number, number])[] =>
-  nodes.flatMap((node) => [[node.path, node.frame.x, node.frame.y, node.frame.width, node.frame.height] as const, ...(node.kind === 'box' ? framesOf(node.children) : [])]);
+// M18-6: a cópia 0.x de tests/examples/legacy fica em fixtures/legacy-0x (.txt, fora do typecheck). O codemod
+// sobre ela dá exatamente os arquivos migrados, salvo os três trechos ambíguos que ele avisa e foram à mão;
+// as fixtures de paridade (engine-parity, emit-parity) provam que os frames não mudaram.
+const LEGACY_0X = resolve(import.meta.dirname, 'fixtures/legacy-0x');
+const LEGACY = resolve(import.meta.dirname, '../examples/legacy');
+const HAND_MIGRATED: Readonly<Record<string, readonly string[]>> = {
+  'components/TwoColumn.tsx': ['grow', 'grow'],
+  'layouts/ContentLayout.tsx': ['justify'],
+};
 
-describe('--fix em broken-original.tsx', () => {
-  it('migra tudo e gera a mesma árvore (frames ±1 pt em 16x9 e 4x3)', async () => {
-    // Cópia congelada (M17): usa os layouts/componentes de tests/examples/legacy, não o DS.
-    const original = resolve(import.meta.dirname, '../examples/legacy/broken-original.tsx');
-    const result = migrateSource(ts, original, readFileSync(original, 'utf8'));
-    expect(result.skipped).toEqual([]);
-    expect(result.changes).toBeGreaterThan(0);
-    // Na mesma pasta do original: os imports relativos continuam valendo.
-    const dir = resolve(import.meta.dirname, '../examples/legacy');
-    const migrated = join(dir, `tmp-migrated-${process.pid}.tsx`);
-    writeFileSync(migrated, result.source);
-    try {
-      const load = async (file: string) => ((await import(pathToFileURL(file).href)) as { default: DeckDefinition }).default;
-      const [before, after] = await Promise.all([original, migrated].map(async (file) => render(await load(file), { sizes: ['16x9', '4x3'], preview: false, includePositioned: true })));
-      before!.forEach((size, index) => {
-        const a = size.positioned!.slides.flatMap((slide) => framesOf(slide.children));
-        const b = after![index]!.positioned!.slides.flatMap((slide) => framesOf(slide.children));
-        expect(b.map(([path]) => path)).toEqual(a.map(([path]) => path));
-        a.forEach(([, ...frame], i) => frame.forEach((value, k) => expect(Math.abs(value - (b[i]![k + 1] as number))).toBeLessThanOrEqual(1)));
-      });
-    } finally {
-      rmSync(migrated, { force: true });
-    }
-  }, 60000);
+const filesOf = (dir: string, prefix = ''): readonly string[] =>
+  readdirSync(join(dir, prefix), { withFileTypes: true }).flatMap((entry) =>
+    entry.isDirectory() ? filesOf(dir, join(prefix, entry.name)) : entry.name.endsWith('.txt') ? [join(prefix, entry.name).split(sep).join('/')] : [],
+  );
+
+describe('--fix / --from 0.x em tests/examples/legacy', () => {
+  const sources = filesOf(LEGACY_0X).map((file) => file.replace(/\.txt$/, ''));
+
+  it('a cópia 0.x cobre todos os arquivos de legacy/', () => {
+    expect(sources.length).toBeGreaterThan(10);
+    sources.forEach((file) => expect(existsSync(join(LEGACY, file)), file).toBe(true));
+  });
+
+  it.each(sources)('%s', (file) => {
+    const result = migrateSource(ts, file, readFileSync(join(LEGACY_0X, `${file}.txt`), 'utf8'));
+    expect(result.skipped.map((skip) => skip.prop)).toEqual(HAND_MIGRATED[file] ?? []);
+    if (HAND_MIGRATED[file] === undefined) expect(result.source).toBe(readFileSync(join(LEGACY, file), 'utf8'));
+  });
 });

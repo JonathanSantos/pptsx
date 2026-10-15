@@ -11,7 +11,7 @@ const PATH = 'Slide > Box > Text';
 const caption = (props: { size: number; minSize?: number }, height = 30, content = LONG) => (
   <Slide padding={40}>
     <Box height={height}>
-      <Text {...props}>{content}</Text>
+      <Text fontSize={props.size} {...(props.minSize === undefined ? {} : { minSize: props.minSize })}>{content}</Text>
     </Box>
   </Slide>
 );
@@ -86,7 +86,7 @@ describe('fit — author size already below the floor', () => {
   it('size 8 that fits → no diagnostic at all', () => {
     const r = fit(
       <Slide padding={40}>
-        <Text size={8}>Nota de rodapé</Text>
+        <Text fontSize={8}>Nota de rodapé</Text>
       </Slide>,
     );
     expect(r.diagnostics).toEqual([]);
@@ -102,7 +102,7 @@ describe('fit — author size already below the floor', () => {
   it('size 8 with minSize 6 that is not reduced → no text-illegible', () => {
     const r = fit(
       <Slide padding={40}>
-        <Text size={8} minSize={6}>
+        <Text fontSize={8} minSize={6}>
           Nota de rodapé
         </Text>
       </Slide>,
@@ -116,7 +116,7 @@ describe('fit — text-illegible only for texts reduced by the fit', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={30}>
-          <Text size={11} minSize={8} fit={policy}>
+          <Text fontSize={11} minSize={8} fit={policy}>
             {LONG}
           </Text>
         </Box>

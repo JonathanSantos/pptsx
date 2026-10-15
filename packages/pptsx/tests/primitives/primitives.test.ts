@@ -36,9 +36,9 @@ describe('primitives', () => {
   });
 
   it('calling a primitive as a function returns an element of that primitive', () => {
-    const el = Box({ width: 10, fill: '#ff0000' });
+    const el = Box({ width: 10, backgroundColor: '#ff0000' });
     expect(el.type).toBe(Box);
-    expect(el.props).toEqual({ width: 10, fill: '#ff0000' });
+    expect(el.props).toEqual({ width: 10, backgroundColor: '#ff0000' });
   });
 
   it('calling Text as a function keeps children in props', () => {

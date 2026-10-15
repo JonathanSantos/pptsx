@@ -20,7 +20,7 @@ import { assertChartSize, assertValidChart, assertValidTable } from './data.ts';
 import { tableGridOf } from './table-grid.ts';
 import { ROOT_TEXT } from './draft.ts';
 import type { InheritedText } from './draft.ts';
-import { InvalidPropError, ResolveError } from './errors.ts';
+import { InvalidPropError, RemovedPropError, ResolveError } from './errors.ts';
 import { expandChild } from './expand.ts';
 import type { Expanded, ExpandedPrimitive } from './expand.ts';
 import { legacyPropsOf } from './legacy.ts';
@@ -93,13 +93,12 @@ const parentOf = (n: Normalized): ParentInfo => ({ text: n.text, css: n.css });
 
 /** A normalização não conhece o path: o erro de valor ganha aqui o path e a primitiva. */
 const normalizedOf = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): Normalized => {
-  ctx.env.observe?.(item.kind, path, item.element.props);
   const props = resolvePropsOf(item.element, item.kind, path, ctx);
   try {
     return normalizeProps(item.kind, props, parent.text);
   } catch (error) {
     if (!(error instanceof InvalidPropError)) throw error;
-    throw new ResolveError(`Prop "${error.property}" de <${nameOf(item)}>: ${error.message}`, path);
+    throw new ResolveError(`Prop "${error.property}" de <${nameOf(item)}>: ${error.message}`, path, error instanceof RemovedPropError);
   }
 };
 

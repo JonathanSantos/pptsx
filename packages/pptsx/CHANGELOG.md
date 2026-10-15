@@ -2,7 +2,34 @@
 
 Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Versões antes da 1.0 podem quebrar a API; o que quebra está em **Mudanças incompatíveis**.
 
-**Política para a 1.0:** as props antigas (aliases do M11: `direction`, `align`/`justify` de contêiner, `grow`, `shrink`, `fill`/`stroke`/`radius` do Box, `background` do Slide, `size`/`weight`/`italic`/`font`/`align` do Text, `fit` da Image) **saem na 1.0**. Desde a 0.6.0 o `pptsx lint` avisa cada uma e o `pptsx lint --fix` reescreve o deck. A 1.0 sai depois da validação do dono no PowerPoint (gráficos, tema, layouts, notas).
+## 1.0.0 — M18: redondo antes de liberar
+
+A versão sai no gate do M18, depois da validação do dono no PowerPoint (gráficos, tema, layouts, notas).
+
+### Mudanças incompatíveis
+
+- **As props da 0.x foram removidas** (os aliases do M11): `direction`, `align`/`justify` de contêiner, `grow`, `shrink`, `fill`/`stroke`/`strokeWidth`/`radius` do Box, `fill`/`direction`/`background={{ image }}` do Slide, `size`/`weight`/`italic`/`font`/`align` do Text e do SlideNumber, `weight`/`italic` do Span, `size`/`font` da Table, `fit` da Image e `showValues` do Chart. Cada uma vira `ResolveError` com a troca (`Prop "size" de <Text>: removida na 1.0; troque por fontSize…`); no `pptsx lint`, um achado `legacy-prop` (error). Os tipos de autor não as aceitam mais.
+- `grow={n}` não existe mais, e com ele a regra de basis dele (0 só sem tamanho no eixo principal). `flex={n}` é o `1 1 0%` do CSS; `grow={0}` antigo equivale a `flexGrow={0}`.
+- `<B>`/`<I>` passam `fontWeight`/`fontStyle` ao Span.
+- `ResolveEnv.observe` saiu (só o lint o usava, para achar aliases).
+
+### Como migrar
+
+- **`pptsx lint --from 0.x <pasta>`** (novo) reescreve todos os `.ts`/`.tsx` da pasta: deck, componentes e layouts. `pptsx lint deck.tsx --fix` continua, só para o deck.
+- O codemod agora cobre também `direction={expr}` → `display="flex" flexDirection={expr}`, `stroke={expr}` → `outline` em template literal, `justify`/`align` em ternário de literais, `grow` em ternário de números, `italic={false}` → `fontStyle="normal"` (antes o atributo sumia e o itálico herdado voltava) e `showValues` → `labels`. O que depende do valor fica, com aviso e linha.
+- Prova: os decks congelados de `tests/examples/legacy/` passaram pelo `--from 0.x` (114 trocas; 3 trechos ambíguos à mão) e batem com as **mesmas fixtures** de paridade do motor pré-M11 (frames ±1 pt, XML dos slides).
+- Guia do agente: apêndice "Migrando de 0.x" (comando e tabela).
+
+### O que é estável na 1.0
+
+Props CSS das primitivas e as props próprias de cada uma; códigos e formato dos diagnósticos; `render`/`renderFragment`/`fragmentSlide` e o resultado deles; a CLI (`build`, `init`, `preview`, `lint`) e suas flags; as ferramentas do MCP (`build`, `preview`, `diagnostics`, `init`, `guide`, `schema`, `lint`); os ganchos de DS (`defineComponent`, `LintRule`, `defineDs`/`DsManifest`, `ds`/`lint` na config).
+
+### Novo
+
+- `pptsx init --ds <pacote|caminho>`: deck inicial que importa os componentes do DS (props do 1º caso do catálogo) e config com o DS e o tema.
+- MCP: ferramenta `lint`; `guide`/`schema` descobrem o DS pela config do deck; schema em JSON Schema 2020-12 (`$id` por fonte).
+- `fragmentSlide` público (o slide do catálogo); `defineComponent` com `catalog` e `defaults` tipados pelas props.
+- Pacote: `bin` sem `./` (o npm 11 removia os comandos na publicação), `sideEffects: false`, provenance, `THIRD_PARTY.md`; `--watch` sem `fs.watch` recursivo dá erro claro.
 
 ## 0.7.0 — M17: núcleo concreto e ganchos para design systems
 

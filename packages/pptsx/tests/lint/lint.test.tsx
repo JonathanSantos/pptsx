@@ -8,16 +8,13 @@ const lint = (slide: SlideElement, extra: Partial<Parameters<typeof lintDeck>[1]
   lintDeck((() => <Deck>{slide}</Deck>) as DeckDefinition, { sizes: ['16x9', '4x3'], baseDir: process.cwd(), ...extra });
 
 describe('pptsx lint', () => {
-  it('props antigas com a troca e o path; irmãos de um map agrupados', async () => {
-    const findings = await lint(
-      <Slide>
-        <Box direction="row">{[1, 2, 3].map((n) => <Box fill="#EEEEEE"><Text size={14}>{n}</Text></Box>)}</Box>
-      </Slide>,
-    );
-    const legacy = findings.filter((f) => f.code === 'legacy-prop');
-    expect(legacy.map((f) => f.path)).toEqual(['Slide > Box', 'Slide > Box > Box[0..2]', 'Slide > Box > Box[0..2] > Text']);
-    expect(legacy[0]!.message).toContain('direction="row" em <box>: troque por display="flex"');
-    expect(legacy.every((f) => f.severity === 'warning' && f.size === undefined)).toBe(true);
+  it('prop da 0.x: um achado error legacy-prop com a troca e o comando (desde a 1.0 o deck nem resolve)', async () => {
+    // Props que o tipo não aceita mais, de propósito.
+    const legacy = { direction: 'row' } as unknown as Parameters<typeof Box>[0];
+    const findings = await lint(<Slide><Box {...legacy}><Text>a</Text></Box></Slide>);
+    expect(findings).toEqual([expect.objectContaining({ severity: 'error', code: 'legacy-prop', path: 'Slide > Box' })]);
+    expect(findings[0]!.message).toContain('Prop "direction" de <Box>: removida na 1.0; troque por display="flex"');
+    expect(findings[0]!.message).toContain('pptsx lint --from 0.x');
   });
 
   it('deck só em CSS: nada a apontar', async () => {

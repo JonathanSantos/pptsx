@@ -163,9 +163,8 @@ interface Labels {
   readonly position?: ChartLabelPosition;
 }
 
-/** `labels` vence o alias antigo `showValues`. */
 export const labelsOf = (props: ChartProps): Labels => {
-  if (props.labels === undefined) return { show: props.showValues === true };
+  if (props.labels === undefined) return { show: false };
   if (typeof props.labels === 'boolean') return { show: props.labels };
   return { show: true, ...props.labels };
 };

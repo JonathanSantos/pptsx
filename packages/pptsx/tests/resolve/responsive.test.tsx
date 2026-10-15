@@ -72,7 +72,7 @@ const responsiveLeftovers = (deck: ResolvedDeck): string[] =>
 describe('resolveDeck — responsive props by size', () => {
   const slide = (
     <Slide>
-      <Text size={{ base: 20, tall: 24, '4x3': 26 }}>x</Text>
+      <Text fontSize={{ base: 20, tall: 24, '4x3': 26 }}>x</Text>
     </Slide>
   );
 
@@ -92,13 +92,13 @@ describe('resolveDeck — responsive props by size', () => {
           padding={{ base: 24, tall: 32 }}
           gap={{ base: 8, wide: 12 }}
           background={{ base: '#ffffff', tall: '#eeeeee' }}
-          direction={{ base: 'column', tall: 'column' }}
+          flexDirection={{ base: 'column', tall: 'column' }}
         >
-          <Box direction={{ base: 'row', tall: 'column' }} gap={{ base: 10, tall: 20 }} fill={{ base: '#ff0000', wide: '#00ff00' }} grow={{ base: 1 }}>
-            <Text size={{ base: 20, tall: 24 }} color={{ base: '#111111', tall: '#222222' }} weight={{ base: 'regular', wide: 'bold' }} fit={{ base: 'shrink', tall: 'truncate' }}>
+          <Box display="flex" flexDirection={{ base: 'row', tall: 'column' }} gap={{ base: 10, tall: 20 }} backgroundColor={{ base: '#ff0000', wide: '#00ff00' }} flex={{ base: 1 }}>
+            <Text fontSize={{ base: 20, tall: 24 }} color={{ base: '#111111', tall: '#222222' }} fontWeight={{ base: 'regular', wide: 'bold' }} fit={{ base: 'shrink', tall: 'truncate' }}>
               a
             </Text>
-            <Image src="x.png" width={{ base: 100, tall: 200 }} fit={{ base: 'contain', tall: 'cover' }} />
+            <Image src="x.png" width={{ base: 100, tall: 200 }} objectFit={{ base: 'contain', tall: 'cover' }} />
             <Shape kind="rect" width={{ base: 10, tall: 20 }} height={{ base: 10 }} radius={{ base: 0, tall: 4 }} />
           </Box>
         </Slide>
@@ -121,8 +121,8 @@ describe('resolveDeck — responsive props by size', () => {
   it('the same deck resolves differently in 16x9', () => {
     const slide = resolveAt(
       <Slide>
-        <Box direction={{ base: 'row', tall: 'column' }}>
-          <Text size={{ base: 20, wide: 28 }}>a</Text>
+        <Box display="flex" flexDirection={{ base: 'row', tall: 'column' }}>
+          <Text fontSize={{ base: 20, wide: 28 }}>a</Text>
         </Box>
       </Slide>,
       CTX_16X9,
@@ -134,7 +134,7 @@ describe('resolveDeck — responsive props by size', () => {
   it('wide preset picks wide values', () => {
     const slide = resolveAt(
       <Slide>
-        <Text size={{ base: 20, tall: 24, wide: 28 }}>a</Text>
+        <Text fontSize={{ base: 20, tall: 24, wide: 28 }}>a</Text>
       </Slide>,
       CTX_WIDE,
     );
@@ -170,7 +170,7 @@ describe('resolveDeck — non-responsive objects pass intact', () => {
   });
 
   it("background={{ image: 'x.png' }} is kept", () => {
-    const slide = resolveAt(<Slide background={{ image: 'x.png' }} />, CTX_4X3);
+    const slide = resolveAt(<Slide backgroundImage="url(x.png)" />, CTX_4X3);
     expect(slide.css.backgroundImage).toBe('x.png');
   });
 
@@ -191,18 +191,18 @@ describe('resolveDeck — non-responsive objects pass intact', () => {
 describe('resolveDeck — values that resolve to undefined', () => {
   it('{ base: undefined, tall: 5 } in 16x9 omits the prop', () => {
     const size = { base: undefined, tall: 5 } as unknown as Responsive<number>;
-    const text = firstText(resolveAt(<Slide><Text size={size}>x</Text></Slide>, CTX_16X9));
+    const text = firstText(resolveAt(<Slide><Text fontSize={size}>x</Text></Slide>, CTX_16X9));
     expect(Object.hasOwn(text.props, 'size')).toBe(false);
   });
 
   it('{ base: undefined, tall: 5 } in 4x3 → 5', () => {
     const size = { base: undefined, tall: 5 } as unknown as Responsive<number>;
-    expect(firstText(resolveAt(<Slide><Text size={size}>x</Text></Slide>, CTX_4X3)).props.size).toBe(5);
+    expect(firstText(resolveAt(<Slide><Text fontSize={size}>x</Text></Slide>, CTX_4X3)).props.size).toBe(5);
   });
 
   it('omitted prop resolves like an unwritten one (default applies downstream)', () => {
     const size = { base: undefined } as unknown as Responsive<number>;
-    const withUndefined = firstText(resolveAt(<Slide><Text size={size}>x</Text></Slide>));
+    const withUndefined = firstText(resolveAt(<Slide><Text fontSize={size}>x</Text></Slide>));
     const without = firstText(resolveAt(<Slide><Text>x</Text></Slide>));
     expect(withUndefined.props).toEqual(without.props);
   });
@@ -226,21 +226,21 @@ describe('resolveDeck — malformed responsive objects', () => {
       resolveAt(
         <Slide>
           <Box>
-            <Text size={{ tall: 24 } as never}>x</Text>
+            <Text fontSize={{ tall: 24 } as never}>x</Text>
           </Box>
         </Slide>,
       ),
     );
     expect(error.path).toBe('Slide > Box > Text');
-    expect(error.message).toContain('Prop "size"');
+    expect(error.message).toContain('Prop "fontSize"');
     expect(error.message).toContain('objeto responsivo sem a chave "base"');
     expect(error.message).toContain('Slide > Box > Text');
   });
 
   it('unknown breakpoint key → ResolveError', () => {
-    const error = resolveErrorOf(() => resolveAt(<Slide><Text size={{ base: 20, tal: 24 } as never}>x</Text></Slide>));
+    const error = resolveErrorOf(() => resolveAt(<Slide><Text fontSize={{ base: 20, tal: 24 } as never}>x</Text></Slide>));
     expect(error.path).toBe('Slide > Text');
-    expect(error.message).toContain('Prop "size"');
+    expect(error.message).toContain('Prop "fontSize"');
     expect(error.message).toContain('breakpoint desconhecido: "tal"');
   });
 
@@ -254,7 +254,7 @@ describe('resolveDeck — malformed responsive objects', () => {
   it('is validated even when the active size would not need the value', () => {
     // A validação é por prop, não por tamanho: o objeto está errado em qualquer tamanho.
     for (const ctx of [CTX_16X9, CTX_4X3]) {
-      expect(() => resolveAt(<Slide><Text size={{ tall: 24 } as never}>x</Text></Slide>, ctx)).toThrow(ResolveError);
+      expect(() => resolveAt(<Slide><Text fontSize={{ tall: 24 } as never}>x</Text></Slide>, ctx)).toThrow(ResolveError);
     }
   });
 
@@ -271,7 +271,7 @@ describe('resolveDeck — user components forward responsive values', () => {
   const Bullets = (props: { size: Responsive<number>; gap?: Responsive<number>; items: readonly string[] }) => (
     <Box gap={props.gap}>
       {props.items.map((item) => (
-        <Text size={props.size}>{item}</Text>
+        <Text fontSize={props.size}>{item}</Text>
       ))}
     </Box>
   );
@@ -313,7 +313,7 @@ describe('responsive props — types', () => {
         {/* @ts-expect-error objeto responsivo exige base */}
         <Slide gap={{ tall: 4 }}>
           {/* @ts-expect-error objeto responsivo exige base */}
-          <Text size={{ tall: 24 }}>x</Text>
+          <Text fontSize={{ tall: 24 }}>x</Text>
           {/* @ts-expect-error src não é responsivo */}
           <Image src={{ base: 'a.png', tall: 'b.png' }} />
           {/* @ts-expect-error kind não é responsivo */}
@@ -331,7 +331,7 @@ describe('responsive props — types', () => {
     const element = (
       <Slide padding={{ base: 10, tall: { top: 4 } }} background={{ base: '#ffffff', tall: { image: 'x.png' } }}>
         <Box paginate={{ base: false, tall: true }} width={{ base: '50%', tall: '100%' }} />
-        <Text size={value}>x</Text>
+        <Text fontSize={value}>x</Text>
       </Slide>
     );
     expect(element).toBeDefined();

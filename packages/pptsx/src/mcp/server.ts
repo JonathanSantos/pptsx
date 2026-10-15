@@ -52,7 +52,7 @@ export const createPptsxMcpServer = (ctx: McpContext, version: string): McpServe
   }, async (input) => asResult(await guideTool(input, ctx)));
   server.registerTool('schema', {
     title: 'Props das primitivas',
-    description: 'Props aceitas por primitiva, em JSON Schema 2020-12 (`$id` por fonte; o tipo TypeScript em `x-tsType`); props antigas (size, weight, direction…) são aliases a evitar — prefira as CSS (fontSize, fontWeight, flexDirection). Com `source` = nome de um DS: as props dos componentes dele. Sem `primitive`: todas.',
+    description: 'Props aceitas por primitiva, em JSON Schema 2020-12 (`$id` por fonte; o tipo TypeScript em `x-tsType`); Com `source` = nome de um DS: as props dos componentes dele. Sem `primitive`: todas.',
     inputSchema: {
       source: z.string().optional().describe('"pptsx" (padrão) ou o nome de um DS registrado.'),
       primitive: z.string().optional().describe('"box", "text", "chart"… ou o nome de um componente do DS'),

@@ -30,7 +30,7 @@ const deckSource = (title: string): string => `import { Deck, Slide, Text, defin
 export default defineDeck(() => (
   <Deck>
     <Slide padding={36}>
-      <Text size={28}>${title}</Text>
+      <Text fontSize={28}>${title}</Text>
     </Slide>
   </Deck>
 ));
@@ -355,7 +355,7 @@ describe('build --watch — real process (bin, fs.watch and tsx namespace)', () 
       const out = mkdtempSync(join(tmpdir(), 'pptsx-watch-out-'));
       tmpDirs.push(out);
       const component = (title: string): string =>
-        `import { Text } from 'pptsx';\nexport const Title = () => <Text size={28}>${title}</Text>;\n`;
+        `import { Text } from 'pptsx';\nexport const Title = () => <Text fontSize={28}>${title}</Text>;\n`;
       writeFileSync(join(dir, 'title.tsx'), component('Componente v1'));
       const deck = join(dir, 'deck.tsx');
       writeFileSync(

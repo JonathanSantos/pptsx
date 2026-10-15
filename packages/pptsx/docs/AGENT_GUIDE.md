@@ -133,7 +133,7 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 | `Path` | `d` (obrigatório; `M L H V C S Q T A Z` do SVG), `viewBox?: [w, h]` (padrão: a caixa do `d`), `fill`, `stroke`, `strokeWidth` (pt), `lineCap`, `lineJoin` (`'miter' \| 'round' \| 'bevel'`), `lineStyle` | nenhum |
 | `Icon` | `src` (obrigatório; `.svg`), `size?` (altura em pt, padrão 24), `color?` (padrão: a cor de texto herdada), `recolor?` (padrão `true`: preto também vira `color`), `render?: 'auto' \| 'shape' \| 'image'` | nenhum |
 | `Connector` | `from`, `to` (ids, obrigatórios), `fromSide`/`toSide` (`'top' \| 'right' \| 'bottom' \| 'left' \| 'auto'`), `route` (`'straight' \| 'elbow'`), `startArrow`/`endArrow` (padrão: só `triangle` no fim), `stroke`, `strokeWidth` (1,5), `lineStyle`, `label`, `labelStyle={{ fontSize, color, background, font }}` (padrões: 12 pt, `#333333`, sem fundo, a fonte herdada do pai) | nenhum (só props; **não aceita CSS**) |
-| `Chart` | `kind` (12, ver "Gráficos") e `data: { categories: string[], series: { name, values: number[], color?, as?, axis? }[] }` (obrigatórios; scatter: `series: { name, points: [x, y][] }[]`, sem `categories`), `colors?` (por série; na pizza/rosca por fatia), `legend?: boolean \| { position: 'bottom' \| 'top' \| 'left' \| 'right' }` (padrão: só com 2+ séries; pizza/rosca sempre), `labels?: boolean \| { format?, position?: 'outside' \| 'inside' \| 'center' }` (`showValues` = `labels`), `xAxis?`/`yAxis?`/`y2Axis?: { title?, min?, max?, step?, format?, grid?, hidden? }`, `holeSize?` (rosca, 10–90, padrão 50), `smooth?`, `markers?` (linha), `title?`, `size?` (12, tamanho dos rótulos) | nenhum |
+| `Chart` | `kind` (12, ver "Gráficos") e `data: { categories: string[], series: { name, values: number[], color?, as?, axis? }[] }` (obrigatórios; scatter: `series: { name, points: [x, y][] }[]`, sem `categories`), `colors?` (por série; na pizza/rosca por fatia), `legend?: boolean \| { position: 'bottom' \| 'top' \| 'left' \| 'right' }` (padrão: só com 2+ séries; pizza/rosca sempre), `labels?: boolean \| { format?, position?: 'outside' \| 'inside' \| 'center' }` `xAxis?`/`yAxis?`/`y2Axis?: { title?, min?, max?, step?, format?, grid?, hidden? }`, `holeSize?` (rosca, 10–90, padrão 50), `smooth?`, `markers?` (linha), `title?`, `size?` (12, tamanho dos rótulos) | nenhum |
 | `Table` | `columns: { header, width?, align?, valign? }[]` e `rows` (obrigatórios; célula = `string \| number \| { text?, children?, colSpan?, rowSpan?, fill?, color?, fontWeight?, fontStyle?, align?, valign?, icon? }`, ver "Tabelas"), `headerRows?` (linhas de cabeçalho acima da de `columns`), `cell?: (ctx) => estilo` (estilo por célula calculado), `header?: { fill?, color?, weight? } \| false` (padrão: negrito sem fundo), `stripe?` (fundo da 2ª, 4ª… linha de dados), `border?` (**cor da grade**, 0,5 pt; sem = sem grade), `cellPadding?` (4 pt), `valign?` (padrão `'top'`), `paginate?`, `repeatHeader?` (padrão `true`), `minSize?`, `fit?: 'shrink' \| 'error'`; texto por `fontSize` (14), `fontFamily`, `color`, `lineHeight` | nenhum |
 
 - `Box` sem fundo nem borda é invisível (só agrupa). Com `backgroundColor`/`border` vira retângulo (arredondado com `borderRadius`).
@@ -157,7 +157,7 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 | `combo` | duas grandezas na mesma categoria (receita em barra + margem em linha) | cada série com `as: 'bar' \| 'line'` e `axis: 'secondary'` para o eixo da direita |
 
 - **Eixos:** `xAxis` é o de categorias (no scatter, o X numérico); `yAxis` o de valores; `y2Axis` o secundário do combo. `format` é código do Excel (`'0%'`, `'#,##0'`, `'0.0'`); valores em fração (`0.18`) com `format: '0%'` saem "18%". `hidden: true` some com o eixo; `grid: false` tira as linhas de grade.
-- **Rótulos:** `labels` (ou `showValues`) mostra os valores; `position` vale por família (barra: fora/dentro/centro; empilhada: centro; área/rosca ignoram).
+- **Rótulos:** `labels` mostra os valores; `position` vale por família (barra: fora/dentro/centro; empilhada: centro; área/rosca ignoram).
 - **Cor por série:** `series[i].color` vence `colors[i]`. **Cor do texto** (rótulos, eixos, legenda, título) é o `color` do Chart, herdado do pai: rótulo `center`/`inside` numa série escura some — dê `color` claro ao Chart, rótulos `outside` ou séries claras.
 - PowerPoint/Keynote redesenham o gráfico: as marcas automáticas dos eixos podem diferir do preview. Fixe `min`/`max`/`step` se importam.
 
@@ -506,7 +506,7 @@ Com os 12 itens de `packages/ds-base/examples/long-list.tsx`, 16:9 vira 3 slides
 
 ```tsx
 <ContentLayout title="Receita contra a meta">
-  <Chart kind="bar" flex={1} title="Receita recorrente (R$ mi)" legend showValues colors={[color.accent, color.muted]}
+  <Chart kind="bar" flex={1} title="Receita recorrente (R$ mi)" legend labels colors={[color.accent, color.muted]}
     data={{ categories: ['Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026'],
             series: [{ name: 'Realizado', values: [38.2, 41.5, 45.9, 52.4] }, { name: 'Meta', values: [40, 42, 45, 50] }] }} />
 </ContentLayout>
@@ -723,7 +723,7 @@ Para uma linha de tendência no scatter, passe-a como outra série de pontos (os
 
 **Caminho preferido, se o servidor `pptsx-mcp` estiver conectado:** use as ferramentas MCP em vez do shell — `diagnose({ deck })` para iterar (rápido, sem PNG), `preview({ deck, size, slide })` para ver um slide, `build({ deck, sizes })` no fim (grava o .pptx e devolve o overview), `guide({ section: "§8" })` e `schema({ primitive: "text" })` para consultar. `isError: true` quer dizer que o deck tem diagnóstico `error` (a ferramenta funcionou). Sem o MCP, a CLI abaixo faz o mesmo.
 
-`pptsx lint deck.tsx` aponta props antigas e outros riscos antes do build; `pptsx lint deck.tsx --fix` migra as props antigas para CSS sem mudar o layout.
+`pptsx lint deck.tsx` aponta riscos antes do build (e as props da 0.x, que desde a 1.0 são erro); `pptsx lint deck.tsx --fix` migra as props da 0.x do deck para CSS sem mudar o layout, e `pptsx lint --from 0.x <pasta>` migra a pasta inteira (apêndice).
 
 **(a) Dentro deste repo** (monorepo; como na §2): rode na raiz do repositório. Um deck que usa o DS de exemplo fica em `packages/ds-base/examples/agent-test/` (o tsconfig de lá resolve `pptsx` e `@pptsx/ds-base` sem build); um deck só de primitivas pode ficar em `packages/pptsx/examples/agent-test/`.
 
@@ -904,7 +904,7 @@ Só um nó paginate (<Box paginate> ou <Text paginate>) por slide; encontrados 2
 - **`{ tall: 24 }` sem `base`** é erro. Sempre `{ base: 20, tall: 24 }`.
 - **`wide` vence `tall`**: num tamanho que é os dois, `{ base: 20, tall: 24, wide: 26 }` dá 26. O preset `wide` (960×540) **não** é `tall`; 16x10 **é**.
 - **Não dá para desligar uma prop por breakpoint** (`{ base: '80%', tall: undefined }` continua `'80%'`): dê outro valor, ou esconda o nó inteiro com `display`.
-- **Props antigas** (`direction`, `align`, `justify`, `grow`, `shrink`, `fill`, `stroke`, `radius` em Box; `size`, `weight`, `italic`, `font`, `align` em Text) ainda funcionam como alias, mas vão sair: escreva CSS (apêndice). Não misture as duas formas no mesmo nó.
+- **Props da 0.x** (`direction`, `align`, `justify`, `grow`, `shrink`, `fill`, `stroke`, `radius` em Box; `size`, `weight`, `italic`, `font`, `align` em Text) saíram na 1.0 e param o build com a troca: escreva CSS, ou rode `pptsx lint --from 0.x` (apêndice).
 - **`paginate` em row ou absoluto**: absoluto é erro; numa row a divisão é por colunas estreitas. Pagine uma coluna.
 - **`\n` para quebrar linha**: não precisa; `\n` cria parágrafo novo.
 - **Fonte diferente de Arial sem registrar** → `font-missing`. Omita `fontFamily` ou registre a família.
@@ -937,29 +937,37 @@ Só um nó paginate (<Box paginate> ou <Text paginate>) por slide; encontrados 2
 - **`cell()` recebe o valor cru**: `typeof value === 'number'` só se a célula foi escrita como número; devolva `text` para formatar.
 - **Diagrama com `position="absolute"`** funciona, mas não se adapta a 4:3; prefira grid com `placeItems="center"` e tamanhos fixos nos nós.
 
-## Apêndice — Migração das props antigas → CSS
+## Apêndice — Migrando de 0.x
 
-As props antigas continuam aceitas como alias (resolvidas para CSS), mas saem numa versão futura. **Não são aliases (continuam válidas):** `size` de `Bullets`/`KpiCard`/`KpiRow`/`Chart`, `justify` de `ContentLayout`, `radius`/`stroke`/`strokeWidth` de `Shape`, `fill` em `Table.header`, `fit`/`minSize`/`maxLines`/`nowrap` de `Text`. Ao mexer num deck antigo, troque assim:
+Na 1.0 as props antigas (aliases da 0.x) **foram removidas**: o build para com `Prop "size" de <Text>: removida na 1.0; troque por fontSize` e o `pptsx lint` mostra o mesmo achado (`legacy-prop`, error). Para migrar:
 
-| antiga | CSS | nota |
+```sh
+npx pptsx lint --from 0.x src/        # todos os .ts/.tsx da pasta (deck, componentes, layouts)
+npx pptsx lint deck.tsx --fix         # só o arquivo do deck
+```
+
+O codemod reescreve o fonte sem mudar o layout (mesmos frames). O que depende do valor e não dá para decidir pelo texto (`justify={prop}` vindo de um componente, `grow={expressão}`) fica como estava, com aviso e linha: troque à mão pela tabela. **Não eram aliases (continuam válidas):** `size` de `Bullets`/`KpiCard`/`KpiRow`/`Chart`/`Icon`, `justify` de `ContentLayout`, `fill`/`radius`/`stroke`/`strokeWidth` de `Shape`/`Path`, `fill` em `Table.header`, `fit`/`minSize`/`maxLines`/`nowrap` de `Text`, `background` CSS com cor.
+
+| 0.x | 1.0 | nota |
 |---|---|---|
-| `direction="row"` (Box, Slide) | `display="flex"` (Box) / `flexDirection="row"` (Slide) | Box sem `display` continua coluna |
+| `direction="row"` (Box, Slide) | `display="flex"` (Box) / `flexDirection="row"` (Slide) | Box sem `display` continua coluna; `direction={expr}` → `display="flex" flexDirection={expr}` |
 | `direction="column"` | (padrão) ou `flexDirection="column"` | |
 | `align="start\|center\|end\|stretch\|baseline"` (Box) | `alignItems="flex-start\|center\|flex-end\|stretch\|baseline"` | |
-| `justify="start\|center\|end\|between\|around\|evenly"` | `justifyContent="flex-start\|center\|flex-end\|space-between\|space-around\|space-evenly"` | |
-| `grow={1}` | `flex={1}` | `grow` mantém a base antiga (0 só sem tamanho no eixo); `flex={1}` = `1 1 0%` |
+| `justify="start\|center\|end\|between\|around\|evenly"` | `justifyContent="flex-start\|center\|flex-end\|space-between\|space-around\|space-evenly"` | ternário de literais também migra |
+| `grow={1}` | `flex={1}` | `flex={1}` = `1 1 0%` |
+| `grow={0}` | `flexGrow={0}` | **não** `flex={0}`: no CSS é `0 1 0%` e zera o item; em expressão, `flex="0 1 auto"` |
 | `shrink={0}` | `flexShrink={0}` | |
-| `fill="#…"` (Box, Slide) | `backgroundColor="#…"` | no `Shape`, `fill` = `backgroundColor` (cor da forma) |
-| `stroke="#…"` / `strokeWidth={2}` (Box) | `border="2px solid #…"` | o `stroke` antigo não ocupava espaço; a borda CSS ocupa (fica dentro da caixa). No `Shape`, `stroke`/`strokeWidth` continuam sendo a linha da forma |
-| `radius={8}` (Box) | `borderRadius={8}` | no `Shape roundRect`, `radius` continua |
-| `background="#…"` (Slide) | `backgroundColor="#…"` | `background={{ image }}` = `backgroundImage="url(…)"` |
-| `padding={{ top: 10 }}` | `paddingTop={10}` ou `padding="10 0 0"` | o objeto continua valendo |
-| `size={20}` (Text, Table) | `fontSize={20}` | herda de Slide/Box. No `Chart`, `size` = tamanho dos rótulos |
+| `fill="#…"` (Box, Slide) | `backgroundColor="#…"` | |
+| `stroke="#…"` / `strokeWidth={2}` (Box) | `outline="2px solid #…"` | como o `stroke` antigo, não ocupa espaço (`border` ocupa) |
+| `radius={8}` (Box) | `borderRadius={8}` | |
+| `background={{ image }}` (Slide) | `backgroundImage="url(…)"` | `background="#…"` (cor) continua valendo |
+| `size={20}` (Text, Table) | `fontSize={20}` | herda de Slide/Box |
 | `weight="bold"` | `fontWeight="bold"` | em `Span` também |
-| `italic` | `fontStyle="italic"` | em `Span` também |
+| `italic` / `italic={false}` | `fontStyle="italic"` / `fontStyle="normal"` | em `Span` também; `normal` desliga o herdado |
 | `font="Inter"` | `fontFamily="Inter"` | |
 | `align="center"` (Text) | `textAlign="center"` | herda |
-| `fit="cover"` (Image) | `objectFit="cover"` | `fit` do Text continua (shrink/truncate/error) |
+| `fit="cover"` (Image) | `objectFit="cover"` | |
+| `showValues` (Chart) | `labels` | |
 | `lineHeight={1.2}` (multiplicava a altura natural) | `lineHeight={1.38}` (≈ 1,2 × 1,15) ou `'normal'` | agora número = múltiplo do `fontSize`; `lineHeight={1}` antigo = `'normal'` |
 | Box row + `Shape` barra ao lado do título | `borderLeft="6px solid #…"` + `paddingLeft` no `Text` | |
 | Box só para empurrar (padding/grow vazio) | `marginTop="auto"` / `margin` | |

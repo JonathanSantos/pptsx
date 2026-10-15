@@ -80,7 +80,7 @@ describe('resolve — Chart', () => {
     expect(() =>
       resolveAt(
         <Slide>
-          <Chart kind="bar" data={data} grow={1} />
+          <Chart kind="bar" data={data} flex={1} />
         </Slide>,
       ),
     ).toThrow(/série "Receita" tem 3 valores para 4 categorias/);
@@ -90,7 +90,7 @@ describe('resolve — Chart', () => {
     expect(() =>
       resolveAt(
         <Slide>
-          <Chart kind="pie" data={TWO_SERIES} grow={1} />
+          <Chart kind="pie" data={TWO_SERIES} flex={1} />
         </Slide>,
       ),
     ).toThrow(/<Chart kind="pie"> aceita uma única série; recebeu 2/);
@@ -100,7 +100,7 @@ describe('resolve — Chart', () => {
     const data: ChartData = { categories: CATEGORIES, series: [{ name: 'Receita', values: [1, 2, Number.NaN, 4] }] };
     const error = resolveError(
       <Slide>
-        <Chart kind="line" data={data} grow={1} />
+        <Chart kind="line" data={data} flex={1} />
       </Slide>,
     );
     expect(error.message).toMatch(/Receita/);
@@ -113,7 +113,7 @@ describe('resolve — Chart', () => {
     expect(() =>
       resolveAt(
         <Slide>
-          <Chart kind="bar" data={data} grow={1} />
+          <Chart kind="bar" data={data} flex={1} />
         </Slide>,
       ),
     ).toThrow(/não finito/);
@@ -133,7 +133,7 @@ describe('resolve — Chart', () => {
     expect(() =>
       resolveAt(
         <Slide>
-          <Chart kind="bar" data={TWO_SERIES} grow={0} />
+          <Chart kind="bar" data={TWO_SERIES} flexGrow={0} />
         </Slide>,
       ),
     ).toThrow(/precisa de width, height, flex\/flexGrow ou de uma célula de grid/);
@@ -155,7 +155,7 @@ describe('resolve — Chart', () => {
     expect(() =>
       resolveAt(
         <Slide>
-          <Chart kind="bar" data={{ categories: [], series: [{ name: 's', values: [] }] }} grow={1} />
+          <Chart kind="bar" data={{ categories: [], series: [{ name: 's', values: [] }] }} flex={1} />
         </Slide>,
       ),
     ).toThrow(/categoria/);
@@ -165,20 +165,20 @@ describe('resolve — Chart', () => {
     expect(() =>
       resolveAt(
         <Slide>
-          <Chart kind="bar" data={{ categories: ['a'], series: [] }} grow={1} />
+          <Chart kind="bar" data={{ categories: ['a'], series: [] }} flex={1} />
         </Slide>,
       ),
     ).toThrow(/série/);
   });
 
   it('invalid kind → error', () => {
-    expect(() => resolveAt(<Slide>{jsx(Chart, { kind: 'radar', data: TWO_SERIES, grow: 1 } as never)}</Slide>)).toThrow(
+    expect(() => resolveAt(<Slide>{jsx(Chart, { kind: 'radar', data: TWO_SERIES, flex: 1 } as never)}</Slide>)).toThrow(
       /kind "radar" inválido/,
     );
   });
 
   it.each([
-    ['grow', <Chart kind="bar" data={TWO_SERIES} grow={1} />],
+    ['grow', <Chart kind="bar" data={TWO_SERIES} flex={1} />],
     ['width', <Chart kind="bar" data={TWO_SERIES} width={300} />],
     ['height', <Chart kind="bar" data={TWO_SERIES} height={200} />],
     ['percent width', <Chart kind="bar" data={TWO_SERIES} width="50%" />],
@@ -189,7 +189,7 @@ describe('resolve — Chart', () => {
 
   it('children → error', () => {
     const error = resolveError(
-      <Slide>{jsx(Chart, { kind: 'bar', data: TWO_SERIES, grow: 1, children: <Text>x</Text> } as never)}</Slide>,
+      <Slide>{jsx(Chart, { kind: 'bar', data: TWO_SERIES, flex: 1, children: <Text>x</Text> } as never)}</Slide>,
     );
     expect(error.message).toMatch(/<Chart> não aceita filhos/);
   });
@@ -198,7 +198,7 @@ describe('resolve — Chart', () => {
     const error = resolveError(
       <Slide>
         <Box>
-          <Chart kind="pie" data={TWO_SERIES} grow={1} />
+          <Chart kind="pie" data={TWO_SERIES} flex={1} />
         </Box>
       </Slide>,
     );
@@ -206,7 +206,7 @@ describe('resolve — Chart', () => {
   });
 
   it('component name becomes the path segment', () => {
-    const Revenue = () => <Chart kind="bar" data={TWO_SERIES} grow={1} />;
+    const Revenue = () => <Chart kind="bar" data={TWO_SERIES} flex={1} />;
     const chart: ResolvedChart = firstOf(
       resolveAt(
         <Slide>
@@ -222,7 +222,7 @@ describe('resolve — Chart', () => {
     const small: ChartData = { categories: ['a'], series: [{ name: 's', values: [1] }] };
     const slide = (
       <Slide>
-        <Chart kind="bar" data={{ base: TWO_SERIES, '4x3': small }} grow={1} />
+        <Chart kind="bar" data={{ base: TWO_SERIES, '4x3': small }} flex={1} />
       </Slide>
     );
     expect(firstOf(resolveAt(slide, CTX), 'chart').props.data).toEqual(TWO_SERIES);
@@ -358,7 +358,7 @@ describe('resolve — Table', () => {
   it('responsive size resolves to a concrete number', () => {
     const slide = (
       <Slide>
-        <Table columns={COLUMNS} rows={[]} size={{ base: 14, wide: 18 }} />
+        <Table columns={COLUMNS} rows={[]} fontSize={{ base: 14, wide: 18 }} />
       </Slide>
     );
     expect(firstOf(resolveAt(slide, CTX), 'table').props.size).toBe(14);

@@ -25,9 +25,9 @@ const { space } = tokens;
 export function TwoColumn({ left, right, direction = 'row', ratio = 0.5 }: TwoColumnProps) {
   const by = <T,>(row: T, column: T): Responsive<T> => mapResponsive(direction, (d) => (d === 'column' ? column : row));
   return (
-    <Box direction={direction} gap={by(space.gap * 1.5, space.gap)} grow={1}>
-      <Box grow={by(ratio, 0)}>{left}</Box>
-      <Box grow={by(1 - ratio, 1)}>{right}</Box>
+    <Box display="flex" flexDirection={direction} gap={by(space.gap * 1.5, space.gap)} flex={1}>
+      <Box flex={by<number | string>(ratio, '0 1 auto')}>{left}</Box>
+      <Box flex={by(1 - ratio, 1)}>{right}</Box>
     </Box>
   );
 }

@@ -29,18 +29,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
   "slide": {
     "type": "object",
     "properties": {
-      "align": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<Align>",
-        "description": "align-items; padrão 'stretch'"
-      },
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -134,10 +130,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "columnGap": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
-      "direction": {
-        "type": "\"row\" | \"column\" | ResponsiveValue<FlexDirection>",
-        "description": "padrão 'column'"
-      },
       "display": {
         "type": "\"flex\" | \"block\" | \"grid\" | \"none\" | ResponsiveValue<\"flex\" | \"block\" | \"grid\" | \"none\">"
       },
@@ -217,12 +209,8 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "inset": {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
-      "justify": {
-        "type": "\"start\" | \"center\" | \"end\" | \"between\" | \"around\" | \"evenly\" | ResponsiveValue<Justify>",
-        "description": "justify-content; padrão 'start'"
-      },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -353,18 +341,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
   "box": {
     "type": "object",
     "properties": {
-      "align": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<Align>",
-        "description": "align-items; padrão 'stretch'"
-      },
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -454,15 +438,8 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "columnGap": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
-      "direction": {
-        "type": "\"row\" | \"column\" | ResponsiveValue<FlexDirection>",
-        "description": "padrão 'column'"
-      },
       "display": {
         "type": "\"flex\" | \"block\" | \"grid\" | \"none\" | ResponsiveValue<\"flex\" | \"block\" | \"grid\" | \"none\">"
-      },
-      "fill": {
-        "type": "string | ResponsiveValue<string>"
       },
       "flex": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -530,9 +507,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "gridTemplateRows": {
         "type": "string | ResponsiveValue<string>"
       },
-      "grow": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "height": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
@@ -547,12 +521,8 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "inset": {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
-      "justify": {
-        "type": "\"start\" | \"center\" | \"end\" | \"between\" | \"around\" | \"evenly\" | ResponsiveValue<Justify>",
-        "description": "justify-content; padrão 'start'"
-      },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -647,10 +617,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "position": {
         "type": "\"static\" | \"relative\" | \"absolute\" | ResponsiveValue<\"static\" | \"relative\" | \"absolute\">"
       },
-      "radius": {
-        "type": "number | ResponsiveValue<number>",
-        "description": "Raio dos cantos em pt; > 0 emite roundRect."
-      },
       "right": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
@@ -663,16 +629,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "shape": {
         "type": "\"rect\" | \"roundRect\" | \"ellipse\" | \"line\" | \"triangle\" | \"rightTriangle\" | \"diamond\" | \"parallelogram\" | \"trapezoid\" | \"pentagon\" | \"hexagon\" | \"octagon\" | \"chevron\" | \"arrowRight\" | \"arrowLeft\" | \"arrowUp\" | \"arrowDown\" | \"doubleArrow\" | \"pill\" | \"star\" | \"cloud\" | \"callout\" | \"bracketPair\" | \"cylinder\" | ResponsiveValue<ShapeKind>",
         "description": "M12: geometria do fundo/borda da caixa (padrão 'rect'; com borderRadius vira 'roundRect'). Os filhos continuam posicionados pelo padding, como numa caixa retangular: a forma não recalcula o layout. 'line' não é aceito."
-      },
-      "shrink": {
-        "type": "number | ResponsiveValue<number>"
-      },
-      "stroke": {
-        "type": "string | ResponsiveValue<string>"
-      },
-      "strokeWidth": {
-        "type": "number | ResponsiveValue<number>",
-        "description": "padrão 1 pt quando stroke definido"
       },
       "style": {
         "type": "Readonly<Record<string, unknown>> | ResponsiveValue<Readonly<Record<string, unknown>>>",
@@ -705,17 +661,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
   "text": {
     "type": "object",
     "properties": {
-      "align": {
-        "type": "\"right\" | \"left\" | \"center\" | ResponsiveValue<TextAlign>"
-      },
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -830,10 +783,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "flexWrap": {
         "type": "\"nowrap\" | \"wrap\" | \"wrap-reverse\" | ResponsiveValue<\"nowrap\" | \"wrap\" | \"wrap-reverse\">"
       },
-      "font": {
-        "type": "string | ResponsiveValue<string>",
-        "description": "Família registrada; padrão 'Arial'."
-      },
       "fontFamily": {
         "type": "string | ResponsiveValue<string>"
       },
@@ -882,9 +831,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "gridTemplateRows": {
         "type": "string | ResponsiveValue<string>"
       },
-      "grow": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "height": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
@@ -899,11 +845,8 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "inset": {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
-      "italic": {
-        "type": "boolean | ResponsiveValue<boolean>"
-      },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -1018,13 +961,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "rowGap": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
-      "shrink": {
-        "type": "number | ResponsiveValue<number>"
-      },
-      "size": {
-        "type": "number | ResponsiveValue<number>",
-        "description": "pt; padrão 18"
-      },
       "style": {
         "type": "Readonly<Record<string, unknown>> | ResponsiveValue<Readonly<Record<string, unknown>>>",
         "description": "Escape: qualquer CSS; o que não tem de/para vira diagnóstico css-not-emitted."
@@ -1044,9 +980,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "transform": {
         "type": "string | ResponsiveValue<string>"
       },
-      "weight": {
-        "type": "number | \"bold\" | \"regular\" | ResponsiveValue<FontWeight>"
-      },
       "whiteSpace": {
         "type": "\"nowrap\" | \"normal\" | ResponsiveValue<\"nowrap\" | \"normal\">"
       },
@@ -1063,13 +996,13 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
     "type": "object",
     "properties": {
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1162,10 +1095,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "display": {
         "type": "\"flex\" | \"block\" | \"grid\" | \"none\" | ResponsiveValue<\"flex\" | \"block\" | \"grid\" | \"none\">"
       },
-      "fit": {
-        "type": "\"contain\" | \"cover\" | ResponsiveValue<ImageFit>",
-        "description": "padrão 'contain'"
-      },
       "flex": {
         "type": "string | number | ResponsiveValue<string | number>"
       },
@@ -1232,9 +1161,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "gridTemplateRows": {
         "type": "string | ResponsiveValue<string>"
       },
-      "grow": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "height": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
@@ -1250,7 +1176,7 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -1353,9 +1279,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "rowGap": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
-      "shrink": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "src": {
         "type": "string"
       },
@@ -1393,13 +1316,13 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
     "type": "object",
     "properties": {
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1571,9 +1494,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "gridTemplateRows": {
         "type": "string | ResponsiveValue<string>"
       },
-      "grow": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "height": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
@@ -1585,7 +1505,7 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -1696,9 +1616,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "rowGap": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
-      "shrink": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "startArrow": {
         "type": "\"none\" | \"triangle\" | \"diamond\" | \"arrow\" | \"stealth\" | \"oval\" | ResponsiveValue<ArrowType>",
         "description": "M12: pontas de seta; só em `kind=\"line\"` (senão ResolveError). Padrão 'none'."
@@ -1765,18 +1682,12 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "string",
         "description": "M13: hyperlink do trecho (URL ou `slide:N`)."
       },
-      "italic": {
-        "type": "boolean"
-      },
       "textDecoration": {
         "type": "\"none\" | \"underline\" | \"line-through\" | \"underline line-through\""
       },
       "verticalAlign": {
         "type": "\"baseline\" | \"super\" | \"sub\"",
         "description": "M13: sobrescrito/subscrito: corpo × DEFAULTS.text.superscriptRatio, sem mudar a altura da linha."
-      },
-      "weight": {
-        "type": "number | \"bold\" | \"regular\""
       }
     },
     "required": []
@@ -1785,13 +1696,13 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
     "type": "object",
     "properties": {
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1961,9 +1872,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "gridTemplateRows": {
         "type": "string | ResponsiveValue<string>"
       },
-      "grow": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "height": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
@@ -1979,7 +1887,7 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -1992,7 +1900,7 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "labels": {
         "type": "boolean | ChartLabels | ResponsiveValue<boolean | ChartLabels>",
-        "description": "M14: rótulos de valor com formato e posição; vence `showValues`."
+        "description": "M14: rótulos de valor sobre as barras/pontos/fatias (true, ou formato e posição); padrão false."
       },
       "left": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
@@ -2090,13 +1998,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "rowGap": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
-      "showValues": {
-        "type": "boolean | ResponsiveValue<boolean>",
-        "description": "Rótulos de valor sobre as barras/pontos/fatias; padrão false (alias antigo de `labels`)."
-      },
-      "shrink": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "size": {
         "type": "number | ResponsiveValue<number>"
       },
@@ -2152,13 +2053,13 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
     "type": "object",
     "properties": {
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -2284,10 +2185,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "flexWrap": {
         "type": "\"nowrap\" | \"wrap\" | \"wrap-reverse\" | ResponsiveValue<\"nowrap\" | \"wrap\" | \"wrap-reverse\">"
       },
-      "font": {
-        "type": "string | ResponsiveValue<string>",
-        "description": "Família registrada; padrão 'Arial'."
-      },
       "fontFamily": {
         "type": "string | ResponsiveValue<string>"
       },
@@ -2336,9 +2233,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "gridTemplateRows": {
         "type": "string | ResponsiveValue<string>"
       },
-      "grow": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "header": {
         "type": "false | TableHeaderStyle | ResponsiveValue<false | TableHeaderStyle>",
         "description": "Estilo da linha de cabeçalho (padrão DEFAULTS.table.header); `false` = sem cabeçalho."
@@ -2358,7 +2252,7 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -2467,13 +2361,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "readonly (readonly TableCellValue[])[] | ResponsiveValue<readonly (readonly TableCellValue[])[]>",
         "description": "rows[i].length === columns.length; números viram texto na resolução."
       },
-      "shrink": {
-        "type": "number | ResponsiveValue<number>"
-      },
-      "size": {
-        "type": "number | ResponsiveValue<number>",
-        "description": "pt; padrão 18"
-      },
       "stripe": {
         "type": "string | ResponsiveValue<string>",
         "description": "Fundo das linhas de dados pares (2ª, 4ª…); ausente = sem zebra."
@@ -2517,13 +2404,13 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
     "type": "object",
     "properties": {
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -2688,9 +2575,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "gridTemplateRows": {
         "type": "string | ResponsiveValue<string>"
       },
-      "grow": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "height": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
@@ -2702,7 +2586,7 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -2808,9 +2692,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "rowGap": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
-      "shrink": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "stroke": {
         "type": "string | ResponsiveValue<string>"
       },
@@ -2856,13 +2737,13 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
     "type": "object",
     "properties": {
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -3021,9 +2902,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "gridTemplateRows": {
         "type": "string | ResponsiveValue<string>"
       },
-      "grow": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "height": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
@@ -3035,7 +2913,7 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -3139,9 +3017,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "rowGap": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
-      "shrink": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "size": {
         "type": "number | ResponsiveValue<number>",
         "description": "Altura em pt quando o autor não dá width/height; padrão DEFAULTS.icon.size."
@@ -3232,17 +3107,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
   "slideNumber": {
     "type": "object",
     "properties": {
-      "align": {
-        "type": "\"right\" | \"left\" | \"center\" | ResponsiveValue<TextAlign>"
-      },
       "alignContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
       },
       "alignItems": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
       },
       "alignSelf": {
-        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\" | \"flex-start\" | \"flex-end\" | \"auto\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
       },
       "aspectRatio": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -3353,10 +3225,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "flexWrap": {
         "type": "\"nowrap\" | \"wrap\" | \"wrap-reverse\" | ResponsiveValue<\"nowrap\" | \"wrap\" | \"wrap-reverse\">"
       },
-      "font": {
-        "type": "string | ResponsiveValue<string>",
-        "description": "Família registrada; padrão 'Arial'."
-      },
       "fontFamily": {
         "type": "string | ResponsiveValue<string>"
       },
@@ -3409,9 +3277,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "gridTemplateRows": {
         "type": "string | ResponsiveValue<string>"
       },
-      "grow": {
-        "type": "number | ResponsiveValue<number>"
-      },
       "height": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
@@ -3422,11 +3287,8 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "inset": {
         "type": "string | number | ResponsiveValue<BoxShorthand>"
       },
-      "italic": {
-        "type": "boolean | ResponsiveValue<boolean>"
-      },
       "justifyContent": {
-        "type": "\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"flex-start\" | \"flex-end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
       },
       "justifyItems": {
         "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
@@ -3522,13 +3384,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "rowGap": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
       },
-      "shrink": {
-        "type": "number | ResponsiveValue<number>"
-      },
-      "size": {
-        "type": "number | ResponsiveValue<number>",
-        "description": "pt; padrão 18"
-      },
       "style": {
         "type": "Readonly<Record<string, unknown>> | ResponsiveValue<Readonly<Record<string, unknown>>>",
         "description": "Escape: qualquer CSS; o que não tem de/para vira diagnóstico css-not-emitted."
@@ -3547,9 +3402,6 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "transform": {
         "type": "string | ResponsiveValue<string>"
-      },
-      "weight": {
-        "type": "number | \"bold\" | \"regular\" | ResponsiveValue<FontWeight>"
       },
       "width": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"

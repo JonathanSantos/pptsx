@@ -11,7 +11,7 @@ export interface KpiRowProps {
 /** Linha de KPI cards de larguras iguais. */
 export function KpiRow({ items, size }: KpiRowProps) {
   return (
-    <Box direction="row" gap={tokens.space.gap}>
+    <Box display="flex" gap={tokens.space.gap}>
       {items.map((item) => (
         <KpiCard {...(size ? { size } : {})} {...item} />
       ))}

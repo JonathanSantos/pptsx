@@ -14,20 +14,20 @@ const PARAGRAPH = 'Um parágrafo bem longo que repete bastante texto para força
 
 const probe = () => (
   <Slide padding={40} gap={10}>
-    <Text size={30} weight="bold">
+    <Text fontSize={30} fontWeight="bold">
       Teste
     </Text>
-    <Box direction="row" gap={10}>
+    <Box display="flex" gap={10}>
       {Array.from({ length: 8 }, (_, i) => (
-        <Box grow={1} fill="#EEEEEE" padding={10}>
-          <Text size={24} fit="error">
+        <Box flex={1} backgroundColor="#EEEEEE" padding={10}>
+          <Text fontSize={24} fit="error">
             Indisponibilidade {i}
           </Text>
         </Box>
       ))}
     </Box>
-    <Text size={20}>{PARAGRAPH}</Text>
-    <Text size={16} font="Inter">
+    <Text fontSize={20}>{PARAGRAPH}</Text>
+    <Text fontSize={16} fontFamily="Inter">
       Fonte não registrada
     </Text>
   </Slide>
@@ -138,10 +138,10 @@ describe('cause.tsx — missing font', () => {
 describe('fit — missing font that also overflows (M6)', () => {
   const Pair = () => (
     <Box height={60}>
-      <Text size={18} shrink={0}>
+      <Text fontSize={18} flexShrink={0}>
         curto
       </Text>
-      <Text size={24} font="Inter">
+      <Text fontSize={24} fontFamily="Inter">
         {PARAGRAPH}
       </Text>
     </Box>
@@ -194,22 +194,22 @@ describe('cause — demand of a row is the largest child demand', () => {
   // que pedem a e b, com max(a, b) < X < a + b.
   const slide = () => (
     <Slide padding={40}>
-      <Text size={20} fit="error">
+      <Text fontSize={20} fit="error">
         Testemunha
       </Text>
       <Box>
-        <Text size={20} fit="error">
+        <Text fontSize={20} fit="error">
           {lines(10)}
         </Text>
       </Box>
-      <Box direction="row" gap={10}>
-        <Box grow={1}>
-          <Text size={20} fit="error">
+      <Box display="flex" gap={10}>
+        <Box flex={1}>
+          <Text fontSize={20} fit="error">
             {lines(9)}
           </Text>
         </Box>
-        <Box grow={1}>
-          <Text size={20} fit="error">
+        <Box flex={1}>
+          <Text fontSize={20} fit="error">
             {lines(9)}
           </Text>
         </Box>
@@ -243,21 +243,21 @@ describe('cause — demand of a column is the sum of child demands', () => {
   // Box[1]: um Text só que pede X, com max(a, b) < X < a + b.
   const slide = () => (
     <Slide padding={40}>
-      <Text size={20} fit="error">
+      <Text fontSize={20} fit="error">
         Testemunha
       </Text>
       <Box>
-        <Text size={20} fit="error">
+        <Text fontSize={20} fit="error">
           {lines(6)}
         </Text>
         <Box>
-          <Text size={20} fit="error">
+          <Text fontSize={20} fit="error">
             {lines(6)}
           </Text>
         </Box>
       </Box>
       <Box>
-        <Text size={20} fit="error">
+        <Text fontSize={20} fit="error">
           {lines(10)}
         </Text>
       </Box>
@@ -288,8 +288,8 @@ describe('cause — no cause when the maximum demand is 0', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={100} gap={10}>
-          <Box height={60} shrink={0} />
-          <Box height={60} shrink={0} />
+          <Box height={60} flexShrink={0} />
+          <Box height={60} flexShrink={0} />
         </Box>
       </Slide>,
     );
@@ -304,10 +304,10 @@ describe('cause — no cause when the maximum demand is 0', () => {
 describe('cause — a Text with a missing font has demand 0 and is never a cause', () => {
   const slide = () => (
     <Slide padding={40}>
-      <Text size={20} font="Inter">
+      <Text fontSize={20} fontFamily="Inter">
         {PARAGRAPH}
       </Text>
-      <Text size={20} fit="error">
+      <Text fontSize={20} fit="error">
         {lines(4)}
       </Text>
     </Slide>
@@ -335,12 +335,12 @@ describe('cause — explicit height has demand 0', () => {
     const r = fit(
       <Slide padding={40} gap={10}>
         <Box height={20}>
-          <Text size={20} fit="error">
+          <Text fontSize={20} fit="error">
             {lines(3)}
           </Text>
         </Box>
         <Box height={20}>
-          <Text size={20} fit="error">
+          <Text fontSize={20} fit="error">
             {lines(2)}
           </Text>
         </Box>
@@ -358,10 +358,10 @@ describe('cause — explicit height has demand 0', () => {
   it('a Text with explicit height that overflows is not the cause of its squeezed sibling', () => {
     const r = fit(
       <Slide padding={40}>
-        <Text size={20} fit="error" height={300} shrink={0}>
+        <Text fontSize={20} fit="error" height={300} flexShrink={0}>
           {lines(20)}
         </Text>
-        <Text size={20} fit="error">
+        <Text fontSize={20} fit="error">
           {lines(3)}
         </Text>
       </Slide>,
@@ -376,12 +376,12 @@ describe('cause — a container only has a cause when it is overloaded', () => {
     const r = fit(
       <Slide padding={40} gap={10}>
         <Box height={60}>
-          <Text size={20} fit="error">
+          <Text fontSize={20} fit="error">
             {lines(5)}
           </Text>
         </Box>
         <Box height={60}>
-          <Text size={20} fit="error">
+          <Text fontSize={20} fit="error">
             {lines(4)}
           </Text>
         </Box>
@@ -396,10 +396,10 @@ describe('cause — a container only has a cause when it is overloaded', () => {
     // Demanda > 0 em cada um, mas Σ(frame + demanda) + gap cabe na área: ninguém tirou altura de ninguém.
     const slide = () => (
       <Slide padding={40} gap={10}>
-        <Text size={20} fit="error" maxHeight={30}>
+        <Text fontSize={20} fit="error" maxHeight={30}>
           {lines(4)}
         </Text>
-        <Text size={20} fit="error" maxHeight={30}>
+        <Text fontSize={20} fit="error" maxHeight={30}>
           {lines(3)}
         </Text>
       </Slide>

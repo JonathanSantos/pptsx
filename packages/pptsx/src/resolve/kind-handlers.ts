@@ -1,41 +1,18 @@
-import { DEFAULTS } from '../core/defaults.ts';
 import type { PrimitiveKind } from '../core/types.ts';
 import { hexListOf, hexOf, withHexFields } from './colors.ts';
-import { finiteNumber, INVALID, pass, reject } from './draft.ts';
+import { pass, reject } from './draft.ts';
 import { InvalidPropError } from './errors.ts';
 import type { Handler } from './draft.ts';
-import { backgroundColor, borderRadius } from './paint-handlers.ts';
 import { SHAPE_CSS } from './shape-handlers.ts';
 import { CONNECTOR_KEYS } from './connector-keys.ts';
 import { parseHref } from './href.ts';
-import { fontWeight, TEXT_HANDLERS, whiteSpace } from './text-handlers.ts';
-import { parsePt } from './values.ts';
-import { BOX_HANDLERS } from './box-handlers.ts';
+import { whiteSpace } from './text-handlers.ts';
 
 /**
- * Por primitiva: nomes antigos (alias até remoção futura, CONTRACTS §M11) e as props que a
- * primitiva consome com o significado da engine. Vencem o CSS homônimo (`fill` do Shape é
- * cor da forma, `border` da Table é a cor da grade).
+ * Por primitiva: as props que ela consome com o significado da engine. Vencem o CSS homônimo
+ * (`fill` do Shape é a cor da forma, `border` da Table é a cor da grade). As props antigas da 0.x
+ * não estão aqui: o normalize as recusa com a troca (removed-props.ts).
  */
-
-const css = (key: string): Handler => BOX_HANDLERS[key] ?? TEXT_HANDLERS[key] ?? pass(key);
-
-const legacyStroke: Handler = (draft, value, key) => ({
-  ...draft,
-  outline: { color: hexOf(key, value), width: draft.outline?.width ?? DEFAULTS.strokeWidth },
-});
-
-const legacyStrokeWidth: Handler = (draft, value) => {
-  const width = parsePt(value) ?? DEFAULTS.strokeWidth;
-  return { ...draft, outline: { color: draft.outline?.color ?? DEFAULTS.lineStroke, width } };
-};
-
-/** `grow={n}` guarda a regra antiga do basis (0 só sem tamanho no eixo principal; ver BasisSource). */
-const legacyGrow: Handler = (draft, value, key) => {
-  const grow = finiteNumber(value);
-  if (grow === undefined) return reject(draft, key, value, INVALID);
-  return { ...draft, flexGrow: grow, basisSource: draft.basisSource === 'none' ? 'grow' : draft.basisSource };
-};
 
 const passAll = (keys: readonly string[]): Readonly<Record<string, Handler>> =>
   Object.fromEntries(keys.map((key) => [key, pass(key)]));
@@ -52,12 +29,6 @@ const passColors = (keys: readonly string[]): Readonly<Record<string, Handler>> 
 // `header={false}` não é objeto e passa intacto.
 const headerColors = (key: string, value: unknown): unknown => withHexFields(key, value, ['fill', 'color']);
 
-const CONTAINER_LEGACY: Readonly<Record<string, Handler>> = {
-  direction: css('flexDirection'),
-  align: css('alignItems'),
-  justify: css('justifyContent'),
-};
-
 /** M12: `id` de qualquer nó (alvo de Connector): string não vazia. */
 const nodeId: Handler = (draft, value, key) => {
   if (typeof value !== 'string' || value.trim() === '') throw new InvalidPropError(key, value, 'use um texto não vazio, único no slide');
@@ -73,18 +44,9 @@ const placeholder: Handler = (draft, value, key) => {
   return pass('placeholder')(draft, value, key);
 };
 
-const ITEM_LEGACY: Readonly<Record<string, Handler>> = {
-  grow: legacyGrow,
-  shrink: css('flexShrink'),
-  id: nodeId,
-};
+const ITEM_OWN: Readonly<Record<string, Handler>> = { id: nodeId };
 
-const TEXT_LEGACY: Readonly<Record<string, Handler>> = {
-  font: css('fontFamily'),
-  size: css('fontSize'),
-  weight: fontWeight,
-  italic: (draft, value) => ({ ...draft, text: { ...draft.text, italic: value === true } }),
-  align: css('textAlign'),
+const TEXT_OWN: Readonly<Record<string, Handler>> = {
   whiteSpace,
   ...passAll(['nowrap', 'fit', 'minSize', 'maxLines']),
 };
@@ -122,23 +84,18 @@ const NO_BOX: Readonly<Record<string, Handler>> = Object.fromEntries(
 export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<string, Handler>>>> = {
   deck: {},
   span: {},
-  slide: { ...CONTAINER_LEGACY, notes: pass('notes'), hidden: pass('hidden'), fill: backgroundColor },
+  slide: { notes: pass('notes'), hidden: pass('hidden') },
   box: {
-    ...CONTAINER_LEGACY,
-    ...ITEM_LEGACY,
-    fill: backgroundColor,
-    stroke: legacyStroke,
-    strokeWidth: legacyStrokeWidth,
-    radius: borderRadius,
+    ...ITEM_OWN,
     paginate: pass('paginate'),
     shape: pass('shape'),
     href,
     placeholder,
   },
-  text: { ...ITEM_LEGACY, ...TEXT_LEGACY, href, paginate: pass('paginate'), placeholder },
-  image: { ...ITEM_LEGACY, src: pass('src'), fit: pass('fit'), objectFit, href, placeholder },
+  text: { ...ITEM_OWN, ...TEXT_OWN, href, paginate: pass('paginate'), placeholder },
+  image: { ...ITEM_OWN, src: pass('src'), objectFit, href, placeholder },
   shape: {
-    ...ITEM_LEGACY,
+    ...ITEM_OWN,
     ...passAll(['kind', 'strokeWidth', 'radius', 'flipH', 'flipV', 'lineStyle', 'lineCap', 'startArrow', 'endArrow']),
     ...passColors(['fill', 'stroke']),
     ...SHAPE_CSS,
@@ -146,19 +103,19 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     backgroundColor: passColor('fill'),
   },
   chart: {
-    ...ITEM_LEGACY,
-    ...passAll(['kind', 'data', 'legend', 'showValues', 'title', 'font', 'size', 'labels', 'xAxis', 'yAxis', 'y2Axis', 'holeSize', 'smooth', 'markers']),
+    ...ITEM_OWN,
+    ...passAll(['kind', 'data', 'legend', 'title', 'font', 'size', 'labels', 'xAxis', 'yAxis', 'y2Axis', 'holeSize', 'smooth', 'markers']),
     colors: passColor('colors', hexListOf),
   },
   table: {
-    ...ITEM_LEGACY,
-    ...passAll(['columns', 'rows', 'cellPadding', 'fit', 'minSize', 'font', 'size', 'lineHeight', 'headerRows', 'cell', 'paginate', 'repeatHeader', 'valign']),
+    ...ITEM_OWN,
+    ...passAll(['columns', 'rows', 'cellPadding', 'fit', 'minSize', 'lineHeight', 'headerRows', 'cell', 'paginate', 'repeatHeader', 'valign']),
     ...passColors(['stripe', 'border']),
     header: passColor('header', headerColors),
   },
   // Path: fill/stroke são a pintura do traço (como no Shape); borda/contorno CSS viram o stroke.
   path: {
-    ...ITEM_LEGACY,
+    ...ITEM_OWN,
     ...passAll(['d', 'viewBox', 'strokeWidth', 'lineCap', 'lineJoin', 'lineStyle']),
     ...passColors(['fill', 'stroke']),
     ...SHAPE_CSS,
@@ -167,11 +124,11 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     backgroundColor: passColor('fill'),
   },
   icon: {
-    ...ITEM_LEGACY,
+    ...ITEM_OWN,
     ...passAll(['src', 'size', 'recolor', 'render']),
     ...NO_BOX,
   },
-  slideNumber: { ...ITEM_LEGACY, ...TEXT_LEGACY, format: pass('format') },
+  slideNumber: { ...ITEM_OWN, ...TEXT_OWN, format: pass('format') },
   connector: {
     ...passAll(CONNECTOR_KEYS),
     stroke: passColor('stroke'),

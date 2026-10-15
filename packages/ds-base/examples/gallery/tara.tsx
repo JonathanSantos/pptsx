@@ -293,7 +293,7 @@ export default defineDeck((ctx: DeckContext) => (
         </Box>
         <Box backgroundColor={C.branco} borderRadius={14} padding={14} boxShadow="0 8px 20px rgba(10,20,80,0.35)">
           <Chart
-            kind="pie" flex={1} legend showValues size={10} color={C.grafite} title="Uso do dinheiro (R$ mi)"
+            kind="pie" flex={1} legend labels size={10} color={C.grafite} title="Uso do dinheiro (R$ mi)"
             colors={[C.grafite, C.cobalto, C.aco, C.chapa]}
             data={{
               categories: ['Lote de 1.000', 'Vendas', 'Certificação', 'Firmware'],

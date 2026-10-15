@@ -11,7 +11,7 @@ const PATH = 'Slide > Box > Text';
 const zeroColumn = (fitPolicy?: 'shrink' | 'error') => (
   <Slide padding={40}>
     <Box height={0} padding={0}>
-      <Text grow={1} {...(fitPolicy ? { fit: fitPolicy } : {})}>
+      <Text flex={1} {...(fitPolicy ? { fit: fitPolicy } : {})}>
         Texto que não tem onde ficar
       </Text>
     </Box>
@@ -39,7 +39,7 @@ describe('fit — zero-height area', () => {
     const r = fit(
       <Slide padding={40}>
         <Box height={30}>
-          <Text size={24} fit="error">
+          <Text fontSize={24} fit="error">
             {'Texto longo que não cabe em trinta pontos de altura. '.repeat(10)}
           </Text>
         </Box>

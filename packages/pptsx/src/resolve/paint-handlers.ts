@@ -1,5 +1,6 @@
 import { strictColorOf } from './colors.ts';
 import { finiteNumber, INVALID, reject, setField } from './draft.ts';
+import { RemovedPropError } from './errors.ts';
 import type { Draft, Handler } from './draft.ts';
 import { SIDES } from './box-handlers.ts';
 import { parseAngle, parseColor, parsePt, parseShadow, parseSides, parseTransform } from './values.ts';
@@ -27,12 +28,13 @@ const backgroundImage: Handler = (draft, value, key) => {
 const hasImage = (value: unknown): value is { readonly image: unknown } =>
   typeof value === 'object' && value !== null && 'image' in value;
 
-/** `background` CSS: cor ou url(); o objeto { image } da engine também vale (Slide). */
+const IMAGE_PATH = /\.(png|jpe?g|gif|svg|webp)$/i;
+
+/** `background` CSS: cor ou url(). As formas da 0.x (`{ image }`, caminho cru) foram removidas na 1.0. */
 const backgroundShorthand: Handler = (draft, value, key) => {
-  if (hasImage(value)) return { ...draft, backgroundImage: String(value.image) };
+  if (hasImage(value)) throw new RemovedPropError(key, value, `backgroundImage="url(${String(value.image)})"`);
   if (typeof value === 'string' && value.trim().startsWith('url(')) return backgroundImage(draft, value, key);
-  // Caminho de imagem cru (API antiga do Slide: background="./bg.png").
-  if (typeof value === 'string' && parseColor(value) === undefined) return { ...draft, backgroundImage: value };
+  if (typeof value === 'string' && parseColor(value) === undefined && IMAGE_PATH.test(value.trim())) throw new RemovedPropError(key, value, `backgroundImage="url(${value.trim()})"`);
   return backgroundColor(draft, value, key);
 };
 

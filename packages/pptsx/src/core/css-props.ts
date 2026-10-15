@@ -140,26 +140,32 @@ type Css = CssBoxProps & CssTextProps;
 type Legacy<P> = Omit<P, 'padding'> & { readonly padding?: Num | string | { readonly top?: Num; readonly right?: Num; readonly bottom?: Num; readonly left?: Num } };
 type WithCss<P> = ResponsiveProps<Omit<Legacy<P>, keyof Css> & Css> & { readonly children?: unknown };
 
-export type CssSlideProps = WithCss<SlideProps>;
-export type CssBoxPropsAuthor = WithCss<BoxProps>;
-export type CssTextPropsAuthor = WithCss<TextProps> & {
+// M18-6: as props da 0.x (aliases) saíram do que o autor escreve; os tipos-base continuam descrevendo o
+// nó resolvido (onde `size`, `weight`… são o estilo de texto efetivo, não props de autor).
+type ItemAliases = 'grow' | 'shrink';
+type ContainerAliases = 'direction' | 'align' | 'justify';
+type TextAliases = 'font' | 'size' | 'weight' | 'italic' | 'align';
+
+export type CssSlideProps = WithCss<Omit<SlideProps, ContainerAliases | 'fill'>>;
+export type CssBoxPropsAuthor = WithCss<Omit<BoxProps, ItemAliases | ContainerAliases | 'fill' | 'stroke' | 'strokeWidth' | 'radius'>>;
+export type CssTextPropsAuthor = WithCss<Omit<TextProps, ItemAliases | TextAliases>> & {
   readonly whiteSpace?: Responsive<'normal' | 'nowrap'>;
 };
-export type CssImagePropsAuthor = WithCss<ImageProps> & { readonly objectFit?: Responsive<'contain' | 'cover'> };
-export type CssShapePropsAuthor = WithCss<ShapeProps>;
-export type CssChartPropsAuthor = WithCss<ChartProps>;
+export type CssImagePropsAuthor = WithCss<Omit<ImageProps, ItemAliases | 'fit'>> & { readonly objectFit?: Responsive<'contain' | 'cover'> };
+export type CssShapePropsAuthor = WithCss<Omit<ShapeProps, ItemAliases>>;
+export type CssChartPropsAuthor = WithCss<Omit<ChartProps, ItemAliases>>;
 /** M12: Path e Icon aceitam o CSS de item (tamanho, margem, opacity, rotate, boxShadow…). */
-export type CssPathPropsAuthor = WithCss<PathProps>;
-export type CssIconPropsAuthor = WithCss<IconProps>;
+export type CssPathPropsAuthor = WithCss<Omit<PathProps, ItemAliases>>;
+export type CssIconPropsAuthor = WithCss<Omit<IconProps, ItemAliases>>;
 /** M12: Connector não é caixa: só as props dele (responsivas). */
 export type ConnectorPropsAuthor = ResponsiveProps<ConnectorProps>;
 /** M13: SlideNumber é um Text de uma linha (CSS de item e de texto). */
-export type CssSlideNumberPropsAuthor = WithCss<SlideNumberProps>;
+export type CssSlideNumberPropsAuthor = WithCss<Omit<SlideNumberProps, ItemAliases | TextAliases>>;
 /** Em Table, `border` continua sendo a cor das linhas da grade (prop da engine). */
-export type CssTablePropsAuthor = ResponsiveProps<Omit<TableProps, keyof Css | 'border'> & Omit<Css, 'border'>> & {
+export type CssTablePropsAuthor = ResponsiveProps<Omit<TableProps, keyof Css | 'border' | ItemAliases | 'font' | 'size'> & Omit<Css, 'border'>> & {
   readonly border?: Responsive<Color>;
 };
-export interface CssSpanProps extends SpanProps {
+export interface CssSpanProps extends Omit<SpanProps, 'weight' | 'italic'> {
   /** M13-7: corpo do trecho (a linha cresce para caber). */
   readonly fontSize?: CssLengthInput;
   /** M13-7: família do trecho (registrada em `fonts`, como a do Text). */

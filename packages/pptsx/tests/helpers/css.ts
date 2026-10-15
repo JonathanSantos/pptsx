@@ -115,7 +115,8 @@ const itemCss = (props: EngineProps): Partial<CssStyle> =>
     minHeight: props.minHeight,
     maxHeight: props.maxHeight,
     flexGrow: props.grow,
-    basisSource: props.grow === undefined ? undefined : ('grow' as const),
+    basisSource: props.grow === undefined ? undefined : ('flex' as const),
+    flexBasis: props.grow === undefined ? undefined : 0,
     flexShrink: props.shrink,
     alignSelf: props.alignSelf === undefined ? undefined : ALIGNS[props.alignSelf],
   });

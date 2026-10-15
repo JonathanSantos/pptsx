@@ -88,7 +88,7 @@ export default defineDeck(() => (
             Faixa do topo vai da coluna 2 até o fim (<B>2 / -1</B>).
           </Text>
         </Box>
-        <Chart kind="bar" data={{ categories: ['Q4', 'Q1', 'Q2', 'Q3'], series: [{ name: 'Receita', values: [38.2, 41.5, 45.9, 52.4] }] }} colors={[accent]} showValues />
+        <Chart kind="bar" data={{ categories: ['Q4', 'Q1', 'Q2', 'Q3'], series: [{ name: 'Receita', values: [38.2, 41.5, 45.9, 52.4] }] }} colors={[accent]} labels />
         <Chart kind="pie" data={{ categories: ['Varejo', 'Crédito', 'Seguros', 'Outros'], series: [{ name: 'Receita nova', values: [4, 0.6, 0.7, 1.2] }] }} />
       </Box>
     </Slide>

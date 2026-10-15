@@ -1,16 +1,15 @@
-import type { DeckDefinition, PositionedNode, PrimitiveKind, RenderOptions, Severity, SizeSpec, Theme } from '../core/types.ts';
+import type { DeckDefinition, PositionedNode, RenderOptions, Severity, SizeSpec, Theme } from '../core/types.ts';
 import { groupDiagnostics } from '../fit/index.ts';
 import { render } from '../render.ts';
 import type { Diagnostic } from '../core/types.ts';
 import { createResolveEnv, resolveDeck, ResolveError, resolveTheme } from '../resolve/index.ts';
 import { createContext, resolveSize } from '../sizes.ts';
-import { aliasRuleOf, suggestionOf } from './aliases.ts';
 import type { LintContext, LintRule } from './rule.ts';
 import type { ResolvedDeck, ResolvedSlide } from '../core/types.ts';
 
 /**
  * M16-5: `pptsx lint` — carrega e resolve o deck (sem gravar nada) e aponta o que vai dar trabalho:
- * props antigas (com a troca), CSS sem de/para, `lineHeight` numérico alto (o Keynote desce a 1ª linha),
+ * props da 0.x (erro desde a 1.0, com a troca), CSS sem de/para, `lineHeight` numérico alto (o Keynote desce a 1ª linha),
  * `fr` solto em grid, cores fora do tema e erro de estrutura. Mensagens para LLM, como os diagnósticos.
  */
 
@@ -40,34 +39,6 @@ export interface LintOptions {
 
 /** lineHeight numérico a partir daqui desloca a 1ª linha no Keynote de forma visível (M11-G: até 2,3 pt com 1.5). */
 const KEYNOTE_LINE_HEIGHT = 1.5;
-
-const formatValue = (value: unknown): string => {
-  if (typeof value === 'string') return `"${value}"`;
-  if (typeof value === 'number' || typeof value === 'boolean') return `{${String(value)}}`;
-  return '{…}';
-};
-
-interface Observed {
-  readonly kind: PrimitiveKind;
-  readonly path: string;
-  readonly slide: number;
-  readonly props: Readonly<Record<string, unknown>>;
-}
-
-const legacyFindingsOf = (observed: readonly Observed[]): readonly LintFinding[] =>
-  observed.flatMap(({ kind, path, slide, props }) =>
-    Object.entries(props).flatMap(([prop, value]): readonly LintFinding[] => {
-      const rule = aliasRuleOf(kind, prop);
-      if (rule === undefined) return [];
-      return [{
-        severity: 'warning',
-        code: 'legacy-prop',
-        slide,
-        path,
-        message: `Prop antiga ${prop}=${formatValue(value)} em <${kind}>: troque por ${suggestionOf(rule, value)}. As props antigas saem na 1.0; \`pptsx lint --fix\` reescreve o arquivo do deck.`,
-      }];
-    }),
-  );
 
 const nodesOf = (nodes: readonly PositionedNode[]): readonly PositionedNode[] =>
   nodes.flatMap((node) => (node.kind === 'box' ? [node, ...nodesOf(node.children)] : [node]));
@@ -130,21 +101,14 @@ const mergeSizes = (perSize: readonly (readonly LintFinding[])[]): readonly Lint
 };
 
 export const lintDeck = async (deck: DeckDefinition, options: LintOptions): Promise<readonly LintFinding[]> => {
-  const observed: Observed[] = [];
-  const env = {
-    ...createResolveEnv(options.baseDir),
-    observe: (kind: PrimitiveKind, path: string, props: Readonly<Record<string, unknown>>) => {
-      const slide = observed.filter((item) => item.kind === 'slide').length + (kind === 'slide' ? 1 : 0);
-      observed.push({ kind, path, slide, props });
-    },
-  };
   const first = resolveSize(options.sizes[0] ?? '16x9');
   try {
     const ctx = createContext(first);
-    resolveDeck(deck(ctx), ctx, env);
+    resolveDeck(deck(ctx), ctx, createResolveEnv(options.baseDir));
   } catch (error) {
     if (!(error instanceof ResolveError)) throw error;
-    return [{ severity: 'error', code: 'structure', slide: 0, path: error.path, message: error.message }];
+    // M18-6: prop da 0.x é erro de resolve; o achado leva a troca e o comando que migra.
+    return [{ severity: 'error', code: error.removedProp ? 'legacy-prop' : 'structure', slide: 0, path: error.path, message: error.message }];
   }
   const theme = options.theme === undefined ? undefined : resolveTheme(options.theme);
   const declared = theme === undefined ? undefined : new Set(theme.declared.map((name) => theme.colors[name].toUpperCase()));
@@ -152,7 +116,7 @@ export const lintDeck = async (deck: DeckDefinition, options: LintOptions): Prom
     options.sizes.map(async (size) => [...(await sizeFindingsOf(deck, size, options, declared)), ...externalFindingsOf(deck, size, options)]),
   );
   const disabled = new Set(options.disable ?? []);
-  return groupFindings([...legacyFindingsOf(observed), ...mergeSizes(perSize)].filter((finding) => !disabled.has(finding.code)));
+  return groupFindings(mergeSizes(perSize).filter((finding) => !disabled.has(finding.code)));
 };
 
 // ───────────── regras externas (M17) ─────────────

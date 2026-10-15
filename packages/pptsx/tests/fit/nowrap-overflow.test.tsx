@@ -28,7 +28,7 @@ describe('fit — nowrap width overflow with shrink', () => {
     fit(
       <Slide padding={40}>
         <Box width={180}>
-          <Text nowrap size={20}>
+          <Text nowrap fontSize={20}>
             {LONG}
           </Text>
         </Box>
@@ -70,7 +70,7 @@ describe('fit — nowrap that fits after shrinking', () => {
     fit(
       <Slide padding={40}>
         <Box width={180}>
-          <Text nowrap size={20}>
+          <Text nowrap fontSize={20}>
             {ALMOST}
           </Text>
         </Box>
@@ -97,7 +97,7 @@ describe('fit — nowrap with fit="error"', () => {
     fit(
       <Slide padding={40}>
         <Box width={180}>
-          <Text nowrap fit="error" size={20}>
+          <Text nowrap fit="error" fontSize={20}>
             {LONG}
           </Text>
         </Box>
@@ -123,7 +123,7 @@ describe('fit — width and height overflow on the same Text', () => {
     fit(
       <Slide padding={40}>
         <Box width={180} height={30}>
-          <Text nowrap size={20}>
+          <Text nowrap fontSize={20}>
             {`${LONG}\nsegunda linha\nterceira linha`}
           </Text>
         </Box>
@@ -146,8 +146,8 @@ describe('fit — the width overflow does not receive causedBy from the height d
     fit(
       <Slide padding={40}>
         <Box width={180} height={60}>
-          <Text size={20}>{'um texto comprido que pede muita altura '.repeat(6)}</Text>
-          <Text nowrap size={20}>
+          <Text fontSize={20}>{'um texto comprido que pede muita altura '.repeat(6)}</Text>
+          <Text nowrap fontSize={20}>
             {LONG}
           </Text>
         </Box>
@@ -165,11 +165,11 @@ describe('fit — the width overflow does not receive causedBy from the height d
 describe('layout/fit — nowrap in a row gets minWidth', () => {
   const row = (nowrap: boolean) => (
     <Slide padding={40}>
-      <Box direction="row" width={400} gap={10}>
-        <Text nowrap={nowrap} size={20}>
+      <Box display="flex" width={400} gap={10}>
+        <Text nowrap={nowrap} fontSize={20}>
           Rótulo comprido aqui
         </Text>
-        <Text size={20}>{LONG}</Text>
+        <Text fontSize={20}>{LONG}</Text>
       </Box>
     </Slide>
   );
@@ -195,11 +195,11 @@ describe('fit — width cause in a row (M8-C "Causa por largura")', () => {
   const result = lazy(() =>
     fit(
       <Slide padding={40}>
-        <Box direction="row" width={300} height={80} gap={10}>
-          <Text nowrap size={20}>
+        <Box display="flex" width={300} height={80} gap={10}>
+          <Text nowrap fontSize={20}>
             {LONG}
           </Text>
-          <Text size={20}>vizinho com texto que precisa de espaço</Text>
+          <Text fontSize={20}>vizinho com texto que precisa de espaço</Text>
         </Box>
       </Slide>,
     ),

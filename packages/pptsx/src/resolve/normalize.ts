@@ -1,6 +1,8 @@
 import { DEFAULTS } from '../core/defaults.ts';
 import type { BorderSide, CssFlexDirection, CssStyle, Display, GridPlacement, Len, MarginLen, NotEmitted, PrimitiveKind, Sides } from '../core/types.ts';
-import { KIND_HANDLERS } from './alias-handlers.ts';
+import { KIND_HANDLERS } from './kind-handlers.ts';
+import { RemovedPropError } from './errors.ts';
+import { aliasRuleOf, suggestionOf } from './removed-props.ts';
 import { BOX_HANDLERS } from './box-handlers.ts';
 import { EMPTY_DRAFT, reject } from './draft.ts';
 import type { BorderDraft, Draft, Handler, InheritedText } from './draft.ts';
@@ -9,8 +11,8 @@ import { PAINT_HANDLERS } from './paint-handlers.ts';
 import { TEXT_HANDLERS } from './text-handlers.ts';
 
 /**
- * Normalização de um nó: props do autor (já sem responsivo) → `CssStyle` (sem shorthands,
- * nomes antigos convertidos) + o estilo de texto que desce para os filhos (herança).
+ * Normalização de um nó: props do autor (já sem responsivo) → `CssStyle` (sem shorthands)
+ * + o estilo de texto que desce para os filhos (herança).
  */
 
 const CSS_HANDLERS: Readonly<Record<string, Handler>> = { ...BOX_HANDLERS, ...PAINT_HANDLERS, ...OUTLINE_HANDLERS, ...TEXT_HANDLERS };
@@ -39,7 +41,17 @@ const SHORTHANDS: ReadonlySet<string> = new Set([
 
 const priorityOf = (key: string): number => (SHORTHANDS.has(key) ? 0 : 1);
 
-const handlerOf = (kind: PrimitiveKind, key: string): Handler => KIND_HANDLERS[kind][key] ?? CSS_HANDLERS[key] ?? unknownHandler;
+// M18-6: prop da 0.x vira erro com a troca. `background` fica com o shorthand CSS, que recusa a forma antiga.
+const removedHandlerOf = (kind: PrimitiveKind, key: string): Handler | undefined => {
+  const rule = aliasRuleOf(kind, key);
+  if (rule === undefined || rule.special === 'background') return undefined;
+  return (_draft, value) => {
+    throw new RemovedPropError(key, value, suggestionOf(rule, value));
+  };
+};
+
+const handlerOf = (kind: PrimitiveKind, key: string): Handler =>
+  KIND_HANDLERS[kind][key] ?? removedHandlerOf(kind, key) ?? CSS_HANDLERS[key] ?? unknownHandler;
 
 type Entry = readonly [string, unknown];
 

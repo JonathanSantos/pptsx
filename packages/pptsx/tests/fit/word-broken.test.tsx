@@ -80,7 +80,7 @@ const expectEveryBrokenWordReported = (r: FitResult) => {
 describe('fit — word broken by character (M5-F)', () => {
   it('sanity: at the original size the word breaks in the chosen box', () => {
     const r = fitSlide({
-      slide: resolveSlide(oneText(boxFitting(WORD, 34), { size: 40, fit: 'error', children: WORD })),
+      slide: resolveSlide(oneText(boxFitting(WORD, 34), { fontSize: 40, fit: 'error', children: WORD })),
       slideIndex: 0,
       size: SIZE_16X9,
       env,
@@ -89,7 +89,7 @@ describe('fit — word broken by character (M5-F)', () => {
   });
 
   it('fit="shrink": shrinks until the word no longer breaks and reports text-shrunk (info)', () => {
-    const r = fit(oneText(boxFitting(WORD, 34), { size: 40, children: WORD }));
+    const r = fit(oneText(boxFitting(WORD, 34), { fontSize: 40, children: WORD }));
     const t = only(r);
     expect(t.text.wordBroken).toBe(false);
     expect(t.text.lines).toEqual([WORD]);
@@ -106,7 +106,7 @@ describe('fit — word broken by character (M5-F)', () => {
 
   it('fit="shrink": a word that never fits down to minSize → text-word-broken warning with fromSize/toSize', () => {
     // mínimo padrão de 40 = 30; a palavra só cabe em ~24 pt.
-    const r = fit(oneText(boxFitting(WORD, 24), { size: 40, children: WORD }));
+    const r = fit(oneText(boxFitting(WORD, 24), { fontSize: 40, children: WORD }));
     const t = only(r);
     expect(t.text.wordBroken).toBe(true);
     expect(textStyleOf(t.props).size).toBe(30);
@@ -119,7 +119,7 @@ describe('fit — word broken by character (M5-F)', () => {
 
   it('cites every broken word in the message', () => {
     const content = `${WORD} Disponibilidade`;
-    const r = fit(oneText(boxFitting('Disponibilidade', 20), { size: 40, children: content }));
+    const r = fit(oneText(boxFitting('Disponibilidade', 20), { fontSize: 40, children: content }));
     const [w] = byCode(r, 'text-word-broken');
     expect(w).toBeDefined();
     expect(w!.message).toContain('"Disponibilidade"');
@@ -127,7 +127,7 @@ describe('fit — word broken by character (M5-F)', () => {
   });
 
   it.each(['error', 'truncate'] as const)('fit="%s": word broken → warning without changing the size', (policy) => {
-    const r = fit(oneText(boxFitting(WORD, 30), { size: 40, fit: policy, children: WORD }));
+    const r = fit(oneText(boxFitting(WORD, 30), { fontSize: 40, fit: policy, children: WORD }));
     const t = only(r);
     expect(textStyleOf(t.props).size).toBe(40);
     expect(t.text.wordBroken).toBe(true);
@@ -141,8 +141,8 @@ describe('fit — word broken by character (M5-F)', () => {
     const r = fit(
       <Slide>
         <Box width={boxFitting(WORD, 30)}>
-          <Text size={40} fit="error">{WORD}</Text>
-          <Text size={20}>ok</Text>
+          <Text fontSize={40} fit="error">{WORD}</Text>
+          <Text fontSize={20}>ok</Text>
         </Box>
       </Slide>,
     );
@@ -152,7 +152,7 @@ describe('fit — word broken by character (M5-F)', () => {
   });
 
   it('wrapping only between words is not reported', () => {
-    const r = fit(oneText(200, { size: 24, children: 'Lorem ipsum dolor sit amet consectetur adipiscing elit' }));
+    const r = fit(oneText(200, { fontSize: 24, children: 'Lorem ipsum dolor sit amet consectetur adipiscing elit' }));
     expect(only(r).text.lines.length).toBeGreaterThan(1);
     expect(byCode(r, 'text-word-broken')).toEqual([]);
     expect(byCode(r, 'text-shrunk')).toEqual([]);
@@ -203,11 +203,11 @@ describe('fit — KpiRow with 5 long values never ships broken words silently', 
 describe('fit — float32 frame width does not break a centered short text (regression)', () => {
   it('"Perguntas?" centered with maxWidth 80% → 0 diagnostics and 1 line each', () => {
     const r = fit(
-      <Slide justify="center" padding={40}>
-        <Text size={40} weight="bold" alignSelf="center" maxWidth="80%" fit="truncate" maxLines={1}>
+      <Slide justifyContent="center" padding={40}>
+        <Text fontSize={40} fontWeight="bold" alignSelf="center" maxWidth="80%" fit="truncate" maxLines={1}>
           Perguntas?
         </Text>
-        <Text size={20} alignSelf="center" maxWidth="80%">
+        <Text fontSize={20} alignSelf="center" maxWidth="80%">
           Perguntas?
         </Text>
       </Slide>,
@@ -223,8 +223,8 @@ describe('fit — float32 frame width does not break a centered short text (regr
 
   it.each([SIZE_16X9, SIZE_4X3])('same in $name', (size) => {
     const r = fit(
-      <Slide justify="center" padding={40}>
-        <Text size={40} weight="bold" alignSelf="center" maxWidth="80%" fit="truncate" maxLines={1}>
+      <Slide justifyContent="center" padding={40}>
+        <Text fontSize={40} fontWeight="bold" alignSelf="center" maxWidth="80%" fit="truncate" maxLines={1}>
           Perguntas?
         </Text>
       </Slide>,

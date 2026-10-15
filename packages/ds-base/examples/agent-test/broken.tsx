@@ -20,10 +20,10 @@ const kpis: Kpi[] = [
 // Cartão de KPI com tamanho de valor controlável (o KpiCard pronto não expõe
 // size e quebrava números no meio com 5 cards por linha).
 const Indicador = ({ label, value, delta, trend, valueSize }: Kpi & { valueSize: number }) => (
-  <Box grow={1} fill={color.surface} radius={8} padding={16} gap={4} justify="center">
-    <Text size={font.small} color={color.muted}>{label}</Text>
-    <Text size={valueSize} minSize={24} weight="bold" color={color.ink}>{value}</Text>
-    <Text size={font.small} weight="bold" color={trend === 'up' ? color.positive : color.negative}>
+  <Box flex={1} backgroundColor={color.surface} borderRadius={8} padding={16} gap={4} justifyContent="center">
+    <Text fontSize={font.small} color={color.muted}>{label}</Text>
+    <Text fontSize={valueSize} minSize={24} fontWeight="bold" color={color.ink}>{value}</Text>
+    <Text fontSize={font.small} fontWeight="bold" color={trend === 'up' ? color.positive : color.negative}>
       {trend === 'up' ? '▲ ' : '▼ '}{delta}
     </Text>
   </Box>
@@ -44,9 +44,9 @@ export default defineDeck((ctx) => (
     </ContentLayout>
 
     <ContentLayout title="Indicadores">
-      <Box gap={16} grow={1}>
+      <Box gap={16} flex={1}>
         {[kpis.slice(0, 3), kpis.slice(3)].map((row) => (
-          <Box direction="row" gap={16} grow={1}>
+          <Box display="flex" gap={16} flex={1}>
             {row.map((k) => (
               <Indicador {...k} valueSize={font.h1} />
             ))}
@@ -56,11 +56,11 @@ export default defineDeck((ctx) => (
     </ContentLayout>
 
     <ContentLayout title="Linha do tempo">
-      <Box direction="row" gap={12}>
+      <Box display="flex" gap={12}>
         {['Planejamento', 'Migração', 'Validação', 'Desligamento'].map((phase, i) => (
-          <Box grow={1} padding={12} gap={4} fill={color.surface} radius={8}>
-            <Text size={font.small} weight="bold" color={color.accent}>Fase {i + 1}</Text>
-            <Text size={18} weight="bold" color={color.ink}>{phase}</Text>
+          <Box flex={1} padding={12} gap={4} backgroundColor={color.surface} borderRadius={8}>
+            <Text fontSize={font.small} fontWeight="bold" color={color.accent}>Fase {i + 1}</Text>
+            <Text fontSize={18} fontWeight="bold" color={color.ink}>{phase}</Text>
           </Box>
         ))}
       </Box>

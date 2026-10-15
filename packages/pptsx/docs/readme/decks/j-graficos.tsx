@@ -8,7 +8,7 @@ export default defineDeck(() => (
       <Text fontSize={26} fontWeight="bold">Gráficos nativos e editáveis</Text>
       <Box display="grid" gap={16} flex={1}
         gridTemplateColumns="repeat(3, minmax(0, 1fr))">
-        <Chart kind="bar" title="Receita (R$ mi)" showValues
+        <Chart kind="bar" title="Receita (R$ mi)" labels
           colors={['#2F6FED']}
           data={{ categories: quarters,
             series: [{ name: 'Receita', values: [38.2, 41.5, 45.9, 52.4] }] }} />
