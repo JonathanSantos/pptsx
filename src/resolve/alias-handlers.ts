@@ -117,7 +117,15 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     ...passColors(['stripe', 'border']),
     header: passColor('header', headerColors),
   },
-  path: {},
+  // Path: fill/stroke são a pintura do traço (como no Shape); borda/contorno CSS viram o stroke.
+  path: {
+    ...ITEM_LEGACY,
+    ...passAll(['d', 'viewBox', 'strokeWidth', 'lineCap', 'lineJoin', 'lineStyle']),
+    ...passColors(['fill', 'stroke']),
+    ...SHAPE_CSS,
+    borderRadius: (draft, value, key) => reject(draft, key, value, 'o Path não tem cantos; desenhe-os no d'),
+    backgroundColor: passColor('fill'),
+  },
   icon: {},
   connector: {},
 };

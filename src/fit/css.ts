@@ -35,7 +35,7 @@ const contextualOf = (node: PositionedNode): readonly NotEmitted[] => {
   if (css.overflow === 'hidden' && node.kind !== 'image') {
     notes.push({ property: 'overflow', value: 'hidden', reason: 'o PPTX não recorta formas; os filhos saem inteiros' });
   }
-  if (css.boxShadow !== undefined && css.backgroundColor === undefined && node.kind !== 'shape') {
+  if (css.boxShadow !== undefined && css.backgroundColor === undefined && node.kind !== 'shape' && node.kind !== 'path' && node.kind !== 'icon') {
     notes.push({ property: 'boxShadow', value: 'sombra', reason: 'sem backgroundColor a forma não tem preenchimento e a sombra não aparece no PPTX' });
   }
   if (css.borderRadius !== undefined && css.borderRadius > 0 && hasSideBorders(css) && boxShapeOf(node) === 'rect') {

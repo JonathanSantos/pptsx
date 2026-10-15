@@ -2,6 +2,7 @@ import type { BorderSide, BorderStyle, CssStyle, PositionedNode, Rect, ShapeKind
 import {
   boxShapeOf,
   hasBackgroundImage,
+  hasBoxDecoration,
   insetRadiusOf,
   insetRect,
   sideSegmentOf,
@@ -36,7 +37,7 @@ const strokeAttrs = (side: BorderSide) => ({
   'stroke-dasharray': DASHES[side.style],
 });
 
-const shadowFilter = (css: CssStyle, id: string): string => {
+export const shadowFilterSvg = (css: CssStyle, id: string): string => {
   const shadow = css.boxShadow;
   if (shadow === undefined) return '';
   const drop = element('feDropShadow', {
@@ -98,10 +99,11 @@ const outlineSvg = (css: CssStyle, frame: Rect, kind: ShapeKind): string =>
 
 /** Sombra, fundo, imagem de fundo (cover), bordas e contorno, nessa ordem (a do emissor). */
 export const decorationSvg = (node: PositionedNode, loadImage: (src: string) => string, index: number): string => {
+  if (!hasBoxDecoration(node)) return '';
   const { css, frame } = node;
   const filterId = `shadow-${index}`;
   const src = hasBackgroundImage(node) ? css.backgroundImage : undefined;
   const image = src === undefined ? '' : imageElementSvg(frame, loadImage(src), 'cover', `bg-${index}`);
   const kind = boxShapeOf(node);
-  return shadowFilter(css, filterId) + backgroundSvg(css, frame, filterId, kind) + image + bordersSvg(css, frame, kind) + outlineSvg(css, frame, kind);
+  return shadowFilterSvg(css, filterId) + backgroundSvg(css, frame, filterId, kind) + image + bordersSvg(css, frame, kind) + outlineSvg(css, frame, kind);
 };

@@ -26,6 +26,9 @@ export const Shape = definePrimitive('shape');
 export const Span = definePrimitive('span');
 export const Chart = definePrimitive('chart');
 export const Table = definePrimitive('table');
+export const Path = definePrimitive('path');
+export const Icon = definePrimitive('icon');
+export const Connector = definePrimitive('connector');
 
 // Componentes (não primitivas): props do autor vêm depois, então vencem o padrão.
 export function B(props: AuthorPropsMap['span']): SlideElement {

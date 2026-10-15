@@ -36,6 +36,7 @@ import type { TextPatch } from './rewrite.ts';
 import { isWithin } from './scope.ts';
 import { shrinkRounds } from './search.ts';
 import { tableDiagnostics } from './table.ts';
+import { vectorDiagnosticsOf } from './vector.ts';
 
 export interface FitInput {
   readonly slide: ResolvedSlide;
@@ -156,7 +157,7 @@ const diagnosticsOf = (pass: Pass, plans: Plans, input: FitInput): readonly Diag
     return node === undefined ? [] : [outOfSlide(ctx, overflow, sidesOutside(node.frame, pass.positioned.frame))];
   });
   const images = nodes.filter(isPositionedImage).flatMap((image) => imageDiagnostic(image, ctx));
-  return [...leaves, ...boxes, ...outside, ...images];
+  return [...leaves, ...boxes, ...outside, ...images, ...vectorDiagnosticsOf(nodes, ctx)];
 };
 
 /** Planos que podem encolher: os Text/Table dentro do escopo congelado ficam com o size do autor. */

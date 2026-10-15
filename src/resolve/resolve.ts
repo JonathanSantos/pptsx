@@ -21,6 +21,7 @@ import { normalizeProps } from './normalize.ts';
 import type { Normalized } from './normalize.ts';
 import { assertPaginateInFlow, assertSinglePaginate } from './paginate.ts';
 import { resolvePropsOf } from './props.ts';
+import { pathGeometryOf } from './path.ts';
 import { runsOf } from './runs.ts';
 import { assertBoxShape, assertValidShape } from './shape.ts';
 import type { RunStyle } from './runs.ts';
@@ -124,6 +125,13 @@ const resolveShape = (item: ExpandedPrimitive, path: string, n: Normalized): Res
   return { kind: 'shape', path, props, css: n.css };
 };
 
+const resolvePath = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
+  assertNoChildren(item, path);
+  const props = legacyPropsOf('path', n);
+  const { commands, viewBox, problem } = pathGeometryOf(props, path);
+  return { kind: 'path', path, props, css: n.css, commands, viewBox, ...(problem === undefined ? {} : { problem }) };
+};
+
 const resolveTable = (item: ExpandedPrimitive, path: string, n: Normalized): ResolvedNode => {
   assertNoChildren(item, path);
   const props = legacyPropsOf('table', n);
@@ -156,6 +164,7 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResponsiveConte
     case 'table':
       return resolveTable(item, path, n);
     case 'path':
+      return resolvePath(item, path, n);
     case 'icon':
     case 'connector':
       throw new ResolveError(`<${nameOf(item)}> ainda não está disponível`, path);

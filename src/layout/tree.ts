@@ -150,8 +150,39 @@ const buildImage: Builder<ResolvedImage> = (source, yoga, { env, parent }) => {
   return { source, yoga, children: [], intrinsic };
 };
 
-const buildLeaf: Builder<ResolvedShape | ResolvedChart | ResolvedPath | ResolvedIcon> = (source, yoga, { parent }) => {
+const buildLeaf: Builder<ResolvedShape | ResolvedChart> = (source, yoga, { parent }) => {
   applyStyle(yoga, { ...toItemStyle(source.css, parent), ...toBoxStyle(source.css) });
+  return { source, yoga, children: [] };
+};
+
+/**
+ * M12: Path e Icon têm tamanho natural (o viewBox em pt; no ícone, altura = size). Sem width,
+ * height nem flex o nó fica com ele; com um eixo só, o outro sai da proporção (aspectRatio).
+ */
+const naturalSizeOf = (source: ResolvedPath | ResolvedIcon): Dimensions => {
+  const { width, height } = source.viewBox;
+  if (source.kind === 'path') return { width, height };
+  const size = source.props.size ?? DEFAULTS.icon.size;
+  return { width: height > 0 ? (size * width) / height : size, height: size };
+};
+
+/** Absoluto com os dois lados de um eixo (`inset: 0`) já tem esse eixo definido. */
+const insetSpans = (css: CssStyle, a: 'left' | 'top', b: 'right' | 'bottom'): boolean =>
+  css.position === 'absolute' && css.inset[a] !== undefined && css.inset[b] !== undefined;
+
+const vectorSizeStyle = (css: CssStyle, natural: Dimensions): YogaStyle => {
+  const hasWidth = css.width !== undefined || insetSpans(css, 'left', 'right');
+  const hasHeight = css.height !== undefined || insetSpans(css, 'top', 'bottom');
+  if (!hasWidth && !hasHeight && css.flexGrow === 0) return { width: natural.width, height: natural.height };
+  // Só um eixo do autor: o outro pela proporção. Com os dois (ou flex), o autor decide a caixa.
+  const ratio = natural.height > 0 && natural.width > 0 ? natural.width / natural.height : undefined;
+  if (hasWidth === hasHeight || css.aspectRatio !== undefined || ratio === undefined) return {};
+  return { aspectRatio: ratio };
+};
+
+const buildVector: Builder<ResolvedPath | ResolvedIcon> = (source, yoga, { parent }) => {
+  const sizing = vectorSizeStyle(source.css, naturalSizeOf(source));
+  applyStyle(yoga, { ...toItemStyle(source.css, parent), ...sizing, ...toBoxStyle(source.css) });
   return { source, yoga, children: [] };
 };
 
@@ -183,8 +214,8 @@ const BUILDERS: DispatchTable<ResolvedNode, BuiltNode, [yoga: YogaNode, ctx: Bui
   shape: buildLeaf,
   chart: buildLeaf,
   table: buildTable,
-  path: buildLeaf,
-  icon: buildLeaf,
+  path: buildVector,
+  icon: buildVector,
 };
 
 const isInFlow = (node: ResolvedNode): boolean => node.css.position !== 'absolute';

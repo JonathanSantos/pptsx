@@ -162,12 +162,17 @@ export interface Decoration {
 
 const EMPTY: Decoration = { under: [], over: [] };
 
+/** M12: nós vetoriais (Path, Icon) não pintam caixa (fundo, borda, contorno). */
+export const hasBoxDecoration = (node: PositionedNode): boolean => node.kind !== 'path' && node.kind !== 'icon';
+
 /**
  * Fundo + borda uniforme = uma forma (fill + linha recuada). Bordas diferentes por lado = fundo
  * sem linha + uma linha por lado. Com imagem de fundo, as bordas vão por cima dela. Só contorno
  * (o `fill`/`stroke` antigos) = uma forma, como a engine emitia.
  */
 export const decorationOf = (node: PositionedNode, item: PaintItem): Decoration => {
+  // Path e Icon não têm caixa: a borda CSS já virou o traço deles e a sombra vai na própria forma.
+  if (!hasBoxDecoration(node)) return EMPTY;
   const { css } = node;
   const uniform = uniformBorderOf(css);
   const hasImage = hasBackgroundImage(node);
