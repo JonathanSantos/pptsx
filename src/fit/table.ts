@@ -1,4 +1,4 @@
-import { DEFAULTS, tableFitOf, tableHeaderOf, tableStyleOf } from '../core/defaults.ts';
+import { DEFAULTS, tableFitOf, tableStyleOf } from '../core/defaults.ts';
 import type { Diagnostic, PositionedTable, Pt, TableFitPolicy, TextStyle } from '../core/types.ts';
 import { brokenWordsOf } from '../text/index.ts';
 import type { Overflow } from './detect.ts';
@@ -7,12 +7,13 @@ import {
   tableIllegible,
   tableOverflowKept,
   tableOverflowShrunk,
+  tableCellIcon,
   tableShrunk,
   tableWordBroken,
 } from './diagnostics.ts';
 import type { BrokenColumn, DiagnosticContext, TableRows } from './diagnostics.ts';
 import type { ShrinkPlan } from './pass.ts';
-import { cellWidthOf, hasHeader, tableCellsOf } from './shrinkable.ts';
+import { cellWidthOf, tableCellsOf } from './shrinkable.ts';
 import type { TableCell } from './shrinkable.ts';
 
 // Diagnósticos finais da Table: mesma ideia do Text (shrink coube / não coube / ilegível /
@@ -33,7 +34,11 @@ interface TableOutcome {
  */
 const shownRowsOf = (table: PositionedTable, available: Pt): number => {
   const bottoms = table.rowHeights.reduce<readonly Pt[]>((acc, height) => [...acc, (acc.at(-1) ?? 0) + height], []);
-  return bottoms.slice(hasHeader(table) ? 1 : 0).filter((bottom) => bottom <= available + DEFAULTS.fit.epsilon).length;
+  // M14: a linha só conta se as células mescladas que começam nela também cabem inteiras.
+  const reach = table.grid.map((row, r) => Math.max(r, ...row.map((cell) => (cell.covered ? r : r + cell.rowSpan - 1))));
+  return bottoms
+    .slice(table.headerCount)
+    .filter((_, index) => (bottoms[reach[index + table.headerCount] ?? index] ?? Infinity) <= available + DEFAULTS.fit.epsilon).length;
 };
 
 const rowsOf = (table: PositionedTable, overflow: Overflow | undefined): TableRows => {
@@ -67,7 +72,7 @@ const DIAGNOSE: Readonly<Record<TableFitPolicy, Diagnose>> = { shrink: diagnoseS
 const brokenColumnsOf = (table: PositionedTable, cells: readonly TableCell[]): readonly BrokenColumn[] =>
   table.props.columns.flatMap((column, index) => {
     const words = cells
-      .filter((cell) => cell.column === index && cell.layout.wordBroken)
+      .filter((cell) => cell.column === index && cell.span === 1 && cell.layout.wordBroken)
       .flatMap((cell) => brokenWordsOf(cell.content, cell.layout.paragraphs));
     const unique = [...new Set(words)];
     return unique.length === 0 ? [] : [{ header: column.header, words: unique, width: cellWidthOf(table, index) }];
@@ -81,9 +86,13 @@ const wordBrokenDiagnostics = (outcome: TableOutcome, cells: readonly TableCell[
 /** Face da primeira célula sem fonte: o cabeçalho pode pedir um peso que o corpo não pede. */
 const missingStyleOf = (table: PositionedTable, cell: TableCell): TextStyle => {
   const style = tableStyleOf(table.props);
-  if (!cell.isHeader) return style;
-  return { ...style, weight: tableHeaderOf(table.props)?.weight ?? DEFAULTS.table.header.weight ?? style.weight };
+  const run = table.grid[cell.row]?.[cell.column]?.runs[0];
+  return run === undefined ? style : { ...style, weight: run.weight, italic: run.italic };
 };
+
+/** M14: um aviso por tabela com ícone em célula. */
+const cellIconNotice = (table: PositionedTable, ctx: DiagnosticContext): readonly Diagnostic[] =>
+  table.grid.some((row) => row.some((cell) => cell.icon !== undefined)) ? [tableCellIcon(ctx, table.path)] : [];
 
 // Fonte ausente: a medição é estimada, então estouro, shrink e palavra partida seriam ruído.
 export const tableDiagnostics = (
@@ -103,5 +112,5 @@ export const tableDiagnostics = (
     min: plan.min,
     rows: rowsOf(table, overflow),
   };
-  return [...DIAGNOSE[tableFitOf(table.props)](outcome, ctx), ...wordBrokenDiagnostics(outcome, cells, ctx)];
+  return [...DIAGNOSE[tableFitOf(table.props)](outcome, ctx), ...wordBrokenDiagnostics(outcome, cells, ctx), ...cellIconNotice(table, ctx)];
 };

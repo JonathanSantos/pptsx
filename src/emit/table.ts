@@ -1,8 +1,9 @@
 import type * as Pptx from './pptx.ts';
-import { DEFAULTS, PT_PER_INCH, tableHeaderOf, tableStyleOf } from '../core/defaults.ts';
-import type { Color, LineBreaks, PositionedTable, TableHeaderStyle, TextLayout } from '../core/types.ts';
+import { DEFAULTS, PT_PER_INCH, tableStyleOf } from '../core/defaults.ts';
+import type { Color, LineBreaks, PositionedTable, PositionedText, TextLayout } from '../core/types.ts';
 import { ptToInches } from '../sizes.ts';
-import { collapseSpaces, hexOf } from './runs.ts';
+import { hexOf, textRunsOfNode } from './runs.ts';
+import { cellTextOf, placedCellsOf, type PlacedCell } from './table-cells.ts';
 
 /**
  * Table → `slide.addTable(rows, options)` (M10-D). Funções puras; unidades e
@@ -48,52 +49,21 @@ export const cellMarginOf = (node: PositionedTable): [number, number, number, nu
 const borderOf = (border: Color | undefined): Pptx.BorderProps =>
   border === undefined ? { type: 'none' } : { type: 'solid', pt: DEFAULTS.table.borderWidth, color: hexOf(border) };
 
-// ───────────── texto da célula ─────────────
+// ───────────── células (M14-3) ─────────────
 
-/** Uma run por linha calculada; breakLine fecha o <a:p> de cada linha menos a última. */
-const runsOfLines = (lines: readonly string[]): Pptx.TableCell[] => {
-  const nonEmpty = lines.length === 0 ? [''] : lines;
-  return nonEmpty.map((text, index) => ({
-    text,
-    options: index < nonEmpty.length - 1 ? { breakLine: true } : {},
-  }));
-};
-
-/** 'auto': o texto do autor, um run por parágrafo ('\n'), espaços normalizados como no medidor. */
-const authorRunsOf = (text: string): Pptx.TableCell[] => runsOfLines(text.split('\n').map(collapseSpaces));
-
-/** Textos originais na mesma grade de `cells` (cabeçalho na linha 0 quando há). */
-const sourceRowsOf = (node: PositionedTable): readonly (readonly string[])[] =>
-  tableHeaderOf(node.props) === undefined ? node.rows : [node.props.columns.map((c) => c.header), ...node.rows];
-
-const cellRunsOf = (layout: TextLayout, source: string | undefined, lineBreaks: LineBreaks): Pptx.TableCell[] =>
-  lineBreaks === 'auto' ? authorRunsOf(source ?? layout.lines.join(' ')) : runsOfLines(layout.lines);
-
-// ───────────── estilo da célula ─────────────
-
-interface RowStyle {
-  readonly bold: boolean;
-  readonly fill?: Color;
-  readonly color?: Color;
-}
-
-const headerStyleOf = (header: TableHeaderStyle): RowStyle => ({
-  bold: (header.weight ?? DEFAULTS.table.header.weight) === 'bold',
-  fill: header.fill,
-  color: header.color,
-});
-
-/** Zebra nas linhas de dados de índice ímpar (2ª, 4ª…), contadas sem o cabeçalho. */
-const dataStyleOf = (dataIndex: number, stripe: Color | undefined): RowStyle => ({
-  bold: false,
-  fill: dataIndex % 2 === 1 ? stripe : undefined,
-});
-
-const rowStyleOf = (node: PositionedTable, rowIndex: number): RowStyle => {
-  const header = tableHeaderOf(node.props);
-  if (header === undefined) return dataStyleOf(rowIndex, node.props.stripe);
-  if (rowIndex === 0) return headerStyleOf(header);
-  return dataStyleOf(rowIndex - 1, node.props.stripe);
+/**
+ * Runs da célula pelo mesmo caminho do Text (estilo por trecho, face, sobrescrito, links), com
+ * cada linha num <a:p> próprio (breakLine), como a tabela sempre saiu: a quebra suave do Text
+ * (softBreakBefore) vira o fim do parágrafo anterior.
+ */
+const cellRunsOf = (text: PositionedText, lineBreaks: LineBreaks): Pptx.TableCell[] => {
+  const runs = textRunsOfNode(text, lineBreaks);
+  return runs.map((run, index) => {
+    const next = runs[index + 1];
+    const { softBreakBefore: _soft, breakLine, ...options } = run.options ?? {};
+    const closes = breakLine === true || next?.options?.softBreakBefore === true;
+    return { text: run.text, options: closes ? { ...options, breakLine: true } : options };
+  }) as Pptx.TableCell[];
 };
 
 /** O .d.ts não lista lineSpacing na célula, mas o pptxgenjs passa as opções da célula aos runs (genXmlTextBody). */
@@ -107,34 +77,39 @@ type CellLineSpacing = Pick<Pptx.TextPropsOptions, 'lineSpacing'>;
 const cellLineSpacingOf = (node: PositionedTable, layout: TextLayout): CellLineSpacing =>
   tableStyleOf(node.props).lineHeight === 'normal' ? {} : { lineSpacing: layout.lineHeight };
 
-const cellOptionsOf = (
-  node: PositionedTable,
-  style: RowStyle,
-  columnIndex: number,
-  lang: string,
-  layout: TextLayout,
-): Pptx.TableCellProps & CellLineSpacing => ({
-  align: node.props.columns[columnIndex]?.align ?? DEFAULTS.text.align,
-  valign: 'top',
-  bold: style.bold,
+const cellOptionsOf = (node: PositionedTable, placed: PlacedCell, lang: string): Pptx.TableCellProps & CellLineSpacing => ({
+  align: placed.cell.align,
+  valign: placed.cell.valign,
   // lang não está entre as opções que o pptxgenjs copia da tabela para a célula.
   lang,
-  ...cellLineSpacingOf(node, layout),
-  ...(style.fill === undefined ? {} : { fill: { color: hexOf(style.fill) } }),
-  ...(style.color === undefined ? {} : { color: hexOf(style.color) }),
+  ...cellLineSpacingOf(node, placed.layout),
+  ...(placed.cell.colSpan > 1 ? { colspan: placed.cell.colSpan } : {}),
+  ...(placed.cell.rowSpan > 1 ? { rowspan: placed.cell.rowSpan } : {}),
+  ...(placed.cell.fill === undefined ? {} : { fill: { color: hexOf(placed.cell.fill) } }),
 });
 
+/**
+ * Célula com ícone: o Keynote ignora margem por célula e recuo de parágrafo, então o espaço do ícone
+ * sai como um espaço inicial com `charSpacing` (largura do espaço + espaçamento = ícone + intervalo).
+ */
+const iconSpacerOf = (node: PositionedTable, placed: PlacedCell): Pptx.TableCell[] => {
+  const icon = placed.cell.icon;
+  if (icon === undefined) return [];
+  const spacing = icon.size + DEFAULTS.table.iconGap - (node.spaceWidth ?? 0);
+  // charSpacing é opção de run de texto; o pptxgenjs passa as opções do run da célula ao <a:rPr>.
+  return [{ text: ' ', options: { charSpacing: Math.max(0, spacing) } as Pptx.TableCellProps }];
+};
+
+/** Linhas do pptxgenjs: cada célula que desenha, na ordem da grade (as cobertas por merge somem). */
 export const tableRowsOf = (node: PositionedTable, ctx: TableEmitContext = {}): Pptx.TableRow[] => {
   const lineBreaks = ctx.lineBreaks ?? DEFAULTS.lineBreaks;
   const lang = ctx.lang ?? DEFAULTS.lang;
-  const sources = sourceRowsOf(node);
-  return node.cells.map((row, rowIndex) => {
-    const style = rowStyleOf(node, rowIndex);
-    return row.map((layout, columnIndex) => ({
-      text: cellRunsOf(layout, sources[rowIndex]?.[columnIndex], lineBreaks),
-      options: cellOptionsOf(node, style, columnIndex, lang, layout),
-    }));
-  });
+  const placed = placedCellsOf(node);
+  return node.grid.map((_, row) =>
+    placed
+      .filter((cell) => cell.row === row)
+      .map((cell) => ({ text: [...iconSpacerOf(node, cell), ...cellRunsOf(cellTextOf(node, cell), lineBreaks)], options: cellOptionsOf(node, cell, lang) })),
+  );
 };
 
 export const tableOptionsOf = (node: PositionedTable, ctx: TableEmitContext = {}): Pptx.TableProps => {

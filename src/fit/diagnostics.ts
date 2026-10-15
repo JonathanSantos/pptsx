@@ -202,6 +202,15 @@ export const fontWeightFallback = (ctx: DiagnosticContext, path: string, family:
     data: { requestedWeight: weights.requested, usedWeight: weights.used },
   });
 
+/** M14: ícone em célula de tabela é uma forma sobre a tabela, não parte dela. */
+export const tableCellIcon = (ctx: DiagnosticContext, path: string): Diagnostic =>
+  make(ctx, {
+    severity: 'info',
+    code: 'table-cell-icon',
+    path,
+    message: 'Os ícones das células saem como formas sobre a tabela, não dentro dela: se alguém mover ou redimensionar a tabela no PowerPoint, os ícones não acompanham.',
+  });
+
 // ───────── Table (M10): mesmos códigos do Text, mensagens próprias (o autor age em linhas/colunas/células).
 
 const TABLE_ADVICE = 'Reduza linhas/colunas, encurte o texto das células, aumente a área';

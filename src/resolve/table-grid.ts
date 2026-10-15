@@ -32,13 +32,15 @@ interface SourceRow {
   readonly header: boolean;
   /** Índice entre as linhas do mesmo tipo (dados: o `row` do `cell()`; cabeçalho: entre os cabeçalhos). */
   readonly index: number;
+  /** A linha de `columns[].header`: cada título é da sua coluna; coluna já ocupada por um rowSpan de cima fica sem ele. */
+  readonly byColumn?: boolean;
 }
 
 const isSpec = (value: TableCellValue): value is TableCellSpec => typeof value === 'object' && value !== null;
 
 const sourceRowsOf = (props: TableResolvedProps): readonly SourceRow[] => {
   const extra = (props.headerRows ?? []).map((cells, index) => ({ cells, header: true, index }));
-  const columns = tableHeaderOf(props) === undefined ? [] : [{ cells: props.columns.map((column) => column.header), header: true, index: extra.length }];
+  const columns = tableHeaderOf(props) === undefined ? [] : [{ cells: props.columns.map((column) => column.header), header: true, index: extra.length, byColumn: true }];
   const data = props.rows.map((cells, index) => ({ cells, header: false, index }));
   return [...extra, ...columns, ...data];
 };
@@ -65,6 +67,14 @@ const placementsOf = (rows: readonly SourceRow[], columns: number, path: string)
   const taken = rows.map(() => new Array<boolean>(columns).fill(false));
   const placements: Placement[] = [];
   rows.forEach((source, row) => {
+    if (source.byColumn === true) {
+      source.cells.forEach((value, col) => {
+        if (taken[row]![col]) return;
+        taken[row]![col] = true;
+        placements.push({ row, col, value, source, colSpan: 1, rowSpan: 1 });
+      });
+      return;
+    }
     let col = 0;
     source.cells.forEach((value, index) => {
       while (col < columns && taken[row]![col]) col += 1;
@@ -149,10 +159,9 @@ const weightOf = (value: unknown, fallback: FontWeight, path: string): FontWeigh
   return weight;
 };
 
-const textOfValue = (value: TableCellValue, spec: TableCellSpec): string | number | TextChildren => {
-  if (!isSpec(value)) return value;
-  return spec.children ?? spec.text ?? '';
-};
+/** `children` vence `text`; o que o `cell()` devolver também vale para célula escrita como valor simples. */
+const textOfValue = (value: TableCellValue, spec: TableCellSpec): string | number | TextChildren =>
+  spec.children ?? spec.text ?? (isSpec(value) ? '' : value);
 
 const runsOfCell = (content: TextChildren, style: CellStyle, path: string): readonly TextRun[] =>
   runsOf(content, { weight: style.weight, italic: style.italic, color: style.color, underline: false, lineThrough: false }, 'none', path);

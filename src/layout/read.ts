@@ -19,7 +19,7 @@ import { readSides } from './apply.ts';
 import { layoutGridChildren } from './grid-layout.ts';
 import { measureInputOf } from './measure.ts';
 import { mainAxisOf } from './style.ts';
-import { measureTable } from './table.ts';
+import { measureTable, spaceWidthOf } from './table.ts';
 import type { BuiltNode } from './tree.ts';
 
 interface Origin {
@@ -104,7 +104,8 @@ const readChart: Reader<ResolvedChart> = (source, built, frame) => ({ ...source,
 const readTable: Reader<ResolvedTable> = (source, built, frame, env) => {
   const box = boxOf(built.yoga);
   const { columnWidths, rowHeights, cells, height } = measureTable(source, contentRectOf(frame, box).width, env);
-  return { ...source, frame, box, fontSize: tableStyleOf(source.props).size, columnWidths, rowHeights, cells, height };
+  const icons = source.grid.some((row) => row.some((cell) => cell.icon !== undefined));
+  return { ...source, frame, box, fontSize: tableStyleOf(source.props).size, columnWidths, rowHeights, cells, height, ...(icons ? { spaceWidth: spaceWidthOf(source, env) } : {}) };
 };
 
 const READERS: DispatchTable<ResolvedNode, PositionedNode, [built: BuiltNode, frame: Rect, env: LayoutEnv]> = {

@@ -1,89 +1,53 @@
-import { DEFAULTS, tableHeaderOf, tableStyleOf } from '../core/defaults.ts';
-import type { Color, FontWeight, PositionedTable, Pt, Rect, TableHeaderStyle, TextLayout } from '../core/types.ts';
-import { ANCHORS, rectAttrs, type TextSvgOptions } from './svg.ts';
-import { element, escapeXml, type Attrs } from './xml.ts';
+import { DEFAULTS } from '../core/defaults.ts';
+import { cellIconOf, cellTextOf, placedCellsOf } from '../emit/table-cells.ts';
+import { iconSvg } from './vector.ts';
+import type { Color, PositionedTable, Rect } from '../core/types.ts';
+import { rectAttrs, textSvg, type TextSvgOptions } from './svg.ts';
+import { element } from './xml.ts';
 
 /**
  * Tabela no preview: fundos, grade e texto já quebrado pelo layout (cells). O SVG não
  * decide quebra nem altura: só desenha rowHeights/columnWidths e recorta pelo frame.
  */
 
-/** Cabeçalho sem weight explícito é negrito (mesma regra do layout ao medir). */
-const HEADER_FALLBACK_WEIGHT: FontWeight = 'bold';
+const round = (value: number): number => Math.round(value * 1000) / 1000;
 
-interface CellBox {
-  readonly row: number;
-  readonly col: number;
-  readonly rect: Rect;
+interface Segment {
+  readonly at: number;
+  readonly from: number;
+  readonly to: number;
 }
 
-interface RowPaint {
-  readonly fill?: Color;
-  readonly color: Color;
-  readonly weight: FontWeight;
-}
-
-/** Posições acumuladas: offsets[i] = início da i-ésima faixa; o último = fim da tabela. */
-const offsetsOf = (start: Pt, sizes: readonly Pt[]): readonly Pt[] =>
-  sizes.reduce<readonly Pt[]>((acc, size) => [...acc, (acc[acc.length - 1] ?? start) + size], [start]);
-
-const cellBoxesOf = (node: PositionedTable): readonly CellBox[] => {
-  const xs = offsetsOf(node.frame.x, node.columnWidths);
-  const ys = offsetsOf(node.frame.y, node.rowHeights);
-  return node.rowHeights.flatMap((height, row) =>
-    node.columnWidths.map((width, col) => ({
-      row,
-      col,
-      rect: { x: xs[col] ?? node.frame.x, y: ys[row] ?? node.frame.y, width, height },
-    })),
+/** Junta trechos da mesma reta que se tocam: uma linha por trecho contínuo. */
+const mergeSegments = (segments: readonly Segment[]): readonly Segment[] => {
+  const byLine = new Map<number, Segment[]>();
+  segments.forEach((segment) => byLine.set(segment.at, [...(byLine.get(segment.at) ?? []), segment]));
+  return [...byLine.values()].flatMap((line) =>
+    [...line]
+      .sort((a, b) => a.from - b.from)
+      .reduce<Segment[]>((merged, segment) => {
+        const last = merged[merged.length - 1];
+        if (last !== undefined && segment.from <= last.to + 1e-6) {
+          merged[merged.length - 1] = { ...last, to: Math.max(last.to, segment.to) };
+          return merged;
+        }
+        return [...merged, segment];
+      }, []),
   );
 };
 
-/** Zebra conta só linhas de dados: a 2ª, 4ª… (índice ímpar) recebem stripe. */
-const rowPaintOf = (node: PositionedTable, header: TableHeaderStyle | undefined, row: number): RowPaint => {
-  const color = node.props.color ?? DEFAULTS.text.color;
-  if (header !== undefined && row === 0) {
-    return { fill: header.fill, color: header.color ?? color, weight: header.weight ?? HEADER_FALLBACK_WEIGHT };
-  }
-  const dataIndex = header === undefined ? row : row - 1;
-  return { fill: dataIndex % 2 === 1 ? node.props.stripe : undefined, color, weight: tableStyleOf(node.props).weight };
-};
-
-const fillSvg = (cell: CellBox, paint: RowPaint): string =>
-  paint.fill === undefined ? '' : element('rect', { ...rectAttrs(cell.rect), fill: paint.fill });
-
-/** Grade inteira em linhas (não stroke por célula): borda compartilhada sai uma vez só. */
-const gridSvg = (node: PositionedTable, border: Color): string => {
-  const xs = offsetsOf(node.frame.x, node.columnWidths);
-  const ys = offsetsOf(node.frame.y, node.rowHeights);
-  const left = xs[0] ?? node.frame.x;
-  const right = xs[xs.length - 1] ?? left;
-  const top = ys[0] ?? node.frame.y;
-  const bottom = ys[ys.length - 1] ?? top;
-  const stroke: Attrs = { stroke: border, 'stroke-width': DEFAULTS.table.borderWidth, 'stroke-linecap': 'square' };
-  const horizontal = ys.map((y) => element('line', { x1: left, y1: y, x2: right, y2: y, ...stroke }));
-  const vertical = xs.map((x) => element('line', { x1: x, y1: top, x2: x, y2: bottom, ...stroke }));
-  return [...horizontal, ...vertical].join('');
-};
-
-/** Mesma regra do textSvg, deslocada pelo padding da célula. */
-const cellTextSvg = (cell: CellBox, layout: TextLayout, paint: RowPaint, common: Attrs, node: PositionedTable): string => {
-  const padding = node.props.cellPadding ?? DEFAULTS.table.cellPadding;
-  const align = node.props.columns[cell.col]?.align ?? DEFAULTS.text.align;
-  const { anchor, offset } = ANCHORS[align];
-  const innerWidth = Math.max(0, cell.rect.width - 2 * padding);
-  const x = cell.rect.x + padding + innerWidth * offset;
-  const top = cell.rect.y + padding;
-  const attrs: Attrs = {
-    ...common,
-    x,
-    'text-anchor': anchor,
-    'font-weight': paint.weight === 'bold' ? 'bold' : 'normal',
-    fill: paint.color,
-  };
-  return layout.lines
-    .map((line, i) => element('text', { ...attrs, y: top + i * layout.lineHeight + layout.ascent }, escapeXml(line)))
-    .join('');
+/**
+ * Grade pelas arestas das células desenhadas: a mesclada não tem linha por dentro, e a aresta
+ * compartilhada sai uma vez só (trechos contínuos viram uma linha).
+ */
+const gridSvg = (rects: readonly Rect[], border: Color): string => {
+  const horizontal = mergeSegments(rects.flatMap(({ x, y, width, height }) => [{ at: round(y), from: round(x), to: round(x + width) }, { at: round(y + height), from: round(x), to: round(x + width) }]));
+  const vertical = mergeSegments(rects.flatMap(({ x, y, width, height }) => [{ at: round(x), from: round(y), to: round(y + height) }, { at: round(x + width), from: round(y), to: round(y + height) }]));
+  const stroke = { stroke: border, 'stroke-width': DEFAULTS.table.borderWidth, 'stroke-linecap': 'square' };
+  return [
+    ...horizontal.map((s) => element('line', { x1: s.from, y1: s.at, x2: s.to, y2: s.at, ...stroke })),
+    ...vertical.map((s) => element('line', { x1: s.at, y1: s.from, x2: s.at, y2: s.to, ...stroke })),
+  ].join('');
 };
 
 /**
@@ -95,31 +59,22 @@ const clipRectOf = (frame: Rect): Rect => {
   return { x: frame.x - bleed, y: frame.y - bleed, width: frame.width + 2 * bleed, height: frame.height + bleed };
 };
 
-const isVisible = (cell: CellBox, frame: Rect): boolean => cell.rect.y < frame.y + frame.height;
+const isVisible = (rect: Rect, frame: Rect): boolean => rect.y < frame.y + frame.height;
 
+/** M14: fundos por célula, bordas, texto por trecho (o mesmo desenho do Text) e ícones. */
 export const tableSvg = (node: PositionedTable, options: TextSvgOptions = {}, clipId = 'table-clip'): string => {
-  const header = tableHeaderOf(node.props);
-  const style = tableStyleOf(node.props);
-  const cells = cellBoxesOf(node).filter((cell) => isVisible(cell, node.frame));
-  const common: Attrs = {
-    'font-family': options.fontFamilyMap?.[style.family] ?? style.family,
-    'font-size': node.fontSize,
-    'font-style': 'normal',
-    'xml:space': 'preserve',
-  };
-  const paints = node.rowHeights.map((_, row) => rowPaintOf(node, header, row));
-  const fallbackPaint = rowPaintOf(node, undefined, 0);
-  const paintOf = (cell: CellBox): RowPaint => paints[cell.row] ?? fallbackPaint;
-  const fills = cells.map((cell) => fillSvg(cell, paintOf(cell))).join('');
-  const grid = node.props.border === undefined ? '' : gridSvg(node, node.props.border);
-  const texts = cells
-    .map((cell) => {
-      const layout = node.cells[cell.row]?.[cell.col];
-      return layout === undefined ? '' : cellTextSvg(cell, layout, paintOf(cell), common, node);
+  const cells = placedCellsOf(node).filter((placed) => isVisible(placed.rect, node.frame));
+  const fills = cells.map((placed) => (placed.cell.fill === undefined ? '' : element('rect', { ...rectAttrs(placed.rect), fill: placed.cell.fill }))).join('');
+  const borders = node.props.border === undefined ? '' : gridSvg(placedCellsOf(node).map((placed) => placed.rect), node.props.border);
+  const texts = cells.map((placed) => textSvg(cellTextOf(node, placed), options)).join('');
+  const icons = cells
+    .map((placed, index) => {
+      const icon = cellIconOf(node, placed);
+      return icon === undefined ? '' : iconSvg(icon, index);
     })
     .join('');
   const clip = element('clipPath', { id: clipId }, element('rect', rectAttrs(clipRectOf(node.frame))));
-  return `${element('defs', {}, clip)}${element('g', { 'clip-path': `url(#${clipId})` }, fills + grid + texts)}`;
+  return `${element('defs', {}, clip)}${element('g', { 'clip-path': `url(#${clipId})` }, fills + borders + texts + icons)}`;
 };
 
 /**

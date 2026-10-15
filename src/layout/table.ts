@@ -1,7 +1,7 @@
 // Colunas sem width seguem o conteúdo (min/max-content por coluna, como `table-layout: auto`
 // do CSS 2.1 §17.5.2.2); `columnWidthsOf` continua sendo a divisão igual (fixas sem conteúdo).
-import { DEFAULTS, tableHeaderOf, tableStyleOf } from '../core/defaults.ts';
-import type { LayoutEnv, Pt, ResolvedTable, TableColumn, TextLayout, TextStyle } from '../core/types.ts';
+import { DEFAULTS, tableStyleOf } from '../core/defaults.ts';
+import type { LayoutEnv, Pt, ResolvedCell, ResolvedTable, TableColumn, TextLayout, TextRun } from '../core/types.ts';
 
 /** Medição da tabela numa largura: tudo que o read e o fit precisam (ver CONTRACTS §M10-B). */
 export interface TableLayout {
@@ -51,28 +51,34 @@ export const columnWidthsOf = (columns: readonly TableColumn[], tableWidth: Pt):
 
 const cellPaddingOf = (table: ResolvedTable): Pt => table.props.cellPadding ?? DEFAULTS.table.cellPadding;
 
-interface TableRowSpec {
-  readonly texts: readonly string[];
-  readonly style: TextStyle;
-}
+/** M14: espaço entre o ícone da célula e o texto (pt). */
+const iconGapOf = (cell: ResolvedCell): Pt => (cell.icon === undefined ? 0 : cell.icon.size + DEFAULTS.table.iconGap);
 
-/** Linhas na ordem de desenho: cabeçalho (quando há) na linha 0, depois os dados. */
-const rowSpecsOf = (table: ResolvedTable): readonly TableRowSpec[] => {
-  const style = tableStyleOf(table.props);
-  const data = table.rows.map((texts) => ({ texts, style }));
-  const header = tableHeaderOf(table.props);
-  if (header === undefined) return data;
-  const weight = header.weight ?? DEFAULTS.table.header.weight ?? style.weight;
-  return [{ texts: table.props.columns.map((column) => column.header), style: { ...style, weight } }, ...data];
+/** Largura que a célula ocupa: as colunas que ela cobre. */
+const spanWidthOf = (widths: readonly Pt[], col: number, span: number): Pt => sum(widths.slice(col, col + span));
+
+const EMPTY_RUNS: readonly TextRun[] = [];
+
+const measureCell = (table: ResolvedTable, cell: ResolvedCell, maxWidth: Pt, env: LayoutEnv): TextLayout => {
+  // O estilo base é o do 1º trecho (o cabeçalho é negrito): a linha usa as métricas dessa face.
+  const base = tableStyleOf(table.props);
+  const [first] = cell.runs;
+  const style = first === undefined ? base : { ...base, weight: first.weight, italic: first.italic };
+  const runs = cell.runs.length === 0 ? EMPTY_RUNS : cell.runs;
+  // Célula com ícone fica numa linha (o espaço do ícone no PPTX só existe na 1ª linha).
+  return env.measureText({
+    content: cell.text,
+    style,
+    ...(runs.length === 0 ? {} : { runs }),
+    maxWidth: Math.max(0, maxWidth - iconGapOf(cell)),
+    ...(cell.icon === undefined ? {} : { nowrap: true }),
+  });
 };
 
-const measureCells = (
-  specs: readonly TableRowSpec[],
-  maxWidths: readonly Pt[],
-  env: LayoutEnv,
-): readonly (readonly TextLayout[])[] =>
-  specs.map(({ texts, style }) =>
-    texts.map((content, column) => env.measureText({ content, style, maxWidth: maxWidths[column] ?? 0 })),
+/** Uma medição por posição da grade (cobertas: texto vazio, não contam para nada). */
+const measureCells = (table: ResolvedTable, columnWidths: readonly Pt[], padding: Pt, env: LayoutEnv): readonly (readonly TextLayout[])[] =>
+  table.grid.map((row) =>
+    row.map((cell, col) => measureCell(table, cell, Math.max(0, spanWidthOf(columnWidths, col, cell.colSpan) - 2 * padding), env)),
   );
 
 /**
@@ -85,19 +91,35 @@ const roundRowHeight = (height: Pt): Pt => {
   return Math.ceil(height / step - DEFAULTS.css.layoutNoise) * step;
 };
 
-const layoutAt = (
-  specs: readonly TableRowSpec[],
-  columnWidths: readonly Pt[],
-  padding: Pt,
-  env: LayoutEnv,
-): TableLayout => {
-  const cells = measureCells(
-    specs,
-    columnWidths.map((width) => Math.max(0, width - 2 * padding)),
-    env,
+/** Altura que a célula pede: o texto (ou o ícone, se maior) mais a margem dos dois lados. */
+const cellHeightOf = (cell: ResolvedCell, layout: TextLayout, padding: Pt): Pt =>
+  Math.max(layout.height, cell.icon?.size ?? 0) + 2 * padding;
+
+/**
+ * Linhas: primeiro as células de uma linha só; depois cada rowSpan que não coube reparte o que
+ * falta igualmente pelas linhas que cobre (CSS 2.1 §17.5.3). Arredondamento no fim.
+ */
+const rowHeightsOf = (table: ResolvedTable, cells: readonly (readonly TextLayout[])[], padding: Pt): readonly Pt[] => {
+  const single = table.grid.map((row, r) =>
+    Math.max(0, ...row.flatMap((cell, c) => (cell.covered || cell.rowSpan > 1 ? [] : [cellHeightOf(cell, cells[r]![c]!, padding)]))),
   );
-  // As células ficam com a medição crua; só a altura da linha é arredondada.
-  const rowHeights = cells.map((row) => roundRowHeight(Math.max(0, ...row.map((cell) => cell.height)) + 2 * padding));
+  const spanned = table.grid.reduce<readonly Pt[]>(
+    (heights, row, r) =>
+      row.reduce<readonly Pt[]>((acc, cell, c) => {
+        if (cell.covered || cell.rowSpan <= 1) return acc;
+        const covered = acc.slice(r, r + cell.rowSpan);
+        const missing = cellHeightOf(cell, cells[r]![c]!, padding) - sum(covered);
+        if (missing <= 0) return acc;
+        return acc.map((height, index) => (index >= r && index < r + cell.rowSpan ? height + missing / cell.rowSpan : height));
+      }, heights),
+    single,
+  );
+  return spanned.map(roundRowHeight);
+};
+
+const layoutAt = (table: ResolvedTable, columnWidths: readonly Pt[], padding: Pt, env: LayoutEnv): TableLayout => {
+  const cells = measureCells(table, columnWidths, padding, env);
+  const rowHeights = rowHeightsOf(table, cells, padding);
   return { columnWidths, rowHeights, cells, height: sum(rowHeights), width: sum(columnWidths) };
 };
 
@@ -108,15 +130,20 @@ interface ContentWidths {
   readonly max: Pt;
 }
 
-/** min/max-content de cada coluna (cabeçalho incluído), medidos sem limite de largura. */
-const contentWidthsOf = (specs: readonly TableRowSpec[], columns: number, padding: Pt, env: LayoutEnv): readonly ContentWidths[] => {
+/**
+ * min/max-content de cada coluna (cabeçalho incluído), medidos sem limite de largura. Só células de
+ * uma coluna contam: a mesclada usa a largura que as colunas dela somarem (não as alarga).
+ */
+const contentWidthsOf = (table: ResolvedTable, columns: number, padding: Pt, env: LayoutEnv): readonly ContentWidths[] => {
   const safety = env.textSafety ?? DEFAULTS.textSafety;
-  const cells = measureCells(specs, Array.from({ length: columns }, () => Number.POSITIVE_INFINITY), env);
+  const singles = table.grid.flatMap((row) =>
+    row.flatMap((cell, col) => (cell.covered || cell.colSpan > 1 ? [] : [{ col, cell, layout: measureCell(table, cell, Number.POSITIVE_INFINITY, env) }])),
+  );
   return Array.from({ length: columns }, (_, index) => {
-    const column = cells.map((row) => row[index]).filter((cell): cell is TextLayout => cell !== undefined);
+    const column = singles.filter((entry) => entry.col === index);
     return {
-      min: Math.max(0, ...column.map((cell) => cell.widestSegment / safety)) + 2 * padding,
-      max: Math.max(0, ...column.map((cell) => cell.width)) + 2 * padding,
+      min: Math.max(0, ...column.map((entry) => entry.layout.widestSegment / safety + iconGapOf(entry.cell))) + 2 * padding,
+      max: Math.max(0, ...column.map((entry) => entry.layout.width + iconGapOf(entry.cell))) + 2 * padding,
     };
   });
 };
@@ -137,12 +164,12 @@ const autoWidthsOf = (content: readonly ContentWidths[], available: Pt): readonl
 };
 
 /** Fixas em pt/% ficam; as auto dividem o resto pelo conteúdo. */
-const contentColumnWidthsOf = (table: ResolvedTable, specs: readonly TableRowSpec[], tableWidth: Pt, padding: Pt, env: LayoutEnv): readonly Pt[] => {
+const contentColumnWidthsOf = (table: ResolvedTable, tableWidth: Pt, padding: Pt, env: LayoutEnv): readonly Pt[] => {
   const { columns } = table.props;
   const fixed = columns.map((column) => fixedWidthOf(column, tableWidth));
   const free = fixed.map((width, index) => (width === undefined ? index : -1)).filter((index) => index >= 0);
   if (free.length === 0) return columnWidthsOf(columns, tableWidth);
-  const content = contentWidthsOf(specs, columns.length, padding, env);
+  const content = contentWidthsOf(table, columns.length, padding, env);
   const available = Number.isFinite(tableWidth) ? Math.max(0, tableWidth - sum(fixed.map((width) => width ?? 0))) : Number.POSITIVE_INFINITY;
   const autos = autoWidthsOf(free.map((index) => content[index]!), available);
   const widths = fixed.map((width, index) => width ?? autos[free.indexOf(index)] ?? 0);
@@ -152,9 +179,15 @@ const contentColumnWidthsOf = (table: ResolvedTable, specs: readonly TableRowSpe
 
 /** Mede a tabela na largura dada (`Infinity` = largura natural pelo conteúdo). */
 export const measureTable = (table: ResolvedTable, width: Pt, env: LayoutEnv): TableLayout => {
-  const specs = rowSpecsOf(table);
   const padding = cellPaddingOf(table);
-  const widths = contentColumnWidthsOf(table, specs, width, padding, env);
-  const layout = layoutAt(specs, widths, padding, env);
+  const widths = contentColumnWidthsOf(table, width, padding, env);
+  const layout = layoutAt(table, widths, padding, env);
   return Number.isFinite(width) ? { ...layout, width } : layout;
+};
+
+/** Largura natural de um espaço na face da tabela: "x x" − "xx" (o medidor apara espaço no fim da linha). */
+export const spaceWidthOf = (table: ResolvedTable, env: LayoutEnv): Pt => {
+  const style = tableStyleOf(table.props);
+  const width = (content: string) => env.measureText({ content, style, maxWidth: Number.POSITIVE_INFINITY, nowrap: true }).width;
+  return Math.max(0, width('x x') - width('xx')) * (env.textSafety ?? DEFAULTS.textSafety);
 };

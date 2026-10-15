@@ -16,6 +16,7 @@ import {
 import { debugOutlineOf, iconImageOf, imageOf, shapeOf, textOf, type ShapeSpec } from './options.ts';
 import type { PaintItem } from './paint.ts';
 import { tableOf } from './table.ts';
+import { cellIconOf, placedCellsOf } from './table-cells.ts';
 import { slideNumberBoxesOf } from './slide-number.ts';
 import { pathOf } from './vector.ts';
 import { hyperlinkOf } from './link.ts';
@@ -63,9 +64,15 @@ const emitters: DispatchTable<PositionedNode, void, [slide: Pptx.Slide, ctx: Emi
     if (Array.isArray(type)) slide.addChart(type, options as never);
     else slide.addChart(type, data, options);
   },
-  table: (node, slide, ctx) => {
-    const { rows, options } = structuredClone(tableOf(contentOf(node), ctx));
+  table: (node, slide, ctx, item) => {
+    const content = contentOf(node);
+    const { rows, options } = structuredClone(tableOf(content, ctx));
     slide.addTable(rows, options);
+    // M14: ícones de célula são formas sobre a tabela (a célula do PPTX não guarda forma).
+    placedCellsOf(content).forEach((placed) => {
+      const icon = cellIconOf(content, placed);
+      if (icon !== undefined) emitters.icon(icon, slide, ctx, { ...item, node: icon });
+    });
   },
   path: (node, slide, _ctx, item) => {
     const spec = pathOf(node);

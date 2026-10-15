@@ -125,6 +125,8 @@ export const DEFAULTS = {
      * usam a mesma altura (achado M10-H: drift de até 0,4 pt por linha).
      */
     rowHeightStep: 0.5,
+    /** M14: espaço (pt) entre o ícone de uma célula e o texto. */
+    iconGap: 4,
   },
   /** 16:9 de referência para ctx.scale */
   referenceSize: { width: 720, height: 405 },

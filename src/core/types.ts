@@ -1169,6 +1169,11 @@ export interface PositionedTable extends ResolvedTable, Positioned {
   readonly cells: readonly (readonly TextLayout[])[];
   /** Σ rowHeights: a altura que a tabela pediu (pode passar de frame.height = estouro). */
   readonly height: Pt;
+  /**
+   * M14: largura natural de um espaço na face da tabela, no size final. O Keynote ignora margem por
+   * célula, então o espaço do ícone de uma célula sai como um espaço inicial com `charSpacing`.
+   */
+  readonly spaceWidth?: Pt;
 }
 
 export interface PositionedPath extends ResolvedPath, Positioned {}

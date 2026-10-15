@@ -58,8 +58,8 @@ const textView = (text: PositionedText): Shrinkable => ({
 export const cellPaddingOf = (table: ResolvedTable): Pt => table.props.cellPadding ?? DEFAULTS.table.cellPadding;
 
 /** Largura em que as células da coluna quebram: a coluna menos a margem interna dos dois lados. */
-export const cellWidthOf = (table: PositionedTable, column: number): Pt =>
-  Math.max(0, (table.columnWidths[column] ?? 0) - 2 * cellPaddingOf(table));
+export const cellWidthOf = (table: PositionedTable, column: number, span = 1): Pt =>
+  Math.max(0, table.columnWidths.slice(column, column + span).reduce((sum, width) => sum + width, 0) - 2 * cellPaddingOf(table));
 
 export interface TableCell {
   readonly layout: TextLayout;
@@ -69,26 +69,20 @@ export interface TableCell {
   /** Texto da célula como o autor escreveu (cabeçalho = `columns[c].header`). */
   readonly content: string;
   readonly isHeader: boolean;
+  /** M14: colunas que a célula cobre. */
+  readonly span: number;
 }
 
-export const hasHeader = (table: ResolvedTable): boolean => tableHeaderOf(table.props) !== undefined;
+export const hasHeader = (table: ResolvedTable): boolean => table.headerCount > 0;
 
-const contentOf = (table: PositionedTable, row: number, column: number): string => {
-  const header = hasHeader(table);
-  if (header && row === 0) return table.props.columns[column]?.header ?? '';
-  return table.rows[header ? row - 1 : row]?.[column] ?? '';
-};
-
-/** Células achatadas, com a origem de cada uma (diagnóstico cita palavra e coluna). */
+/** Células achatadas que desenham (as cobertas por merge ficam de fora), com a origem de cada uma. */
 export const tableCellsOf = (table: PositionedTable): readonly TableCell[] =>
   table.cells.flatMap((cells, row) =>
-    cells.map((layout, column) => ({
-      layout,
-      row,
-      column,
-      content: contentOf(table, row, column),
-      isHeader: hasHeader(table) && row === 0,
-    })),
+    cells.flatMap((layout, column) => {
+      const cell = table.grid[row]?.[column];
+      if (cell === undefined || cell.covered) return [];
+      return [{ layout, row, column, span: cell.colSpan, content: cell.text, isHeader: cell.header }];
+    }),
   );
 
 /** Alguma célula medida por estimativa (família/peso não registrados). */
@@ -104,7 +98,7 @@ const tableView = (table: PositionedTable): Shrinkable => {
     fontMissing: isTableFontMissing(table),
     broken: cells
       .filter((cell) => cell.layout.wordBroken)
-      .map((cell) => ({ widest: cell.layout.widestSegment, breakWidth: breakWidthOf(cellWidthOf(table, cell.column)) })),
+      .map((cell) => ({ widest: cell.layout.widestSegment, breakWidth: breakWidthOf(cellWidthOf(table, cell.column, cell.span)) })),
     lineWidth: 0,
   };
 };
