@@ -2,6 +2,15 @@
 
 Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Versões antes da 1.0 podem quebrar a API; o que quebra está em **Mudanças incompatíveis**.
 
+## 1.0.1 — primeira publicação no npm
+
+Mesmo motor da 1.0.0 (a 1.0.0 saiu só como release do GitHub, com o núcleo ainda `private`). Publica `pptsx`, `@pptsx/ds-kit` e `@pptsx/ds-base` no npm.
+
+### Correções
+
+- Deck carregado como CommonJS no Node 20.19+ e 22.12+ (`require(esm)` ligado): o erro volta a dizer para pôr `"type": "module"` no `package.json`, em vez da mensagem crua do Node.
+- Testes e CI passam no Windows (Node 20 e 22).
+
 ## 1.0.0 — M18: redondo antes de liberar
 
 Versão do gate do M18. A publicação (tag `v1.0.0`) espera a lista do dono em `docs/work/VALIDACAO-DONO.md` (PowerPoint, Google Slides, CI em matriz, `repository` e `private`).
