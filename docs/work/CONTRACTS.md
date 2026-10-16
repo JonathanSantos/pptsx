@@ -453,6 +453,9 @@ Origem: `docs/work/poc/browser-layout.md`, `docs/work/reports/POC-css.md` e o c�
 
 - **Elementos substituídos (Image), `src/layout/replaced.ts`:** depois do layout cada Image recebe largura/altura usadas pela tabela do CSS 2.1 §10.4 (`aspectRatio` do autor substitui a proporção intrínseca; `%` contra a área de conteúdo do pai; `%` de altura só com pai de altura definida) e o layout roda de novo até estabilizar. **Diferença intencional em relação ao browser:** com `width="100%"` e só `maxHeight` (ou só `maxWidth`/`maxHeight`), a imagem **mantém a proporção** em vez de distorcer (o Yoga já fazia isso em coluna; row e grid passam a bater). Em grid, Image sem tamanho do autor fica no início da célula nos dois eixos (não estica), como o browser; `justifySelf`/`alignSelf` valem; só `alignSelf="stretch"` na própria Image estica.
 
+- **Contribuição mínima do item de grid (M19):** na largura, o mínimo automático do item (o min-content, CSS Grid §6.6) só vale com `minWidth` ausente. Com `minWidth` numérico do autor e `width` não numérica, a contribuição mínima é o próprio `minWidth` (+ margens): `minWidth={0}` deixa uma trilha `1fr` encolher abaixo do conteúdo, como `min-width: 0` no CSS. `minmax(0, 1fr)` continua ignorando o conteúdo como antes.
+- **Proporção esticada no grid (M19):** item com `aspectRatio` e `maxHeight` que o grid estica na largura (justify `stretch`) recebe `maxWidth = min(maxWidth do autor, maxHeight × aspectRatio)` (a restrição transferida pela proporção, CSS Sizing 4 §5.1; `%` contra a área). Sem isso o grow da área vencia e uma forma redonda virava elipse.
+
 ### `src/fit/` (M11-C)
 - Aplica as adaptações `PoC:` de `poc/css/fit/` em `src/fit/`: área de conteúdo = frame − border − padding (`contentRectOf`); margens dos filhos entram na soma do `box-overflow` e na demanda da causa; item de grid usa `cell` como área disponível (célula estourada = `box-overflow` do item com a célula como contêiner; sem `causedBy` entre células); linha de wrap = "row" para a causa; `css.ts` com `cssNotEmittedOf(positioned)` (warning por propriedade/valor/motivo/path, uma vez por nó); `scope.ts` inalterado. `fitSlide`/`fitDeck` mantêm assinatura.
 
@@ -492,7 +495,7 @@ Plano: `docs/work/milestones/M12.md` (sequencial). Tipos em `src/core/types.ts` 
 - Preview: os mesmos traços como `<path>`; raster como `<image>` com o mesmo PNG.
 
 ### `Connector` (M12-5)
-- Resolve: o Connector some da árvore (não entra no layout nem nos paths dos irmãos de outro tipo) e vai para `ResolvedSlide.connectors`, com path próprio (`… > Connector[i]`). `id` duplicado no slide → ResolveError. `from`/`to` sem nó → `missing` (o fit emite `connector-target-missing`, error, e não desenha). `label` é resolvido como o conteúdo de um Text (Span/B/I valem) com `labelStyle` (fonte herdada do slide).
+- Resolve: o Connector some da árvore (não entra no layout nem nos paths dos irmãos de outro tipo) e vai para `ResolvedSlide.connectors`, com path próprio (`… > Connector[i]`). `id` duplicado no mesmo escopo → ResolveError. **Escopo de ids (M19):** o escopo de um nó é a instância de componente mais próxima que o contém (o nó com `component`; sem componente, o slide). O mesmo id pode se repetir em instâncias **diferentes** (um componente com conectores repetido numa grade); a 1ª ocorrência mantém o id e as seguintes viram `id#2`, `id#3`… (interno; `from`/`to` são reescritos). Cada ponta de conector procura o id no escopo do conector e sobe para os de fora; num nível com mais de uma ocorrência visível e nenhuma no escopo exato → ResolveError "id … ambíguo". Ids únicos no slide saem exatamente como o autor escreveu. `from`/`to` sem nó → `missing` (o fit emite `connector-target-missing`, error, e não desenha). `label` é resolvido como o conteúdo de um Text (Span/B/I valem) com `labelStyle` (fonte herdada do slide).
 - Fit (pós-layout, por parte paginada, em `fitDeck`): pontas fora desta parte → omitido com `connector-omitted` (info) na parte em que o conector não sai. Âncora = ponto médio do lado do border-box (sem rotação); `auto` escolhe o par de lados (ou o lado que falta) que minimiza a distância entre as âncoras. `straight` = 2 pontos. `elbow`: lados no mesmo eixo (left/right × left/right, top/bottom × top/bottom) = 3 segmentos com a dobra no meio desse eixo; eixos mistos = um L (2 segmentos); pontos colineares são fundidos (cotovelo alinhado vira reta). Rótulo: medido numa linha com o medidor do env, centrado no meio do segmento mais longo; frame do rótulo = texto + `DEFAULTS.connector.label.padding` por lado.
 - Emit: pintado depois de todos os nós (por cima), na ordem dos conectores. `straight` → `line` com `flipH/flipV` pela direção; `elbow` → `custGeom` aberto sem fill. Setas `headEnd` (início) e `tailEnd` (fim); padrão só `endArrow` (`DEFAULTS.connector.endArrow`). Rótulo = fundo opcional (rect sem linha) + caixa de texto.
 - Preview: polilinha (`<polyline>`) encurtada pelo comprimento da seta onde há ponta cheia; pontas como polígonos/elipses; rótulo com fundo e texto.
@@ -613,3 +616,30 @@ Plano: `docs/work/milestones/M17.md`. Regra da linha: o que só faz sentido com 
 - `OverviewItem.label`: legenda própria sem marca de seção (overviews fora de um deck).
 - API pública para DS (sem marca): `mapResponsive`/`isResponsive`/`pickResponsive`, `toHexColor`, `resolveTheme`, `buildOverview`, `defaultFontFaces`/`defaultFontFiles`, `createContext`/`resolveSize`, `lintDeck`, tipos da árvore resolvida e posicionada.
 - `@pptsx/ds-base`: só a API pública de `pptsx` e do `ds-kit`; componentes com `defineComponent` (mesmos nomes de antes: paths iguais), `KpiCard` com `createVariants`, `TwoColumn` com slots, `meta.catalog` nos quatro componentes; regras `ds-base/colors-from-tokens`, `fonts-from-theme`, `kpi-row-max-4`, `cover-only-first`; guia em `guide/*.md`; schema gerado (`npm run schema`).
+
+### `Container` (M19-4)
+
+Tipos em `src/core/types.ts` (bloco "Container (M19)"): `ContainerQueryProps`, `ContainerBox`, `ContainerResponsive<T>`,
+`ContainerBreakpoint` (`narrow` | `short` | `small`); `PrimitiveKind` ganha `'container'`; `ResolvedBox.container?:
+'pending' | 'measured'`; códigos `container-unsized` (warning) e `container-depth` (error). Padrões em
+`DEFAULTS.containerQuery { narrow: 480, short: 240, maxDepth: 3 }`.
+
+- **Autor:** `<Container …props de Box (sem paginate/placeholder)>{(box) => filhos}</Container>`. Filho que não é
+  função → `ResolveError` "precisa de uma função como filho". Path `… > Container > …`.
+- **Resolve:** o Container vira um `ResolvedBox` (layout, fit, emissão e preview não conhecem outra coisa). Sem medida
+  para o seu `(slide, path)`: sem filhos, `container: 'pending'`. Com medida: a função é chamada com o `ContainerBox`
+  (content box medida; `narrow` ⇔ width < `narrow`, `short` ⇔ height < `short`; `pick`: com os dois, `small` > `narrow` >
+  `short` > `base`; com um, ele > `base`; `slide` = o contexto do slide), os filhos são resolvidos normalmente e o Box
+  recebe `width`/`height` = **frame medido** (border-box), `flexGrow 0`, `flexShrink 0`, `flexBasis auto`
+  (contenção de tamanho: o conteúdo não muda o espaço, então irmãos e paths ficam como na passada que mediu);
+  `container: 'measured'`. Container dentro de Box `paginate` → `ResolveError`.
+- **Passadas (`src/containers.ts`, `resolveWithContainers`):** resolve com as medidas conhecidas (começa vazio); se
+  algum slide tem Container `pending`, faz `layoutSlide` só desses slides, mede cada pendente (frame e
+  `contentRectOf`) e resolve de novo; repete até nada pendente. Na passada `maxDepth` ainda pendente → um
+  `container-depth` por Container (o Container fica vazio). Medida com largura ou altura < 0,5 pt → `container-unsized`
+  (a função recebe o 0). Diagnósticos de Container vêm antes dos do fit, com `slide` base 1 do autor.
+- **Custo zero sem Container:** sem nada pendente a 1ª passada é a final (o deck resolvido e o PPTX ficam idênticos aos
+  de antes do M19-4).
+- `render` e as regras externas do `lint` (`resolveMeasured`) usam as passadas; `resolveDeck(root, ctx, env,
+  containers?)` aceita as medidas (público, opcional).
+

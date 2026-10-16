@@ -19,8 +19,7 @@ import type {
   SlideProps,
   SpanProps,
   TableProps,
-  TextProps,
-} from './types.ts';
+  TextProps, Child, ContainerBox } from './types.ts';
 
 type Num = number;
 /** Comprimento CSS: número (pt), 'Npx', 'Npt' ou 'N%'. */
@@ -163,6 +162,10 @@ export type CssIconPropsAuthor = WithCss<Omit<IconProps, ItemAliases>>;
 export type ConnectorPropsAuthor = ResponsiveProps<ConnectorProps>;
 /** M13: SlideNumber é um Text de uma linha (CSS de item e de texto). */
 export type CssSlideNumberPropsAuthor = WithCss<Omit<SlideNumberProps, ItemAliases | TextAliases>>;
+/** M19: Container = props de Box (CSS do autor), sem paginate/placeholder, com a função do espaço como filho. */
+export type CssContainerQueryPropsAuthor = Omit<CssBoxPropsAuthor, 'children' | 'paginate' | 'placeholder'> & {
+  readonly children: (box: ContainerBox) => Child;
+};
 /** Em Table, `border` continua sendo a cor das linhas da grade (prop da engine). */
 export type CssTablePropsAuthor = ResponsiveProps<Omit<TableProps, keyof Css | 'border' | ItemAliases | 'font' | 'size'> & Omit<Css, 'border'>> & {
   readonly border?: Responsive<Color>;

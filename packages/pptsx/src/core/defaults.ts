@@ -124,6 +124,11 @@ export const DEFAULTS = {
   watchDebounceMs: 150,
   /** M9: 'tall' ⇔ aspect < tallAspect; 'wide' ⇔ scale > wideScale (ver core/responsive.ts). */
   breakpoints: { tallAspect: 1.5, wideScale: 1.2 },
+  /**
+   * M19: `<Container>`. `narrow`/`short` = limites (pt) da largura/altura medidas para os breakpoints de contêiner;
+   * `maxDepth` = níveis de Container aninhado (uma passada de layout a mais por nível); passou → container-depth.
+   */
+  containerQuery: { narrow: 480, short: 240, maxDepth: 3 },
   /** M9: máximo de partes em que um slide com Box paginate pode se dividir; passou → box-overflow. */
   paginate: { maxParts: 10 },
   /** M10: gráfico nativo. Paleta cíclica por série/categoria; tipografia de rótulos, eixos, legenda e título. */

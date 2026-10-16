@@ -3447,5 +3447,321 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       }
     },
     "required": []
+  },
+  "container": {
+    "type": "object",
+    "properties": {
+      "alignContent": {
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | \"stretch\">"
+      },
+      "alignItems": {
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\">"
+      },
+      "alignSelf": {
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"stretch\" | \"baseline\" | \"auto\">"
+      },
+      "aspectRatio": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "background": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Shorthand: uma cor ou `url(…)`."
+      },
+      "backgroundColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "backgroundImage": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "border": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderBottom": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderBottomColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderBottomStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderBottomWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeft": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderLeftColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderLeftStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderLeftWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderRadius": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderRight": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderRightColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderRightStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderRightWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTop": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "borderTopColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "borderTopStyle": {
+        "type": "\"none\" | \"solid\" | \"dashed\" | \"dotted\" | ResponsiveValue<\"none\" | \"solid\" | \"dashed\" | \"dotted\">"
+      },
+      "borderTopWidth": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "M17: as longhands por lado (o resolve já as aceitava; faltavam nos tipos). Largura sem estilo não desenha (CSS)."
+      },
+      "borderWidth": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "bottom": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "boxShadow": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "boxSizing": {
+        "type": "\"border-box\" | ResponsiveValue<\"border-box\">"
+      },
+      "color": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "columnGap": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "display": {
+        "type": "\"flex\" | \"block\" | \"grid\" | \"none\" | ResponsiveValue<\"flex\" | \"block\" | \"grid\" | \"none\">"
+      },
+      "flex": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "flexBasis": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | \"auto\" | ResponsiveValue<CssLengthInput | \"auto\">"
+      },
+      "flexDirection": {
+        "type": "\"row\" | \"column\" | \"row-reverse\" | \"column-reverse\" | ResponsiveValue<\"row\" | \"column\" | \"row-reverse\" | \"column-reverse\">"
+      },
+      "flexGrow": {
+        "type": "number | ResponsiveValue<number>"
+      },
+      "flexShrink": {
+        "type": "number | ResponsiveValue<number>"
+      },
+      "flexWrap": {
+        "type": "\"nowrap\" | \"wrap\" | \"wrap-reverse\" | ResponsiveValue<\"nowrap\" | \"wrap\" | \"wrap-reverse\">"
+      },
+      "fontFamily": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "fontSize": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "fontStyle": {
+        "type": "\"normal\" | \"italic\" | ResponsiveValue<\"normal\" | \"italic\">"
+      },
+      "fontWeight": {
+        "type": "number | \"normal\" | \"bold\" | \"regular\" | ResponsiveValue<number | \"normal\" | \"bold\" | \"regular\">"
+      },
+      "gap": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "gridAutoColumns": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "gridAutoFlow": {
+        "type": "\"row\" | ResponsiveValue<\"row\">"
+      },
+      "gridAutoRows": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "gridColumn": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "gridColumnEnd": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "gridColumnStart": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "gridRow": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "gridRowEnd": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "gridRowStart": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "gridTemplateColumns": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "gridTemplateRows": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "height": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "href": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "M13: hyperlink no fundo da caixa: URL externa ou `slide:N` (N = slide do autor, base 1)."
+      },
+      "id": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "M12: identificador do nó para `Connector from/to`. Único no slide (duplicado → ResolveError); não muda layout nem pintura."
+      },
+      "inset": {
+        "type": "string | number | ResponsiveValue<BoxShorthand>"
+      },
+      "justifyContent": {
+        "type": "\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\" | ResponsiveValue<\"flex-start\" | \"start\" | \"center\" | \"flex-end\" | \"end\" | \"space-between\" | \"space-around\" | \"space-evenly\">"
+      },
+      "justifyItems": {
+        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\">"
+      },
+      "justifySelf": {
+        "type": "\"start\" | \"center\" | \"end\" | \"stretch\" | \"auto\" | ResponsiveValue<\"start\" | \"center\" | \"end\" | \"stretch\" | \"auto\">"
+      },
+      "left": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "letterSpacing": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "lineHeight": {
+        "type": "number | \"normal\" | ResponsiveValue<number | \"normal\">"
+      },
+      "margin": {
+        "type": "string | number | { readonly top?: number | undefined; readonly right?: number | undefined; readonly bottom?: number | undefined; readonly left?: number | undefined; } | ResponsiveValue<string | number | { readonly top?: number | undefined; readonly right?: number | undefined; readonly bottom?: number | undefined; readonly left?: number | undefined; }>"
+      },
+      "marginBottom": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | \"auto\" | ResponsiveValue<MarginInput>"
+      },
+      "marginLeft": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | \"auto\" | ResponsiveValue<MarginInput>"
+      },
+      "marginRight": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | \"auto\" | ResponsiveValue<MarginInput>"
+      },
+      "marginTop": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | \"auto\" | ResponsiveValue<MarginInput>"
+      },
+      "maxHeight": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "maxWidth": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "minHeight": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "minWidth": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "opacity": {
+        "type": "number | ResponsiveValue<number>"
+      },
+      "order": {
+        "type": "number | ResponsiveValue<number>"
+      },
+      "outline": {
+        "type": "string | number | ResponsiveValue<string | number>",
+        "description": "Contorno que não ocupa espaço ('1px solid #ccc'; número = largura). Só sólido no PPTX."
+      },
+      "outlineColor": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "outlineWidth": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "overflow": {
+        "type": "\"hidden\" | \"visible\" | ResponsiveValue<\"hidden\" | \"visible\">"
+      },
+      "padding": {
+        "type": "string | number | { readonly top?: number | undefined; readonly right?: number | undefined; readonly bottom?: number | undefined; readonly left?: number | undefined; } | ResponsiveValue<string | number | { readonly top?: number | undefined; readonly right?: number | undefined; readonly bottom?: number | undefined; readonly left?: number | undefined; }>"
+      },
+      "paddingBottom": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "paddingLeft": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "paddingRight": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "paddingTop": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "placeItems": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "placeSelf": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "position": {
+        "type": "\"static\" | \"relative\" | \"absolute\" | ResponsiveValue<\"static\" | \"relative\" | \"absolute\">"
+      },
+      "right": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "rotate": {
+        "type": "string | number | ResponsiveValue<string | number>"
+      },
+      "rowGap": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "shape": {
+        "type": "\"rect\" | \"roundRect\" | \"ellipse\" | \"line\" | \"triangle\" | \"rightTriangle\" | \"diamond\" | \"parallelogram\" | \"trapezoid\" | \"pentagon\" | \"hexagon\" | \"octagon\" | \"chevron\" | \"arrowRight\" | \"arrowLeft\" | \"arrowUp\" | \"arrowDown\" | \"doubleArrow\" | \"pill\" | \"star\" | \"cloud\" | \"callout\" | \"bracketPair\" | \"cylinder\" | ResponsiveValue<ShapeKind>",
+        "description": "M12: geometria do fundo/borda da caixa (padrão 'rect'; com borderRadius vira 'roundRect'). Os filhos continuam posicionados pelo padding, como numa caixa retangular: a forma não recalcula o layout. 'line' não é aceito."
+      },
+      "style": {
+        "type": "Readonly<Record<string, unknown>> | ResponsiveValue<Readonly<Record<string, unknown>>>",
+        "description": "Escape: qualquer CSS; o que não tem de/para vira diagnóstico css-not-emitted."
+      },
+      "textAlign": {
+        "type": "\"right\" | \"left\" | \"start\" | \"center\" | \"end\" | ResponsiveValue<\"right\" | \"left\" | \"start\" | \"center\" | \"end\">"
+      },
+      "textDecoration": {
+        "type": "\"none\" | \"underline\" | \"line-through\" | \"underline line-through\" | ResponsiveValue<\"none\" | \"underline\" | \"line-through\" | \"underline line-through\">"
+      },
+      "textTransform": {
+        "type": "\"none\" | \"uppercase\" | \"lowercase\" | \"capitalize\" | ResponsiveValue<\"none\" | \"uppercase\" | \"lowercase\" | \"capitalize\">"
+      },
+      "top": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "transform": {
+        "type": "string | ResponsiveValue<string>"
+      },
+      "width": {
+        "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
+      },
+      "zIndex": {
+        "type": "number | ResponsiveValue<number>"
+      }
+    },
+    "required": []
   }
 };

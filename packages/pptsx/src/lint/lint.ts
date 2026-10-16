@@ -1,6 +1,6 @@
 import type { DeckDefinition, PositionedNode, RenderOptions, Severity, SizeSpec, Theme } from '../core/types.ts';
 import { groupDiagnostics } from '../fit/index.ts';
-import { render } from '../render.ts';
+import { render, resolveMeasured } from '../render.ts';
 import type { Diagnostic } from '../core/types.ts';
 import { createResolveEnv, resolveDeck, ResolveError, resolveTheme } from '../resolve/index.ts';
 import { createContext, resolveSize } from '../sizes.ts';
@@ -128,7 +128,8 @@ const externalFindingsOf = (deck: DeckDefinition, size: SizeSpec, options: LintO
   const rules = options.rules ?? [];
   if (rules.length === 0) return [];
   const ctx = createContext(resolveSize(size));
-  const resolved = resolveDeck(deck(ctx), ctx, createResolveEnv(options.baseDir));
+  // M19: com as medidas dos Containers, as regras veem o conteúdo que a função de cada um devolveu.
+  const resolved = resolveMeasured(deck, size, { ...options.render, ...(options.baseDir === undefined ? {} : { baseDir: options.baseDir }) });
   const run = (node: Parameters<LintRule['check']>[0], context: LintContext): readonly LintFinding[] =>
     rules.flatMap((rule): readonly LintFinding[] => {
       try {

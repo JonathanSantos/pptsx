@@ -18,7 +18,7 @@ export interface AliasRule {
   readonly special?: 'direction-box' | 'stroke' | 'background' | 'italic' | 'grow';
 }
 
-const ITEMS: readonly PrimitiveKind[] = ['box', 'text', 'image', 'shape', 'chart', 'table', 'path', 'icon', 'slideNumber'];
+const ITEMS: readonly PrimitiveKind[] = ['box', 'text', 'image', 'shape', 'chart', 'table', 'path', 'icon', 'slideNumber', 'container'];
 const TEXTS: readonly PrimitiveKind[] = ['text', 'slideNumber'];
 const ALIGN = { start: 'flex-start', end: 'flex-end', center: 'center', stretch: 'stretch', baseline: 'baseline' };
 const JUSTIFY = { start: 'flex-start', end: 'flex-end', center: 'center', between: 'space-between', around: 'space-around', evenly: 'space-evenly' };

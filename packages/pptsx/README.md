@@ -760,6 +760,30 @@ Na [`ds-base/examples/demo.tsx`](../ds-base/examples/demo.tsx), o componente `Tw
 
 <p align="center"><img src="docs/readme/demo-twocolumn.png" width="900" alt="Slide de receita em 16:9 com bullets e gráfico lado a lado, e em 4:3 com o gráfico embaixo dos bullets"></p>
 
+### Pelo espaço do componente: `Container`
+
+Breakpoints dizem o tamanho do **slide**. Um componente numa meia coluna precisa saber o tamanho **dele**. O
+`<Container>` é um Box cujo conteúdo é uma função do espaço medido:
+
+```tsx
+import { Container } from 'pptsx';
+
+<Box width="37%" display="flex">
+  <Container flex={1}>
+    {(box) => (box.narrow ? <KpiCompacto value="91%" /> : <KpiGrande value="91%" />)}
+  </Container>
+</Box>
+
+// Atalho para valores, como ctx.pick: small (estreito e baixo) > narrow / short > base
+<Container flex={1}>{(box) => <Text fontSize={box.pick({ base: 28, narrow: 16, small: 12 })}>…</Text>}</Container>
+```
+
+`box` traz `width`/`height` (content box, pt), `aspect`, `narrow` (< 480 pt), `short` (< 240 pt), `pick` e o contexto
+do `slide`. O tamanho do Container vem do pai (flex, width/height, célula de grid), **nunca do conteúdo** — é isso que
+deixa a medição exata: o motor faz uma passada de layout para medir e a segunda com o conteúdo escolhido. Aninhar
+custa uma passada por nível (até 3). Slides sem Container não pagam nada: saem idênticos. Pai que depende do conteúdo
+→ aviso `container-unsized`; dentro de `<Box paginate>` → erro.
+
 ### Paginação
 
 `<Box paginate>` divide os filhos em fluxo entre slides quando não cabem, em vez de encolher a fonte. O resto continua num **clone do slide** (mesmo título, fundo, decoração, rodapé e notas). Em 4:3, com mais altura, os mesmos 9 itens cabem num slide só:

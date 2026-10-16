@@ -102,11 +102,11 @@ const AUTO_PLACEMENT: GridPlacement = { start: { kind: 'auto' }, end: { kind: 'a
 
 /** Direção padrão: Slide e Box sem display são column (decisão M11 nº 3); `display: flex` explícito é row (CSS). */
 const defaultDirectionOf = (kind: PrimitiveKind, draft: Draft): CssFlexDirection =>
-  kind === 'box' && draft.display === 'flex' ? DEFAULTS.css.cssFlexDirection : DEFAULTS.css.legacyDirection;
+  (kind === 'box' || kind === 'container') && draft.display === 'flex' ? DEFAULTS.css.cssFlexDirection : DEFAULTS.css.legacyDirection;
 
 const displayOf = (kind: PrimitiveKind, draft: Draft): Display => {
   if (draft.display !== undefined) return draft.display;
-  return kind === 'box' || kind === 'slide' ? DEFAULTS.css.boxDisplay : 'block';
+  return kind === 'box' || kind === 'container' || kind === 'slide' ? DEFAULTS.css.boxDisplay : 'block';
 };
 
 /** Campo opcional só quando definido (o CssStyle distingue "ausente" de valor). */

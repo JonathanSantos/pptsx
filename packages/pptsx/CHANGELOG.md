@@ -2,6 +2,25 @@
 
 Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Versões antes da 1.0 podem quebrar a API; o que quebra está em **Mudanças incompatíveis**.
 
+## Não lançado — M19: composição
+
+### Novidades
+
+- **`<Container>`**: Box cujo conteúdo é uma função do espaço medido (`{(box) => …}`), com `box.width/height`,
+  `narrow`/`short` e `box.pick({ base, narrow, short, small })`. O tamanho vem do pai (contenção de tamanho); o
+  motor mede numa passada de layout e resolve de novo. Novos diagnósticos `container-unsized` (warning) e
+  `container-depth` (error). Slides sem Container saem idênticos.
+- **Ids de conector com escopo de componente**: o mesmo `id` pode se repetir em instâncias diferentes de um
+  componente (um diagrama com conectores repetido numa grade); antes o build abortava. Ids únicos saem iguais.
+- `resolveDeck(root, ctx, env, containers?)` aceita medidas de Container (opcional).
+
+### Mudanças de comportamento
+
+- Item de grid com `minWidth` numérico (e sem `width` numérica): o `minWidth` passa a ser o mínimo da trilha, como
+  `min-width` no CSS. `minWidth={0}` deixa uma trilha `1fr` encolher abaixo do conteúdo (antes era ignorado).
+  Nenhum dos decks de exemplo do repositório mudou.
+- Item de grid esticado com `aspectRatio` e `maxHeight`: mantém a proporção (antes virava elipse/retângulo).
+
 ## 1.0.2 — primeira publicação no npm
 
 Mesmo motor da 1.0.1. Publica `pptsx`, `@pptsx/ds-kit` e `@pptsx/ds-base` no npm (a 1.0.1 saiu só como release do GitHub: o job do npm parou num aviso do CI antes de publicar).

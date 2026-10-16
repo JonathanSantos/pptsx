@@ -1,6 +1,6 @@
 import type { DeckDefinition } from './core/types.ts';
 
-export { Deck, Slide, Box, Text, Image, Shape, Span, B, I, Sup, Sub, Chart, Table, Path, Icon, Connector, SlideNumber, defineLayout, defineComponent } from './primitives/index.ts';
+export { Deck, Slide, Box, Text, Image, Shape, Span, B, I, Sup, Sub, Chart, Table, Path, Icon, Connector, SlideNumber, Container, defineLayout, defineComponent } from './primitives/index.ts';
 export { Fragment } from './jsx/jsx-runtime.ts';
 export { resolveDeck, ResolveError } from './resolve/index.ts';
 export { render, renderFragment, fragmentSlide, type FragmentOptions, type FragmentResult, type FragmentSlideOptions } from './render.ts';
@@ -47,6 +47,11 @@ export type {
 } from './core/types.ts';
 
 export type {
+  ContainerBox,
+  ContainerBreakpoint,
+  ContainerQueryProps,
+  ContainerResponsive,
+  ContainerResponsiveValue,
   Align,
   ArrowType,
   ConnectorLabelStyle,
