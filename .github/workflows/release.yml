@@ -1,5 +1,6 @@
 # Release por tag (`v1.0.1`): a release do GitHub com o pptsx.mjs (arquivo único, Node 20+, sem node_modules),
-# o SHA256SUMS que o script da skill confere e os zips das skills; depois o npm.
+# os binários do pptsx-rs por plataforma (macOS arm64/x86_64, Linux x86_64/arm64, Windows x86_64), o
+# SHA256SUMS que o script da skill confere (bundle e binários) e os zips das skills; depois o npm.
 # Não roda a suíte de novo: o job `gate` exige que o workflow CI tenha passado no mesmo commit (o push da main).
 # Fluxo: commit com a versão nova → push da main → tag `v<versão>` → push da tag (a Release espera o CI, se ainda roda).
 # A tag tem de ser a versão do núcleo (packages/pptsx/package.json): a skill baixa de
@@ -35,6 +36,14 @@ jobs:
             echo "::error::a tag $GITHUB_REF_NAME não bate com a versão do núcleo ($version)"
             exit 1
           fi
+      - name: Versão do pptsx-rs igual à do núcleo
+        run: |
+          rs=$(grep -m1 '^version' packages/pptsx-rs/Cargo.toml | sed -E 's/.*"(.*)".*/\1/')
+          core=$(node -p "require('./packages/pptsx/package.json').version")
+          if [ "$rs" != "$core" ]; then
+            echo "::error::packages/pptsx-rs/Cargo.toml está em $rs e o núcleo em $core"
+            exit 1
+          fi
       - name: CI verde neste commit
         env:
           GH_TOKEN: ${{ github.token }}
@@ -55,8 +64,57 @@ jobs:
           echo "::error::sem CI verde no commit $GITHUB_SHA; faça o push da main, espere o CI e só então a tag"
           exit 1
 
-  release:
+  # Binários do pptsx-rs, um por alvo. O x86_64 do macOS é cross-compilado no runner arm64 (toolchain da Apple).
+  binaries:
     needs: gate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: macos-latest, target: x86_64-apple-darwin }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - run: cargo build --release -p pptsx-rs --target ${{ matrix.target }}
+      - name: Empacotar (tar.gz; zip no Windows) com README e LICENSE
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="pptsx-rs-${{ matrix.target }}"
+          mkdir -p "dist/$name"
+          cp packages/pptsx-rs/README.md LICENSE "dist/$name/"
+          case "${{ matrix.target }}" in
+            *windows*)
+              cp "target/${{ matrix.target }}/release/pptsx-rs.exe" "dist/$name/"
+              (cd dist && 7z a -tzip "$name.zip" "$name" >/dev/null) ;;
+            *)
+              cp "target/${{ matrix.target }}/release/pptsx-rs" "dist/$name/"
+              tar -czf "dist/$name.tar.gz" -C dist "$name" ;;
+          esac
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pptsx-rs-${{ matrix.target }}
+          path: |
+            dist/pptsx-rs-*.tar.gz
+            dist/pptsx-rs-*.zip
+          if-no-files-found: error
+
+  release:
+    needs: [gate, binaries]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -80,9 +138,19 @@ jobs:
           node packages/ds-kit/bin/pptsx-ds.mjs skill packages/ds-base/src/ds.ts --out dist/skill-ds-base
           (cd dist/skill/.claude/skills && zip -r ../../../pptsx-skill.zip pptsx)
           (cd dist/skill-ds-base/.claude/skills && zip -r ../../../ds-base-skill.zip pptsx-ds-base)
-      # M18-7: o pptsx.mjs e o SHA256SUMS que o script da skill confere.
-      - name: Release com o bundle e as skills
-        run: gh release create "$GITHUB_REF_NAME" packages/pptsx/dist/standalone/pptsx.mjs packages/pptsx/dist/standalone/SHA256SUMS dist/pptsx-skill.zip dist/ds-base-skill.zip --generate-notes
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pptsx-rs-*
+          path: dist/bin
+          merge-multiple: true
+      # O SHA256SUMS tem o bundle (a linha que o script da skill lê) e, abaixo, cada binário.
+      - name: SHA256SUMS com os binários
+        run: |
+          (cd dist/bin && sha256sum pptsx-rs-*) >> packages/pptsx/dist/standalone/SHA256SUMS
+          cat packages/pptsx/dist/standalone/SHA256SUMS
+      # M18-7: o pptsx.mjs e o SHA256SUMS que o script da skill confere; os binários do pptsx-rs ao lado.
+      - name: Release com o bundle, os binários e as skills
+        run: gh release create "$GITHUB_REF_NAME" packages/pptsx/dist/standalone/pptsx.mjs packages/pptsx/dist/standalone/SHA256SUMS dist/bin/pptsx-rs-* dist/pptsx-skill.zip dist/ds-base-skill.zip --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
 

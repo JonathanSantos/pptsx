@@ -1,0 +1,131 @@
+[
+  {
+    "size": "16x9",
+    "slide": 1,
+    "severity": "info",
+    "code": "text-shrunk",
+    "path": "Slide > Bullets > Box[0..3] > Text",
+    "message": "Texto reduzido de 20 pt para 19 pt para caber na área. Se a redução incomodar, encurte o conteúdo ou aumente a área. (×4: mesmo problema em Box[0..3])",
+    "data": {
+      "fromSize": 20,
+      "toSize": 19,
+      "count": 4,
+      "paths": [
+        "Slide > Bullets > Box[0] > Text",
+        "Slide > Bullets > Box[1] > Text",
+        "Slide > Bullets > Box[2] > Text",
+        "Slide > Bullets > Box[3] > Text"
+      ]
+    }
+  },
+  {
+    "size": "16x9",
+    "slide": 2,
+    "severity": "error",
+    "code": "text-overflow",
+    "path": "Slide > Box > Text",
+    "message": "Texto estourou 0.5% (1.2 pt) da altura disponível mesmo em 19 pt (mínimo); reduza o conteúdo, aumente a área ou baixe minSize.",
+    "data": {
+      "overflowPt": 1.2,
+      "overflowPct": 0.5,
+      "fromSize": 20,
+      "toSize": 19
+    }
+  },
+  {
+    "size": "16x9",
+    "slide": 3,
+    "severity": "warning",
+    "code": "text-truncated",
+    "path": "Slide > Text",
+    "message": "Texto cortado com reticências: mostradas 3 de 8 linhas (~63% do conteúdo oculto). Encurte o conteúdo, aumente a área, aumente maxLines ou use fit=\"shrink\"."
+  },
+  {
+    "size": "16x9",
+    "slide": 4,
+    "severity": "warning",
+    "code": "text-truncated",
+    "path": "Slide > Box > Box[0] > Text",
+    "message": "Texto cortado com reticências: mostradas 6 de 8 linhas (~25% do conteúdo oculto). Encurte o conteúdo, aumente a área, aumente maxLines ou use fit=\"shrink\"."
+  },
+  {
+    "size": "16x9",
+    "slide": 4,
+    "severity": "error",
+    "code": "text-overflow",
+    "path": "Slide > Box > Box[1] > Text",
+    "message": "Texto estourou 16.8% (21.2 pt) da altura disponível em 16 pt (fit=\"error\" não ajusta); reduza o conteúdo, aumente a área ou troque para fit=\"shrink\" ou fit=\"truncate\".",
+    "data": {
+      "overflowPt": 21.2,
+      "overflowPct": 16.8
+    }
+  },
+  {
+    "size": "16x9",
+    "slide": 4,
+    "severity": "warning",
+    "code": "text-truncated",
+    "path": "Slide > Text",
+    "message": "Texto cortado com reticências: mostradas 1 de 3 linhas (~67% do conteúdo oculto). Encurte o conteúdo, aumente a área, aumente maxLines ou use fit=\"shrink\"."
+  },
+  {
+    "size": "16x9",
+    "slide": 5,
+    "severity": "error",
+    "code": "box-overflow",
+    "path": "Slide > Box",
+    "message": "Os filhos em fluxo somam 812 pt na horizontal (row), mas a área de conteúdo tem 648 pt: estouro de 164 pt (25.3%). Reduza width/height fixos ou gap/padding, permita flexShrink nos filhos (flexShrink={0} impede), ou aumente o contêiner.",
+    "data": {
+      "overflowPt": 164,
+      "overflowPct": 25.3
+    }
+  },
+  {
+    "size": "4x3",
+    "slide": 3,
+    "severity": "warning",
+    "code": "text-truncated",
+    "path": "Slide > Text",
+    "message": "Texto cortado com reticências: mostradas 3 de 8 linhas (~63% do conteúdo oculto). Encurte o conteúdo, aumente a área, aumente maxLines ou use fit=\"shrink\"."
+  },
+  {
+    "size": "4x3",
+    "slide": 4,
+    "severity": "warning",
+    "code": "text-truncated",
+    "path": "Slide > Box > Box[0] > Text",
+    "message": "Texto cortado com reticências: mostradas 6 de 8 linhas (~25% do conteúdo oculto). Encurte o conteúdo, aumente a área, aumente maxLines ou use fit=\"shrink\"."
+  },
+  {
+    "size": "4x3",
+    "slide": 4,
+    "severity": "error",
+    "code": "text-overflow",
+    "path": "Slide > Box > Box[1] > Text",
+    "message": "Texto estourou 16.8% (21.2 pt) da altura disponível em 16 pt (fit=\"error\" não ajusta); reduza o conteúdo, aumente a área ou troque para fit=\"shrink\" ou fit=\"truncate\".",
+    "data": {
+      "overflowPt": 21.2,
+      "overflowPct": 16.8
+    }
+  },
+  {
+    "size": "4x3",
+    "slide": 4,
+    "severity": "warning",
+    "code": "text-truncated",
+    "path": "Slide > Text",
+    "message": "Texto cortado com reticências: mostradas 1 de 3 linhas (~67% do conteúdo oculto). Encurte o conteúdo, aumente a área, aumente maxLines ou use fit=\"shrink\"."
+  },
+  {
+    "size": "4x3",
+    "slide": 5,
+    "severity": "error",
+    "code": "box-overflow",
+    "path": "Slide > Box",
+    "message": "Os filhos em fluxo somam 812 pt na horizontal (row), mas a área de conteúdo tem 648 pt: estouro de 164 pt (25.3%). Reduza width/height fixos ou gap/padding, permita flexShrink nos filhos (flexShrink={0} impede), ou aumente o contêiner.",
+    "data": {
+      "overflowPt": 164,
+      "overflowPct": 25.3
+    }
+  }
+]

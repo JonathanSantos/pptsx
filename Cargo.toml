@@ -1,0 +1,11 @@
+# Workspace do Rust: o binário pptsx-rs (packages/pptsx-rs). `cargo test` e `cargo clippy` rodam daqui.
+[workspace]
+members = ["packages/pptsx-rs"]
+resolver = "3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "s"
+strip = true
+panic = "abort"

@@ -173,6 +173,10 @@ Como o React é a base de bibliotecas de componentes, o pptsx é a base de desig
 | `renderFragment(elemento, { size })` | um componente isolado num slide (frames, SVG, PNG): a base do catálogo |
 | `defineDs(manifest)` | o guia e o schema de props do DS no MCP e na skill |
 
+### O binário em Rust
+
+[`packages/pptsx-rs`](packages/pptsx-rs/README.md) é o núcleo portado para Rust: um executável de 6 MB, sem Node, com a mesma CLI (`build`, `check`, `lint`, `init`, `mcp`, `--watch`, `--serve`), a mesma saída (XML, diagnósticos e lint comparados com o TS em `cargo test`) e a mesma versão. Serve para quem quer o MCP ou a skill sem instalar o Node: o `.vscode/mcp.json` aponta direto para o binário. Cada release traz o binário para macOS, Linux e Windows e o `SHA256SUMS`.
+
 ## Como funciona
 
 <p align="center">
@@ -245,7 +249,8 @@ pptsx/
 │   │   ├── docs/AGENT_GUIDE.md   o guia único para agentes
 │   │   └── docs/readme/          imagens deste README, decks que as geram e a marca (brand/)
 │   ├── ds-kit/                tokens, tema, variantes, slots, regras, catálogo, createDs, CLI pptsx-ds
-│   └── ds-base/               DS de exemplo: src/, guide/, fixtures/ (contrato visual) e examples/
+│   ├── ds-base/               DS de exemplo: src/, guide/, fixtures/ (contrato visual) e examples/
+│   └── pptsx-rs/              o núcleo em Rust: src/{js,model,yoga,grid,layout,emit,package,preview,serve}, fixtures/ do TS
 ├── examples/                  gallery/ (os seis DS da galeria) e third-party-ds/ (DS feito só com o guia do kit)
 ├── docs/                      spec do produto, marcos, contratos entre módulos e relatórios
 └── scripts/                   brand.mjs (identidade visual), gallery.mjs (galeria), publish-check, keynote-export
@@ -264,6 +269,7 @@ npm install
 | `npm run build` | compila `src/` para `dist/` (JS + `.d.ts`) |
 | `npm run test:package` | `npm pack` → projeto vazio → `init` → `build` (lento) |
 | `npm run publish:check` | confere os `package.json` antes de publicar |
+| `cargo test` | o port em Rust contra as fixtures do TS (`packages/pptsx-rs/scripts/golden.sh` as regenera) |
 | `node scripts/brand.mjs` | regenera logo, banners, ícones e diagramas em `packages/pptsx/docs/readme/brand/` |
 | `node scripts/gallery.mjs` | reconstrói os seis DS de `examples/gallery/` (falha com qualquer `warning`) e remonta a galeria (macOS: usa fontes do sistema) |
 
