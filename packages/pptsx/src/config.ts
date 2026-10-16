@@ -77,6 +77,8 @@ export const isRequireAsyncError = (error: unknown): boolean => {
   if (!(error instanceof Error)) return false;
   const code = (error as NodeJS.ErrnoException).code;
   if (code === 'ERR_REQUIRE_ASYNC_MODULE' || error.message.includes('require() cannot be used on an ESM graph')) return true;
+  // Node 20.19+ e 22.12+ (require(esm) ligado): o mesmo deck CJS cai no ciclo do require(esm), com outra mensagem.
+  if (code === 'ERR_REQUIRE_CYCLE_MODULE' || /Cannot require\(\) ES Module .* in a cycle|is not yet fully loaded/.test(error.message)) return true;
   // require() de um pacote só-ESM (exports sem `require`/`default`): mesma causa, deck carregado como CJS.
   return code === 'ERR_PACKAGE_PATH_NOT_EXPORTED' && /node_modules[\\/]pptsx/.test(error.message);
 };

@@ -9,6 +9,8 @@ on:
 jobs:
   check:
     runs-on: ${{ matrix.os }}
+    # Windows ainda experimental (VALIDACAO-DONO §3.1): falha ali não derruba o CI.
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -23,14 +25,15 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
+      # Antes dos testes: os pacotes se importam pelo nome, e o `exports` aponta para dist/.
+      - name: Build dos pacotes
+        run: npm run build
       - name: Typecheck
         run: npm run typecheck
       - name: Lint do repo (variáveis e parâmetros sem uso)
         run: npm run lint:repo
       - name: Testes
         run: npm test
-      - name: Build do pacote
-        run: npm run build
       - name: Teste dos pacotes empacotados (os três)
         run: npm run test:package
       - name: npm publish --dry-run dos três

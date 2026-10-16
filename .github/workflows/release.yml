@@ -29,9 +29,10 @@ jobs:
             exit 1
           fi
       - run: npm ci
+      # Antes dos testes: os pacotes se importam pelo nome, e o `exports` aponta para dist/.
+      - run: npm run build
       - run: npm run typecheck
       - run: npm test
-      - run: npm run build
       - run: npm run test:package
       - name: Bundle de arquivo único (paridade com o build normal)
         run: npm run test:standalone --workspace pptsx
