@@ -22,6 +22,7 @@ mod package;
 mod preview;
 mod report;
 mod serve;
+mod skill;
 mod text;
 mod validate;
 mod yoga;
@@ -45,6 +46,9 @@ uso:
   pptsx-rs lint  <deck.tsx> [--size 16x9,4x3] [--json]
                  regras da engine e as dos DS registrados no pptsx.config.ts
   pptsx-rs init  [pasta] [--force] [--json]      cria deck.tsx, tsconfig.json, pptsx.config.ts
+  pptsx-rs skill [--out pptsx] [--bin <binário> | --no-bin]
+                                                   a skill para agentes (SKILL.md, references/, mcp/) com
+                                                   este binário em bin/: a pasta vai em .github/skills ou .claude/skills
   pptsx-rs mcp [--ds <ds.ts>]...                  servidor MCP por stdio (build, diagnose,
                                                    preview, lint, guide, schema)
 
@@ -207,6 +211,9 @@ fn main() -> ExitCode {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     if raw.first().map(String::as_str) == Some("init") {
         return init::run(&raw[1..]);
+    }
+    if raw.first().map(String::as_str) == Some("skill") {
+        return skill::run(&raw[1..]);
     }
     if raw.first().map(String::as_str) == Some("mcp") {
         let ds: Vec<String> = raw.iter().enumerate().filter(|(i, a)| *i > 0 && raw[i - 1] == "--ds" && !a.starts_with("--")).map(|(_, a)| a.clone()).collect();

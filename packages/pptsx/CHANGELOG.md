@@ -2,6 +2,13 @@
 
 Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Versões antes da 1.0 podem quebrar a API; o que quebra está em **Mudanças incompatíveis**.
 
+## 1.0.4 — a release do pptsx-rs é a skill
+
+- **`pptsx-rs skill`**: a pasta da skill para agentes (`SKILL.md` curto, `references/essentials.md`,
+  `guide.md` com índice de linhas e `props.md`, `mcp/*.json` prontos, README) gerada do guia e do schema
+  embutidos, com o próprio binário em `bin/`. O pacote de cada plataforma na release passa a ser essa pasta:
+  descompacte em `.github/skills/` (Copilot) ou `.claude/skills/` (Claude Code) e o agente se vira, sem Node.
+
 ## 1.0.3 — M19: composição; o núcleo em Rust
 
 ### Novidades

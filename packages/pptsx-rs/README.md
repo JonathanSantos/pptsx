@@ -57,7 +57,7 @@ O [pptsx](../pptsx/README.md) em TypeScript é a referência. Este pacote reprod
 
 ## Instalar
 
-Cada [release](https://github.com/JonathanSantos/pptsx/releases/latest) traz um pacote por plataforma e o `SHA256SUMS` (o mesmo arquivo que lista o `pptsx.mjs`).
+Cada [release](https://github.com/JonathanSantos/pptsx/releases/latest) traz um pacote por plataforma e o `SHA256SUMS` (o mesmo arquivo que lista o `pptsx.mjs`). O pacote **é a skill**: uma pasta `pptsx/` com o `SKILL.md`, as referências para o agente, os `mcp.json` prontos e o binário em `bin/`. Descompactou, moveu para a pasta de skills, acabou.
 
 | Sistema | Arquivo |
 |---|---|
@@ -67,18 +67,21 @@ Cada [release](https://github.com/JonathanSantos/pptsx/releases/latest) traz um 
 | Linux arm64 | `pptsx-rs-aarch64-unknown-linux-gnu.tar.gz` |
 | Windows x86_64 | `pptsx-rs-x86_64-pc-windows-msvc.zip` |
 
-macOS e Linux, no projeto em que o agente vai trabalhar (o binário fica em `tools/`, fora do git se preferir):
+macOS e Linux, na raiz do repositório em que o agente vai trabalhar:
 
 ```bash
 alvo=aarch64-apple-darwin   # ou x86_64-apple-darwin, x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu
 base=https://github.com/JonathanSantos/pptsx/releases/latest/download
 curl -LO "$base/pptsx-rs-$alvo.tar.gz" && curl -LO "$base/SHA256SUMS"
 shasum -a 256 -c SHA256SUMS --ignore-missing          # confere o pacote baixado
-tar -xzf "pptsx-rs-$alvo.tar.gz" && mkdir -p tools && mv "pptsx-rs-$alvo/pptsx-rs" tools/
-tools/pptsx-rs --version
+mkdir -p .github/skills && tar -xzf "pptsx-rs-$alvo.tar.gz" -C .github/skills    # Copilot; Claude Code: .claude/skills
+cp .github/skills/pptsx/mcp/vscode.mcp.json .vscode/mcp.json                     # Claude Code: mcp/claude.mcp.json → .mcp.json
+.github/skills/pptsx/bin/pptsx-rs --version
 ```
 
-No macOS, um binário baixado pelo navegador pode chegar com a quarentena do Gatekeeper; `xattr -d com.apple.quarantine tools/pptsx-rs` libera. No Windows, extraia o `.zip` e use `tools\pptsx-rs.exe` nos exemplos abaixo.
+Pronto: o agente lê `.github/skills/pptsx/SKILL.md`, sabe onde está o binário e como iniciar, construir e corrigir um deck. No Windows, extraia o `.zip` em `.github\skills\` e o binário é `bin\pptsx-rs.exe`. No macOS, um pacote baixado pelo navegador pode chegar com a quarentena do Gatekeeper; `xattr -d com.apple.quarantine .github/skills/pptsx/bin/pptsx-rs` libera.
+
+A pasta da skill também sai do próprio binário, para quem compilou do código: `pptsx-rs skill --out pptsx` (gera `SKILL.md`, `references/`, `mcp/` e copia o binário para `bin/`).
 
 Para compilar do código (Rust estável, 1.85+):
 
@@ -90,8 +93,9 @@ cargo build --release          # na raiz do monorepo (workspace) ou em packages/
 ## Em 30 segundos
 
 ```bash
-tools/pptsx-rs init meu-deck                                 # deck.tsx, tsconfig.json, pptsx.config.ts, assets/
-tools/pptsx-rs build meu-deck/deck.tsx --size 16x9,4x3       # .pptx + PNG por slide + overview + diagnósticos
+bin=.github/skills/pptsx/bin/pptsx-rs
+$bin init meu-deck                                 # deck.tsx, tsconfig.json, pptsx.config.ts, assets/
+$bin build meu-deck/deck.tsx --size 16x9,4x3       # .pptx + PNG por slide + overview + diagnósticos
 ```
 
 ```text
@@ -124,47 +128,47 @@ O jeito principal de um agente usar o pptsx-rs é pelo **servidor MCP**: o agent
 
 ### GitHub Copilot no VS Code
 
-Crie `.vscode/mcp.json` na raiz do repositório. O agent mode do Copilot sobe o servidor ao abrir a pasta e oferece as ferramentas no chat.
+A skill em `.github/skills/pptsx/` já ensina o fluxo e as armadilhas ao agent mode. Para ele usar as ferramentas em vez do shell, `.vscode/mcp.json` na raiz do repositório (é o arquivo `mcp/vscode.mcp.json` da skill):
 
 ```json
 {
   "servers": {
     "pptsx": {
       "type": "stdio",
-      "command": "${workspaceFolder}/tools/pptsx-rs",
+      "command": "${workspaceFolder}/.github/skills/pptsx/bin/pptsx-rs",
       "args": ["mcp"]
     }
   }
 }
 ```
 
-Depois, no chat em agent mode: *"Crie um deck de 5 slides sobre o resultado do trimestre em `decks/q3.tsx` e gere o PPTX em 16:9 e 4:3"*. O agente chama `guide`, escreve o arquivo, chama `build`, lê os diagnósticos e corrige até sair limpo. Para que ele siga as regras do pptsx sem perguntar, vale também copiar a skill da release (`pptsx-skill.zip`, pasta `pptsx/`) para `.github/skills/pptsx/`: o `SKILL.md` ensina o fluxo e as armadilhas, e `references/` tem o guia e as props. O script dessa skill usa Node; com o binário presente, o agente usa o MCP e ignora o script.
+Depois, no chat em agent mode: *"Crie um deck de 5 slides sobre o resultado do trimestre em `decks/q3.tsx` e gere o PPTX em 16:9 e 4:3"*. O agente lê o `SKILL.md`, chama `guide` se precisar, escreve o arquivo, chama `build`, lê os diagnósticos e corrige até sair limpo.
 
 ### Claude Code
 
-`.mcp.json` na raiz do repositório (ou `~/.claude.json` para todos os projetos):
+A mesma pasta vai em `.claude/skills/pptsx/`; `.mcp.json` na raiz do repositório é o `mcp/claude.mcp.json` da skill:
 
 ```json
 {
   "mcpServers": {
     "pptsx": {
-      "command": "tools/pptsx-rs",
+      "command": ".claude/skills/pptsx/bin/pptsx-rs",
       "args": ["mcp"]
     }
   }
 }
 ```
 
-A skill em `.claude/skills/pptsx/` vem do mesmo `pptsx-skill.zip`. No Claude Desktop, a entrada é a mesma em `claude_desktop_config.json`, com o caminho absoluto do binário.
+No Claude Desktop, a entrada é a mesma em `claude_desktop_config.json`, com o caminho absoluto do binário.
 
 ### Sem MCP: o agente na linha de comando
 
 Um agente que só tem shell usa os mesmos comandos de uma pessoa, com `--json` para ler a saída por máquina:
 
 ```bash
-tools/pptsx-rs check deck.tsx --json          # diagnósticos em JSON, sem gravar nada
-tools/pptsx-rs build deck.tsx --size 16x9     # .pptx, PNGs e dist/deck.diagnostics.json
-tools/pptsx-rs lint deck.tsx --json           # regras da engine e do DS
+$bin check deck.tsx --json          # diagnósticos em JSON, sem gravar nada
+$bin build deck.tsx --size 16x9     # .pptx, PNGs e dist/deck.diagnostics.json
+$bin lint deck.tsx --json           # regras da engine e do DS
 ```
 
 O ciclo que funciona: `check --json` até zerar os `error`, `build`, abrir o `overview.png` e conferir. Em CI, `build` com código de saída 1 em `error` basta como gate.
@@ -208,6 +212,7 @@ pptsx-rs build <deck.tsx> [--size 16x9,4x3] [--out dist/] [--lang pt-BR] [--line
 pptsx-rs check <deck.tsx> [--size 16x9] [--debug] [--json]      diagnósticos (e frames em pt, com --debug)
 pptsx-rs lint  <deck.tsx> [--size 16x9,4x3] [--json]            regras da engine e dos DS da config
 pptsx-rs init  [pasta] [--force] [--json]                       deck.tsx, tsconfig.json, pptsx.config.ts, assets/
+pptsx-rs skill [--out pptsx] [--bin <binário> | --no-bin]        a pasta da skill (SKILL.md, references/, mcp/, bin/)
 pptsx-rs tree  <deck.tsx> [--size 16x9]                         a árvore avaliada
 pptsx-rs mcp   [--ds <ds.ts>]...                                servidor MCP por stdio
 ```
@@ -338,7 +343,8 @@ Concessão pragmática: `node:fs`, `node:path` e `node:url` existem **só para l
 ## O que falta
 
 - `lint --fix` e `lint --from 0.x`: o codemod usa a API do compilador do TypeScript e fica no TS.
-- `init --ds` e um `pptsx-rs skill`: o deck inicial de um DS e a skill gerada pelo binário. Hoje a skill vem do `pptsx-skill.zip` da release (script em Node) e o agente usa o MCP.
+- `init --ds`: o deck inicial que já importa os componentes de um DS (o TS carrega o módulo do DS pelo Node para montá-lo).
+- `skill` não embute um DS (`references/ds.md` da skill do TS); para um DS, use a skill gerada pelo `pptsx-ds skill`.
 - No MCP, `init` e o parâmetro `ds` do `lint` (os DS vêm da config ou do `--ds` do servidor).
 - Criar um DS (`pptsx-ds init`, `catalog`, `skill`) é trabalho do `@pptsx/ds-kit`, com Node.
 - O taffy ficou só como o tipo `Style` do modelo; trocá-lo por um `Style` próprio é limpeza, não comportamento.

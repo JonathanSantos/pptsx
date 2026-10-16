@@ -175,7 +175,7 @@ Como o React é a base de bibliotecas de componentes, o pptsx é a base de desig
 
 ### O binário em Rust
 
-[`packages/pptsx-rs`](packages/pptsx-rs/README.md) é o núcleo portado para Rust: um executável de 6 MB, sem Node, com a mesma CLI (`build`, `check`, `lint`, `init`, `mcp`, `--watch`, `--serve`), a mesma saída (XML, diagnósticos e lint comparados com o TS em `cargo test`) e a mesma versão. Serve para quem quer o MCP ou a skill sem instalar o Node: o `.vscode/mcp.json` aponta direto para o binário. Cada release traz o binário para macOS, Linux e Windows e o `SHA256SUMS`.
+[`packages/pptsx-rs`](packages/pptsx-rs/README.md) é o núcleo portado para Rust: um executável de 6 MB, sem Node, com a mesma CLI (`build`, `check`, `lint`, `init`, `mcp`, `--watch`, `--serve`), a mesma saída (XML, diagnósticos e lint comparados com o TS em `cargo test`) e a mesma versão. Serve para quem quer a skill e o MCP sem instalar o Node: o pacote da release **é a skill** (`pptsx/` com `SKILL.md`, referências, `mcp/*.json` e o binário em `bin/`), para descompactar em `.github/skills/` ou `.claude/skills/`. Um pacote por plataforma (macOS, Linux e Windows), no `SHA256SUMS`.
 
 ## Como funciona
 

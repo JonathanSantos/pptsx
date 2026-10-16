@@ -13,7 +13,7 @@ use crate::js::value::{Obj, arr_val, obj_val, str_val, to_json};
 use crate::js::{self, Value};
 
 /// docs/AGENT_GUIDE.md e o schema das props do pptsx, embutidos no binário.
-const GUIDE: &str = include_str!("../assets/agent-guide.md");
+pub(crate) const GUIDE: &str = include_str!("../assets/agent-guide.md");
 const SCHEMA_SOURCE: &str = include_str!("../assets/schema.generated.ts");
 const CORE_SOURCE: &str = "pptsx";
 const PROTOCOL: &str = "2025-06-18";
@@ -394,7 +394,7 @@ fn guide_tool(input: &Value, ds: &[&Ds]) -> ToolResult {
 
 // ───────────── schema ─────────────
 
-fn core_schema() -> Option<Value> {
+pub(crate) fn core_schema() -> Option<Value> {
     // O schema gerado é um objeto JSON literal depois de `PROPS_SCHEMA ... =`.
     let at = SCHEMA_SOURCE.find("PROPS_SCHEMA")?;
     let start = at + SCHEMA_SOURCE[at..].find("= {")? + 2;

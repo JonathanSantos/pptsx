@@ -1,5 +1,6 @@
 # Release por tag (`v1.0.1`): a release do GitHub com o pptsx.mjs (arquivo único, Node 20+, sem node_modules),
-# os binários do pptsx-rs por plataforma (macOS arm64/x86_64, Linux x86_64/arm64, Windows x86_64), o
+# a skill do pptsx-rs por plataforma (pasta `pptsx/` com SKILL.md, references/, mcp/ e o binário em bin/;
+# macOS arm64/x86_64, Linux x86_64/arm64, Windows x86_64), o
 # SHA256SUMS que o script da skill confere (bundle e binários) e os zips das skills; depois o npm.
 # Não roda a suíte de novo: o job `gate` exige que o workflow CI tenha passado no mesmo commit (o push da main).
 # Fluxo: commit com a versão nova → push da main → tag `v<versão>` → push da tag (a Release espera o CI, se ainda roda).
@@ -88,23 +89,26 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
+      # Dois builds: o do alvo (vai no pacote) e o da máquina (gera a skill; o alvo pode não rodar aqui).
       - run: cargo build --release -p pptsx-rs --target ${{ matrix.target }}
-      - name: Empacotar (tar.gz; zip no Windows) com README e LICENSE
+      - run: cargo build --release -p pptsx-rs
+      - name: Empacotar a skill (pasta pptsx/ com o binário em bin/; tar.gz, zip no Windows)
         shell: bash
         run: |
           set -euo pipefail
           name="pptsx-rs-${{ matrix.target }}"
-          mkdir -p "dist/$name"
-          cp packages/pptsx-rs/README.md LICENSE "dist/$name/"
           case "${{ matrix.target }}" in
-            *windows*)
-              cp "target/${{ matrix.target }}/release/pptsx-rs.exe" "dist/$name/"
-              (cd dist && 7z a -tzip "$name.zip" "$name" >/dev/null) ;;
-            *)
-              cp "target/${{ matrix.target }}/release/pptsx-rs" "dist/$name/"
-              tar -czf "dist/$name.tar.gz" -C dist "$name" ;;
+            *windows*) bin="target/${{ matrix.target }}/release/pptsx-rs.exe"; host="target/release/pptsx-rs.exe" ;;
+            *) bin="target/${{ matrix.target }}/release/pptsx-rs"; host="target/release/pptsx-rs" ;;
           esac
-          ls -la dist
+          mkdir -p dist
+          "$host" skill --out dist/pptsx --bin "$bin"
+          cp LICENSE dist/pptsx/
+          case "${{ matrix.target }}" in
+            *windows*) (cd dist && 7z a -tzip "$name.zip" pptsx >/dev/null) ;;
+            *) tar -czf "dist/$name.tar.gz" -C dist pptsx ;;
+          esac
+          ls -la dist dist/pptsx dist/pptsx/bin
       - uses: actions/upload-artifact@v4
         with:
           name: pptsx-rs-${{ matrix.target }}

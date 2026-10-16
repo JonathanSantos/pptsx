@@ -725,7 +725,7 @@ dependencies = [
 
 [[package]]
 name = "pptsx-rs"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "imagesize",
  "indexmap",
