@@ -178,11 +178,34 @@ const groupFindings = (findings: readonly LintFinding[]): readonly LintFinding[]
 
 const ORDER: Readonly<Record<Severity, number>> = { error: 0, warning: 1, info: 2 };
 
+// As primitivas e os invólucros internos (`Fixed` do layout, `Footer` do Deck): qualquer outro segmento é componente do autor.
+const PRIMITIVE_SEGMENTS: ReadonlySet<string> = new Set([
+  'Deck', 'Slide', 'Box', 'Text', 'Span', 'Image', 'Shape', 'Chart', 'Table', 'Path', 'Icon', 'Connector', 'SlideNumber', 'Container', 'Fixed', 'Footer',
+]);
+
+/** O path passa por um componente (um segmento que não é primitiva, ex.: `Risks`). */
+export const isInsideComponent = (path: string): boolean =>
+  path.split(' > ').some((segment) => {
+    const name = segment.split('[')[0]!.trim();
+    return name !== '' && !PRIMITIVE_SEGMENTS.has(name);
+  });
+
+// 1.0.5: info de dentro de um componente (cores internas do DS, p. ex.) é para quem faz o DS, não para
+// quem escreve o deck: o resumo só conta; o --json continua com tudo.
+const isFoldable = (finding: LintFinding): boolean => finding.severity === 'info' && isInsideComponent(finding.path);
+
+const foldedLineOf = (folded: readonly LintFinding[]): readonly string[] => {
+  if (folded.length === 0) return [];
+  const codes = [...new Set(folded.map((finding) => finding.code))].sort();
+  return [`  • ${folded.length} info dentro de componentes de design system (${codes.join(', ')}): são do DS, não do deck; --json lista todos`];
+};
+
 export const lintSummaryOf = (findings: readonly LintFinding[]): string => {
   if (findings.length === 0) return 'Lint: nada a apontar.';
   const counts = (['error', 'warning', 'info'] as const).map((severity) => `${findings.filter((f) => f.severity === severity).length} ${severity}`).join(', ');
-  const lines = [...findings]
+  const lines = findings
+    .filter((finding) => !isFoldable(finding))
     .sort((a, b) => ORDER[a.severity] - ORDER[b.severity] || a.slide - b.slide)
     .map((f) => `  ${f.severity === 'error' ? '✖' : f.severity === 'warning' ? '▲' : '•'} [${f.size === undefined ? '' : `${f.size} · `}slide ${f.slide}] ${f.code} em ${f.path}\n    ${f.message}`);
-  return [`Lint: ${counts}`, ...lines].join('\n');
+  return [`Lint: ${counts}`, ...foldedLineOf(findings.filter(isFoldable)), ...lines].join('\n');
 };

@@ -108,7 +108,7 @@ dist/
 └── deck.diagnostics.json       código, severidade, slide, path do nó, mensagem e dados
 ```
 
-O `init` grava os `.d.ts` do pptsx em `.pptsx/types/` e aponta o `tsconfig.json` para lá (`paths`): o VS Code confere tipos e autocompleta as props **sem `npm install`** (o build nunca usou o Node). Num projeto que já existe, `pptsx-rs types <pasta>` faz só isso. O build sai com código 1 quando há diagnóstico `error`, como o `pptsx build`.
+O `init` grava os `.d.ts` do pptsx em `.pptsx/types/` como um pacote de tipos e põe `typeRoots` no `tsconfig.json`: o VS Code confere tipos e autocompleta as props **sem `npm install`** (o build nunca usou o Node). Se um dia o `pptsx` for instalado em `node_modules`, ele vence a cópia. Num projeto que já existe, `pptsx-rs types <pasta>` faz só isso. O build sai com código 1 quando há diagnóstico `error`, como o `pptsx build`.
 
 Quando um nó estoura dentro de um componente, o diagnóstico diz **qual componente do autor e com que props** (`no componente <Risks items=[4 itens] status="warn" />`, e `data.component` no JSON): é ali que se mexe, não no path interno do DS. Um `console.warn` do deck ou do DS (um ícone com nome desconhecido, por exemplo) vira o diagnóstico `module-warning`, em vez de sumir.
 
@@ -217,9 +217,9 @@ pptsx-rs build <deck.tsx> [--size 16x9,4x3] [--out dist/] [--lang pt-BR] [--line
 pptsx-rs check <deck.tsx> [--size 16x9] [--debug] [--json]      diagnósticos (e frames em pt, com --debug)
 pptsx-rs lint  <deck.tsx> [--size 16x9,4x3] [--json]            regras da engine e dos DS da config
 pptsx-rs init  [pasta] [--ds <pacote|caminho>] [--force] [--json]
-                                                                deck.tsx, tsconfig.json (+ paths dos tipos), pptsx.config.ts,
+                                                                deck.tsx, tsconfig.json (+ typeRoots dos tipos), pptsx.config.ts,
                                                                 assets/ e .pptsx/types; com --ds, o deck já usa o DS
-pptsx-rs types [pasta]                                          (re)grava os tipos do pptsx e o paths do tsconfig
+pptsx-rs types [pasta]                                          (re)grava os tipos do pptsx e o typeRoots do tsconfig
 pptsx-rs skill [--out pptsx] [--ds <pacote|caminho>] [--bin <binário> | --no-bin]
                                                                 a pasta da skill (SKILL.md, references/, mcp/, bin/);
                                                                 com --ds, references/ds.md e pptsx.config.ts do DS

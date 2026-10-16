@@ -2,10 +2,28 @@
 
 Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Versões antes da 1.0 podem quebrar a API; o que quebra está em **Mudanças incompatíveis**.
 
-## 1.0.5 — pptsx-rs: dev e agent friendly com um design system
+## 1.0.5 — dev e agent friendly com um design system (TS e pptsx-rs)
 
-- **Tipos sem npm**: `pptsx-rs init` grava os `.d.ts` do pptsx em `.pptsx/types/` e aponta o `tsconfig.json`
-  para lá (`paths`); o editor confere o deck e autocompleta as props sem `npm install`. `pptsx-rs types <pasta>`
+O binário ganhou primeiro e o núcleo em TS acompanhou no mesmo lançamento (a regra é o Rust seguir o TS; aqui
+a ordem se inverteu de propósito e foi fechada antes da tag). Os quatro itens abaixo saem iguais nos dois:
+
+- **`data.component`** nos diagnósticos: quando o nó estourado está dentro de um componente do autor, o
+  diagnóstico traz `<Nome prop=valor … />` da instância (`ResolvedBase.source`, novo no contrato) e o resumo
+  imprime `no componente <…>`. Path, mensagem e severidade não mudam.
+- **`module-warning`** (novo `DiagnosticCode`): `console.warn`/`console.error` de um módulo do deck ou do DS
+  durante o build viram warning no slide 0, em todos os tamanhos, em vez de sumir no terminal.
+- **Resumo do lint**: achados `info` dentro de componentes (`off-theme-color` da própria marca) saem numa linha
+  só; `--json` continua com tudo.
+- **Tipos para o editor**: `pptsx init` grava os `.d.ts` do pacote em `.pptsx/types/pptsx/` como um pacote de tipos
+  e põe `typeRoots` no `tsconfig.json` (não `paths`: o tsx seguiria o mapeamento e quebraria o build; com
+  `typeRoots` o `node_modules/pptsx` instalado vence e a cópia só vale sem ele). Os módulos do JSX entram como
+  declarações ambientes geradas dos próprios `.d.ts`. Novo `pptsx types [dir]` regrava; o `--json` do `init`
+  ganha `types`.
+
+### No pptsx-rs
+
+- **Tipos sem npm**: `pptsx-rs init` grava os `.d.ts` do pptsx em `.pptsx/types/` (um `typeRoots` do
+  `tsconfig.json`); o editor confere o deck e autocompleta as props sem `npm install`. `pptsx-rs types <pasta>`
   faz só isso num projeto existente.
 - **`init --ds <pacote|caminho>`** e **`skill --ds`** no binário: o deck inicial com um slide por componente do
   DS, a config que o registra, o tsconfig com a pasta do DS, e na skill `references/ds.md` (componentes,

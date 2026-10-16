@@ -1,3 +1,5 @@
+import { TYPE_ROOTS } from './types.ts';
+
 /** Arquivos que `pptsx init` cria; só dados, o IO fica em init.ts. */
 export interface ScaffoldFile {
   /** Relativo ao diretório do projeto, com `/`. */
@@ -72,9 +74,11 @@ const TSCONFIG = {
     allowImportingTsExtensions: true,
     noEmit: true,
     skipLibCheck: true,
+    // 1.0.5: os tipos que o init grava em .pptsx/types (cli/types.ts); o editor não depende do node_modules.
+    typeRoots: TYPE_ROOTS,
   },
   include: ['**/*.ts', '**/*.tsx'],
-  exclude: ['dist'],
+  exclude: ['dist', '.pptsx'],
 } as const;
 
 const CONFIG_TEMPLATE = `import { defineConfig } from 'pptsx';

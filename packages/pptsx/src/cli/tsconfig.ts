@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 /** O que o deck exige do tsconfig: o tsx usa essas chaves para compilar o JSX contra o pptsx. */
+import { TYPES_ROOT, TYPE_ROOTS } from './types.ts';
+
 export const REQUIRED_JSX = 'react-jsx';
 export const REQUIRED_JSX_IMPORT_SOURCE = 'pptsx';
 
@@ -98,6 +100,19 @@ const REQUIRED_OPTIONS: Readonly<Record<string, string>> = {
   jsxImportSource: REQUIRED_JSX_IMPORT_SOURCE,
 };
 
+const LOCAL_TYPE_ROOT = TYPE_ROOTS[0]!;
+
+/**
+ * 1.0.5: o `typeRoots` com a cópia local dos tipos. Ausente → o do scaffold; presente sem a cópia → ela entra na
+ * frente (o resto do usuário fica); já com ela → nada.
+ */
+const typeRootsPatchOf = (options: Readonly<Record<string, unknown>>): readonly string[] | undefined => {
+  const existing = options.typeRoots;
+  if (existing === undefined) return TYPE_ROOTS;
+  if (!Array.isArray(existing)) return undefined;
+  return existing.includes(LOCAL_TYPE_ROOT) ? undefined : [LOCAL_TYPE_ROOT, ...(existing as readonly string[])];
+};
+
 /** tsconfig existente no `init`: completa jsx/jsxImportSource ausentes; valores diferentes ficam e geram aviso. */
 export const mergeTsconfig = (existing: string): TsconfigMerge => {
   const tsconfig = parseJsonc(existing);
@@ -112,9 +127,10 @@ export const mergeTsconfig = (existing: string): TsconfigMerge => {
     return { kind: 'warn', warning: `tsconfig.json tem compilerOptions.${found}; mantido como está. ${hintOf()}` };
   }
   const missing = entries.filter(([key]) => options[key] === undefined);
-  if (missing.length === 0) return { kind: 'keep' };
-  const merged = { ...tsconfig, compilerOptions: { ...options, ...Object.fromEntries(missing) } };
-  const added = missing.map(([key, value]) => `${key} = "${value}"`).join(' e ');
+  const typeRoots = typeRootsPatchOf(options);
+  if (missing.length === 0 && typeRoots === undefined) return { kind: 'keep' };
+  const merged = { ...tsconfig, compilerOptions: { ...options, ...Object.fromEntries(missing), ...(typeRoots === undefined ? {} : { typeRoots }) } };
+  const added = [...missing.map(([key, value]) => `${key} = "${value}"`), ...(typeRoots === undefined ? [] : [`typeRoots com os tipos do pptsx em ${TYPES_ROOT}`])].join(' e ');
   return {
     kind: 'write',
     content: `${JSON.stringify(merged, null, 2)}\n`,

@@ -4,7 +4,7 @@
 //! deck.tsx existente aborta; .gitignore, package.json e tsconfig.json existentes são mesclados,
 //! nunca apagados. `--ds <pacote|caminho>` monta o deck com os componentes do DS (um slide por
 //! caso de catálogo) e a config que o registra, lendo o manifesto pelo avaliador (dsinfo.rs).
-//! Sempre grava os tipos do pptsx em `.pptsx/types/` e o `paths` do tsconfig (types.rs): o editor
+//! Sempre grava os tipos do pptsx em `.pptsx/types/` e o `typeRoots` do tsconfig (types.rs): o editor
 //! entende o deck sem `npm install`.
 
 use std::collections::BTreeMap;
@@ -81,11 +81,7 @@ const TSCONFIG_TEMPLATE: &str = r#"{
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "paths": {
-      "pptsx": ["./.pptsx/types/pptsx/index.d.ts"],
-      "pptsx/jsx-runtime": ["./.pptsx/types/pptsx/jsx/jsx-runtime.d.ts"],
-      "pptsx/jsx-dev-runtime": ["./.pptsx/types/pptsx/jsx/jsx-dev-runtime.d.ts"]
-    }
+    "typeRoots": ["./.pptsx/types", "./node_modules/@types"]
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["dist", ".pptsx"]
@@ -279,28 +275,29 @@ fn merge_tsconfig(existing: &str) -> Merge {
         return Merge::Warn(format!("tsconfig.json tem compilerOptions.{}; mantido como está. {hint}", conflicts.join(", ")));
     }
     let missing: Vec<(&str, &str)> = required.iter().filter(|(k, _)| matches!(options.get(**k), None | Some(Value::Undefined))).map(|(k, v)| (*k, *v)).collect();
-    // `paths` para os tipos locais do pptsx (types.rs), só as chaves que faltam.
-    let mut paths = match options.get("paths") {
-        Some(Value::Object(p)) => (**p).clone(),
-        _ => Obj::new(),
+    // `typeRoots` com a cópia local dos tipos (types.rs): ausente → o do scaffold; presente sem ela → entra na frente.
+    let type_roots: Option<Vec<Value>> = match options.get("typeRoots") {
+        None | Some(Value::Undefined) => Some(crate::types::TYPE_ROOTS.iter().map(|r| str_val(r)).collect()),
+        Some(Value::Array(existing)) => {
+            let items = existing.borrow();
+            let has_local = items.iter().any(|v| matches!(v, Value::Str(s) if &**s == crate::types::TYPE_ROOTS[0]));
+            if has_local { None } else { Some(std::iter::once(str_val(crate::types::TYPE_ROOTS[0])).chain(items.iter().cloned()).collect()) }
+        }
+        Some(_) => None,
     };
-    let missing_paths: Vec<(&str, &str)> = crate::types::PATHS.iter().filter(|(k, _)| !paths.contains_key(*k)).copied().collect();
-    if missing.is_empty() && missing_paths.is_empty() {
+    if missing.is_empty() && type_roots.is_none() {
         return Merge::Keep;
     }
     for (k, v) in &missing {
         options.insert(Rc::from(*k), str_val(v));
     }
-    for (k, v) in &missing_paths {
-        paths.insert(Rc::from(*k), arr_val(vec![str_val(v)]));
-    }
-    if !missing_paths.is_empty() {
-        options.insert(Rc::from("paths"), obj_val(paths));
+    if let Some(roots) = &type_roots {
+        options.insert(Rc::from("typeRoots"), arr_val(roots.clone()));
     }
     tsconfig.insert(Rc::from("compilerOptions"), obj_val(options));
     let mut added: Vec<String> = missing.iter().map(|(k, v)| format!("{k} = \"{v}\"")).collect();
-    if !missing_paths.is_empty() {
-        added.push("paths para os tipos do pptsx em .pptsx/types".into());
+    if type_roots.is_some() {
+        added.push(format!("typeRoots com os tipos do pptsx em {}", crate::types::TYPES_ROOT));
     }
     Merge::Write {
         content: format!("{}\n", crate::mcp::pretty_json(&obj_val(tsconfig))),
@@ -404,7 +401,7 @@ fn summary(dir: &Path, p: &Plan) -> String {
     lines.join("\n")
 }
 
-/// `pptsx-rs types [pasta]`: só os tipos e o `paths` do tsconfig (para um projeto que já tem deck).
+/// `pptsx-rs types [pasta]`: só os tipos e o `typeRoots` do tsconfig (para um projeto que já tem deck).
 pub fn run_types(argv: &[String]) -> ExitCode {
     let cwd = std::env::current_dir().unwrap_or_default();
     let dir = argv.first().map_or(cwd.clone(), |d| if Path::new(d).is_absolute() { PathBuf::from(d) } else { cwd.join(d) });
@@ -440,7 +437,7 @@ pub fn run_types(argv: &[String]) -> ExitCode {
             "tsconfig.json criado".into()
         }
     };
-    println!("Tipos do pptsx {} em {}/{} ({n} arquivos); {note}.", env!("CARGO_PKG_VERSION"), dir.display(), crate::types::TYPES_DIR);
+    println!("Tipos do pptsx {} em {}/{} ({n} arquivos); {}.", env!("CARGO_PKG_VERSION"), dir.display(), crate::types::TYPES_DIR, note.trim_end_matches('.'));
     ExitCode::SUCCESS
 }
 
@@ -475,7 +472,7 @@ pub fn run(argv: &[String]) -> ExitCode {
         return ExitCode::from(1);
     }
     match crate::types::write(&args.dir) {
-        Ok(n) => plan.types = Some(format!("{}/ ({n} .d.ts do pptsx {}; o tsconfig aponta para eles: o editor entende o deck sem npm install)", crate::types::TYPES_DIR, env!("CARGO_PKG_VERSION"))),
+        Ok(n) => plan.types = Some(format!("{}/ ({n} .d.ts do pptsx {}; typeRoots do tsconfig: o editor entende o deck sem npm install)", crate::types::TYPES_DIR, env!("CARGO_PKG_VERSION"))),
         Err(e) => plan.warnings.push(format!("tipos do pptsx não gravados: {e}")),
     }
     for (path, content) in &plan.writes {

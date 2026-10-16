@@ -6,3 +6,4 @@ export { detectOverflow } from './detect.ts';
 export type { Overflow } from './detect.ts';
 export { groupDiagnostics } from './group.ts';
 export { cssNotEmittedOf } from './css.ts';
+export { attributeComponents, componentSourcesOf } from './component.ts';

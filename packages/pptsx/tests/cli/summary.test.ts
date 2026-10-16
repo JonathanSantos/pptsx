@@ -169,3 +169,25 @@ describe('summaryOf — author slide after pagination (M9)', () => {
     expect(summaryOf([diag('error', 'Slide > Text')])).toContain('slide 1]');
   });
 });
+
+describe('summaryOf — componente do autor (1.0.5)', () => {
+  it('data.component vira a linha "no componente <…>" logo abaixo da mensagem, com a mesma indentação', () => {
+    const inside = diag('error', 'Slide > Risks > Box[0] > Text', { message: 'estourou', data: { overflowPt: 2, component: '<Risks items=[4 itens] status="warn" />' } });
+    const lines = linesOf(summaryOf([inside]));
+    const message = lineIndex(lines.join('\n'), 'estourou');
+    expect(lines[message + 1]).toBe('    no componente <Risks items=[4 itens] status="warn" />');
+    expect(indentOf(lines[message + 1]!)).toBe(indentOf(lines[message]!));
+  });
+
+  it('derivado dentro de um componente: a linha do componente sai no bloco do derivado (↳)', () => {
+    const inside = derived('Slide > Card > Text', CAUSE);
+    const withComponent = { ...inside, data: { ...inside.data, component: '<Card title="x" />' } };
+    const summary = summaryOf([cause, withComponent]);
+    expect(lineIndex(summary, 'no componente <Card title="x" />')).toBe(lineIndex(summary, 'derivado Slide > Card > Text') + 1);
+    expect(linesOf(summary)[lineIndex(summary, 'no componente')]!.startsWith('      ')).toBe(true);
+  });
+
+  it('sem data.component, nada muda', () => {
+    expect(summaryOf([cause])).not.toContain('no componente');
+  });
+});

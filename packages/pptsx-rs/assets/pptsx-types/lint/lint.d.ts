@@ -27,4 +27,6 @@ export interface LintOptions {
     readonly disable?: readonly string[];
 }
 export declare const lintDeck: (deck: DeckDefinition, options: LintOptions) => Promise<readonly LintFinding[]>;
+/** O path passa por um componente (um segmento que não é primitiva, ex.: `Risks`). */
+export declare const isInsideComponent: (path: string) => boolean;
 export declare const lintSummaryOf: (findings: readonly LintFinding[]) => string;

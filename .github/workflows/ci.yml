@@ -80,8 +80,9 @@ jobs:
         run: |
           packages/pptsx-rs/scripts/golden.sh
           git diff --exit-code -- packages/pptsx-rs/fixtures packages/pptsx-rs/assets
-          # Um .d.ts ou fixture novo que não foi commitado também é drift (o diff só vê rastreados).
-          test -z "$(git status --porcelain -- packages/pptsx-rs/fixtures packages/pptsx-rs/assets)"
+          # Um .d.ts ou fixture novo que não foi commitado também é drift (o diff só vê rastreados). Só os não
+          # rastreados: o `status` listaria todo slide*.xml, que o emissor grava em CRLF e o índice guarda em LF.
+          test -z "$(git ls-files --others --exclude-standard -- packages/pptsx-rs/fixtures packages/pptsx-rs/assets)"
 
   gallery:
     needs: check

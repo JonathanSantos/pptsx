@@ -4,12 +4,15 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import JSZip from 'jszip';
 import { runCli } from '../../src/cli.ts';
+import { TYPE_ROOTS, typesSourceDir } from '../../src/cli/types.ts';
 import { captureConsole, type CapturedConsole } from '../helpers/console.ts';
 
 /** `pptsx init [dir] [--force] [--json]` (M7-B), em processo. */
 
 const TIMEOUT = 60_000;
 const SCAFFOLD = ['deck.tsx', 'tsconfig.json', 'pptsx.config.ts', 'assets/.gitkeep', '.gitignore', 'package.json'] as const;
+// 1.0.5: com o dist/ do pacote (CI constrói antes), o init também grava .pptsx/types e o --json ganha "types".
+const JSON_KEYS = typesSourceDir() === undefined ? ['files'] : ['files', 'types'];
 
 const tmpDirs: string[] = [];
 const freshDir = (): string => {
@@ -112,7 +115,7 @@ describe('init — package.json', () => {
     writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'legado', type: 'commonjs' }));
     expect(await runCli(['init', dir, '--json'], tmpdir())).toBe(0);
     const json = JSON.parse(output.logs.join('\n')) as Record<string, unknown>;
-    expect(Object.keys(json)).toEqual(['files']);
+    expect(Object.keys(json)).toEqual(JSON_KEYS);
     expect(output.errors.join('\n')).toMatch(/"commonjs"[\s\S]*"module"/);
     expect(readJson(dir, 'package.json').type).toBe('module');
   });
@@ -127,7 +130,7 @@ describe('init — package.json', () => {
 });
 
 describe('init — existing tsconfig.json', () => {
-  it('without jsx/jsxImportSource → gains both, keeps the other keys (2-space JSON), warns', async () => {
+  it('without jsx/jsxImportSource → gains both and the types typeRoots, keeps the other keys (2-space JSON), warns', async () => {
     const dir = freshDir();
     const original = {
       compilerOptions: { target: 'ES2020', strict: true, outDir: 'out', paths: { '@/*': ['./src/*'] } },
@@ -138,18 +141,18 @@ describe('init — existing tsconfig.json', () => {
     const merged = readJson(dir, 'tsconfig.json');
     expect(merged).toEqual({
       ...original,
-      compilerOptions: { ...original.compilerOptions, jsx: 'react-jsx', jsxImportSource: 'pptsx' },
+      compilerOptions: { ...original.compilerOptions, jsx: 'react-jsx', jsxImportSource: 'pptsx', typeRoots: TYPE_ROOTS },
     });
     expect(read(dir, 'tsconfig.json')).toMatch(/^ {2}"compilerOptions"/m);
     expect(read(dir, 'tsconfig.json')).not.toMatch(/^ {4}"compilerOptions"/m);
     expect(allOutput()).toMatch(/tsconfig/);
   });
 
-  it('only jsxImportSource missing → only it is added', async () => {
+  it('only jsxImportSource missing → it and the types typeRoots are added, nothing else', async () => {
     const dir = freshDir();
     writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { jsx: 'react-jsx', strict: true } }, null, 2));
     expect(await runCli(['init', dir], tmpdir())).toBe(0);
-    expect(readJson(dir, 'tsconfig.json').compilerOptions).toEqual({ jsx: 'react-jsx', strict: true, jsxImportSource: 'pptsx' });
+    expect(readJson(dir, 'tsconfig.json').compilerOptions).toEqual({ jsx: 'react-jsx', strict: true, jsxImportSource: 'pptsx', typeRoots: TYPE_ROOTS });
   });
 
   it('jsxImportSource "react" → untouched, with a warning', async () => {
@@ -162,14 +165,22 @@ describe('init — existing tsconfig.json', () => {
     expect(allOutput()).toMatch(/pptsx/);
   });
 
-  it('already pptsx-ready → untouched, no tsconfig warning', async () => {
+  it('already pptsx-ready with the types typeRoots → untouched, no tsconfig warning', async () => {
     const dir = freshDir();
-    const raw = `${JSON.stringify({ compilerOptions: { jsx: 'react-jsx', jsxImportSource: 'pptsx', strict: false } }, null, 2)}\n`;
+    const raw = `${JSON.stringify({ compilerOptions: { jsx: 'react-jsx', jsxImportSource: 'pptsx', strict: false, typeRoots: TYPE_ROOTS } }, null, 2)}\n`;
     writeFileSync(join(dir, 'tsconfig.json'), raw);
     expect(await runCli(['init', dir], tmpdir())).toBe(0);
     expect(read(dir, 'tsconfig.json')).toBe(raw);
     expect(output.errors.join('\n')).not.toMatch(/tsconfig/);
     expect(output.logs.join('\n')).not.toMatch(/▲[^\n]*tsconfig/);
+  });
+
+  it('pptsx-ready without typeRoots (1.0.5) → gains only the types typeRoots, with a warning naming them', async () => {
+    const dir = freshDir();
+    writeFileSync(join(dir, 'tsconfig.json'), `${JSON.stringify({ compilerOptions: { jsx: 'react-jsx', jsxImportSource: 'pptsx', strict: false } }, null, 2)}\n`);
+    expect(await runCli(['init', dir], tmpdir())).toBe(0);
+    expect(readJson(dir, 'tsconfig.json').compilerOptions).toEqual({ jsx: 'react-jsx', jsxImportSource: 'pptsx', strict: false, typeRoots: TYPE_ROOTS });
+    expect(allOutput()).toMatch(/typeRoots com os tipos do pptsx/);
   });
 });
 
@@ -213,11 +224,11 @@ describe('init — existing deck', () => {
 });
 
 describe('init --json', () => {
-  it('stdout is only { files } and every listed file exists', async () => {
+  it('stdout is only { files } (and "types" when the package has dist/) and every listed file exists', async () => {
     const dir = freshDir();
     expect(await runCli(['init', dir, '--json'], tmpdir())).toBe(0);
     const json = JSON.parse(output.logs.join('\n')) as { files?: unknown };
-    expect(Object.keys(json)).toEqual(['files']);
+    expect(Object.keys(json)).toEqual(JSON_KEYS);
     expect(Array.isArray(json.files)).toBe(true);
     const files = (json.files as string[]).map((file) => resolve(tmpdir(), file));
     for (const file of files) expect(existsSync(file), file).toBe(true);

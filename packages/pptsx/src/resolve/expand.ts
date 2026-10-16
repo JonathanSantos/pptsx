@@ -1,6 +1,7 @@
 import { COMPONENT_META, FRAGMENT, LAYOUT_DEFINITION, PRIMITIVE_KIND } from '../core/types.ts';
 import type { Child, Component, ComponentMeta, LayoutDefinition, Primitive, PrimitiveKind, SlideElement } from '../core/types.ts';
 import { isPrimitive, primitiveName } from '../primitives/index.ts';
+import { authorSourceOf } from './source.ts';
 
 /** Primitiva já desembrulhada de componentes/fragments, com o segmento de path que vai receber. */
 export interface ExpandedPrimitive {
@@ -12,6 +13,8 @@ export interface ExpandedPrimitive {
   readonly layout?: LayoutDefinition;
   /** M17: o componente mais externo que gerou a primitiva (o do segmento do path). */
   readonly component?: ComponentMeta;
+  /** 1.0.5: `<Nome prop=valor … />` dessa instância (ResolvedBase.source). */
+  readonly source?: string;
 }
 
 export interface ExpandedText {
@@ -33,7 +36,13 @@ const segmentOf = (meta: ComponentMeta): string => meta.displayName ?? meta.name
 interface Outer {
   readonly name: string;
   readonly meta: ComponentMeta;
+  readonly source?: string;
 }
+
+const identityOf = (outer: Outer): Pick<ExpandedPrimitive, 'component' | 'source'> => ({
+  component: outer.meta,
+  ...(outer.source === undefined ? {} : { source: outer.source }),
+});
 
 const kindOf = (primitive: Primitive<PrimitiveKind>): PrimitiveKind => primitive[PRIMITIVE_KIND];
 
@@ -54,10 +63,11 @@ const expandElement = (element: SlideElement, outer?: Outer): readonly Expanded[
   if (type === FRAGMENT) return expandChild(element.props.children, outer);
   if (isPrimitive(type)) {
     const kind = kindOf(type);
-    return [{ type: 'primitive', kind, element, segment: outer?.name ?? primitiveName(kind), ...(outer === undefined ? {} : { component: outer.meta }) }];
+    return [{ type: 'primitive', kind, element, segment: outer?.name ?? primitiveName(kind), ...(outer === undefined ? {} : identityOf(outer)) }];
   }
   const meta = metaOf(type);
-  const items = expandChild(type(element.props), outer ?? { name: segmentOf(meta), meta });
+  const source = authorSourceOf(meta, element.props as Readonly<Record<string, unknown>>);
+  const items = expandChild(type(element.props), outer ?? { name: segmentOf(meta), meta, ...(source === undefined ? {} : { source }) });
   const layout = layoutOf(type);
   if (layout === undefined) return items;
   return items.map((item) => (item.type === 'primitive' && item.kind === 'slide' && item.layout === undefined ? { ...item, layout } : item));

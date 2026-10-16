@@ -777,6 +777,7 @@ Campos de `data` (opcionais): `overflowPt`/`overflowPct`, `fromSize`/`toSize`, `
 
 - `causedBy`: path do nó que **provocou** este estouro (um irmão que pede mais espaço do que há). Corrija a causa primeiro; os derivados somem sozinhos. Dentro de grid não há `causedBy` entre células: cada célula é dona do próprio estouro.
 - `count` e `paths`: diagnóstico **agrupado**. Irmãos homônimos com o mesmo problema viram um item só (`Box[0..7]`, `Box[0,2,5]`). Corrija uma vez, no `.map` ou componente.
+- `component`: o componente do autor **com as props** dentro do qual está o nó, `<Risks items=[4 itens] status="warn" />` (o resumo imprime `no componente <…>`). É ali que se mexe: menos itens, texto mais curto, outra prop; o `path` abaixo dele é o interior do componente (do design system), não o seu código.
 
 ### Como ler o `path`
 
@@ -797,6 +798,7 @@ Campos de `data` (opcionais): `overflowPt`/`overflowPct`, `fromSize`/`toSize`, `
 | `text-truncated` | warning | `truncate`/`maxLines` cortou com `…` | se não era a intenção: encurte ou aumente a área |
 | `box-overflow` | error | filhos em fluxo (tamanhos fixos, margens, gap, padding, borda) somam mais que a área de conteúdo; linhas do wrap que não cabem; item maior que a sua **célula de grid** | reduza fixos/gap/margens; `flexShrink` volta a 1; troque fixos por `flex`/`%`; no grid, track `auto` ou `minmax(auto, …)`; no wrap, dê altura ou menos itens |
 | `out-of-slide` | error | nó **em fluxo** fora do slide | reduza; use `%`/`flex`; decoração → `position="absolute"` |
+| `module-warning` | warning | um módulo do deck ou do design system chamou `console.warn`/`console.error` durante o build (um ícone com nome desconhecido que caiu num padrão, por exemplo); slide 0, sem path | faça o que a mensagem diz (corrija o nome, a prop); o aviso vem do código, não do layout |
 | `css-not-emitted` | warning | propriedade CSS sem de/para no PPTX (`overflow: hidden`, gradiente, `filter`, `scale`/`skew`, sombra `inset`/`spread`/múltipla, sombra sem fundo, raio por canto, raio com bordas diferentes por lado, track fora do subconjunto, rotate em Chart/Table, propriedade desconhecida). O preview também não desenha | remova ou troque por uma suportada (§3); se o efeito é dispensável, ignore |
 | `slide-continued` | info | um `Box paginate` (itens), `Text paginate` (`data.kind: "text"`, linhas) ou `Table paginate` (`data.kind: "table"`, linhas da tabela) virou `data.parts` slides | nada; partes desequilibradas → `fontSize`/`gap` responsivos |
 | `font-weight-fallback` | warning | `fontWeight` sem face registrada a até 100; `data.requestedWeight` / `data.usedWeight` | registre a face desse peso em `fonts` ou use um peso que existe |

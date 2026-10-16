@@ -9,6 +9,7 @@
     "data": {
       "fromSize": 20,
       "toSize": 19,
+      "component": "<Bullets items=[4 itens] />",
       "count": 4,
       "paths": [
         "Slide > Bullets > Box[0] > Text",

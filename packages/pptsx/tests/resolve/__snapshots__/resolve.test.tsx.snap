@@ -114,6 +114,7 @@ exports[`resolveDeck — full tree > matches the stored snapshot 1`] = `
                   "weight": "bold",
                 },
               ],
+              "source": "<Title text="Hello" />",
             },
             {
               "content": "World",
@@ -425,6 +426,7 @@ exports[`resolveDeck — full tree > matches the stored snapshot 1`] = `
       "props": {
         "notes": "speaker notes",
       },
+      "source": "<CoverLayout title="Hello" subtitle="World" />",
       "sourceSlide": 1,
     },
     {

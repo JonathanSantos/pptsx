@@ -50,7 +50,7 @@ uso:
   pptsx-rs init  [pasta] [--ds <pacote|caminho>] [--force] [--json]
                                                    cria deck.tsx, tsconfig.json, pptsx.config.ts e os tipos do
                                                    pptsx para o editor (.pptsx/types); com --ds, o deck usa o DS
-  pptsx-rs types [pasta]                          (re)grava os tipos do pptsx e o `paths` do tsconfig
+  pptsx-rs types [pasta]                          (re)grava os tipos do pptsx e o `typeRoots` do tsconfig
   pptsx-rs skill [--out pptsx] [--ds <pacote|caminho>] [--bin <binário> | --no-bin]
                                                    a skill para agentes (SKILL.md, references/, mcp/) com
                                                    este binário em bin/: a pasta vai em .github/skills ou .claude/skills

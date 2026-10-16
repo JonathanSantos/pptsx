@@ -1,6 +1,7 @@
 import { type DsDeckSource } from './ds-scaffold.ts';
 import { type ScaffoldFile } from './scaffold.ts';
 export declare const INIT_USAGE = "uso: pptsx init [dir] [--ds <pacote|caminho>] [--force] [--json]";
+export declare const TYPES_USAGE = "uso: pptsx types [dir]   (regrava os tipos do pptsx em .pptsx/types e o typeRoots do tsconfig)";
 export interface InitArgs {
     readonly dir: string;
     readonly force: boolean;
@@ -15,9 +16,13 @@ export interface InitPlan {
     readonly warnings: readonly string[];
     /** Subconjunto de `writes` que já existia (sobrescrito com --force ou mesclado). */
     readonly updated: readonly string[];
+    /** 1.0.5: a linha dos tipos gravados em .pptsx/types (cli/types.ts); ausente quando não havia .d.ts para copiar. */
+    readonly types?: string;
 }
 export interface InitReport {
     readonly files: readonly string[];
+    /** 1.0.5: pasta absoluta dos tipos, quando gravados. */
+    readonly types?: string;
 }
 export declare const parseInitCli: (argv: readonly string[], cwd?: string) => InitArgs;
 export declare const deckExistsMessage: (deckPath: string) => string;
@@ -33,4 +38,10 @@ export declare const initJsonOf: (dir: string, plan: InitPlan) => string;
 export declare const loadDsSource: (spec: string, dir: string, cwd: string) => Promise<DsDeckSource>;
 /** Cria/atualiza os arquivos do projeto e devolve o plano; não imprime (o MCP usa por stdio). */
 export declare const applyInit: (args: Pick<InitArgs, 'dir' | 'force'>, source?: DsDeckSource) => InitPlan;
+export interface TypesArgs {
+    readonly dir: string;
+}
+export declare const parseTypesCli: (argv: readonly string[], cwd?: string) => TypesArgs;
+/** `pptsx types [dir]`: só os tipos e o `typeRoots` do tsconfig, para um projeto que já tem deck (ou que atualizou o pptsx). */
+export declare const runTypes: (args: TypesArgs) => number;
 export declare const runInit: (args: InitArgs, cwd: string) => Promise<number>;

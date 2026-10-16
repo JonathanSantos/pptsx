@@ -862,6 +862,12 @@ interface ResolvedBase<K extends PrimitiveKind, P> {
      */
     readonly component?: ComponentMeta;
     /**
+     * 1.0.5: `<Nome prop=valor … />` do componente do autor que gerou este nó (só na raiz da instância, junto
+     * de `component`; os filhos não herdam). Os diagnósticos de dentro da instância levam isso em
+     * `data.component`: é onde o autor mexe, não no path interno do DS. Ausente = primitiva escrita direto.
+     */
+    readonly source?: string;
+    /**
      * Props que não são CSS geométrico: o estilo de texto resolvido (com herança; o fit troca o `size`),
      * política de ajuste (`fit`, `minSize`, `maxLines`), conteúdo (`src`, `data`, `columns`, `kind`…) e
      * marcações (`paginate`, `href`, `id`, `placeholder`). Padrões: core/defaults.ts.
@@ -1228,7 +1234,9 @@ export type DiagnosticCode = 'text-overflow' | 'text-shrunk' | 'text-truncated' 
 /** M12: ícone SVG fora do subconjunto vetorial (ou render="image") virou imagem (info). */
  | 'icon-rasterized'
 /** M12: `d` de um Path com comando fora do subconjunto (error; o Path não é desenhado). */
- | 'path-invalid';
+ | 'path-invalid'
+/** 1.0.5: `console.warn`/`console.error` de um módulo do deck ou do DS durante o build (warning, slide 0, path ''). */
+ | 'module-warning';
 export interface Diagnostic {
     readonly severity: Severity;
     readonly code: DiagnosticCode;
@@ -1270,6 +1278,11 @@ export interface Diagnostic {
         /** M15: em 'placeholder-unused', o layout e os placeholders sem nó. */
         readonly layout?: string;
         readonly placeholders?: readonly string[];
+        /**
+         * 1.0.5: o componente do autor (com as props) dentro do qual está o nó, `<Risks items=[4 itens] status="warn" />`
+         * (ResolvedBase.source do ancestral mais próximo). Ausente = o nó está fora de componentes.
+         */
+        readonly component?: string;
     };
 }
 /** M15: as 12 cores do tema do arquivo (as do seletor de cores do PowerPoint/Keynote). Ausentes = Office. */

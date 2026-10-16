@@ -269,7 +269,7 @@ const resolveContainer = (item: ExpandedPrimitive, path: string, n: Normalized, 
 const withComponent = (item: ExpandedPrimitive, resolved: ResolvedChildren): ResolvedChildren => {
   const [first, ...rest] = resolved.nodes;
   if (item.component === undefined || first === undefined) return resolved;
-  return { ...resolved, nodes: [{ ...first, component: item.component }, ...rest] };
+  return { ...resolved, nodes: [{ ...first, component: item.component, ...(item.source === undefined ? {} : { source: item.source }) }, ...rest] };
 };
 
 const resolveItem = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): ResolvedChildren =>
@@ -374,6 +374,7 @@ const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResolveScope,
     ...(notes === undefined ? {} : { notes }),
     ...(layout === undefined ? {} : { layout }),
     ...(item.component === undefined ? {} : { component: item.component }),
+    ...(item.source === undefined ? {} : { source: item.source }),
     ...(connectors.length === 0 ? {} : { connectors: connectors.map((connector) => withMissing(connector, ids)) }),
   };
   assertSinglePaginate(slide);

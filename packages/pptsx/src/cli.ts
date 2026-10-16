@@ -4,7 +4,8 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { INIT_USAGE, parseInitCli, runInit } from './cli/init.ts';
+import { INIT_USAGE, TYPES_USAGE, parseInitCli, parseTypesCli, runInit, runTypes } from './cli/init.ts';
+import { captureNotes, withModuleWarnings } from './cli/notes.ts';
 import { MIGRATION_SOURCES, migrateTree, migrationSummaryOf } from './cli/migrate.ts';
 import { SKILL_USAGE, parseSkillCli, runSkill } from './cli/skill.ts';
 import { standaloneRuntime } from './standalone.ts';
@@ -25,6 +26,7 @@ export const USAGE = [
   'uso: pptsx build <deck.tsx> [--size 16x9,4x3,10x7.5in] [--out dist/] [--debug] [--json] ' +
     '[--preview native|none] [--preview-width 1280] [--lang pt-BR] [--line-breaks forced|auto] [--embed-fonts] [--watch]',
   `     ${INIT_USAGE.replace(/^uso: /, '')}`,
+  `     ${TYPES_USAGE.replace(/^uso: /, '')}`,
   '     pptsx preview <deck.tsx> --serve [--port 4321] [--size 16x9,4x3,wide] [--lang pt-BR] [--line-breaks forced|auto]',
   '     pptsx lint <deck.tsx> [--fix] [--json] [--size 16x9,4x3]',
   '     pptsx lint --from 0.x <pasta|arquivo> [--json]   (migra as props da 0.x em todos os .ts/.tsx)',
@@ -196,8 +198,12 @@ const slideLabelOf = (d: Diagnostic): string =>
     ? `slide ${d.slide} (${d.data.sourceSlide} no deck)`
     : `slide ${d.slide}`;
 
+// 1.0.5: o componente do autor (com as props) é onde se mexe; o path é o interior dele.
+const componentLineOf = (d: Diagnostic, indent: string): string =>
+  d.data?.component === undefined ? '' : `\n${indent}  no componente ${d.data.component}`;
+
 const formatDiagnostic = (d: Diagnostic, indent: string = '  ', marker: string = ''): string =>
-  `${indent}${marker}${SEVERITY_ICON[d.severity]} [${d.size} · ${slideLabelOf(d)}] ${d.code} em ${d.path}\n${indent}  ${d.message}`;
+  `${indent}${marker}${SEVERITY_ICON[d.severity]} [${d.size} · ${slideLabelOf(d)}] ${d.code} em ${d.path}\n${indent}  ${d.message}${componentLineOf(d, indent)}`;
 
 const formatDerived = (d: Diagnostic): string => formatDiagnostic(d, '    ', '↳ ');
 
@@ -316,9 +322,13 @@ export interface BuildOutcome {
 /** Um build completo, gravando tudo em disco. `fresh` recarrega deck, config e o que eles importam. */
 export const buildOnce = async (args: CliArgs, cwd: string, deps: CliDeps, fresh: boolean): Promise<BuildOutcome> => {
   const importModule = deps.importModule ?? defaultImportModule;
-  const config = await loadConfig(configDirOf(args.deckPath, cwd), { fresh, cwd }, importModule);
-  const deck = await loadDeck(args.deckPath, { fresh, cwd }, importModule);
-  const results = await render(deck, mergeOptions(args, config));
+  // 1.0.5: console.warn/error do deck, da config e dos DS (na carga e no render) viram `module-warning`.
+  const captured = await captureNotes(async () => {
+    const config = await loadConfig(configDirOf(args.deckPath, cwd), { fresh, cwd }, importModule);
+    const deck = await loadDeck(args.deckPath, { fresh, cwd }, importModule);
+    return render(deck, mergeOptions(args, config));
+  });
+  const results = withModuleWarnings(captured.value, captured.notes);
   const deckName = deckNameOf(args.deckPath);
   const diagnostics = results.flatMap((result) => result.diagnostics);
   const pathsPerSize = results.map((result) => pathsOfResult(args.outDir, deckName, result));
@@ -438,11 +448,13 @@ const previewStateFrom = async (args: PreviewArgs, cwd: string, deps: CliDeps, v
   const builtAt = timestampOf(new Date());
   try {
     const importModule = deps.importModule ?? defaultImportModule;
-    const config = await loadConfig(configDirOf(args.deckPath, cwd), { fresh: true, cwd }, importModule);
-    const deck = await loadDeck(args.deckPath, { fresh: true, cwd }, importModule);
-    const sizes = args.sizes ?? config.sizes ?? parseSizeList(DEFAULTS.previewServer.sizes.join(','));
-    const results = await render(deck, { ...mergeOptions(previewBuildArgsOf(args, cwd), config), sizes, preview: false, includePositioned: true });
-    return { version, builtAt, sizes: sizeStatesOf(results) };
+    const captured = await captureNotes(async () => {
+      const config = await loadConfig(configDirOf(args.deckPath, cwd), { fresh: true, cwd }, importModule);
+      const deck = await loadDeck(args.deckPath, { fresh: true, cwd }, importModule);
+      const sizes = args.sizes ?? config.sizes ?? parseSizeList(DEFAULTS.previewServer.sizes.join(','));
+      return render(deck, { ...mergeOptions(previewBuildArgsOf(args, cwd), config), sizes, preview: false, includePositioned: true });
+    });
+    return { version, builtAt, sizes: sizeStatesOf(withModuleWarnings(captured.value, captured.notes)) };
   } catch (error) {
     // Erro no deck não derruba o servidor: a página mostra o erro sobre o último resultado bom.
     return { ...previous, version, builtAt, error: errorMessageOf(error) };
@@ -593,6 +605,7 @@ const dispatch = async (argv: readonly string[], cwd: string, deps: CliDeps): Pr
     return 0;
   }
   if (commandOf(argv) === 'init') return runInit(parseInitCli(argv, cwd), cwd);
+  if (commandOf(argv) === 'types') return runTypes(parseTypesCli(argv, cwd));
   if (commandOf(argv) === 'preview') return previewServe(parsePreviewCli(argv, cwd), cwd, deps);
   if (commandOf(argv) === 'lint') return runLint(parseLintCli(argv, cwd), cwd, deps);
   if (commandOf(argv) === 'skill') return runSkill(parseSkillCli(argv, cwd), cwd);

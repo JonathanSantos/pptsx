@@ -14,6 +14,7 @@ import type {
 import { measureInputOf } from '../layout/index.ts';
 import { brokenWordsOf } from '../text/index.ts';
 import { attributeCauses } from './cause.ts';
+import { attributeComponents } from './component.ts';
 import type { Overflow } from './detect.ts';
 import { boxOverflow, cellOverflow, fontMissing, fontWeightFallback, imageUpscaled, outOfSlide, textTruncated, textWordBroken } from './diagnostics.ts';
 import type { DiagnosticContext } from './diagnostics.ts';
@@ -188,7 +189,7 @@ export const fitSlideFrozen = (input: FitInput, frozenScope: string | undefined)
   const plans = plansOf(input.slide);
   const shrunk = shrinkRounds(passOf(input.slide, input), shrinkablePlans(plans, frozenScope), input, DEFAULTS.maxFitIterations);
   const final = settle(shrunk, plans, input);
-  const diagnostics = attributeCauses(diagnosticsOf(final, plans, input), final.positioned, final.overflows);
+  const diagnostics = attributeComponents(attributeCauses(diagnosticsOf(final, plans, input), final.positioned, final.overflows), final.positioned);
   return { slide: final.positioned, diagnostics: groupDiagnostics(diagnostics) };
 };
 

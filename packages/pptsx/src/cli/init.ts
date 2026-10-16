@@ -18,8 +18,10 @@ import {
   type ScaffoldFile,
 } from './scaffold.ts';
 import { mergeTsconfig } from './tsconfig.ts';
+import { TYPES_DIR, TYPES_MISSING_WARNING, typesLineOf, typesSourceDir, writeTypes } from './types.ts';
 
 export const INIT_USAGE = 'uso: pptsx init [dir] [--ds <pacote|caminho>] [--force] [--json]';
+export const TYPES_USAGE = 'uso: pptsx types [dir]   (regrava os tipos do pptsx em .pptsx/types e o typeRoots do tsconfig)';
 
 export interface InitArgs {
   readonly dir: string;
@@ -36,10 +38,14 @@ export interface InitPlan {
   readonly warnings: readonly string[];
   /** Subconjunto de `writes` que já existia (sobrescrito com --force ou mesclado). */
   readonly updated: readonly string[];
+  /** 1.0.5: a linha dos tipos gravados em .pptsx/types (cli/types.ts); ausente quando não havia .d.ts para copiar. */
+  readonly types?: string;
 }
 
 export interface InitReport {
   readonly files: readonly string[];
+  /** 1.0.5: pasta absoluta dos tipos, quando gravados. */
+  readonly types?: string;
 }
 
 export const parseInitCli = (argv: readonly string[], cwd: string = process.cwd()): InitArgs => {
@@ -126,6 +132,7 @@ export const initSummaryOf = (dir: string, plan: InitPlan, cwd: string): string 
     `Projeto pptsx em ${dir}:`,
     ...plan.writes.map((file) => `  ${plan.updated.includes(file.path) ? 'atualizado' : 'criado    '} ${file.path}`),
     ...plan.kept.map((path) => `  mantido    ${path}`),
+    ...(plan.types === undefined ? [] : [`  tipos      ${plan.types}`]),
     ...plan.warnings.map((warning) => `\n▲ ${warning}`),
     '',
     'Próximos passos:',
@@ -133,7 +140,11 @@ export const initSummaryOf = (dir: string, plan: InitPlan, cwd: string): string 
   ].join('\n');
 
 export const initJsonOf = (dir: string, plan: InitPlan): string =>
-  JSON.stringify({ files: plan.writes.map((file) => join(dir, file.path)) } satisfies InitReport, null, 2);
+  JSON.stringify(
+    { files: plan.writes.map((file) => join(dir, file.path)), ...(plan.types === undefined ? {} : { types: join(dir, TYPES_DIR) }) } satisfies InitReport,
+    null,
+    2,
+  );
 
 // ---------- IO ----------
 
@@ -225,7 +236,45 @@ export const applyInit = (args: Pick<InitArgs, 'dir' | 'force'>, source?: DsDeck
   const plan = planInit(files, readExisting(args.dir, files), args.force, join(args.dir, DECK_FILE), dirName);
   mkdirSync(args.dir, { recursive: true });
   plan.writes.forEach((file) => writeFile(args.dir, file));
-  return plan;
+  return withTypes(plan, writeTypes(args.dir, typesSourceDir()));
+};
+
+const withTypes = (plan: InitPlan, written: ReturnType<typeof writeTypes>): InitPlan =>
+  written === undefined ? { ...plan, warnings: [...plan.warnings, TYPES_MISSING_WARNING] } : { ...plan, types: typesLineOf(written) };
+
+// ---------- types (1.0.5) ----------
+
+export interface TypesArgs {
+  readonly dir: string;
+}
+
+export const parseTypesCli = (argv: readonly string[], cwd: string = process.cwd()): TypesArgs => {
+  const { positionals } = parseArgs({ args: [...argv], allowPositionals: true, options: {} });
+  const [command, dir, ...extra] = positionals;
+  if (command !== 'types' || extra.length > 0) throw new Error(TYPES_USAGE);
+  return { dir: resolve(cwd, dir ?? '.') };
+};
+
+const tsconfigNoteOf = (dir: string): string => {
+  const path = join(dir, TSCONFIG_FILE);
+  if (!existsSync(path)) {
+    writeFileSync(path, scaffoldFiles().find((file) => file.path === TSCONFIG_FILE)!.content);
+    return 'tsconfig.json criado';
+  }
+  const merged = mergeTsconfig(readFileSync(path, 'utf8'));
+  if (merged.kind === 'keep') return 'tsconfig.json já aponta para os tipos';
+  if (merged.kind === 'warn') return merged.warning;
+  writeFileSync(path, merged.content);
+  return merged.warning;
+};
+
+/** `pptsx types [dir]`: só os tipos e o `typeRoots` do tsconfig, para um projeto que já tem deck (ou que atualizou o pptsx). */
+export const runTypes = (args: TypesArgs): number => {
+  mkdirSync(args.dir, { recursive: true });
+  const written = writeTypes(args.dir, typesSourceDir());
+  if (written === undefined) throw new Error(TYPES_MISSING_WARNING);
+  console.log(`Tipos do pptsx ${written.version} em ${join(args.dir, written.dir)} (${written.count} arquivos); ${tsconfigNoteOf(args.dir).replace(/\.$/, '')}.`);
+  return 0;
 };
 
 export const runInit = async (args: InitArgs, cwd: string): Promise<number> => {

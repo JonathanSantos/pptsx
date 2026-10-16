@@ -9,6 +9,8 @@ export interface ExpandedPrimitive {
     readonly layout?: LayoutDefinition;
     /** M17: o componente mais externo que gerou a primitiva (o do segmento do path). */
     readonly component?: ComponentMeta;
+    /** 1.0.5: `<Nome prop=valor … />` dessa instância (ResolvedBase.source). */
+    readonly source?: string;
 }
 export interface ExpandedText {
     readonly type: 'text';
@@ -19,6 +21,7 @@ export type Expanded = ExpandedPrimitive | ExpandedText;
 interface Outer {
     readonly name: string;
     readonly meta: ComponentMeta;
+    readonly source?: string;
 }
 /**
  * Achata a árvore até primitivas e textos soltos. `outer` carrega o componente mais externo, cujo nome

@@ -1,4 +1,3 @@
-/** O que o deck exige do tsconfig: o tsx usa essas chaves para compilar o JSX contra o pptsx. */
 export declare const REQUIRED_JSX = "react-jsx";
 export declare const REQUIRED_JSX_IMPORT_SOURCE = "pptsx";
 type JsonObject = Readonly<Record<string, unknown>>;
