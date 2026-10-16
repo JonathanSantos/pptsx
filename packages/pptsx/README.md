@@ -5,7 +5,7 @@
 <p align="center">
   <img alt="TypeScript ESM" src="https://img.shields.io/badge/TypeScript-ESM-4F5BFF?style=flat-square&labelColor=0B1020&logo=typescript&logoColor=white">
   <img alt="Node 20+" src="https://img.shields.io/badge/node-%E2%89%A5%2020-8A93B8?style=flat-square&labelColor=0B1020&logo=nodedotjs&logoColor=white">
-  <img alt="Testes: 1.985" src="https://img.shields.io/badge/testes-1.985%20passando-14B87F?style=flat-square&labelColor=0B1020">
+  <img alt="Testes do núcleo: 1.985" src="https://img.shields.io/badge/testes%20do%20n%C3%BAcleo-1.985%20passando-14B87F?style=flat-square&labelColor=0B1020">
   <img alt="Calibração no Keynote: 34/34" src="https://img.shields.io/badge/Keynote-34%2F34%20linhas-C246D8?style=flat-square&labelColor=0B1020">
   <img alt="PPTX nativo" src="https://img.shields.io/badge/sa%C3%ADda-PPTX%20nativo-FF6A3D?style=flat-square&labelColor=0B1020">
   <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-8A93B8?style=flat-square&labelColor=0B1020">

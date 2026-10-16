@@ -338,11 +338,42 @@ const stageCard = (x, y, w, h, { n, title, lines, dark = false }) =>
   `<rect x="${x + 20}" y="${y + 44}" width="28" height="3.5" rx="1.75" fill="url(#grad)"/>` +
   lines.map((line, i) => text(x + 20, y + 72 + i * 21, fits(line, 13, w - 36), { size: 13, fill: dark ? '#C3CAE6' : C.slateDark })).join('');
 
-const arrow = (x1, y1, x2, y2, { color = C.slate, dashed = false, head = true, width = 2 } = {}) =>
-  `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="${color}" stroke-width="${width}" fill="none"${dashed ? ' stroke-dasharray="5 5"' : ''}${head ? ' marker-end="url(#ah)"' : ''}/>`;
-const arrowPath = (d, { color = C.slate, dashed = false, width = 2 } = {}) =>
-  `<path d="${d}" stroke="${color}" stroke-width="${width}" fill="none"${dashed ? ' stroke-dasharray="5 5"' : ''} marker-end="url(#ah)"/>`;
-const arrowHead = () => `<marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${C.slate}"/></marker>`;
+// Pontas de seta como polígono explícito, nunca <marker>: `orient="auto-start-reverse"` não renderiza em
+// todo visualizador (o painel do app mostrava as setas quebradas), e um polígono sai igual em qualquer lugar.
+const HEAD_LENGTH = 11;
+const HEAD_HALF_WIDTH = 5;
+/** Último ponto e a direção de chegada de um `d` com comandos absolutos M, L, H, V e C. */
+const pathEndOf = (d) => {
+  const tokens = d.match(/[MLHVC]|-?\d*\.?\d+/g) || [];
+  let command = 'M';
+  let point = null;
+  let previous = null;
+  for (let i = 0; i < tokens.length; ) {
+    const token = tokens[i];
+    if (/^[MLHVC]$/.test(token)) { command = token; i += 1; continue; }
+    const read = (n) => tokens.slice(i, i + n).map(Number);
+    if (command === 'H') { previous = point; point = { x: read(1)[0], y: point.y }; i += 1; continue; }
+    if (command === 'V') { previous = point; point = { x: point.x, y: read(1)[0] }; i += 1; continue; }
+    if (command === 'C') { const [, , x2, y2, x, y] = read(6); previous = { x: x2, y: y2 }; point = { x, y }; i += 6; continue; }
+    const [x, y] = read(2); previous = point; point = { x, y }; i += 2;
+  }
+  return { point, previous };
+};
+const headOf = (d, color) => {
+  const { point, previous } = pathEndOf(d);
+  if (!point || !previous) return '';
+  const dx = point.x - previous.x, dy = point.y - previous.y;
+  const n = Math.hypot(dx, dy) || 1, ux = dx / n, uy = dy / n;
+  const bx = point.x - ux * HEAD_LENGTH, by = point.y - uy * HEAD_LENGTH;
+  const px = -uy, py = ux;
+  const pt = (x, y) => `${round(x)},${round(y)}`;
+  return `<polygon points="${pt(point.x, point.y)} ${pt(bx + px * HEAD_HALF_WIDTH, by + py * HEAD_HALF_WIDTH)} ${pt(bx - px * HEAD_HALF_WIDTH, by - py * HEAD_HALF_WIDTH)}" fill="${color}"/>`;
+};
+const round = (v) => Math.round(v * 100) / 100;
+const arrowPath = (d, { color = C.slate, dashed = false, width = 2, head = true } = {}) =>
+  `<path d="${d}" stroke="${color}" stroke-width="${width}" fill="none" stroke-linecap="round"${dashed ? ' stroke-dasharray="5 5"' : ''}/>` + (head ? headOf(d, color) : '');
+const arrow = (x1, y1, x2, y2, options = {}) => arrowPath(`M${x1} ${y1} L${x2} ${y2}`, options);
+const arrowHead = () => '';
 
 const diagramDefs = () => gradient('grad') + gradient('gradH', { x1: 0, y1: 0, x2: 1, y2: 0 }) + shadow('sh', 0.08, 4, 8) + arrowHead();
 
@@ -409,7 +440,7 @@ const pipelineSvg = () => {
     }),
     arrow(ex + ew + 4, top + 34, ox - 6, top + 34),
     arrow(ex + ew + 4, top + 148, ox - 6, top + 106),
-    `<path d="M${xs[3] + cw - 14} ${top + ch} V ${top + ch + 62} H ${ox - 18} V ${top + 178} H ${ox - 6}" stroke="${C.slate}" stroke-width="2" fill="none" stroke-dasharray="5 5" marker-end="url(#ah)"/>`,
+    arrowPath(`M${xs[3] + cw - 14} ${top + ch} V ${top + ch + 62} H ${ox - 18} V ${top + 178} H ${ox - 6}`, { dashed: true }),
     // Estratégias
     eyebrow(44, 524, 'ESTRATÉGIAS DE CÓDIGO'),
     ...[
