@@ -3,6 +3,15 @@
   "version": "1.0.0",
   "description": "TSX → PPTX engine with automatic layout (MVP)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonathanSantos/pptsx.git",
+    "directory": "packages/pptsx"
+  },
+  "homepage": "https://github.com/JonathanSantos/pptsx/tree/main/packages/pptsx#readme",
+  "bugs": {
+    "url": "https://github.com/JonathanSantos/pptsx/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "private": true,

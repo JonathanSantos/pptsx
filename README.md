@@ -70,12 +70,16 @@ Este repositório é o monorepo do núcleo e das ferramentas de design system.
 
 ## Em 30 segundos
 
+Só precisa do Node 20.6+. Baixe o `pptsx.mjs` da [última release](https://github.com/JonathanSantos/pptsx/releases/latest): é o pptsx inteiro num arquivo, sem `node_modules` (detalhes em [Arquivo único](packages/pptsx/README.md#arquivo-único-sem-npm)).
+
 ```sh
 mkdir meu-deck && cd meu-deck
-npm install pptsx
-npx pptsx init                               # deck.tsx, tsconfig.json, pptsx.config.ts, assets/
-npx pptsx build deck.tsx --size 16x9,4x3     # .pptx + PNG por slide + overview + diagnósticos
+curl -LO https://github.com/JonathanSantos/pptsx/releases/latest/download/pptsx.mjs
+node pptsx.mjs init                              # deck.tsx, tsconfig.json, pptsx.config.ts, assets/
+node pptsx.mjs build deck.tsx --size 16x9,4x3    # .pptx + PNG por slide + overview + diagnósticos
 ```
+
+A release também traz `SHA256SUMS` e as skills para agentes (`pptsx-skill.zip`, `ds-base-skill.zip`). Ainda não há pacote no npm; quando houver, `npm install pptsx` e `npx pptsx …` fazem o mesmo.
 
 <table>
 <tr>

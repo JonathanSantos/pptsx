@@ -3,6 +3,15 @@
   "version": "0.2.0",
   "description": "Design system de exemplo sobre o pptsx: tokens, tema, layouts, componentes, regras de marca e galeria.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonathanSantos/pptsx.git",
+    "directory": "packages/ds-base"
+  },
+  "homepage": "https://github.com/JonathanSantos/pptsx/tree/main/packages/ds-base#readme",
+  "bugs": {
+    "url": "https://github.com/JonathanSantos/pptsx/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
