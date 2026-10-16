@@ -683,14 +683,33 @@ fn rank(severity: &str) -> u8 {
     }
 }
 
+const PRIMITIVE_SEGMENTS: [&str; 16] = ["Deck", "Slide", "Box", "Text", "Span", "Image", "Shape", "Chart", "Table", "Path", "Icon", "Connector", "SlideNumber", "Container", "Fixed", "Footer"];
+
+/// O path passa por um componente do autor (segmento que não é primitiva, ex.: `Risks`).
+fn inside_component(path: &str) -> bool {
+    path.split(" > ").any(|seg| {
+        let name = seg.split('[').next().unwrap_or(seg).trim();
+        !name.is_empty() && !PRIMITIVE_SEGMENTS.contains(&name)
+    })
+}
+
 pub fn summary(findings: &[Finding]) -> String {
     if findings.is_empty() {
         return "Lint: nada a apontar.".into();
     }
     let counts = ["error", "warning", "info"].map(|s| format!("{} {s}", findings.iter().filter(|f| f.severity == s).count())).join(", ");
-    let mut sorted: Vec<&Finding> = findings.iter().collect();
+    // Info de dentro de um componente (cores internas do DS, p. ex.) é para quem faz o DS: o resumo
+    // só conta; o --json continua com tudo.
+    let folded: Vec<&Finding> = findings.iter().filter(|f| f.severity == "info" && inside_component(&f.path)).collect();
+    let mut sorted: Vec<&Finding> = findings.iter().filter(|f| !(f.severity == "info" && inside_component(&f.path))).collect();
     sorted.sort_by_key(|f| (rank(&f.severity), f.slide));
     let mut out = format!("Lint: {counts}");
+    if !folded.is_empty() {
+        let mut codes: Vec<&str> = folded.iter().map(|f| f.code.as_str()).collect();
+        codes.sort_unstable();
+        codes.dedup();
+        out.push_str(&format!("\n  • {} info dentro de componentes de design system ({}): são do DS, não do deck; --json lista todos", folded.len(), codes.join(", ")));
+    }
     for f in sorted {
         let mark = match f.severity.as_str() {
             "error" => "✖",

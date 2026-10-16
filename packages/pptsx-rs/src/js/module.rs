@@ -287,7 +287,7 @@ fn file_candidates(base: &Path) -> Option<PathBuf> {
     None
 }
 
-fn resolve(from: &Path, spec: &str) -> Option<PathBuf> {
+pub(crate) fn resolve(from: &Path, spec: &str) -> Option<PathBuf> {
     if spec.starts_with("./") || spec.starts_with("../") || spec.starts_with('/') {
         return file_candidates(&from.join(spec)).and_then(|p| fs::canonicalize(p).ok());
     }

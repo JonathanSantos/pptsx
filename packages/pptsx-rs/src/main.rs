@@ -8,6 +8,7 @@ mod config;
 mod containers;
 mod css;
 mod diag;
+mod dsinfo;
 mod embed;
 mod emit;
 mod grid;
@@ -24,6 +25,7 @@ mod report;
 mod serve;
 mod skill;
 mod text;
+mod types;
 mod validate;
 mod yoga;
 mod yoga_layout;
@@ -45,8 +47,11 @@ uso:
   pptsx-rs tree  <deck.tsx> [--size 16x9]     mostra a árvore avaliada do deck
   pptsx-rs lint  <deck.tsx> [--size 16x9,4x3] [--json]
                  regras da engine e as dos DS registrados no pptsx.config.ts
-  pptsx-rs init  [pasta] [--force] [--json]      cria deck.tsx, tsconfig.json, pptsx.config.ts
-  pptsx-rs skill [--out pptsx] [--bin <binário> | --no-bin]
+  pptsx-rs init  [pasta] [--ds <pacote|caminho>] [--force] [--json]
+                                                   cria deck.tsx, tsconfig.json, pptsx.config.ts e os tipos do
+                                                   pptsx para o editor (.pptsx/types); com --ds, o deck usa o DS
+  pptsx-rs types [pasta]                          (re)grava os tipos do pptsx e o `paths` do tsconfig
+  pptsx-rs skill [--out pptsx] [--ds <pacote|caminho>] [--bin <binário> | --no-bin]
                                                    a skill para agentes (SKILL.md, references/, mcp/) com
                                                    este binário em bin/: a pasta vai em .github/skills ou .claude/skills
   pptsx-rs mcp [--ds <ds.ts>]...                  servidor MCP por stdio (build, diagnose,
@@ -211,6 +216,9 @@ fn main() -> ExitCode {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     if raw.first().map(String::as_str) == Some("init") {
         return init::run(&raw[1..]);
+    }
+    if raw.first().map(String::as_str) == Some("types") {
+        return init::run_types(&raw[1..]);
     }
     if raw.first().map(String::as_str) == Some("skill") {
         return skill::run(&raw[1..]);
@@ -408,6 +416,9 @@ fn run(args: &Args, deps: &mut Vec<PathBuf>) -> ExitCode {
     // --serve (state_out): um JSON por tamanho com os slides, os frames por path e os diagnósticos.
     let mut state_sizes: Vec<String> = Vec::new();
     let mut notes: Vec<String> = config.warnings.iter().chain(&font_warnings).cloned().collect();
+    let mut interp = interp;
+    // console.warn/error de módulos do deck e dos DS: diagnósticos do deck inteiro (slide 0).
+    let module_notes: Vec<String> = std::mem::take(&mut interp.notes);
     let containers = std::cell::RefCell::new(model::ContainerRun::new(interp));
     for (ctx, deck) in sizes.iter().zip(&decks) {
         let t0 = Instant::now();
@@ -567,6 +578,15 @@ fn run(args: &Args, deps: &mut Vec<PathBuf>) -> ExitCode {
         }
         for f in families {
             notes.push(format!("fonte \"{f}\" medida com a métrica da Liberation Sans (Arial); quebras podem diferir"));
+        }
+        // Notas dos módulos (avaliação do deck e funções de Container), sem repetir.
+        let container_notes: Vec<String> = std::mem::take(&mut containers.borrow_mut().interp.notes);
+        let mut seen_notes: Vec<String> = Vec::new();
+        for note in module_notes.iter().cloned().chain(container_notes) {
+            if !seen_notes.contains(&note) {
+                diags.add(diag::Diag::new(Level::Warn, "module-warning", 0, "", format!("{note} (aviso de um módulo do deck ou do design system, via console.warn)")));
+                seen_notes.push(note);
+            }
         }
         // M8: EOT das faces usadas; o que não dá para embutir vira warning (font-not-embeddable).
         let mut font_parts: Vec<embed::FontPart> = Vec::new();

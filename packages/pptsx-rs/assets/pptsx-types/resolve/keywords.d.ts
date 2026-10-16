@@ -1,0 +1,12 @@
+import type { CssAlign, CssAlignContent, CssFlexDirection, CssFlexWrap, CssJustify, CssPlace, CssPosition, Display, TextAlign, TextDecoration, TextTransform } from '../core/types.ts';
+export declare const parseAlign: (value: unknown) => CssAlign | undefined;
+export declare const parseJustify: (value: unknown) => CssJustify | undefined;
+export declare const parseAlignContent: (value: unknown) => CssAlignContent | undefined;
+export declare const parsePlace: (value: unknown) => CssPlace | undefined;
+export declare const parseDirection: (value: unknown) => CssFlexDirection | undefined;
+export declare const parseWrap: (value: unknown) => CssFlexWrap | undefined;
+export declare const parseDisplay: (value: unknown) => Display | undefined;
+export declare const parsePosition: (value: unknown) => CssPosition | undefined;
+export declare const parseTextAlign: (value: unknown) => TextAlign | undefined;
+export declare const parseTextTransform: (value: unknown) => TextTransform | undefined;
+export declare const parseDecoration: (value: unknown) => TextDecoration | undefined;

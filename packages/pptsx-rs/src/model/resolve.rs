@@ -8,7 +8,7 @@ use taffy::style::{AlignContent, FlexDirection};
 use crate::css::{Dash, Stroke, parse_color};
 use crate::diag::Diags;
 use crate::js::{DeckCtx, Element, Kind, Value};
-use crate::js::value::LAYOUT_KEY;
+use crate::js::value::{Func, LAYOUT_KEY};
 use crate::text::LineHeight;
 
 use super::*;
@@ -105,7 +105,7 @@ pub(super) fn resolve_slide(cx: &mut Cx, slide: &Element, footer: Option<&Value>
             let inner = resolve_children(cx, &flat, &inherit, &fixed_path, false);
             cx.fixed = false;
             let style = Style { position: Position::Absolute, inset: Rect { top: LengthPercentageAuto::length(0.0), right: LengthPercentageAuto::length(0.0), bottom: LengthPercentageAuto::length(0.0), left: LengthPercentageAuto::length(0.0) }, ..Style::default() };
-            children.push(Node { kind: NodeKind::Container, style, z: Some(-1.0), absolute: true, paint: Paint { opacity: 1.0, ..Paint::default() }, children: inner, label: fixed_path, href: None, component: true, id: None, paginate: false, slide_number: None, layered: true, placeholder: None, fixed: true, basis: Basis::None });
+            children.push(Node { kind: NodeKind::Container, style, z: Some(-1.0), absolute: true, paint: Paint { opacity: 1.0, ..Paint::default() }, children: inner, label: fixed_path, href: None, component: true, id: None, paginate: false, slide_number: None, layered: true, placeholder: None, fixed: true, basis: Basis::None, source: None });
         }
     // M13: o footer do Deck entra em cada slide como último filho, num invólucro absoluto do
     // tamanho do slide com o conteúdo empurrado para a base (resolve.ts withFooter).
@@ -126,9 +126,9 @@ pub(super) fn resolve_slide(cx: &mut Cx, slide: &Element, footer: Option<&Value>
             justify_content: AlignContent::FLEX_END,
             ..Style::default()
         };
-        children.push(Node { kind: NodeKind::Container, style, z: None, absolute: true, paint: Paint { opacity: 1.0, ..Paint::default() }, children: inner, label: footer_path, href: None, component: true, id: None, paginate: false, slide_number: None, layered: true, placeholder: None, fixed: false, basis: Basis::None });
+        children.push(Node { kind: NodeKind::Container, style, z: None, absolute: true, paint: Paint { opacity: 1.0, ..Paint::default() }, children: inner, label: footer_path, href: None, component: true, id: None, paginate: false, slide_number: None, layered: true, placeholder: None, fixed: false, basis: Basis::None, source: None });
     }
-    let root = Node { kind: NodeKind::Container, style, z: None, absolute: false, paint: Paint { opacity: 1.0, ..Paint::default() }, children, label: slide_path, href: None, component: false, id: None, paginate: false, slide_number: None, layered: false, placeholder: None, fixed: false, basis: Basis::None };
+    let root = Node { kind: NodeKind::Container, style, z: None, absolute: false, paint: Paint { opacity: 1.0, ..Paint::default() }, children, label: slide_path, href: None, component: false, id: None, paginate: false, slide_number: None, layered: false, placeholder: None, fixed: false, basis: Basis::None, source: None };
     let mut root = root;
     let mut connectors = std::mem::take(&mut cx.connectors);
     let ids = match scope_ids(&mut root, &mut connectors) {
@@ -341,6 +341,51 @@ pub(super) fn plain_text(children: &[Value]) -> String {
 }
 
 /// Segmento do path do pptsx: o componente mais externo que gerou o elemento, senão a primitiva.
+/// `<Nome prop=valor …>` para a raiz de um componente do autor (data.component dos diagnósticos):
+/// strings e números como foram escritos, arrays e objetos pelo tamanho, funções e elementos pelo tipo.
+fn author_source(el: &Element) -> Option<Rc<str>> {
+    if !el.component {
+        return None;
+    }
+    let (tag, props) = &**el.source.as_ref()?;
+    let meta_name = match el.props.get(crate::js::value::COMPONENT_PROP) {
+        Some(Value::Object(meta)) => meta.get("name").map(Value::to_js_string).filter(|n| !n.is_empty()),
+        _ => None,
+    };
+    let name = meta_name.or_else(|| match tag {
+        Value::Func(f) => match &**f {
+            Func::Closure(c) => Some(c.name.to_string()),
+            Func::Native(n) => Some(n.name.to_string()),
+            Func::Component { name, .. } => Some(name.to_string()),
+            Func::Intrinsic(k) => Some(k.name().to_string()),
+        }
+        .filter(|n| !n.is_empty() && n != "anonymous"),
+        _ => None,
+    })?;
+    let mut parts: Vec<String> = Vec::new();
+    for (k, v) in props.iter() {
+        if &**k == "children" || &**k == crate::js::value::COMPONENT_PROP {
+            continue;
+        }
+        let shown = match v {
+            Value::Undefined | Value::Null => continue,
+            Value::Str(t) => {
+                let short: String = t.chars().take(40).collect();
+                format!("\"{short}{}\"", if t.chars().count() > 40 { "…" } else { "" })
+            }
+            Value::Num(_) | Value::Bool(_) => v.to_js_string(),
+            Value::Array(a) => format!("[{} itens]", a.borrow().len()),
+            Value::Object(o) => format!("{{{}}}", o.keys().take(4).map(|k| k.to_string()).collect::<Vec<_>>().join(", ")),
+            Value::Func(_) => "fn".into(),
+            Value::Element(_) => "<…>".into(),
+            Value::Regex(_) => "regex".into(),
+        };
+        parts.push(format!("{k}={shown}"));
+    }
+    let text = if parts.is_empty() { format!("<{name} />") } else { format!("<{name} {} />", parts.join(" ")) };
+    Some(Rc::from(text.as_str()))
+}
+
 pub(crate) fn segment_of(el: &Element) -> String {
     match el.props.get(crate::js::value::COMPONENT_PROP) {
         Some(Value::Object(meta)) => meta.get("name").map(Value::to_js_string).filter(|n| !n.is_empty()).unwrap_or_else(|| el.kind.name().to_string()),
@@ -428,6 +473,7 @@ pub(super) fn resolve_node(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &
     let z = cx.num(props, "zIndex");
     let href = cx.string(props, "href");
     let component = el.component;
+    let source = author_source(el);
     let id = cx.string(props, "id");
     let paginate = matches!(el.kind, Kind::Box | Kind::Text | Kind::Table) && cx.bool(props, "paginate").unwrap_or(false);
     let slide_number = (el.kind == Kind::SlideNumber).then(|| cx.string(props, "format").unwrap_or_else(|| "n".into()));
@@ -437,7 +483,7 @@ pub(super) fn resolve_node(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &
     let layered_of = |paint: &Paint| explicit || z.is_some() || paint.opacity < 1.0 || paint.rotate != 0.0 || paint.translate != (0.0, 0.0);
     let mk = |kind, style, paint: Paint, children, label| {
         let layered = layered_of(&paint);
-        Some(Node { kind, style, z, absolute, paint, children, label, href: href.clone(), component, id: id.clone(), paginate, slide_number: slide_number.clone(), layered, placeholder: placeholder.clone(), fixed, basis })
+        Some(Node { kind, style, z, absolute, paint, children, label, href: href.clone(), component, id: id.clone(), paginate, slide_number: slide_number.clone(), layered, placeholder: placeholder.clone(), fixed, basis, source: source.clone() })
     };
     match el.kind {
         Kind::Box => {
@@ -450,7 +496,7 @@ pub(super) fn resolve_node(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &
             if let Some(shape) = cx.string(props, "shape")
                 && let Some(spec) = shape_spec(cx, props, &shape, &mut paint) {
                     let layered = layered_of(&paint);
-                    let mut node = Node { kind: NodeKind::Shape(spec), style, z, absolute, paint, children, label, href, component, id, paginate, slide_number: None, layered, placeholder, fixed, basis };
+                    let mut node = Node { kind: NodeKind::Shape(spec), style, z, absolute, paint, children, label, href, component, id, paginate, slide_number: None, layered, placeholder, fixed, basis, source: None };
                     node.style.display = Display::Flex;
                     return Some(node);
                 }
@@ -466,7 +512,7 @@ pub(super) fn resolve_node(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &
             let mut node = match cx.string(props, "shape").and_then(|shape| shape_spec(cx, props, &shape, &mut paint)) {
                 Some(spec) => {
                     let layered = layered_of(&paint);
-                    let mut node = Node { kind: NodeKind::Shape(spec), style, z, absolute, paint, children, label, href, component, id, paginate: false, slide_number: None, layered, placeholder: None, fixed, basis };
+                    let mut node = Node { kind: NodeKind::Shape(spec), style, z, absolute, paint, children, label, href, component, id, paginate: false, slide_number: None, layered, placeholder: None, fixed, basis, source: None };
                     node.style.display = Display::Flex;
                     node
                 }

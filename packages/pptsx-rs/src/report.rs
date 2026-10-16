@@ -1016,7 +1016,28 @@ pub fn slide_diagnostics(placed: &[Placed], slide: usize, fonts: &Fonts) -> Vec<
     out.extend(overflows.iter().filter(|o| o.kind == Kind::Slide).map(|o| out_of_slide(placed, o, slide)));
     out.extend(placed.iter().skip(1).filter_map(|p| image_diagnostic(p, slide)));
     out.extend(placed.iter().skip(1).filter_map(|p| icon_diagnostic(p, slide)));
-    group(attribute_causes(out, placed, &kids, &overflows, fonts))
+    group(with_component(attribute_causes(out, placed, &kids, &overflows, fonts), placed))
+}
+
+/// `data.component`: o componente do autor mais próximo acima do nó do diagnóstico (ou o próprio),
+/// com as props que ele passou. O path continua o do pptsx; isto é o que diz "o que mexer".
+fn with_component(mut diags: Vec<Diag>, placed: &[Placed]) -> Vec<Diag> {
+    let by_path: HashMap<&str, usize> = placed.iter().enumerate().map(|(i, p)| (p.node.label.as_str(), i)).collect();
+    for d in &mut diags {
+        let Some(&start) = by_path.get(d.path.as_str()) else { continue };
+        let mut i = start;
+        loop {
+            if let Some(source) = &placed[i].node.source {
+                d.set("component", Data::Str(source.to_string()));
+                break;
+            }
+            if i == 0 {
+                break;
+            }
+            i = placed[i].parent;
+        }
+    }
+    diags
 }
 
 // ───────────── paginação, JSON e resumo ─────────────
@@ -1112,7 +1133,8 @@ pub fn summary(list: &[(String, Diag)]) -> String {
             Some(s) if s as usize != d.slide => format!("slide {} ({} no deck)", d.slide, s),
             _ => format!("slide {}", d.slide),
         };
-        format!("{indent}{marker}{} [{size} · {slide}] {} em {}\n{indent}  {}", icon(d.level), d.code, d.path, d.msg)
+        let component = d.get_str("component").map(|c| format!("\n{indent}  no componente {c}")).unwrap_or_default();
+        format!("{indent}{marker}{} [{size} · {slide}] {} em {}\n{indent}  {}{component}", icon(d.level), d.code, d.path, d.msg)
     };
     let primary: Vec<&Diag> = list.iter().map(|(_, d)| d).filter(|d| !is_derived(d)).collect();
     let derived = list.len() - primary.len();

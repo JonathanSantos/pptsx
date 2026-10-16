@@ -1,0 +1,32 @@
+import pptxgenjs from 'pptxgenjs';
+import type * as PptxTypes from 'pptxgenjs';
+/**
+ * Adaptador do pptxgenjs. Os .d.ts do pacote são CJS (`export default` + namespace),
+ * então sob NodeNext o TS vê o default import como o módulo inteiro; em runtime ESM
+ * o default já é a classe. Resolvemos os dois casos aqui e reexportamos os tipos,
+ * para o resto do emissor não depender dessa esquisitice.
+ */
+type PptxConstructor = typeof pptxgenjs.default;
+export declare const PptxGenJS: PptxConstructor;
+export type Presentation = InstanceType<PptxConstructor>;
+export type Slide = PptxTypes.default.Slide;
+export type ShapeName = PptxTypes.default.SHAPE_NAME;
+export type ShapeProps = PptxTypes.default.ShapeProps;
+export type ShapeFillProps = PptxTypes.default.ShapeFillProps;
+export type ShapeLineProps = PptxTypes.default.ShapeLineProps;
+export type TextProps = PptxTypes.default.TextProps;
+export type TextPropsOptions = PptxTypes.default.TextPropsOptions;
+export type ImageProps = PptxTypes.default.ImageProps;
+export type BackgroundProps = PptxTypes.default.BackgroundProps;
+export type SlideMasterProps = PptxTypes.default.SlideMasterProps;
+export type ChartName = PptxTypes.default.CHART_NAME;
+export type ChartMulti = PptxTypes.default.IChartMulti;
+export type ChartOptions = PptxTypes.default.IChartOpts;
+export type ChartSeriesData = PptxTypes.default.OptsChartData;
+export type TableRow = PptxTypes.default.TableRow;
+export type TableCell = PptxTypes.default.TableCell;
+export type TableCellProps = PptxTypes.default.TableCellProps;
+export type TableProps = PptxTypes.default.TableProps;
+export type BorderProps = PptxTypes.default.BorderProps;
+export type ShadowProps = PptxTypes.default.ShadowProps;
+export {};

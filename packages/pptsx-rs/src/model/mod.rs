@@ -188,6 +188,10 @@ pub struct Node {
     pub fixed: bool,
     /// flex-basis como o pptsx o passa ao Yoga (style.ts flexBasisOf), para o motor Yoga.
     pub basis: Basis,
+    /// Raiz de um componente do autor: `<Nome prop=valor …>` com as props que ele passou, em texto
+    /// curto. Os diagnósticos dentro do componente levam isto em `data.component`, para quem lê
+    /// saber o que mexer sem conhecer a entranha do DS.
+    pub source: Option<std::rc::Rc<str>>,
 }
 
 /// Origem do flex-basis (BasisSource do pptsx): nenhuma (auto), do autor (`flexBasis`, ou

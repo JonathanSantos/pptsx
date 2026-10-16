@@ -33,7 +33,17 @@ export default defineDeck(() => (
 ));
 ```"##;
 
-fn skill_md(version: &str) -> String {
+fn skill_md(version: &str, ds: Option<&crate::dsinfo::DsInfo>) -> String {
+    let ds_section = ds.map(|d| {
+        let by_path = d.import_from.starts_with('.') || d.import_from.starts_with('/');
+        let where_it_is = if by_path {
+            format!("O código dele está em `{}` (caminho relativo à pasta onde a skill foi gerada: a raiz do projeto).", d.import_from)
+        } else {
+            format!("Ele é o pacote `{}`: precisa estar instalado na pasta do deck (`npm install {}`).", d.import_from, d.import_from)
+        };
+        format!("## Design system: {}\n\nEste projeto usa o DS **{}**. {where_it_is} `references/pptsx.config.ts` é a config que o registra (regras no lint, tema no arquivo): copie para a pasta do deck. Prefira os componentes dele às primitivas: `references/ds.md` tem cada componente com um exemplo, as props e as regras. `{BIN} init <pasta> --ds {}` cria um deck que já os importa e registra.\n\n", d.name, d.name, d.import_from)
+    }).unwrap_or_default();
+    let ds_refs = if ds.is_some() { "- `references/ds.md`: os componentes, as props e as regras do design system.\n- `references/pptsx.config.ts`: a config que registra o design system.\n" } else { "" };
     format!(
         r#"---
 name: {NAME}
@@ -72,14 +82,17 @@ O motor é o binário desta skill, sem Node nem instalação: `{BIN}` (Windows: 
 - Gráfico nativo: `<Chart kind="bar" data={{{{ categories: [...], series: [{{ name, values: [...] }}] }}}} labels flex={{1}} />` (precisa de altura: `flex={{1}}` ou `height`). Tabela: `<Table columns={{[{{ header: "Área" }}, {{ header: "Q3", align: "right" }}]}} rows={{[["Varejo", "22,6"]]}} />` (números como texto mantêm a vírgula).
 - Imagem: `<Image src="./logo.png" width={{120}} />`, com o caminho relativo ao deck.
 - O que o PPTX não tem (gradiente, `overflow: hidden`…) vira o aviso `css-not-emitted`: troque por algo que exista. Não invente props; na dúvida, `references/props.md`.
-- Design system instalado no projeto (`npm install @pptsx/ds-base`, por exemplo): importe os componentes dele, registre no `pptsx.config.ts` (`defineConfig({{ ds: [ds] }})`) e prefira-os às primitivas; `{BIN} lint deck.tsx` aplica as regras dele.
+- Design system instalado no projeto (`npm install @pptsx/ds-base`, por exemplo): importe os componentes dele, registre no `pptsx.config.ts` (`defineConfig({{ ds: [ds] }})`) e prefira-os às primitivas; `{BIN} lint deck.tsx` aplica as regras dele. `{BIN} init <pasta> --ds <pacote>` cria o deck já com os componentes.
+- Tipos: o `init` grava os `.d.ts` do pptsx em `.pptsx/types/` e aponta o `tsconfig.json` para lá; o editor entende `pptsx` sem `npm install`. Se o editor não achar `pptsx`, `{BIN} types <pasta>`.
+- Lendo diagnósticos: `data.component` diz o componente do autor e as props dele (`<Risks items=[4 itens] status="warn" />`) quando o nó estourado fica dentro de um componente; é ali que se mexe, não no path interno. Achados `off-theme-color` de nível info dentro de componentes de DS são do DS, não do deck.
+- `module-warning` (slide 0) é um `console.warn` do deck ou do DS, como um ícone com nome desconhecido: corrija o que ele diz.
 
-## Referências
+{ds_section}## Referências
 
 - `references/essentials.md`: o essencial do guia; leia inteiro antes do primeiro deck.
 - `references/guide.md`: o guia completo (primitivas, texto, receitas, diagnósticos, armadilhas), com índice de linhas.
 - `references/props.md`: as props de cada primitiva, com o tipo.
-- `mcp/vscode.mcp.json` e `mcp/claude.mcp.json`: a entrada do servidor MCP para copiar em `.vscode/mcp.json` ou `.mcp.json`.
+{ds_refs}- `mcp/vscode.mcp.json` e `mcp/claude.mcp.json`: a entrada do servidor MCP para copiar em `.vscode/mcp.json` ou `.mcp.json`.
 "#
     )
 }
@@ -254,9 +267,9 @@ fn props_section(title: &str, schema: &Value) -> String {
     out
 }
 
-/// `references/props.md`, gerado do schema embutido (o mesmo do `schema()` do MCP), nunca à mão.
-fn props_md(schema: &Value) -> String {
-    let mut out = String::from("# Props das primitivas do pptsx\n\nGerado do schema do pptsx (o mesmo do `schema()` no MCP). `*` = obrigatória. Toda prop aceita também um valor por breakpoint, `{ base, tall, wide }` (guia §2).\n\n");
+/// Tabelas de props de um schema `{ nome: { properties, required } }` com um título.
+fn props_sections(heading: &str, schema: &Value) -> String {
+    let mut out = format!("# {heading}\n\nGerado do schema do pptsx (o mesmo do `schema()` no MCP). `*` = obrigatória. Toda prop aceita também um valor por breakpoint, `{{ base, tall, wide }}` (guia §2).\n\n");
     if let Value::Object(o) = schema {
         for (key, value) in o.iter() {
             let title = PRIMITIVE_TITLES.iter().find(|(k, _)| *k == &**key).map_or(key.to_string(), |(_, t)| (*t).to_string());
@@ -264,6 +277,11 @@ fn props_md(schema: &Value) -> String {
         }
     }
     out
+}
+
+/// `references/props.md`, gerado do schema embutido (o mesmo do `schema()` do MCP), nunca à mão.
+fn props_md(schema: &Value) -> String {
+    props_sections("Props das primitivas do pptsx", schema)
 }
 
 fn mcp_json(bin: &str, vscode: bool) -> String {
@@ -286,7 +304,7 @@ A skill do pptsx para agentes, com o motor dentro (`bin/pptsx-rs`): nada de Node
 2. Para o agente usar as ferramentas MCP em vez do shell, copie `mcp/vscode.mcp.json` para `.vscode/mcp.json` ou `mcp/claude.mcp.json` para `.mcp.json` na raiz do repositório (o caminho já aponta para o `bin/` desta pasta).
 3. Peça o deck. O agente lê o `SKILL.md`, escreve o `.tsx`, compila e corrige pelos diagnósticos.
 
-No macOS, se o sistema bloquear o binário baixado: `xattr -d com.apple.quarantine bin/pptsx-rs`. Para o editor conferir os tipos do deck, `npm install pptsx` na pasta do deck (só tipos; o build não usa o Node).
+No macOS, se o sistema bloquear o binário baixado: `xattr -d com.apple.quarantine bin/pptsx-rs`. O `init` grava os tipos do pptsx em `.pptsx/types/` e aponta o `tsconfig.json` para lá: o editor confere o deck sem `npm install` (num projeto que já existe, `bin/pptsx-rs types <pasta>`).
 "#
     )
 }
@@ -295,22 +313,25 @@ struct Args {
     out: PathBuf,
     bin: Option<PathBuf>,
     no_bin: bool,
+    ds: Option<String>,
 }
 
 fn parse(argv: &[String]) -> Result<Args, String> {
     let mut out = None;
     let mut bin = None;
     let mut no_bin = false;
+    let mut ds = None;
     let mut it = argv.iter();
     while let Some(a) = it.next() {
         match a.as_str() {
             "--out" => out = Some(PathBuf::from(it.next().ok_or("--out precisa de uma pasta")?)),
             "--bin" => bin = Some(PathBuf::from(it.next().ok_or("--bin precisa de um arquivo")?)),
             "--no-bin" => no_bin = true,
-            other => return Err(format!("opção desconhecida: {other}\nuso: pptsx-rs skill [--out <pasta>] [--bin <binário> | --no-bin]")),
+            "--ds" => ds = Some(it.next().ok_or("--ds precisa de um pacote ou caminho")?.to_string()),
+            other => return Err(format!("opção desconhecida: {other}\nuso: pptsx-rs skill [--out <pasta>] [--ds <pacote|caminho>] [--bin <binário> | --no-bin]")),
         }
     }
-    Ok(Args { out: out.unwrap_or_else(|| PathBuf::from(NAME)), bin, no_bin })
+    Ok(Args { out: out.unwrap_or_else(|| PathBuf::from(NAME)), bin, no_bin, ds })
 }
 
 fn write(root: &Path, rel: &str, content: &str) -> Result<(), String> {
@@ -349,8 +370,19 @@ pub fn run(argv: &[String]) -> ExitCode {
     };
     let bin_vscode = format!(".github/skills/{NAME}/bin/pptsx-rs");
     let bin_claude = format!(".claude/skills/{NAME}/bin/pptsx-rs");
-    let files = [
-        ("SKILL.md", skill_md(version)),
+    let cwd = std::env::current_dir().unwrap_or_default();
+    let ds = match &args.ds {
+        Some(spec) => match crate::dsinfo::load(spec, &cwd, &cwd) {
+            Ok(info) => Some(info),
+            Err(e) => {
+                eprintln!("\x1b[31merro\x1b[0m {e}");
+                return ExitCode::from(1);
+            }
+        },
+        None => None,
+    };
+    let mut files = vec![
+        ("SKILL.md", skill_md(version, ds.as_ref())),
         ("references/essentials.md", essentials(crate::mcp::GUIDE)),
         ("references/guide.md", guide_reference(crate::mcp::GUIDE)),
         ("references/props.md", props_md(&schema)),
@@ -358,6 +390,10 @@ pub fn run(argv: &[String]) -> ExitCode {
         ("mcp/claude.mcp.json", mcp_json(&bin_claude, false)),
         ("README.md", readme(version)),
     ];
+    if let Some(ds) = &ds {
+        files.push(("references/ds.md", crate::dsinfo::markdown(ds, |schema| props_sections("Props dos componentes", schema).replacen("# ", "## ", 1))));
+        files.push(("references/pptsx.config.ts", crate::dsinfo::config_content(ds)));
+    }
     let mut written: Vec<String> = Vec::new();
     for (rel, content) in &files {
         if let Err(e) = write(&args.out, rel, content) {

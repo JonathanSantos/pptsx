@@ -2,6 +2,21 @@
 
 Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Versões antes da 1.0 podem quebrar a API; o que quebra está em **Mudanças incompatíveis**.
 
+## 1.0.5 — pptsx-rs: dev e agent friendly com um design system
+
+- **Tipos sem npm**: `pptsx-rs init` grava os `.d.ts` do pptsx em `.pptsx/types/` e aponta o `tsconfig.json`
+  para lá (`paths`); o editor confere o deck e autocompleta as props sem `npm install`. `pptsx-rs types <pasta>`
+  faz só isso num projeto existente.
+- **`init --ds <pacote|caminho>`** e **`skill --ds`** no binário: o deck inicial com um slide por componente do
+  DS, a config que o registra, o tsconfig com a pasta do DS, e na skill `references/ds.md` (componentes,
+  exemplos, props, regras, guia) e `references/pptsx.config.ts`. Saída igual à do `pptsx init --ds`.
+- **Diagnóstico com o componente do autor**: quando o nó fica dentro de um componente, `data.component` traz
+  `<Nome prop=valor … />` e o resumo imprime `no componente <…>`; o path e a mensagem não mudam.
+- **`module-warning`**: um `console.warn` do deck ou do DS (ícone desconhecido, por exemplo) vira diagnóstico
+  (warning, slide 0) em vez de sumir.
+- **Lint**: achados info dentro de componentes de DS (`off-theme-color` da própria marca) saem resumidos numa
+  linha no texto; o `--json` continua listando todos.
+
 ## 1.0.4 — a release do pptsx-rs é a skill
 
 - **`pptsx-rs skill`**: a pasta da skill para agentes (`SKILL.md` curto, `references/essentials.md`,

@@ -94,7 +94,8 @@ cargo build --release          # na raiz do monorepo (workspace) ou em packages/
 
 ```bash
 bin=.github/skills/pptsx/bin/pptsx-rs
-$bin init meu-deck                                 # deck.tsx, tsconfig.json, pptsx.config.ts, assets/
+$bin init meu-deck                                 # deck.tsx, tsconfig.json, pptsx.config.ts, assets/ e os tipos do pptsx
+$bin init meu-deck --ds @pptsx/ds-base             # o mesmo, com o deck já usando um design system
 $bin build meu-deck/deck.tsx --size 16x9,4x3       # .pptx + PNG por slide + overview + diagnósticos
 ```
 
@@ -107,7 +108,9 @@ dist/
 └── deck.diagnostics.json       código, severidade, slide, path do nó, mensagem e dados
 ```
 
-O `tsconfig.json` que o `init` grava aponta o JSX para `pptsx`; para o editor conferir tipos e autocompletar, `npm install pptsx` na pasta do deck (só os tipos; o build não usa o Node). O build sai com código 1 quando há diagnóstico `error`, como o `pptsx build`.
+O `init` grava os `.d.ts` do pptsx em `.pptsx/types/` e aponta o `tsconfig.json` para lá (`paths`): o VS Code confere tipos e autocompleta as props **sem `npm install`** (o build nunca usou o Node). Num projeto que já existe, `pptsx-rs types <pasta>` faz só isso. O build sai com código 1 quando há diagnóstico `error`, como o `pptsx build`.
+
+Quando um nó estoura dentro de um componente, o diagnóstico diz **qual componente do autor e com que props** (`no componente <Risks items=[4 itens] status="warn" />`, e `data.component` no JSON): é ali que se mexe, não no path interno do DS. Um `console.warn` do deck ou do DS (um ícone com nome desconhecido, por exemplo) vira o diagnóstico `module-warning`, em vez de sumir.
 
 ## Com IA no projeto
 
@@ -202,6 +205,8 @@ export default defineConfig({ ds: [ds] });   // tema no arquivo, regras no lint,
 
 Com isso o `lint` aplica as regras de marca do DS, o `guide` do MCP ganha a fonte `ds-base` e o `schema` responde as props dos componentes dele. O servidor também aceita `pptsx-rs mcp --ds caminho/ds.ts` para um DS fora da config. Instalar o pacote do DS continua sendo `npm install`, porque ele é um pacote npm.
 
+`pptsx-rs init <pasta> --ds @pptsx/ds-base` (ou um caminho, `--ds ../ds-orbit/src/index.ts`) cria o deck com um slide por componente do DS, a config que o registra e o tsconfig; `pptsx-rs skill --ds …` gera a skill com `references/ds.md` (componentes, exemplos, props, regras e o guia do DS) e `references/pptsx.config.ts`, para o agente usar a marca sem procurar. Achados `off-theme-color` de nível info dentro de componentes do DS são do DS, não do deck: o `lint` os resume numa linha (o `--json` lista todos).
+
 **Criar** um DS continua no `@pptsx/ds-kit`, com Node: `pptsx-ds init` (scaffold), `pptsx-ds catalog` (o catálogo visual e o contrato de fixtures) e `pptsx-ds skill`. O binário é para quem **usa** um DS pronto.
 
 ## A CLI
@@ -211,8 +216,13 @@ pptsx-rs build <deck.tsx> [--size 16x9,4x3] [--out dist/] [--lang pt-BR] [--line
                [--preview native|none] [--preview-width 1280] [--embed-fonts] [--watch] [--serve [--port 4173]]
 pptsx-rs check <deck.tsx> [--size 16x9] [--debug] [--json]      diagnósticos (e frames em pt, com --debug)
 pptsx-rs lint  <deck.tsx> [--size 16x9,4x3] [--json]            regras da engine e dos DS da config
-pptsx-rs init  [pasta] [--force] [--json]                       deck.tsx, tsconfig.json, pptsx.config.ts, assets/
-pptsx-rs skill [--out pptsx] [--bin <binário> | --no-bin]        a pasta da skill (SKILL.md, references/, mcp/, bin/)
+pptsx-rs init  [pasta] [--ds <pacote|caminho>] [--force] [--json]
+                                                                deck.tsx, tsconfig.json (+ paths dos tipos), pptsx.config.ts,
+                                                                assets/ e .pptsx/types; com --ds, o deck já usa o DS
+pptsx-rs types [pasta]                                          (re)grava os tipos do pptsx e o paths do tsconfig
+pptsx-rs skill [--out pptsx] [--ds <pacote|caminho>] [--bin <binário> | --no-bin]
+                                                                a pasta da skill (SKILL.md, references/, mcp/, bin/);
+                                                                com --ds, references/ds.md e pptsx.config.ts do DS
 pptsx-rs tree  <deck.tsx> [--size 16x9]                         a árvore avaliada
 pptsx-rs mcp   [--ds <ds.ts>]...                                servidor MCP por stdio
 ```
@@ -343,8 +353,6 @@ Concessão pragmática: `node:fs`, `node:path` e `node:url` existem **só para l
 ## O que falta
 
 - `lint --fix` e `lint --from 0.x`: o codemod usa a API do compilador do TypeScript e fica no TS.
-- `init --ds`: o deck inicial que já importa os componentes de um DS (o TS carrega o módulo do DS pelo Node para montá-lo).
-- `skill` não embute um DS (`references/ds.md` da skill do TS); para um DS, use a skill gerada pelo `pptsx-ds skill`.
 - No MCP, `init` e o parâmetro `ds` do `lint` (os DS vêm da config ou do `--ds` do servidor).
 - Criar um DS (`pptsx-ds init`, `catalog`, `skill`) é trabalho do `@pptsx/ds-kit`, com Node.
 - O taffy ficou só como o tipo `Style` do modelo; trocá-lo por um `Style` próprio é limpeza, não comportamento.

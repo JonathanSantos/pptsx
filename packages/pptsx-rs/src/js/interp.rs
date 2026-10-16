@@ -30,6 +30,8 @@ pub enum Flow {
 }
 
 pub struct Interp {
+    /// `console.warn`/`console.error` do deck e dos DS: viram o diagnóstico `module-warning`.
+    pub notes: Vec<String>,
     pub modules: Vec<ModuleRec>,
     pub by_path: HashMap<PathBuf, usize>,
     pub globals: Env,
@@ -42,7 +44,7 @@ impl Interp {
     pub fn new() -> Self {
         let globals = scope(None);
         super::builtins::install_globals(&globals);
-        Interp { modules: Vec::new(), by_path: HashMap::new(), globals, cur: 0, fuel: FUEL, depth: 0 }
+        Interp { notes: Vec::new(), modules: Vec::new(), by_path: HashMap::new(), globals, cur: 0, fuel: FUEL, depth: 0 }
     }
 
     // ───────────── erros ─────────────

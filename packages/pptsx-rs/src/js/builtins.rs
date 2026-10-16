@@ -142,7 +142,7 @@ pub fn install_globals(env: &Env) {
         ]),
         false,
     );
-    env.define("console", fns(&[("log", console_log), ("warn", console_log), ("error", console_log), ("info", console_log)]), false);
+    env.define("console", fns(&[("log", console_log), ("warn", console_note), ("error", console_note), ("info", console_log)]), false);
     env.define("Number", native("Number", |_, _, a| Ok(Value::Num(if a.is_empty() { 0.0 } else { arg(a, 0).to_num() })), Value::Undefined), false);
     env.define("String", native("String", |_, _, a| Ok(str_val(&if a.is_empty() { String::new() } else { arg(a, 0).to_js_string() })), Value::Undefined), false);
     env.define("Boolean", native("Boolean", |_, _, a| Ok(Value::Bool(arg(a, 0).truthy())), Value::Undefined), false);
@@ -154,7 +154,7 @@ pub fn install_globals(env: &Env) {
     env.define("NaN", num(f64::NAN), false);
 }
 
-fn console_log(_: &mut Interp, _: &Value, a: &[Value]) -> R<Value> {
+fn console_text(a: &[Value]) -> String {
     let parts: Vec<String> = a
         .iter()
         .map(|v| match v {
@@ -166,7 +166,21 @@ fn console_log(_: &mut Interp, _: &Value, a: &[Value]) -> R<Value> {
             }
         })
         .collect();
-    eprintln!("[deck] {}", parts.join(" "));
+    parts.join(" ")
+}
+
+/// console.warn/error: nota do módulo (um DS avisando de ícone desconhecido, por exemplo), que o
+/// build devolve como diagnóstico `module-warning` em vez de perder no stderr.
+fn console_note(it: &mut Interp, _: &Value, a: &[Value]) -> R<Value> {
+    let text = console_text(a);
+    if !it.notes.contains(&text) {
+        it.notes.push(text);
+    }
+    Ok(Value::Undefined)
+}
+
+fn console_log(_: &mut Interp, _: &Value, a: &[Value]) -> R<Value> {
+    eprintln!("[deck] {}", console_text(a));
     Ok(Value::Undefined)
 }
 

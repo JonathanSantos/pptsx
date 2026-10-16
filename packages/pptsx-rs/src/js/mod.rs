@@ -215,6 +215,19 @@ pub fn evaluate_module(path: &Path) -> Result<(Interp, Value), String> {
     Ok((interp, default))
 }
 
+/// Resolve um especificador de import (`./ds/src/index.ts`, `@marca/ds`) a partir de uma pasta,
+/// como o deck resolveria (relativo, ou pacote em node_modules subindo as pastas).
+pub fn resolve_import(from_dir: &Path, spec: &str) -> Option<std::path::PathBuf> {
+    module::resolve(from_dir, spec)
+}
+
+/// Avalia um módulo e devolve o avaliador e todos os exports (`ds` nomeado ou `default`).
+pub fn evaluate_exports(path: &Path) -> Result<(Interp, std::rc::Rc<value::Obj>), String> {
+    let mut interp = Interp::new();
+    let exports = interp.load_entry(path).map_err(|t| interp.describe(t))?;
+    Ok((interp, exports))
+}
+
 /// Chama uma função JS (regra de lint) com mensagem de erro legível.
 pub fn call_function(interp: &mut Interp, f: &Value, args: Vec<Value>) -> Result<Value, String> {
     interp.refuel();

@@ -142,6 +142,26 @@ Dois detalhes vistos de passagem: a primeira execução de um binário recém-co
 - **Grid próprio:** `src/grid.rs` porta o `grid.ts` (476 linhas: placement sparse, `minmax`, `fr`, `repeat`, §11.5 a §11.8) com 4 testes unitários; `yoga_layout.rs` porta o `grid-layout.ts` e o `intrinsic.ts` (min-content por tipo de nó, max-content e altura numa largura em árvores Yoga isoladas, `placeInArea`, `placeAbsolute`). O taffy saiu do layout (ficou só como tipo do `Style`). Conferido: `demo` 100/100 formas, `showcase` 163/165, galeria 4 decks, `ds-orbit` `compose`/`matrix-lists-a`/`matrix-numbers` com diagnósticos idênticos e formas a ±1 EMU; os 7 testes dourados verdes.
 - **embedFonts:** `src/embed.rs` porta o `eot.ts` e o `embed.ts`; `embedFonts` na config ou `--embed-fonts`. Com as quatro Liberation registradas como "Liberation Sans", os `.fntdata` saem **byte a byte iguais** aos do TS, com o mesmo `<p:embeddedFontLst>`, rels e content type. `.otf`/`.ttc` e fsType restrito viram `font-not-embeddable` (caminho não exercitado com arquivo real).
 
+## Adendo: usabilidade com um design system (16/10, noite, 1.0.5)
+
+Os quatro atritos levantados no uso do binário com o `ds-orbit`, e a tipagem para o editor:
+
+- **Diagnóstico aponta o componente do autor.** `Node.source` guarda `<Nome prop=valor …>` de cada raiz de componente do autor; `report.rs` sobe do nó estourado ao componente mais próximo e grava `data.component`; o resumo imprime `no componente <StatusBoard items=[3 itens] />`. Path e mensagem não mudam (paridade com o TS mantida; as fixtures douradas continuam verdes). No `project.tsx` em 16x9, 77/77 diagnósticos saem com o componente.
+- **Falha silenciosa do DS vira diagnóstico.** `console.warn`/`console.error` de qualquer módulo avaliado são recolhidos (`Interp.notes`) e saem como `module-warning` (warning, slide 0, deduplicado); `console.log` continua no stderr. O `ds-orbit` passou a avisar quando um ícone é desconhecido e cai no `star`.
+- **Ruído do lint.** Achados de nível info dentro de componentes de DS (`off-theme-color` da própria marca) saem numa linha só no texto: "N info dentro de componentes de design system (códigos): são do DS, não do deck"; `--json` lista todos. No `assistente-ia.tsx`, 59 linhas viraram 1.
+- **Agente e DS.** `dsinfo.rs` carrega o manifesto do DS pelo avaliador (pacote em `node_modules` ou caminho), e `init --ds <pacote|caminho>` gera deck (um slide por componente, com as props do catálogo), `pptsx.config.ts` e `tsconfig.json` idênticos aos do `pptsx init --ds` (conferido por `diff`; o deck gerado dá os mesmos 55 erros nos dois, em `wide,4x3`, porque as peças do Orbit foram feitas para os layouts dele e o scaffold do TS as põe num `Slide` genérico). `skill --ds` acrescenta `references/ds.md` (componentes, exemplos, props do schema, regras, guia) e `references/pptsx.config.ts`, e o `SKILL.md` ganha a seção do DS.
+- **Tipos sem npm.** `build.rs` copia os 160 `.d.ts` de `packages/pptsx/dist` para `assets/pptsx-types/` (744 KB; o CI acusa drift) e os embute; `init` (e `pptsx-rs types <pasta>`) grava em `.pptsx/types/pptsx/` e põe `paths` no `tsconfig.json` (`pptsx`, `pptsx/jsx-runtime`, `pptsx/jsx-dev-runtime`), mesclando num tsconfig existente. Conferido com o `tsc` numa pasta fora do monorepo e sem `node_modules`: `pptsx` e o JSX resolvem; os únicos erros que sobram vêm do próprio `ds-orbit` importado por caminho (`node:fs` sem `@types/node`), que não existem quando o DS é um pacote instalado.
+
+| Dimensão (uso do binário com um DS) | Antes | Agora |
+|---|:-:|:-:|
+| Diagnóstico leva ao lugar certo | 6 | 9 |
+| Falhas do DS aparecem | 5 | 8,5 (depende de o DS avisar; o Orbit avisa) |
+| Lint útil, sem ruído | 6 | 9 |
+| Agente começa sozinho (`init --ds`, skill com o DS) | 6 | 9 |
+| Editor entende o deck sem instalar nada | 5 | 9 |
+
+**Usabilidade com DS: 9 / 10** (era 7). O que falta para mais: o scaffold do `init --ds` montar os componentes nos layouts do próprio DS (hoje segue o TS e põe cada um num `Slide` genérico, o que dá erros no Orbit), e um DS por caminho precisar de `@types/node` para o `tsc` ficar limpo.
+
 ## Observações sobre o código
 
 Pontos fortes: sem `unsafe`; o port do Yoga 3.2.1 segue o C++ nome a nome e explica por quê no cabeçalho; erros do avaliador sempre com posição; mensagens em português iguais às do TS; `MCP` via subprocesso evita o vazamento do arena; `--json` e código de saída coerentes com a CLI original.
