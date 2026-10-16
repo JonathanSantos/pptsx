@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { exitCodeOf, mergeOptions, parseCli, summaryOf } from '../../src/cli.ts';
 import { defineConfig } from '../../src/config.ts';
 import type { Diagnostic, Severity } from '../../src/core/types.ts';
@@ -43,7 +43,7 @@ describe('parseCli', () => {
 
   it('--out, --debug, --json, --lang', () => {
     const args = parseCli(['build', 'd.tsx', '--out', 'out/x', '--debug', '--json', '--lang', 'en-US'], CWD);
-    expect(args.outDir).toBe(join(CWD, 'out/x'));
+    expect(args.outDir).toBe(resolve(CWD, 'out/x'));
     expect(args.debug).toBe(true);
     expect(args.json).toBe(true);
     expect(args.lang).toBe('en-US');

@@ -9,8 +9,6 @@ on:
 jobs:
   check:
     runs-on: ${{ matrix.os }}
-    # Windows ainda experimental (VALIDACAO-DONO §3.1): falha ali não derruba o CI.
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:

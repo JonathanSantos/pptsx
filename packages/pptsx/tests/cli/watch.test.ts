@@ -397,7 +397,9 @@ describe('build --watch — real process (bin, fs.watch and tsx namespace)', () 
       } finally {
         child.kill('SIGINT');
       }
-      expect(await exited).toBe(0);
+      // No Windows kill('SIGINT') encerra o processo à força (sem handler, código null): só o POSIX prova a saída limpa.
+      const code = await exited;
+      if (process.platform !== 'win32') expect(code).toBe(0);
     },
     TIMEOUT,
   );

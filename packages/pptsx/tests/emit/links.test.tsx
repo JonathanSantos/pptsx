@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
+import { fileURLToPath } from 'node:url';
 import { Box, Deck, Image, Slide, Span, Text } from '../../src/primitives/index.ts';
 import { render } from '../../src/render.ts';
 import { resolveDeck } from '../../src/resolve/index.ts';
@@ -7,7 +8,7 @@ import { createContext, resolveSize } from '../../src/sizes.ts';
 import type { SlideElement } from '../../src/core/types.ts';
 import { build, shapesOf } from '../helpers/build.tsx';
 
-const EXAMPLES = new URL('../../examples/', import.meta.url).pathname;
+const EXAMPLES = fileURLToPath(new URL('../../examples/', import.meta.url));
 
 const rels = async (deck: SlideElement, slide = 1): Promise<{ xml: string; rels: string }> => {
   const [result] = await render(() => deck, { preview: false, baseDir: EXAMPLES });

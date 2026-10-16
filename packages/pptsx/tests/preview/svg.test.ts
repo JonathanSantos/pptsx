@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { resolve } from 'node:path';
 import { slideToSvg, type SvgOptions } from '../../src/preview/index.ts';
 import type { PositionedNode, PositionedSlide, TextLayout } from '../../src/core/types.ts';
 import { SIZE_16X9, SIZE_4X3, pBox, pImage, pShape, pSlide, pText, rect, singleRunLines, type TestSlideProps } from '../helpers/nodes.ts';
@@ -241,7 +242,7 @@ describe('slideToSvg — images', () => {
   it('reads the image through the injected readFile, resolved against baseDir', () => {
     readCalls.length = 0;
     imageSvg();
-    expect(readCalls).toContain('/base/pics/a.png');
+    expect(readCalls).toContain(resolve('/base', 'pics/a.png'));
   });
 
   it('places the image at its frame', () => {
@@ -281,7 +282,7 @@ describe('slideToSvg — background', () => {
     const [img] = findElements(svg, 'image');
     expect(img?.attrs.href).toMatch(/^data:image\/png;base64,/);
     expect([num(img?.attrs.width), num(img?.attrs.height)]).toEqual([720, 405]);
-    expect(readCalls).toContain('/base/bg.png');
+    expect(readCalls).toContain(resolve('/base', 'bg.png'));
   });
 });
 

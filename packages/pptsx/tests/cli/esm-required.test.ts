@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ESM_REQUIRED_MESSAGE, importUserModule, isRequireAsyncError } from '../../src/config.ts';
 import type { ImportModule } from '../../src/cli/loader.ts';
 
@@ -14,6 +14,7 @@ import type { ImportModule } from '../../src/cli/loader.ts';
  *
  * Precisa de processo real (bin → tsx): dentro do vitest todo módulo vira ESM e o erro não acontece.
  * O deck importa a engine por caminho absoluto e sem JSX para não depender de node_modules no temporário.
+ * Em ESM o caminho vai como file:// (no Windows o loader recusa "D:\\…"); em CJS, como caminho, que é o que o require() aceita.
  */
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
@@ -23,8 +24,10 @@ const TIMEOUT = 120_000;
 const tmpDirs: string[] = [];
 afterAll(() => tmpDirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
 
-const DECK = `import { Deck, Slide, Text, defineDeck } from ${JSON.stringify(join(ROOT, 'src', 'index.ts'))};
-import { jsx } from ${JSON.stringify(join(ROOT, 'src', 'jsx', 'jsx-runtime.ts'))};
+const specifier = (type: 'commonjs' | 'module', path: string): string => JSON.stringify(type === 'module' ? pathToFileURL(path).href : path);
+
+const deckOf = (type: 'commonjs' | 'module'): string => `import { Deck, Slide, Text, defineDeck } from ${specifier(type, join(ROOT, 'src', 'index.ts'))};
+import { jsx } from ${specifier(type, join(ROOT, 'src', 'jsx', 'jsx-runtime.ts'))};
 export default defineDeck(() => jsx(Deck, { children: jsx(Slide, { children: jsx(Text, { children: 'oi' }) }) }));
 `;
 
@@ -35,7 +38,7 @@ const projectWith = (type: 'commonjs' | 'module'): string => {
   tmpDirs.push(dir);
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: `deck-${type}`, private: true, type }));
   writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify(TSCONFIG));
-  writeFileSync(join(dir, 'deck.tsx'), DECK);
+  writeFileSync(join(dir, 'deck.tsx'), deckOf(type));
   return dir;
 };
 
@@ -89,6 +92,8 @@ describe('isRequireAsyncError', () => {
       'ERR_PACKAGE_PATH_NOT_EXPORTED from node_modules\\pptsx (Windows)',
       nodeError('ERR_PACKAGE_PATH_NOT_EXPORTED', 'No "exports" main defined in C:\\deck\\node_modules\\pptsx\\package.json'),
     ],
+    ['ERR_REQUIRE_CYCLE_MODULE (Node 20.19+)', nodeError('ERR_REQUIRE_CYCLE_MODULE', 'Cannot require() ES Module /tmp/deck.tsx in a cycle.')],
+    ['the Node 22 message without code', new Error("request for './primitives/index.ts' is from a module not been linked")],
   ])('true for %s', (_case, error) => {
     expect(isRequireAsyncError(error)).toBe(true);
   });

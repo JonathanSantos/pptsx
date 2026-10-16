@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 import { Box, Text, defineComponent } from '../../src/primitives/index.ts';
 import { defineDs } from '../../src/ds.ts';
 import { COMPONENT_META } from '../../src/core/types.ts';
@@ -180,10 +180,13 @@ describe('scripts/pptsx.mjs', () => {
     const cache = freshDir('pptsx-cache-');
     const nodeDir = dirname(process.execPath);
     // npm offline: o npx falha rápido (ENOTCACHED) em vez de ir à rede; cwd fora do repo para não achar o workspace.
+    // No Windows o npm.cmd roda pelo cmd.exe, que precisa de SystemRoot/ComSpec; o cache do npm vai para a casa vazia.
+    const home = freshDir('pptsx-home-');
+    const windowsEnv = process.platform === 'win32' ? { SystemRoot: process.env.SystemRoot, ComSpec: process.env.ComSpec, PATHEXT: process.env.PATHEXT } : {};
     const result = spawnSync(process.execPath, [install(), 'build', 'deck.tsx'], {
       encoding: 'utf8',
       cwd: freshDir('pptsx-cwd-'),
-      env: { PATH: `${nodeDir}:/usr/bin:/bin`, PPTSX_CACHE: cache, npm_config_offline: 'true', HOME: freshDir('pptsx-home-') },
+      env: { ...windowsEnv, PATH: [nodeDir, '/usr/bin', '/bin'].join(delimiter), PPTSX_CACHE: cache, npm_config_offline: 'true', HOME: home, USERPROFILE: home, npm_config_cache: join(home, 'npm-cache') },
     });
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('não achei o runtime do pptsx 9.9.9');
