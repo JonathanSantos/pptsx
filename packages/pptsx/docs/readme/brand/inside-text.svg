@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 620" width="1280" height="620" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>pptsx: medição de texto com o fontkit e quebras forçadas no PPTX</title>
+<defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F5BFF"/><stop offset=".55" stop-color="#C246D8"/><stop offset="1" stop-color="#FF6A3D"/></linearGradient><linearGradient id="gradH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4F5BFF"/><stop offset=".55" stop-color="#C246D8"/><stop offset="1" stop-color="#FF6A3D"/></linearGradient><filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0B1020" flood-opacity="0.08"/></filter><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8A93B8"/></marker><linearGradient id="gradV" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#4F5BFF"/><stop offset=".55" stop-color="#C246D8"/><stop offset="1" stop-color="#FF6A3D"/></linearGradient><filter id="cardShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0B1020" flood-opacity="0.28"/></filter><filter id="slideShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0B1020" flood-opacity="0.14"/></filter><filter id="cardShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#0B1020" flood-opacity="0.28"/></filter></defs>
+<rect width="1280" height="620" rx="22" fill="#F7F8FD"/><rect x=".5" y=".5" width="1279" height="619" rx="21.5" fill="none" stroke="#E2E6F3"/>
+<text x="44" y="50" font-size="12" font-weight="700" fill="#5A6385" letter-spacing="1.8" xml:space="preserve">TEXTO: MEDIDO COM A FONTE, QUEBRADO PELA ENGINE</text><text x="44" y="82" font-size="17" font-weight="600" fill="#0B1020" xml:space="preserve">O fontkit mede cada glifo; cada linha medida vira uma quebra manual no .pptx, para sair igual ao PNG.</text>
+<rect x="44" y="110" width="640" height="340" rx="16" fill="#FFFFFF" stroke="#E2E6F3"/>
+<rect x="76" y="150" width="440" height="184" fill="#F7F8FD" stroke="#8A93B8" stroke-dasharray="4 3"/>
+<line x1="502.8" y1="136" x2="502.8" y2="346" stroke="#FF6A3D" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="502.8" y="130" font-size="11.5" font-weight="700" fill="#FF6A3D" text-anchor="middle" xml:space="preserve">97 %</text>
+<line x1="76" y1="184.640625" x2="516" y2="184.640625" stroke="#4F5BFF" stroke-opacity=".35"/>
+<line x1="76" y1="230.640625" x2="516" y2="230.640625" stroke="#4F5BFF" stroke-opacity=".35"/>
+<line x1="76" y1="276.640625" x2="516" y2="276.640625" stroke="#4F5BFF" stroke-opacity=".35"/>
+<line x1="76" y1="322.640625" x2="516" y2="322.640625" stroke="#4F5BFF" stroke-opacity=".35"/>
+<line x1="68" y1="153.640625" x2="524" y2="153.640625" stroke="#8A93B8" stroke-dasharray="2 3" stroke-opacity=".9"/>
+<line x1="68" y1="184.640625" x2="524" y2="184.640625" stroke="#4F5BFF" stroke-dasharray="2 3" stroke-opacity=".9"/>
+<line x1="68" y1="192.359375" x2="524" y2="192.359375" stroke="#8A93B8" stroke-dasharray="2 3" stroke-opacity=".9"/>
+<text x="76" y="184.640625" font-size="32" font-weight="400" fill="#0B1020" xml:space="preserve">A receita subiu 14% em</text>
+<text x="76" y="230.640625" font-size="32" font-weight="400" fill="#0B1020" xml:space="preserve">todas as regiões, exceto no</text>
+<text x="76" y="276.640625" font-size="32" font-weight="400" fill="#0B1020" xml:space="preserve">Norte, e fechou em R$ 52,4</text>
+<text x="76" y="322.640625" font-size="32" font-weight="400" fill="#0B1020" xml:space="preserve">mi.</text>
+<line x1="76.0" y1="195.359375" x2="76.0" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="98.1" y1="195.359375" x2="98.1" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="107.1" y1="195.359375" x2="107.1" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="118.6" y1="195.359375" x2="118.6" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="137.3" y1="195.359375" x2="137.3" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="155.5" y1="195.359375" x2="155.5" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="174.2" y1="195.359375" x2="174.2" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="181.9" y1="195.359375" x2="181.9" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="192.6" y1="195.359375" x2="192.6" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="210.5" y1="195.359375" x2="210.5" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="219.5" y1="195.359375" x2="219.5" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="236.4" y1="195.359375" x2="236.4" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="255.3" y1="195.359375" x2="255.3" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="274.9" y1="195.359375" x2="274.9" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="282.7" y1="195.359375" x2="282.7" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="301.6" y1="195.359375" x2="301.6" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="310.6" y1="195.359375" x2="310.6" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="323.6" y1="195.359375" x2="323.6" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="344.3" y1="195.359375" x2="344.3" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="375.7" y1="195.359375" x2="375.7" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="384.7" y1="195.359375" x2="384.7" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<line x1="403.4" y1="195.359375" x2="403.4" y2="201.359375" stroke="#FF6A3D" stroke-width="1"/>
+<text x="532" y="157.640625" font-size="11.5" font-weight="600" fill="#8A93B8" xml:space="preserve">ascender</text>
+<text x="532" y="184.640625" font-size="11.5" font-weight="600" fill="#4F5BFF" xml:space="preserve">baseline</text>
+<text x="532" y="206.359375" font-size="11.5" font-weight="600" fill="#8A93B8" xml:space="preserve">descender</text>
+<path d="M620 150 v46" stroke="#C246D8" stroke-width="2"/><path d="M607 150 h10 M607 196 h10" stroke="#C246D8" stroke-width="2"/>
+<text x="628" y="177" font-size="11.5" font-weight="600" fill="#C246D8" xml:space="preserve">46 pt</text>
+<text x="64" y="424" font-size="12" font-weight="400" fill="#5A6385" xml:space="preserve">traços coral: o avanço de cada glifo (com kerning) da 1ª linha</text>
+<text x="64" y="440" font-size="12" font-weight="600" fill="#0B1020" xml:space="preserve">4 linhas medidas → 3 quebras &lt;a:br/&gt; no arquivo</text>
+<g filter="url(#cardShadow)"><rect x="704" y="110" width="532" height="340" rx="16" fill="#121834"/></g><rect x="704.5" y="110.5" width="531" height="339" rx="15.5" fill="none" stroke="#FFFFFF" stroke-opacity=".1"/><path d="M704 150 h532" stroke="#FFFFFF" stroke-opacity=".08"/><circle cx="726" cy="130" r="5.5" fill="#F0445A" opacity=".9"/><circle cx="744" cy="130" r="5.5" fill="#F5A524" opacity=".9"/><circle cx="762" cy="130" r="5.5" fill="#14B87F" opacity=".9"/><text x="970" y="135" font-size="12.5" font-weight="400" fill="#8A93B8" text-anchor="middle" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" xml:space="preserve">ppt/slides/slide1.xml</text>
+<text x="726" y="182" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7C86AE">&lt;a:p&gt;</tspan></text>
+<text x="726" y="204" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7EA6FF">  &lt;a:pPr&gt;&lt;a:lnSpc&gt;&lt;a:spcPts </tspan><tspan fill="#D9B8FF">val</tspan><tspan fill="#7C86AE">=&quot;</tspan><tspan fill="#FFD479">4600</tspan><tspan fill="#7C86AE">&quot;/&gt;</tspan><tspan fill="#7EA6FF">&lt;/a:lnSpc&gt;&lt;/a:pPr&gt;</tspan></text>
+<text x="726" y="226" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7EA6FF">  &lt;a:r&gt;&lt;a:t&gt;</tspan><tspan fill="#FFB08F">A receita subiu 14% em</tspan><tspan fill="#7EA6FF">&lt;/a:t&gt;&lt;/a:r&gt;</tspan></text>
+<text x="726" y="248" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7FE3C4">  &lt;a:br/&gt;</tspan></text>
+<text x="726" y="270" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7EA6FF">  &lt;a:r&gt;&lt;a:t&gt;</tspan><tspan fill="#FFB08F">todas as regiões, exceto no</tspan><tspan fill="#7EA6FF">&lt;/a:t&gt;&lt;/a:r&gt;</tspan></text>
+<text x="726" y="292" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7FE3C4">  &lt;a:br/&gt;</tspan></text>
+<text x="726" y="314" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7EA6FF">  &lt;a:r&gt;&lt;a:t&gt;</tspan><tspan fill="#FFB08F">Norte, e fechou em R$ 52,4</tspan><tspan fill="#7EA6FF">&lt;/a:t&gt;&lt;/a:r&gt;</tspan></text>
+<text x="726" y="336" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7FE3C4">  &lt;a:br/&gt;</tspan></text>
+<text x="726" y="358" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7EA6FF">  &lt;a:r&gt;&lt;a:t&gt;</tspan><tspan fill="#FFB08F">mi.</tspan><tspan fill="#7EA6FF">&lt;/a:t&gt;&lt;/a:r&gt;</tspan></text>
+<text x="726" y="380" font-family="'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" xml:space="preserve"><tspan fill="#7C86AE">&lt;/a:p&gt;</tspan></text>
+<text x="726" y="432" font-size="11.5" font-weight="400" fill="#AEB6D6" xml:space="preserve">altura de linha exata (spcPts), não múltiplo: o Keynote e o PowerPoint não reinterpretam</text>
+<rect x="44" y="474" width="288" height="112" rx="14" fill="#FFFFFF" stroke="#E2E6F3"/><text x="64" y="518" font-size="30" font-weight="800" fill="url(#gradH)" xml:space="preserve">34/34</text><text x="64" y="546" font-size="12.5" font-weight="400" fill="#5A6385" xml:space="preserve">amostras de texto simples com as</text><text x="64" y="564" font-size="12.5" font-weight="400" fill="#5A6385" xml:space="preserve">mesmas linhas no Keynote</text>
+<rect x="344" y="474" width="288" height="112" rx="14" fill="#FFFFFF" stroke="#E2E6F3"/><text x="364" y="518" font-size="30" font-weight="800" fill="url(#gradH)" xml:space="preserve">30/30</text><text x="364" y="546" font-size="12.5" font-weight="400" fill="#5A6385" xml:space="preserve">amostras de rich text (negrito, itálico, cor</text><text x="364" y="564" font-size="12.5" font-weight="400" fill="#5A6385" xml:space="preserve">por trecho)</text>
+<rect x="644" y="474" width="288" height="112" rx="14" fill="#FFFFFF" stroke="#E2E6F3"/><text x="664" y="518" font-size="30" font-weight="800" fill="url(#gradH)" xml:space="preserve">43/43</text><text x="664" y="546" font-size="12.5" font-weight="400" fill="#5A6385" xml:space="preserve">rich text com sobrescrito e corpo por</text><text x="664" y="564" font-size="12.5" font-weight="400" fill="#5A6385" xml:space="preserve">trecho</text>
+<rect x="944" y="474" width="288" height="112" rx="14" fill="#FFFFFF" stroke="#E2E6F3"/><text x="964" y="518" font-size="30" font-weight="800" fill="url(#gradH)" xml:space="preserve">0,97</text><text x="964" y="546" font-size="12.5" font-weight="400" fill="#5A6385" xml:space="preserve">textSafety: quebra com 3 % de folga, a</text><text x="964" y="564" font-size="12.5" font-weight="400" fill="#5A6385" xml:space="preserve">caixa sai cheia</text>
+</svg>

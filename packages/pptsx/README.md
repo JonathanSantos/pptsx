@@ -1,86 +1,130 @@
-<h1 align="center">pptsx</h1>
+<p align="center">
+  <img src="docs/readme/brand/banner.svg" width="100%" alt="pptsx: slides em TSX, layout em CSS, PPTX nativo e editável. À direita, um deck.tsx com Slide, Text e Box em grid e o slide que ele gera, com três indicadores e um gráfico de barras">
+</p>
+
+<p align="center">
+  <img alt="TypeScript ESM" src="https://img.shields.io/badge/TypeScript-ESM-4F5BFF?style=flat-square&labelColor=0B1020&logo=typescript&logoColor=white">
+  <img alt="Node 20+" src="https://img.shields.io/badge/node-%E2%89%A5%2020-8A93B8?style=flat-square&labelColor=0B1020&logo=nodedotjs&logoColor=white">
+  <img alt="Testes: 1.985" src="https://img.shields.io/badge/testes-1.985%20passando-14B87F?style=flat-square&labelColor=0B1020">
+  <img alt="Calibração no Keynote: 34/34" src="https://img.shields.io/badge/Keynote-34%2F34%20linhas-C246D8?style=flat-square&labelColor=0B1020">
+  <img alt="PPTX nativo" src="https://img.shields.io/badge/sa%C3%ADda-PPTX%20nativo-FF6A3D?style=flat-square&labelColor=0B1020">
+  <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-8A93B8?style=flat-square&labelColor=0B1020">
+</p>
 
 <p align="center">
   <b>Slides em TSX, layout em CSS, saída em PPTX nativo e editável.</b><br>
-  Box model, flexbox, grid e <code>zIndex</code> escritos como props. Sem coordenadas.<br>
+  Box model, flexbox, grid e <code>zIndex</code> escritos como props, sem coordenadas.<br>
   O mesmo arquivo vira 16:9, 4:3 e wide, e todo problema volta como diagnóstico com o caminho até o nó.
 </p>
 
-<p align="center">
-  <img alt="TypeScript ESM" src="https://img.shields.io/badge/TypeScript-ESM-2F6FED?logo=typescript&logoColor=white">
-  <img alt="Node 20+" src="https://img.shields.io/badge/Node-%E2%89%A5%2020-1B2A4A?logo=nodedotjs&logoColor=white">
-  <img alt="Testes: 1967" src="https://img.shields.io/badge/testes-1967%20passando-1E9E6A">
-  <img alt="Calibração no Keynote: 34/34" src="https://img.shields.io/badge/Keynote-34%2F34%20linhas-5B6680">
-  <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-F4F6FA?labelColor=5B6680&color=E8EEFC">
-</p>
+<br>
 
-<p align="center">
-  <img src="docs/readme/gallery/hero.png" width="960" alt="Seis slides de seis decks diferentes: capa de relatório agrícola com mosaico de talhões girado, capa de pitch com uma balança desenhada em formas, capa de festival de cinema com furos de película, painel com seis reservatórios e seus níveis, diagrama da Terra e da Lua, e um quadro de retrospectiva com adesivos girados">
-</p>
+<table>
+<tr>
+<td width="33%" valign="top">
+<img src="docs/readme/brand/icon-css.svg" width="40" alt=""><br>
+<b>CSS de verdade</b><br>
+<sub>Flex, grid com <code>fr</code> e <code>minmax</code>, <code>margin: auto</code>, bordas por lado, sombra, <code>rotate</code> e <code>zIndex</code>.</sub><br>
+<sub><a href="#o-que-você-escreve-é-css">CSS como props →</a></sub>
+</td>
+<td width="33%" valign="top">
+<img src="docs/readme/brand/icon-responsive.svg" width="40" alt=""><br>
+<b>Um arquivo, vários formatos</b><br>
+<sub>Breakpoints em qualquer prop e paginação automática: 16:9, 4:3 e wide sem <code>if</code>.</sub><br>
+<sub><a href="#responsivo-de-verdade">Responsivo →</a></sub>
+</td>
+<td width="33%" valign="top">
+<img src="docs/readme/brand/icon-native.svg" width="40" alt=""><br>
+<b>Nativo e editável</b><br>
+<sub>Formas, texto rico, 12 gráficos, tabelas com merges, diagramas e o tema do arquivo.</sub><br>
+<sub><a href="#gráficos-e-tabelas-nativos">Gráficos e tabelas →</a></sub>
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+<img src="docs/readme/brand/icon-diagnostics.svg" width="40" alt=""><br>
+<b>Diagnósticos que explicam</b><br>
+<sub>Cada estouro vem com <code>path</code>, causa e a correção; PNG por slide e overview com selos.</sub><br>
+<sub><a href="#diagnósticos-que-um-agente-entende">Diagnósticos →</a></sub>
+</td>
+<td width="33%" valign="top">
+<img src="docs/readme/brand/icon-ds.svg" width="40" alt=""><br>
+<b>Base de design systems</b><br>
+<sub>O núcleo não tem marca: tokens, componentes e regras vivem num DS, pela API pública.</sub><br>
+<sub><a href="#design-systems-em-cima-do-pptsx">Design systems →</a></sub>
+</td>
+<td width="33%" valign="top">
+<img src="docs/readme/brand/icon-agents.svg" width="40" alt=""><br>
+<b>Feito para agentes</b><br>
+<sub>Servidor MCP, <code>--json</code>, skill para Claude e Copilot e um guia único.</sub><br>
+<sub><a href="#para-agentes">Para agentes →</a></sub>
+</td>
+</tr>
+</table>
 
-<p align="center">
-  <sub>Um slide de cada deck da <a href="#galeria">galeria</a>. Todas as imagens deste README são PNGs que a própria engine desenhou com o mesmo layout do <code>.pptx</code>, a partir de <a href="examples/gallery/"><code>examples/gallery/</code></a>, <a href="examples/"><code>examples/</code></a> e <a href="docs/readme/decks/"><code>docs/readme/decks/</code></a>.</sub>
-</p>
+<details>
+<summary><b>Sumário</b></summary>
 
-<p align="center">
-  <a href="#galeria">Galeria</a> ·
-  <a href="#em-30-segundos">Em 30 segundos</a> ·
-  <a href="#o-que-você-escreve-é-css">CSS como props</a> ·
-  <a href="#como-funciona-por-dentro">Por dentro</a> ·
-  <a href="#diagnósticos-que-um-agente-entende">Diagnósticos</a> ·
-  <a href="#responsivo-de-verdade">Responsivo</a> ·
-  <a href="#gráficos-e-tabelas-nativos">Gráficos e tabelas</a> ·
-  <a href="#cli">CLI</a> ·
-  <a href="#api-programática">API</a> ·
-  <a href="#depara-css--pptx">CSS → PPTX</a> ·
-  <a href="#limitações">Limitações</a>
-</p>
+| começar | por dentro | referência |
+|---|---|---|
+| [Galeria](#galeria) | [Como funciona por dentro](#como-funciona-por-dentro) · [Por dentro do .pptx](#por-dentro-do-pptx) | [CLI](#cli) |
+| [Em 30 segundos](#em-30-segundos) | [Arquitetura do código](#arquitetura-do-código) | [API programática](#api-programática) |
+| [O que você escreve é CSS](#o-que-você-escreve-é-css) | [Diagnósticos](#diagnósticos-que-um-agente-entende) | [De/para CSS → PPTX](#depara-css--pptx) |
+| [Responsivo](#responsivo-de-verdade) | [Validação](#validação) | [Limitações](#limitações) |
+| [Gráficos e tabelas](#gráficos-e-tabelas-nativos) · [Dados](#dados-12-gráficos-e-tabelas-ricas) | [Design systems](#design-systems-em-cima-do-pptsx) | [Para agentes](#para-agentes) |
+| [Texto](#texto-pesos-notas-links-e-continuação) · [Diagramas](#diagramas) · [Arquivo](#arquivo-pronto-para-editar) | [Migrando de 0.x](#migrando-de-0x) | [Desenvolvimento](#desenvolvimento) |
+
+</details>
 
 ---
 
 ## Galeria
 
-Seis decks em [`@pptsx/ds-base/examples/gallery/`](../ds-base/examples/gallery/) (a galeria é do DS de exemplo: o núcleo não tem marca), cada um com paleta, tipografia e um elemento de assinatura próprios; o comentário no topo de cada arquivo diz o que foi escolhido e por quê. A fonte é só Arial: o caráter vem de escala, peso, `letterSpacing`, caixa alta e composição. Todos saem sem `warning` em 16:9 e 4:3, e em cada montagem o slide da direita é o 4:3.
+Seis design systems criados do zero com o [`@pptsx/ds-kit`](../ds-kit/README.md), cada um com tokens, tema, componentes com variantes e um deck de quatro slides, em [`examples/gallery/`](../../examples/gallery/). Nada de template: a mesma engine, seis identidades. Todos saem **sem nenhum `warning`**, e cada imagem é o PNG que a própria engine desenhou com o mesmo layout do `.pptx`. `node scripts/gallery.mjs` (na raiz) reconstrói os seis decks e remonta as imagens.
 
-### Safra 2025/26 · relatório anual de uma cooperativa
+<p align="center">
+  <img src="docs/readme/gallery-ds/hero.png" width="100%" alt="As capas dos seis design systems em 3 por 2: Nebula, lançamento escuro com brilhos; A Gazeta, primeira página de jornal; FORMA, cartaz Bauhaus; Brisa, app de finanças em pastel; terminal, pós-mortem em fonte mono; Botânica, relatório de impacto com folhas">
+</p>
 
-<p align="center"><img src="docs/readme/gallery/safra.png" width="960" alt="Capa vinho com mosaico de talhões verdes e amarelos girado, mapa de calor de chuva por mês e núcleo com a célula da estiagem destacada, e o slide 4:3 das sobras com uma barra proporcional"></p>
+### Nebula · lançamento de produto
 
-O mosaico da capa é um grid com `span` girado −14° atrás do título (`zIndex={-1}`); a chuva é um mapa de calor de 13 colunas de grid; as sobras são uma barra de `Box` com `flex` igual ao percentual. Também tem barras e tabela nativas. [`safra.tsx`](../ds-base/examples/gallery/safra.tsx)
+<p align="center"><img src="docs/readme/gallery-ds/nebula.png" width="100%" alt="Painel da Nebula: nome em Inter, paleta de violeta, ciano, lima e rosa sobre fundo quase preto; capa do Orbit 3.0 com brilhos em camadas e anéis, slide de benchmarks com barras de comparação, grade de seis recursos e o fechamento com o comando de instalação"></p>
 
-### Tara T1 · pitch de hardware
+Fundo quase preto, **Inter** e **Andale Mono** nos metadados. O brilho é feito de três elipses concêntricas com `opacity` crescente atrás do conteúdo (`zIndex={-1}`); os anéis são `Box` redondos só com `border`. As barras do benchmark são `Box` com `width` em %, e o `Metric` escolhe a cor do número por `createVariants`. [`nebula/`](../../examples/gallery/nebula/)
 
-<p align="center"><img src="docs/readme/gallery/tara.png" width="960" alt="Capa com uma balança azul desenhada em formas, girada e com sombra, comparação em colunas com a do produto destacada, e a ficha técnica 4:3 com nove visores LCD"></p>
+### A Gazeta · editorial de jornal
 
-O aparelho da capa é um `Box` girado com `boxShadow`; chapa, saco e visor giram junto. O visor LCD volta em todo número do pitch, a comparação é um grid com a coluna do produto em relevo, e em 4:3 a ficha técnica mostra 9 itens em vez de 6 (`ctx.pick`). [`tara.tsx`](../ds-base/examples/gallery/tara.tsx)
+<p align="center"><img src="docs/readme/gallery-ds/gazeta.png" width="100%" alt="Painel da Gazeta: nome em Georgia sobre papel creme; primeira página com cabeçalho de fio duplo, manchete, duas colunas com fio entre elas e o índice da edição; página com 73% em vermelho e capitular; gráfico e tabela nativos; página de opinião invertida com aspas gigantes"></p>
 
-### Lanterna · programa de um festival de curtas
+Papel creme, **Georgia** em títulos e corpo, **Inter** em caixa alta nos chapéus. A diagramação é feita de bordas: o fio duplo do cabeçalho são duas `borderTop`, o fio entre colunas é `borderLeft`. A capitular é um `Text` ao lado do parágrafo; a página de opinião põe aspas de 230 pt atrás do texto, e a tabela e o gráfico são nativos, em Georgia. [`gazeta/`](../../examples/gallery/gazeta/)
 
-<p align="center"><img src="docs/readme/gallery/lanterna.png" width="960" alt="Capa ameixa com o título LANTERNA espaçado em amarelo e furos de película no topo e na base, grade de sessões de cinco dias, e o slide 4:3 com o número 48 e pílulas das mostras"></p>
+### FORMA · congresso de design
 
-Furos de película em `flex` no topo e na base de todo slide, halo do projetor em elipses com `opacity`, título com `letterSpacing` largo e um selo girado 90°. A grade tem 6 colunas de grid e uma borda esquerda por mostra; as mostras são pílulas com `flexWrap`. [`lanterna.tsx`](../ds-base/examples/gallery/lanterna.tsx)
+<p align="center"><img src="docs/readme/gallery-ds/forma.png" width="100%" alt="Painel da Forma: nome em DIN Condensed sobre papel cru; capa com círculo vermelho, retângulo azul, triângulo amarelo e fios pretos; programa em três colunas com cabeçalhos de cor; palestrantes com retratos geométricos; mosaico de números em blocos de cor"></p>
 
-### Reservatórios · painel semanal de saneamento
+Inspiração Bauhaus: papel cru, preto e as três primárias, títulos em **DIN Condensed** (uma face só, registrada para os dois pesos). A capa é composição pura de `Shape` (`ellipse`, `triangle`) e `Box` absolutos; os retratos são círculo + trapézio, e o mosaico de números usa `gridColumn="span 2"`. [`forma/`](../../examples/gallery/forma/)
 
-<p align="center"><img src="docs/readme/gallery/reservatorios.png" width="960" alt="Seis reservatórios com o nível de água em azul e um em vermelho abaixo da linha tracejada de mínimo, indicadores com sombra e dois gráficos, e o slide 4:3 com a tabela de prazos e o SLA"></p>
+### Brisa · app de finanças
 
-Cada reservatório é um `Box` com o nível em `height` percentual, a linha de mínimo é uma borda tracejada e o número fica por cima com `zIndex`. KPIs com sombra, linha e barras em células de grid, tabela zebrada; em 4:3 o cartão do SLA desce para baixo da tabela. [`reservatorios.tsx`](../ds-base/examples/gallery/reservatorios.tsx)
+<p align="center"><img src="docs/readme/gallery-ds/brisa.png" width="100%" alt="Painel da Brisa: nome em Inter sobre fundo de papel quente; capa com bolhas pastel e cartão de saldo com gráfico de semana; resumo do mês com rosca nativa e três cartões pastel; metas com barras de progresso; três passos e o botão escuro"></p>
 
-### Marés · aula de ciências
+Pastéis de fundo (menta, pêssego, lilás, manteiga) e a versão profunda de cada um para texto e dados, tudo em **Inter**. Raios grandes e `boxShadow` macia; as bolhas são elipses atrás do conteúdo. A rosca é um `Chart` nativo, e as barras da semana e das metas são `Box` com `height`/`width` em %. [`brisa/`](../../examples/gallery/brisa/)
 
-<p align="center"><img src="docs/readme/gallery/mares.png" width="960" alt="Capa azul-escura com a Terra e o envelope de água, diagrama da Terra e da Lua com os pontos A, B e C e setas de força, e o slide 4:3 com quatro passos e números grandes translúcidos"></p>
+### ~/terminal · pós-mortem de incidente
 
-Terra, envelope de água e Lua são `Shape`s posicionados numa caixa de tamanho fixo; o envelope gira na direção da Lua. As setas de força são `Box` + "►", com o comprimento como dado. Passos com o número em `opacity`, maré de um dia em gráfico de linha. [`mares.tsx`](../ds-base/examples/gallery/mares.tsx)
+<p align="center"><img src="docs/readme/gallery-ds/terminal.png" width="100%" alt="Painel do Terminal: nome em Andale Mono sobre fundo escuro; capa com janela de terminal, prompt e o incidente INC-2041; linha do tempo com trilho tracejado e pontos coloridos; impacto com medidores tracejados e gráfico de área; checklist de ações"></p>
 
-### Retro do Q3 · retrospectiva de time
+Tudo em **Andale Mono**, cor só para estado (verde, âmbar, vermelho). A janela é um `Box` com borda e três `Shape`s na barra; a linha do tempo tem um trilho de `borderLeft` tracejada atrás dos pontos; os medidores usam borda `dashed`, e a taxa de erro é um gráfico de área nativo. [`terminal/`](../../examples/gallery/terminal/)
 
-<p align="center"><img src="docs/readme/gallery/retro.png" width="960" alt="Capa com adesivos coloridos girados e com sombra, quadro com três colunas de adesivos e votos em pontos vermelhos, e o slide 4:3 com as dez ações num slide só"></p>
+### Botânica · relatório de impacto
 
-Adesivos são `Box` levemente girados (`rotate`), com sombra; votos são elipses. Linha do tempo em `borderLeft` com pontos absolutos, citações com `<I>` e `<Span>`. As 10 ações usam `paginate`: viram dois slides em 16:9 e cabem num só em 4:3. [`retro.tsx`](../ds-base/examples/gallery/retro.tsx)
+<p align="center"><img src="docs/readme/gallery-ds/botanica.png" width="100%" alt="Painel da Botânica: nome em Big Caslon sobre areia; capa verde-floresta com ramo de folhas giradas; números em Caslon com gráfico de barras empilhadas; três projetos com paisagens abstratas; depoimento com aspas em terracota"></p>
+
+Verde-floresta, musgo, sálvia e terracota, **Big Caslon** nos títulos e números (com algarismos de estilo antigo) e **Inter** no texto. As folhas são elipses com `rotate` ao longo de um caule; as paisagens dos cartões são sol e colinas em elipses; as emissões saem num `stackedBar` nativo. [`botanica/`](../../examples/gallery/botanica/)
 
 ### Como um elemento é feito
 
-O reservatório do painel, inteiro. O nível é um `Box` absoluto com `height` em %, a linha de mínimo é um `Box` de altura 0 com `borderTop` tracejada, e o número sobe com `zIndex` (posicionado, ele pinta depois do enchimento):
+Um elemento da [galeria do `@pptsx/ds-base`](../ds-base/README.md#galeria) (seis decks só com Arial): o reservatório do painel de saneamento, inteiro. O nível é um `Box` absoluto com `height` em %, a linha de mínimo é um `Box` de altura 0 com `borderTop` tracejada, e o número sobe com `zIndex` (posicionado, ele pinta depois do enchimento):
 
 ```tsx
 <Box flex={1} border={`2px solid ${C.linha}`} borderRadius={14} backgroundColor={C.branco} padding={10}>
@@ -116,7 +160,8 @@ npx pptsx init                               # deck.tsx, tsconfig.json, pptsx.co
 npx pptsx build deck.tsx --size 16x9,4x3     # .pptx + PNG por slide + overview + diagnósticos
 ```
 
-Com um design system: `npx pptsx init --ds @marca/ds` (ou um caminho, `--ds ../meu-ds`) gera um deck que importa os componentes do DS (um slide por componente, com as props do primeiro caso do catálogo) e uma config que registra o DS e o tema.
+> [!TIP]
+> Com um design system: `npx pptsx init --ds @marca/ds` (ou um caminho, `--ds ../meu-ds`) gera um deck que importa os componentes do DS (um slide por componente, com as props do primeiro caso do catálogo) e uma config que registra o DS e o tema.
 
 Um deck é uma função que devolve `<Deck>` com `<Slide>`s. Contêineres são `Box`, todo texto fica dentro de `Text`, e ninguém informa x/y.
 
@@ -167,13 +212,17 @@ dist/
 └── deck.diagnostics.json        ← diagnósticos de todos os tamanhos
 ```
 
-Requer Node ≥ 20 e um projeto ESM (`"type": "module"`); o `init` cuida disso. Durante a edição, `--watch` refaz tudo a cada arquivo salvo.
+> [!NOTE]
+> Requer Node ≥ 20 e um projeto ESM (`"type": "module"`); o `init` cuida disso. Durante a edição, `--watch` refaz tudo a cada arquivo salvo.
 
 ---
 
 ## O que você escreve é CSS
 
-As props são **CSS em camelCase**. Números são pt (1 pol = 72 pt), `'12px'` também vale, `'50%'` é do pai, e os shorthands funcionam como no browser: `padding="8 16"`, `border="2px solid #ccc"`, `margin="0 auto"`, `flex={1}`. A única diferença intencional: **`Box` sem `display` é uma coluna flex** que estica os filhos (o que um slide quer quase sempre); `display="flex"` é row, como no CSS.
+As props são **CSS em camelCase**. Números são pt (1 pol = 72 pt), `'12px'` também vale, `'50%'` é do pai, e os shorthands funcionam como no browser: `padding="8 16"`, `border="2px solid #ccc"`, `margin="0 auto"`, `flex={1}`.
+
+> [!IMPORTANT]
+> A única diferença intencional: **`Box` sem `display` é uma coluna flex** que estica os filhos (o que um slide quer quase sempre); `display="flex"` é row, como no CSS.
 
 Cada exemplo abaixo é um deck de verdade em [`docs/readme/decks/`](docs/readme/decks/); a imagem é o `slide-01.png` que ele gera. Os trechos omitem os imports e o `defineDeck(() => <Deck>…</Deck>)` em volta.
 
@@ -388,7 +437,7 @@ A referência completa, com cada prop por primitiva (`Deck`, `Slide`, `Box`, `Te
 ## Como funciona por dentro
 
 <p align="center">
-  <img src="docs/readme/pipeline.svg" width="960" alt="Pipeline: deck.tsx → resolve → layout ⇄ fit → emit (.pptx) e preview (PNG), com diagnostics.json saindo do fit">
+  <img src="docs/readme/brand/pipeline.svg" width="100%" alt="Pipeline: deck.tsx, resolve, layout e fit (com até 12 rodadas entre layout e fit) dentro do núcleo puro; depois emit e preview; saídas .pptx, PNG com overview e diagnostics.json. Embaixo, as estratégias: funções puras, IO só nas bordas, despacho por kind e saída determinística">
 </p>
 
 `render(deck, { sizes })` repete o mesmo caminho para cada tamanho de slide. Cada etapa é uma função pura (árvore entra, árvore sai); ler fontes, imagens e arquivos fica só nas bordas.
@@ -400,21 +449,77 @@ A referência completa, com cada prop por primitiva (`Deck`, `Slide`, `Box`, `Te
 5. **emit.** O [pptxgenjs](https://gitbrent.github.io/PptxGenJS/) converte pt → polegadas e emite formas, textos, imagens, gráficos e tabelas nativos. Depois a engine pós-processa o zip: corrige o XML que o PowerPoint pediria para "reparar", conserta a planilha embutida dos gráficos (sem isso o Keynote descarta o gráfico) e renumera as partes para a saída ser determinística.
 6. **preview.** Os mesmos itens posicionados viram SVG, que o [resvg](https://github.com/yisibl/resvg-js) rasteriza com as mesmas fontes da medição. O overview junta as miniaturas e põe um selo em cada slide com `error` ou `warning`.
 
+### A árvore em três estados
+
+O mesmo slide atravessa o pipeline como três árvores. No JSX, um componente ainda é uma função; depois do resolve, só há primitivas com props normalizadas e um `path` cada; depois do layout, cada nó tem o seu frame absoluto em pt.
+
+<p align="center">
+  <img src="docs/readme/brand/inside-tree.svg" width="100%" alt="Três colunas: a árvore JSX com Slide, Text e KpiRow (componente ainda não chamado); a árvore resolvida com KpiRow expandido em Box e KpiCards e as props normalizadas; e a árvore posicionada com x, y, largura e altura de cada nó. Embaixo, o path Slide > KpiRow > Box > KpiCard[0] > Text[1]">
+</p>
+
+### Resolve: shorthands, cascata e herança
+
+Antes de medir qualquer coisa, toda prop vira longhand, os conflitos são decididos como no CSS e o texto herda do pai. Por isso o layout e o emissor nunca veem um shorthand.
+
+<p align="center">
+  <img src="docs/readme/brand/inside-resolve.svg" width="100%" alt="Shorthands expandidos: padding 8 16 vira quatro paddings, margin 0 auto, flex 1 vira grow 1, shrink 1, basis 0, e border vira as quatro bordas. Ao lado, a precedência (style, longhand, shorthand, herdado, padrão) e a herança de cor e alinhamento de Slide para Box para Text">
+</p>
+
+### O motor de grid
+
+O flexbox é do Yoga; o `display: grid` é um motor próprio, puro, que segue o algoritmo de dimensionamento de tracks do CSS Grid e depois posiciona os itens (com `span` e linhas negativas). Conferido contra o Chrome em 48 casos.
+
+<p align="center">
+  <img src="docs/readme/brand/inside-grid.svg" width="100%" alt="Tracks de uma grade de 640 pt com gap 16: 200 pt fixo, minmax(0, 1fr) com 136 pt e 2fr com 272 pt; itens A, B e C na linha 1, D ocupando duas colunas e E na linha 2; e as contas: fixos, gaps, sobra de 408 pt e 1fr igual a 136 pt">
+</p>
+
+### Ordem de pintura
+
+Quem fica na frente segue o CSS (Apêndice E): `zIndex` negativo, fluxo normal, posicionados/`opacity`/`rotate`, `zIndex` positivo. No `.pptx` a camada vira a ordem dos objetos no slide; emissor e preview percorrem a mesma lista de `PaintItem`s, então o PNG e o arquivo empilham igual.
+
+<p align="center">
+  <img src="docs/readme/brand/inside-stacking.svg" width="100%" alt="Cinco planos isométricos empilhados: fundo do slide, zIndex negativo com uma elipse, fluxo normal com blocos, posicionados com um quadrado girado translúcido e zIndex positivo com um selo. Ao lado, a explicação de cada camada">
+</p>
+
+### De um Box a formas nativas
+
+Cada nó pintável vira um objeto OOXML: um `Box` com fundo, borda, raio e sombra é **uma** forma `roundRect`; cada `Text` é uma caixa de texto. O `padding` não sai no arquivo: ele já virou a posição dos filhos.
+
+<p align="center">
+  <img src="docs/readme/brand/inside-box-shapes.svg" width="100%" alt="Um KpiCard em TSX à esquerda; no meio, a vista explodida em três planos: a forma com fundo, borda e sombra, a caixa de texto do rótulo e a do valor; à direita, a tabela CSS para OOXML. Embaixo, a conversão de unidades: 40 pt, 0,556 polegada, 508 000 EMU">
+</p>
+
 ### O loop de ajuste
 
 Texto que não cabe dispara uma busca **por escopo**: os textos da mesma instância de componente (os itens de um `Bullets`, label e valor de um `KpiCard`) encolhem juntos, para manter a hierarquia tipográfica; uma instância vizinha só encolhe se ela mesma estourar. Cada escopo faz uma busca binária do menor passo de fonte que resolve, e cada tentativa é um layout completo.
 
 <p align="center">
-  <img src="docs/readme/fit-loop.svg" width="900" alt="Loop de ajuste: slide resolvido → Box paginate não cabe? (sim: paginate em clones do slide) → layout → algum Text estourou? (sim: shrink por escopo → menos de 12 rodadas? sim volta ao layout) → truncate → diagnósticos text-shrunk, slide-continued, text-truncated, text-overflow, box-overflow">
+  <img src="docs/readme/brand/fit-loop.svg" width="100%" alt="Loop de ajuste: slide resolvido → Box paginate não cabe? (sim: paginate em clones do slide) → layout → algum Text estourou? (sim: shrink por escopo → menos de 12 rodadas? sim volta ao layout) → truncate → diagnósticos text-shrunk, slide-continued, text-truncated, text-overflow, box-overflow">
+</p>
+
+<p align="center">
+  <img src="docs/readme/brand/inside-shrink.svg" width="100%" alt="O mesmo componente Quote em duas larguras: o largo fica em 22 pt, o estreito desce para 17 pt. Ao lado, a busca binária: tenta 17 (cabe), 20, 19 e 18 (não cabem) e fica com 17 pt em 4 layouts. Embaixo, as regras de escopo, passo, piso e custo">
 </p>
 
 ### Por que as quebras de linha são forçadas
 
 PowerPoint e Keynote quebram linhas cada um do seu jeito. Para o `.pptx` sair igual ao PNG, cada linha que a engine mediu vira uma quebra manual dentro do parágrafo (`lineBreaks: 'forced'`, o padrão). O texto continua nativo e editável; só as quebras ficam fixas. A medição foi calibrada exportando pelo Keynote: **34 de 34** amostras de texto simples e **30 de 30** de rich text com as mesmas linhas da engine. Com `--line-breaks auto` o aplicativo requebra (mais editável), e no Keynote 10 das 34 amostras quebram em outra palavra; nenhuma vaza do frame, porque a engine quebra com 3 % de folga (`textSafety: 0.97`).
 
+<p align="center">
+  <img src="docs/readme/brand/inside-text.svg" width="100%" alt="Um parágrafo medido em 4 linhas com as guias de ascender, baseline e descender, o avanço de cada glifo da primeira linha e a linha de 97 % da largura; ao lado, o XML do slide com um run por linha, quebras a:br e altura de linha exata em spcPts. Embaixo, a calibração: 34/34, 30/30, 43/43 e textSafety 0,97">
+</p>
+
+### Por dentro do .pptx
+
+O pptxgenjs escreve o pacote; a engine reabre o zip e corrige o que o PowerPoint pediria para "reparar" e o que o Keynote descartaria, e renumera as partes para o mesmo deck gerar os mesmos bytes.
+
+<p align="center">
+  <img src="docs/readme/brand/inside-pptx.svg" width="100%" alt="A árvore do zip deck.16x9.pptx com presentation.xml, slides, charts e a planilha embutida destacados, e quatro correções: listas na ordem do schema, um pPr por parágrafo, gráficos renumerados sem ponto vazio, e o ref da tabela do xlsx sem o apóstrofo que faz o Keynote descartar o gráfico">
+</p>
+
 ### Quanto custou trocar para CSS
 
-A API em CSS nasceu de uma prova de conceito medida contra a engine anterior ([relatório](docs/work/reports/POC-css.md)):
+A API em CSS nasceu de uma prova de conceito medida contra a engine anterior ([relatório](../../docs/work/reports/POC-css.md)):
 
 | medida | resultado |
 |---|---|
@@ -422,6 +527,53 @@ A API em CSS nasceu de uma prova de conceito medida contra a engine anterior ([r
 | tempo de build da demo (3 tamanhos, com preview) | **1,02×** a engine anterior |
 | motor de grid contra o Chrome, 48 casos (grid, flex, block, caixa) | 47/48 em ±1 pt com a métrica da engine; 48/48 com a altura de linha do browser |
 | posições e diagnósticos dos exemplos | iguais à engine anterior: frames ±1 pt, mesmos códigos, paths e mensagens (depois, as colunas sem `width` da `Table` passaram a seguir o conteúdo, de propósito) |
+
+---
+
+## Arquitetura do código
+
+Cada pasta de `src/` é um módulo com a API pública no seu `index.ts`; o resto é interno. Os contratos entre módulos são os tipos de [`src/core/types.ts`](src/core/types.ts) e as regras de [`docs/work/CONTRACTS.md`](../../docs/work/CONTRACTS.md).
+
+| módulo | papel | destaque |
+|---|---|---|
+| `jsx/` | runtime JSX próprio | `jsx()` só cria objetos congelados; não há React nem reconciliação |
+| `primitives/` | `Deck`, `Slide`, `Box`, `Text`, `Chart`, `Table`, `Connector`… | `definePrimitive`, `defineComponent` e `defineLayout` são fábricas que carimbam identidade e `meta` |
+| `core/` | contratos | tipos, padrões numéricos (`defaults.ts`), props CSS, `dispatch` por `kind`, valores responsivos |
+| `resolve/` | componentes → primitivas | shorthands, cascata, herança de texto, breakpoints, tema, `path` de cada nó; um handler por `kind` |
+| `layout/` | frames em pt | Yoga para flex, motor de grid próprio (tracks, `fr`, `minmax`, `span`), medida intrínseca, baseline, tabela |
+| `text/` | medição e quebra | medidor fontkit e medidor de estimativa (Strategy), quebra em linhas, rich text por trecho |
+| `fonts/` | faces | Liberation Sans como Arial, fontes do sistema, EOT para `--embed-fonts` |
+| `fit/` | ajuste e diagnósticos | detecção, escopos de shrink, busca binária, `paginate`, `truncate`, causa (`causedBy`) e grupos |
+| `emit/` | `.pptx` | um emissor por `kind` sobre o pptxgenjs, tema, layouts, seções, sanitização do XML e renumeração |
+| `preview/` | PNG | SVG por slide com as fórmulas de forma do OOXML, gráficos, tabelas; resvg; overview com selos |
+| `lint/` | regras | regras do núcleo, `LintRule` dos design systems, codemod da 0.x |
+| `cli/`, `mcp/`, `skill/` | as bordas | `build`/`init`/`lint`/`preview --serve`, o servidor MCP e a skill para agentes |
+| `render.ts` | a borda do pipeline | lê fontes e imagens, monta o `LayoutEnv` e roda resolve → layout → fit → emit → preview por tamanho |
+
+### Estratégias
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+**Funções puras, dados imutáveis.** Toda etapa do pipeline recebe uma árvore `readonly` e devolve outra; não há classes (salvo erros) nem estado global. Por isso cada etapa tem testes próprios com o layout calculado à mão.
+
+**IO só nas bordas.** Ler arquivo, fonte e imagem acontece em `render.ts`, `cli.ts` e nas fábricas `create*`. O mesmo núcleo roda na CLI, no MCP, no preview ao vivo e no arquivo único `pptsx.mjs`.
+
+**Dependências injetadas.** O layout recebe um `LayoutEnv` com `measureText` e `imageSize`; nos testes, o medidor de estimativa substitui o fontkit.
+
+</td>
+<td width="50%" valign="top">
+
+**Tabela de despacho por `kind`.** Emissores, desenho do preview e leitura do layout usam `dispatch` (`core/dispatch.ts`): uma primitiva nova é uma entrada na tabela, e o TypeScript cobra a que faltar.
+
+**Strategy onde varia o comportamento.** Medidores de texto e políticas de estouro (`shrink`, `truncate`, `error`) são intercambiáveis; o deck escolhe por prop.
+
+**Sem números mágicos, saída determinística.** Padrões vêm de `core/defaults.ts`; pt é a unidade interna (polegadas só no emissor, px só no preview). O zip é renumerado no fim: o mesmo deck gera os mesmos bytes, e o XML emitido vira fixture.
+
+</td>
+</tr>
+</table>
 
 ---
 
@@ -452,7 +604,8 @@ Diagnósticos: 1 error, 0 warning, 0 info
     Texto estourou 17.9% (14 pt) da altura disponível em 20 pt (fit="error" não ajusta); reduza o conteúdo, aumente a área ou troque para fit="shrink" ou fit="truncate".
 ```
 
-O exit code é `1` (há um `error`). Com `--json`, o stdout tem só JSON, pronto para um agente ler:
+> [!NOTE]
+> O exit code é `1` (há um `error`). Com `--json`, o stdout tem só JSON, pronto para um agente ler:
 
 ```json
 {
@@ -509,6 +662,10 @@ const Quote = ({ width }: { width: number }) => (
 
 ### O que vem em cada diagnóstico
 
+<p align="center">
+  <img src="docs/readme/brand/inside-diagnostic.svg" width="100%" alt="Um diagnóstico em JSON com cada campo anotado: onde (size e slide), gravidade, código, path, mensagem e dados. Embaixo, a causa antes do efeito com a seta de derivado no terminal, e oito irmãos agrupados em Box[0..7] com count 8">
+</p>
+
 - `size`, `slide` (a partir de 1, no arquivo gerado), `severity` (`error` corrige, `warning` é aceitável se intencional, `info` é só aviso), `code`, `path`, `message` e `data` opcional (`overflowPt`, `fromSize`/`toSize`, `axis`…).
 - **Causa antes do efeito.** `data.causedBy` marca o estouro que é consequência de outro nó; a mensagem termina com "corrija `<causa>` primeiro", e no terminal os derivados aparecem com `↳` sob a causa.
 - **Grupos.** Irmãos com o mesmo problema viram um item só: `Box[0..7]`, com `data.count` e `data.paths`. Corrija uma vez, no `.map` ou no componente.
@@ -553,11 +710,17 @@ Mensagens reais, correções típicas e o checklist de correção estão no [gui
 
 | chave | ativa quando | 16x9 | 16x10 | 4x3 | wide |
 |---|---|:-:|:-:|:-:|:-:|
-| `tall` | proporção < 1,5 (muda a **estrutura**) | | ✓ | ✓ | |
+| `tall` | proporção < 1,5 (muda a **estrutura**) | | | ✓ | |
 | `wide` | escala > 1,2 (muda a **tipografia**) | | | | ✓ |
 | nome exato (`'4x3'`, `'custom-10x7.5'`) | o tamanho atual tem esse nome | ✓ | ✓ | ✓ | ✓ |
 
-Precedência: nome exato > `wide` > `tall` > `base`. O deck abaixo é **um arquivo só**, construído com `--size 16x9,4x3`:
+Precedência: nome exato > `wide` > `tall` > `base`. O 16:10 tem proporção 1,6: **não** é `tall` e cai no `base`.
+
+<p align="center">
+  <img src="docs/readme/brand/inside-breakpoints.svg" width="100%" alt="Os quatro presets em escala: 16x9 com 720 por 405, 16x10 com 720 por 450, 4x3 com 720 por 540 e wide com 960 por 540; cada um com aspecto, escala, as chaves ativas e o valor que a mesma prop escolhe: três colunas em todos, exceto no 4x3, que usa tall e fica com duas">
+</p>
+
+O deck abaixo é **um arquivo só**, construído com `--size 16x9,4x3`:
 
 ```tsx
 const areas = ['Varejo', 'Crédito', 'Seguros', 'Logística', 'Marketing', 'Jurídico'];
@@ -600,6 +763,10 @@ Na [`ds-base/examples/demo.tsx`](../ds-base/examples/demo.tsx), o componente `Tw
 ### Paginação
 
 `<Box paginate>` divide os filhos em fluxo entre slides quando não cabem, em vez de encolher a fonte. O resto continua num **clone do slide** (mesmo título, fundo, decoração, rodapé e notas). Em 4:3, com mais altura, os mesmos 9 itens cabem num slide só:
+
+<p align="center">
+  <img src="docs/readme/brand/inside-paginate.svg" width="100%" alt="O slide do autor com 9 itens, três passando da base; em 16:9 vira duas partes com 6 e 3 itens, com título e rodapé clonados destacados; em 4:3 os 9 cabem num slide. Embaixo, o diagnóstico slide-continued">
+</p>
 
 ```tsx
 const items = [
@@ -818,7 +985,7 @@ As 24 formas ([`examples/diagrams/formas.tsx`](examples/diagrams/formas.tsx)) e 
 
 <p align="center"><img src="docs/readme/diagramas-formas.png" width="480" alt="Grade com as 24 formas nativas e o nome de cada uma"> <img src="docs/readme/diagramas-icones.png" width="480" alt="Doze ícones de traço em três tamanhos e três cores, e seis cartões com ícone roxo"></p>
 
-O preview desenha cada forma com as fórmulas do OOXML; no Keynote os nós batem com o PNG em ±1 pt (relatório em [`docs/work/reports/M12.md`](docs/work/reports/M12.md)).
+O preview desenha cada forma com as fórmulas do OOXML; no Keynote os nós batem com o PNG em ±1 pt (relatório em [`docs/work/reports/M12.md`](../../docs/work/reports/M12.md)).
 
 ---
 
@@ -963,10 +1130,10 @@ O `render` não grava arquivos nem imprime; devolve um resultado por tamanho.
 
 ## De/para CSS → PPTX
 
-O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não sai, e **sempre avisa**. O preview desenha só o que o `.pptx` tem, então o PNG nunca promete mais do que o arquivo entrega.
+O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não sai, e **sempre avisa** (`css-not-emitted`).
 
 <p align="center">
-  <img src="docs/readme/css-to-pptx.svg" width="900" alt="Três colunas: sai nativo (cores, bordas, raio, sombra, opacity, rotate, zIndex, texto, Chart e Table), sai com diferença (fundo de Text, opacity por forma, letterSpacing sem kerning, lineHeight no Keynote) e css-not-emitted com warning (overflow hidden, gradiente, scale, sombra inset, raio por canto, peso sem face, auto-fill)">
+  <img src="docs/readme/brand/css-to-pptx.svg" width="100%" alt="Três colunas: sai nativo (cores, bordas, raio, sombra, opacity, rotate, zIndex, texto, Chart e Table), sai com diferença (fundo de Text, opacity por forma, letterSpacing sem kerning, lineHeight no Keynote) e css-not-emitted com warning (overflow hidden, gradiente, scale, sombra inset, raio por canto, peso sem face, auto-fill)">
 </p>
 
 <details>
@@ -1005,9 +1172,10 @@ O que o `.pptx` consegue representar sai nativo; o resto sai aproximado ou não 
 
 ## Validação
 
-- **Testes:** 1854 com `vitest` (unitários, layout calculado à mão, oráculo do grid contra o Chrome, XML emitido, preview).
+- **Testes:** 1985 com `vitest` (unitários, layout calculado à mão, oráculo do grid contra o Chrome, XML emitido, preview).
 - **Keynote:** os exemplos e a vitrine foram exportados pelo Keynote (`scripts/keynote-export.sh`) e conferidos contra o preview: bordas por lado (±0,25 pt), sombra, rotação, opacidade, `zIndex`, grid, wrap, `display` responsivo, gráficos e tabelas nativos. A calibração de texto bate 34/34 e 30/30. Da galeria, `tara` (16:9) e `safra` (4:3) foram exportados e conferidos slide a slide: grupo girado com sombra, grid girado atrás do texto, mapa de calor, tabela e barra proporcional saem como no preview; só os gráficos são redesenhados pelo Keynote, como esperado. Os decks de diagramas (`examples/diagrams/` e a arquitetura do `ds-base`) batem com o preview em ±1 pt nos nós; o relatório de texto corrido e os pesos da Inter (`ds-base/examples/texto/`) saem com as mesmas linhas, e a calibração rica (com sobrescrito e corpo por trecho) bate 43/43.
-- **PowerPoint e Google Slides:** ainda não validados; a conferência no PowerPoint está com o dono do projeto. O XML é corrigido nos pontos em que o PowerPoint pediria "reparar".
+> [!WARNING]
+> **PowerPoint e Google Slides:** ainda não validados; a conferência no PowerPoint está com o dono do projeto. O XML é corrigido nos pontos em que o PowerPoint pediria "reparar".
 
 ### Preview ao vivo
 
@@ -1033,9 +1201,9 @@ Na 1.0 as props de antes do CSS (`direction`, `grow`, `fill` do Box, `size`/`wei
 
 O núcleo faz render e **não tem marca**: primitivas, layout, ajuste, diagnósticos, arquivo PPTX, CLI e MCP. Tokens, tema, layouts e componentes vivem num design system, em outro pacote, ligado ao núcleo só pela API pública — como o React é a base das bibliotecas de componentes.
 
-```
-pptsx (núcleo) ◀── @pptsx/ds-kit (ferramentas de DS) ◀── @pptsx/ds-base, o seu DS…
-```
+<p align="center">
+  <img src="docs/readme/brand/ecosystem.svg" width="100%" alt="Camadas do ecossistema: no topo @pptsx/ds-base e o seu DS; no meio @pptsx/ds-kit; os ganchos da API pública defineComponent, LintRule, renderFragment e defineDs; na base o núcleo pptsx; embaixo, CLI, API, MCP, skill e arquivo único">
+</p>
 
 | gancho no núcleo | para quê |
 |---|---|
@@ -1116,8 +1284,18 @@ Os decks com marca (a demo, a vitrine, a galeria, `texto/`, `dados/`, `arquivo/`
 
 </details>
 
-Spec do produto em [`docs/spec.md`](docs/spec.md); contratos entre módulos em [`docs/work/CONTRACTS.md`](docs/work/CONTRACTS.md).
+Spec do produto em [`docs/spec.md`](../../docs/spec.md); contratos entre módulos em [`docs/work/CONTRACTS.md`](../../docs/work/CONTRACTS.md).
 
 ## Licença
 
 MIT. As fontes Liberation Sans em `fonts/` têm licença própria (`fonts/LICENSE`).
+
+<p align="center">
+  <br>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readme/brand/logo-dark.svg">
+    <img src="docs/readme/brand/logo-light.svg" height="40" alt="pptsx">
+  </picture>
+  <br>
+  <sub>TSX entra, PPTX sai.</sub>
+</p>

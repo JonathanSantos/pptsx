@@ -1,8 +1,36 @@
-# @pptsx/ds-kit
+<p align="center">
+  <img src="../pptsx/docs/readme/brand/banner-ds-kit.svg" width="100%" alt="@pptsx/ds-kit: ferramentas para criar o seu design system. Tokens de cor, e um mesmo componente em três variantes: neutral, strong e lg">
+</p>
+
+<p align="center">
+  <img alt="@pptsx/ds-kit 0.2.0" src="https://img.shields.io/badge/@pptsx/ds--kit-0.2.0-C246D8?style=flat-square&labelColor=0B1020">
+  <img alt="peer: pptsx 1.x" src="https://img.shields.io/badge/peer-pptsx%201.x-4F5BFF?style=flat-square&labelColor=0B1020">
+  <img alt="README compilado por teste" src="https://img.shields.io/badge/README-compilado%20por%20teste-14B87F?style=flat-square&labelColor=0B1020">
+  <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-8A93B8?style=flat-square&labelColor=0B1020">
+</p>
+
+<p align="center">
+  <a href="#1-montar">Montar</a> ·
+  <a href="#2-tokens-e-tema">Tokens e tema</a> ·
+  <a href="#3-um-componente">Componente</a> ·
+  <a href="#4-regras-de-lint">Regras</a> ·
+  <a href="#5-o-manifesto">Manifesto</a> ·
+  <a href="#6-usar-num-deck">Deck</a> ·
+  <a href="#7-conferir">Conferir</a> ·
+  <a href="#8-publicar">Publicar</a> ·
+  <a href="#a-api-num-relance">API</a>
+</p>
+
+<br>
 
 Ferramentas para criar um **design system (DS)** sobre o [pptsx](../pptsx/README.md): tokens, tema, componentes com variantes tipadas e slots, regras de lint, catálogo visual e o manifesto que liga o DS ao `pptsx lint`, ao MCP e à skill para agentes. Um DS usa **só** `'pptsx'` e `'@pptsx/ds-kit'`. Exemplo completo: [`@pptsx/ds-base`](../ds-base/README.md).
 
-Esta página segue a ordem em que um DS nasce: montar → tokens e tema → componente → regras → manifesto → usar num deck → conferir → publicar. Os trechos marcados com `// arquivo:` formam um DS que compila e roda (um teste do pacote os grava numa pasta, compila e faz o build).
+<p align="center">
+  <img src="../pptsx/docs/readme/brand/ds-flow.svg" width="100%" alt="Os oito passos de um DS: montar (pptsx-ds init), tokens e tema, componente (StatCard.tsx), regras (rules.ts), manifesto (ds.ts), usar num deck (deck.tsx), conferir (lint e catálogo) e publicar (npm e skill)">
+</p>
+
+> [!NOTE]
+> Esta página segue a ordem em que um DS nasce. Os trechos marcados com `// arquivo:` formam um DS que compila e roda: um teste do pacote os grava numa pasta, compila, faz o build, passa no lint e renderiza o catálogo. O que está aqui funciona.
 
 ## 1. Montar
 
@@ -99,7 +127,7 @@ export const StatCard = defineComponent(
 );
 ```
 
-- **`createVariants`**: escolha → props CSS (`base` < variantes; espalhe com `{...card({ tone, size })}` e escreva depois o que muda). As props são checadas contra a primitiva-alvo (`for`: `'box'` por padrão, `'text'`, `'image'`, `'shape'`): um nome CSS errado, um valor do tipo errado, uma opção ou um padrão inexistentes **não compilam**. Escolha responsiva vira prop responsiva. Breakpoints: `base` (sempre), `tall` (4:3 e 16:10), `wide` (960×540).
+- **`createVariants`**: escolha → props CSS (`base` < variantes; espalhe com `{...card({ tone, size })}` e escreva depois o que muda). As props são checadas contra a primitiva-alvo (`for`: `'box'` por padrão, `'text'`, `'image'`, `'shape'`): um nome CSS errado, um valor do tipo errado, uma opção ou um padrão inexistentes **não compilam**. Escolha responsiva vira prop responsiva. Breakpoints: `base` (sempre), `tall` (4:3; o 16:10, com proporção 1,6, não é tall), `wide` (960×540).
 - **`defineComponent(meta, fn, defaults?)`**: `meta.name` vai no path dos diagnósticos (`Slide > StatCard[0] > Text`) e é o que as regras comparam. `catalog` e `defaults` são tipados pelas props do componente. `guide` (markdown) vira a seção do componente no guia do MCP e na skill.
 - **Slots**: `Slots<'footer' | 'header'>` declara as áreas; `slot(valor, padrão?)` desenha; `filledSlots(props, nomes)` diz quais vieram.
 - **Catálogo**: um caso que preenche o corpo (`flex={1}`) leva `fill: true`. Um layout de slide (componente que devolve `<Slide>`) fica fora do catálogo.
@@ -191,4 +219,32 @@ A config vale para os decks da pasta dela e das de baixo (sem nenhuma, a do dire
 - `package.json` do DS: `peerDependencies` com `pptsx` e `@pptsx/ds-kit`, `exports` para o JS compilado (`tsc` com `rewriteRelativeImportExtensions`), como o `@pptsx/ds-base`.
 - **Skill para agentes:** `npx pptsx-ds skill ds.ts --out skill/` gera a skill `pptsx-<pacote>` para Claude e Copilot (SKILL.md, `references/ds.md` com cada componente e regra, a config que registra o DS e o script que roda o pptsx).
 
-**Armadilhas:** um `meta.name` diferente do nome usado nas regras faz a regra nunca disparar. Um caso de catálogo sem `fill` mostra o componente na largura toda e na altura do conteúdo. Uma borda por lado precisa de estilo (`borderLeft="6px solid #E63946"`, não só `borderLeftWidth`); o build avisa.
+> [!WARNING]
+> **Armadilhas.** Um `meta.name` diferente do nome usado nas regras faz a regra nunca disparar. Um caso de catálogo sem `fill` mostra o componente na largura toda e na altura do conteúdo. Uma borda por lado precisa de estilo (`borderLeft="6px solid #E63946"`, não só `borderLeftWidth`); o build avisa.
+
+## A API num relance
+
+| export | tipo | o que faz |
+|---|---|---|
+| `defineTokens(spec)` | tokens | valida e congela cores (normalizadas para `#RRGGBB`), escala e espaços; `tokenAt` e `scale` |
+| `themeOf(tokens, mapa)` | tema | monta o tema do arquivo PPTX a partir de caminhos de token |
+| `checkTheme(theme)` | tema | avisos de contraste abaixo do WCAG AA |
+| `createVariants({ base, variants, defaults, for? })` | componente | escolha → props CSS, checadas contra a primitiva-alvo; escolha responsiva vira prop responsiva |
+| `defineComponent(meta, fn, defaults?)` | componente | nome no path, guia, casos de catálogo (vem do núcleo, reexportado) |
+| `slot`, `filledSlots`, `Slots<…>` | componente | áreas nomeadas e o que veio preenchido |
+| `defineRule(id, severity, fn)` | regras | regra própria, rodada em cada nó resolvido |
+| `colorsFromTokens`, `fontsFromTheme`, `maxChildren`, `onlyOnSlide` | regras | regras prontas |
+| `createDs({ name, components, theme, rules, guide?, schema? })` | manifesto | liga regras ao lint, guia e schema ao MCP; `ds.warnings` |
+| `componentGuides`, `schemaOf` | manifesto | o guia a partir dos `meta.guide`; o schema completo pela API do TypeScript |
+
+| CLI `pptsx-ds` | o que faz |
+|---|---|
+| `init <pasta>` | cria um DS que compila: tokens, tema, um `Card`, regras, guia, `ds.ts`, config, `package.json`, `tsconfig` |
+| `catalog <ds.ts> --out <dir> [--fixtures <dir>] [--check] [--pptx]` | PNG por caso, overview por componente, fixtures (o contrato visual) e `.pptx` por componente |
+| `skill <ds.ts> --out <dir>` | a skill `pptsx-<pacote>` para Claude e Copilot |
+
+<p align="center">
+  <br>
+  <img src="../pptsx/docs/readme/brand/mark.svg" height="36" alt="pptsx"><br>
+  <sub>Parte do <a href="../../README.md">monorepo pptsx</a> · MIT</sub>
+</p>

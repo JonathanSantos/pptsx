@@ -132,7 +132,7 @@ export const skillMarkdown = (options: SkillOptions): string => {
     '- `Box` sem `display` é **coluna**; `display="flex"` é **linha**. Colunas iguais: `display="grid" gridTemplateColumns="repeat(3, minmax(0, 1fr))"` (sempre `minmax(0, 1fr)`, nunca `1fr` solto) ou `flex={1}` em cada filho de uma linha.',
     '- Ocupar a altura que sobra: `flex={1}`. Rodapé no fim: `marginTop="auto"` no último filho.',
     '- Fonte e cor declaradas no `Slide` ou num `Box` **descem** para os `Text` de dentro: defina uma vez e escreva só o que muda.',
-    '- O 4:3 é mais **alto** que o 16:9 (mesma largura). Valor por formato: `{ base: …, tall: … }` (`tall` = 4:3 e 16:10), nunca `if` sobre o formato.',
+    '- O 4:3 é mais **alto** que o 16:9 (mesma largura). Valor por formato: `{ base: …, tall: … }` (`tall` = 4:3; o 16:10 cai no `base`), nunca `if` sobre o formato.',
     '- Lista ou tabela longa: `<Box paginate flex={1}>` (ou `Table paginate`) divide o conteúdo em vários slides; um por slide. Texto que não cabe encolhe até um mínimo e, depois disso, vira `error` com o conserto.',
     '- Gráfico nativo: `<Chart kind="bar" data={{ categories: [...], series: [{ name, values: [...] }] }} labels flex={1} />` (precisa de altura: `flex={1}` ou `height`). Tabela: `<Table columns={[{ header: "Área" }, { header: "Q3", align: "right" }]} rows={[["Varejo", "22,6"]]} />` (números como texto mantêm a vírgula).',
     '- Imagem: `<Image src="./logo.png" width={120} />`, com o caminho relativo ao deck.',

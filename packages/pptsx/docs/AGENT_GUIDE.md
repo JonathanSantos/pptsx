@@ -65,7 +65,7 @@ Toda prop de `Slide`, `Box`, `Text`, `Image`, `Shape`, `Chart` e `Table` aceita 
 
 | chave | ativa quando | 16x9 | 16x10 | 4x3 | wide |
 |---|---|---|---|---|---|
-| `tall` | `ctx.aspect < 1.5` (mais "quadrado": muda a **estrutura**) | | ✓ | ✓ | |
+| `tall` | `ctx.aspect < 1.5` (mais "quadrado": muda a **estrutura**) | | | ✓ | |
 | `wide` | `ctx.scale > 1.2` (maior nos dois eixos: muda a **tipografia**) | | | | ✓ |
 | nome exato (`'16x9'`, `'4x3'`, `'custom-10x7.5'`) | `ctx.name` igual | ✓ | ✓ | ✓ | ✓ |
 
@@ -902,7 +902,7 @@ Só um nó paginate (<Box paginate> ou <Text paginate>) por slide; encontrados 2
 - **Borda ocupa espaço**: `border="6px solid …"` num Box de altura fixa tira 12 pt da área de conteúdo; um texto que cabia pode estourar.
 - **Margens contam**: filhos com `marginTop`/`marginBottom` somam na altura do pai; o `box-overflow` diz quanto.
 - **`{ tall: 24 }` sem `base`** é erro. Sempre `{ base: 20, tall: 24 }`.
-- **`wide` vence `tall`**: num tamanho que é os dois, `{ base: 20, tall: 24, wide: 26 }` dá 26. O preset `wide` (960×540) **não** é `tall`; 16x10 **é**.
+- **`wide` vence `tall`**: num tamanho que é os dois, `{ base: 20, tall: 24, wide: 26 }` dá 26. O preset `wide` (960×540) **não** é `tall`; 16x10 (proporção 1,6) também **não**: cai no `base`.
 - **Não dá para desligar uma prop por breakpoint** (`{ base: '80%', tall: undefined }` continua `'80%'`): dê outro valor, ou esconda o nó inteiro com `display`.
 - **Props da 0.x** (`direction`, `align`, `justify`, `grow`, `shrink`, `fill`, `stroke`, `radius` em Box; `size`, `weight`, `italic`, `font`, `align` em Text) saíram na 1.0 e param o build com a troca: escreva CSS, ou rode `pptsx lint --from 0.x` (apêndice).
 - **`paginate` em row ou absoluto**: absoluto é erro; numa row a divisão é por colunas estreitas. Pagine uma coluna.

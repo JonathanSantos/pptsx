@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>agents</title>
+<defs><linearGradient id="t" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4F5BFF"/><stop offset=".55" stop-color="#C246D8"/><stop offset="1" stop-color="#FF6A3D"/></linearGradient></defs>
+<rect width="64" height="64" rx="16" fill="url(#t)"/><g fill="#FFFFFF"><path d="M30 12 C31.5 22 34 24.5 44 26 C34 27.5 31.5 30 30 40 C28.5 30 26 27.5 16 26 C26 24.5 28.5 22 30 12 Z"/><path d="M45 36 C45.8 41 47 42.2 52 43 C47 43.8 45.8 45 45 50 C44.2 45 43 43.8 38 43 C43 42.2 44.2 41 45 36 Z" opacity=".75"/></g>
+</svg>
