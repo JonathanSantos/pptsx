@@ -72,6 +72,22 @@ const hasNpm = () => {
   return probe.status === 0;
 };
 
+// Última falha do npx (1ª linha útil do stderr), para a mensagem de ajuda dizer o motivo real.
+let npxFailure = '';
+
+// O npx só serve se a versão existir no registro (ou no cache do npm): sonda antes de confiar nele,
+// senão o erro cru do npm apareceria no lugar da instrução.
+const npxRuntime = () => {
+  if (!hasNpm()) return null;
+  const command = IS_WINDOWS ? 'npx.cmd' : 'npx';
+  const prefix = ['--yes', 'pptsx@' + VERSION];
+  const probe = spawnSync(command, [...prefix, '--version'], { encoding: 'utf8', shell: IS_WINDOWS });
+  if (probe.status === 0) return { command, prefix, shell: IS_WINDOWS };
+  const lines = (probe.stderr || '').split('\n').map((line) => line.replace(/^npm (error|ERR!) ?/, '').trim()).filter((line) => line && !line.startsWith('A complete log'));
+  npxFailure = lines[0] || 'npx pptsx@' + VERSION + ' falhou';
+  return null;
+};
+
 const bundleRuntime = (file) => ({ command: process.execPath, prefix: [file], shell: false });
 
 const findRuntime = async () => {
@@ -81,8 +97,7 @@ const findRuntime = async () => {
   if (existsSync(cached) && (!BUNDLE_SHA256 || sha256(readFileSync(cached)) === BUNDLE_SHA256)) return bundleRuntime(cached);
   const downloaded = await download();
   if (downloaded) return bundleRuntime(downloaded);
-  if (hasNpm()) return { command: IS_WINDOWS ? 'npx.cmd' : 'npx', prefix: ['--yes', 'pptsx@' + VERSION], shell: IS_WINDOWS };
-  return null;
+  return npxRuntime();
 };
 
 const HELP = [
@@ -97,11 +112,12 @@ const HELP = [
 
 const offlineHelp = () =>
   [
-    'pptsx: não achei o runtime do pptsx ' + VERSION + ' (sem cache, sem download, sem npm).',
+    'pptsx: não achei o runtime do pptsx ' + VERSION + ' (sem cache, ' + (RELEASE_BASE ? 'sem download' : 'download desligado: a skill foi gerada sem a URL da release') + (npxFailure ? ', e o npx falhou: ' + npxFailure : ', sem npm') + ').',
     'Para resolver, uma destas:',
     '  1. Baixe pptsx.mjs ' + (RELEASE_BASE ? 'de ' + RELEASE_BASE + '/pptsx.mjs' : 'da release v' + VERSION + ' do pptsx') + ' e grave em ' + cachedBundle(),
     '     (ou aponte o arquivo com PPTSX_BUNDLE=/caminho/pptsx.mjs). Precisa de Node 20.6 ou mais novo.',
-    '  2. Instale Node com npm e rode de novo: o script usa npx pptsx@' + VERSION + ', sem instalar nada global.',
+    '  2. Com Node e npm e a versão ' + VERSION + ' publicada no npm, rode de novo: o script usa npx pptsx@' + VERSION + ', sem instalar nada global.',
+    '  Antes da publicação (release no GitHub e npm) só as opções do item 1 funcionam.',
   ].join('\n');
 
 const SEVERITY_MARK = { error: '✖', warning: '▲', info: '•' };

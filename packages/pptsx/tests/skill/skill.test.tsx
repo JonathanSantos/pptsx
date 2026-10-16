@@ -7,7 +7,10 @@ import { Box, Text, defineComponent } from '../../src/primitives/index.ts';
 import { defineDs } from '../../src/ds.ts';
 import { COMPONENT_META } from '../../src/core/types.ts';
 import { PROPS_SCHEMA } from '../../src/mcp/schema.generated.ts';
-import { createSkillFiles, githubRepoOf, skillFiles, skillNameOf, writeSkill, type SkillFile, type SkillOptions } from '../../src/skill/index.ts';
+import { createSkillFiles, essentialsOf, githubRepoOf, skillFiles, skillNameOf, writeSkill, type SkillFile, type SkillOptions } from '../../src/skill/index.ts';
+import { readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** M18-8: a skill gerada por `pptsx skill` (formato Agent Skills, Claude e Copilot) e o script dela. */
 
@@ -55,6 +58,7 @@ describe('skillFiles', () => {
     expect(claude).toEqual(github);
     expect(claude.map(([path]) => path)).toEqual([
       'skills/pptsx/SKILL.md',
+      'skills/pptsx/references/essentials.md',
       'skills/pptsx/references/guide.md',
       'skills/pptsx/references/props.md',
       'skills/pptsx/scripts/pptsx.mjs',
@@ -97,6 +101,31 @@ describe('skillFiles', () => {
     expect(fileOf(withDs, `${root}/references/pptsx.config.ts`)).toContain("import { ds } from '@marca/ds';");
     expect(fileOf(withDs, `${root}/references/pptsx.config.ts`)).toContain('theme: ds.theme');
     expect(fileOf(withDs, `${root}/SKILL.md`)).toContain('Design system: marca');
+  });
+
+  it('references/essentials.md: só as seções essenciais do guia real, curto o bastante para um Read', () => {
+    const guide = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'AGENT_GUIDE.md'), 'utf8');
+    const essentials = essentialsOf(guide);
+    const lines = essentials.split('\n');
+    expect(lines.length).toBeLessThanOrEqual(450);
+    expect(essentials).toContain('## 1. Modelo mental');
+    expect(essentials).toContain('### Por primitiva');
+    expect(essentials).toContain('### Paginação');
+    expect(essentials).toContain('### Códigos');
+    expect(essentials).toContain('## 9. Armadilhas comuns');
+    expect(essentials).not.toContain('## 6. Receitas');
+    expect(essentials).not.toContain('## 5. Design systems');
+    expect(essentials).not.toContain('### Fontes');
+    expect(fileOf(skillFiles({ ...BASE, guide }), '.claude/skills/pptsx/references/essentials.md')).toBe(essentials);
+    expect(fileOf(skillFiles({ ...BASE, guide }), '.claude/skills/pptsx/SKILL.md')).toContain('references/essentials.md');
+  });
+
+  it('README: avisa que antes da publicação só PPTSX_BUNDLE ou o cache funcionam; sem release, diz que o download está desligado', () => {
+    const readme = fileOf(skillFiles(BASE), 'README.md');
+    expect(readme).toContain('Antes da publicação da 9.9.9');
+    expect(readme).toContain('PPTSX_BUNDLE=');
+    expect(readme).toContain('download da release está desligado');
+    expect(fileOf(skillFiles({ ...BASE, releaseBase: 'https://github.com/x/y/releases/download/v9.9.9' }), 'README.md')).not.toContain('download da release está desligado');
   });
 
   it('o índice do guia aponta a linha certa de cada seção', () => {
@@ -146,6 +175,22 @@ describe('scripts/pptsx.mjs', () => {
     expect(result.stderr).toContain(join(cache, '9.9.9', 'pptsx.mjs'));
     expect(result.stderr).toContain('npx pptsx@9.9.9');
   });
+
+  it('com npm mas sem a versão publicada (npx falha): sai com 2 com o motivo do npx, não o erro cru', () => {
+    const cache = freshDir('pptsx-cache-');
+    const nodeDir = dirname(process.execPath);
+    // npm offline: o npx falha rápido (ENOTCACHED) em vez de ir à rede; cwd fora do repo para não achar o workspace.
+    const result = spawnSync(process.execPath, [install(), 'build', 'deck.tsx'], {
+      encoding: 'utf8',
+      cwd: freshDir('pptsx-cwd-'),
+      env: { PATH: `${nodeDir}:/usr/bin:/bin`, PPTSX_CACHE: cache, npm_config_offline: 'true', HOME: freshDir('pptsx-home-') },
+    });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('não achei o runtime do pptsx 9.9.9');
+    expect(result.stderr).toContain('o npx falhou:');
+    expect(result.stderr).toContain('Antes da publicação');
+    expect(result.stdout).not.toContain('npm error');
+  }, 120_000);
 
   it('bundle no cache com SHA256 errado não é usado', () => {
     const cache = freshDir('pptsx-cache-');

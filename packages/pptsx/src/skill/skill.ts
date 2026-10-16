@@ -114,7 +114,7 @@ export const skillMarkdown = (options: SkillOptions): string => {
     '## Fluxo (meta: entregar em até 2 builds)',
     '',
     '1. **Pasta do deck:** `node …/scripts/pptsx.mjs init <pasta>` cria um `deck.tsx` de exemplo, `tsconfig.json` e `pptsx.config.ts`. Ou escreva só o `deck.tsx`, como no modelo abaixo: o script compila sem `tsconfig.json` nem `pptsx.config.ts` (a config só é preciso para fontes próprias, tema ou um design system).',
-    '2. **Escreva os slides** seguindo as regras abaixo. O que não estiver aqui está em `references/guide.md` (longo: o índice no topo dá a linha de cada seção; §3 primitivas e props, §4 texto, §6 receitas, §8 diagnósticos, §9 armadilhas) e `references/props.md` (todas as props, com o tipo).',
+    '2. **Escreva os slides** seguindo as regras abaixo. Antes do primeiro deck, leia `references/essentials.md` (curto: primitivas, texto, paginação, diagnósticos e armadilhas, cabe num Read). O resto está em `references/guide.md` (longo: o índice no topo dá a linha de cada seção; §6 receitas) e `references/props.md` (todas as props, com o tipo).',
     '3. **Compile:** `node …/scripts/pptsx.mjs build <pasta>/deck.tsx --size 16x9` (`--size 16x9,4x3` se pedirem os dois formatos). Os arquivos saem em `dist/` (`--out` muda a pasta).',
     '4. **Leia o resumo:** cada diagnóstico tem o slide, o caminho do nó (`Slide > Box[1] > Text` é o Text do 2º Box do slide) e o que fazer. Abra o overview PNG listado para ver o layout.',
     '5. **Corrija** os `error` (e de preferência os `warning`) e compile de novo.',
@@ -141,6 +141,7 @@ export const skillMarkdown = (options: SkillOptions): string => {
     ...(options.ds === undefined ? [] : dsSection(options.ds)),
     '## Referências',
     '',
+    '- `references/essentials.md`: o essencial do guia (≈ 350 linhas): leia inteiro antes do primeiro deck.',
     '- `references/guide.md`: o guia completo (primitivas, texto, receitas, diagnósticos, armadilhas).',
     '- `references/props.md`: as props de cada primitiva, com o tipo.',
     ...(options.ds === undefined ? [] : ['- `references/ds.md`: os componentes, as props e as regras do design system.', '- `references/pptsx.config.ts`: a config que registra o design system.']),
@@ -200,7 +201,7 @@ const mcpVsCode = (name: string): string =>
 const mcpClaudeCode = (name: string): string =>
   `${JSON.stringify({ mcpServers: { [name]: { command: 'node', args: [`.claude/skills/${name}/scripts/pptsx.mjs`, 'mcp'] } } }, null, 2)}\n`;
 
-const readmeOf = (name: string, version: string): string =>
+const readmeOf = (name: string, version: string, releaseBase: string | undefined): string =>
   [
     `# Skill ${name} (pptsx ${version})`,
     '',
@@ -211,6 +212,11 @@ const readmeOf = (name: string, version: string): string =>
     `- **GitHub Copilot no VS Code (agent mode):** \`.github/skills/${name}/\` e \`.vscode/mcp.json\`.`,
     '',
     'O script (`scripts/pptsx.mjs`, ou `pptsx.cmd` no Windows) precisa só de Node 20.6+. Ele usa o bundle `pptsx.mjs` em cache (`~/.cache/pptsx/<versão>/`), baixa da release conferindo o SHA256 ou cai para `npx pptsx@<versão>`, e nunca instala nada global.',
+    '',
+    `**Antes da publicação da ${version}** (release no GitHub e pacote no npm) o script não acha o runtime sozinho: aponte \`PPTSX_BUNDLE=/caminho/dist/standalone/pptsx.mjs\` (saída de \`npm run build:standalone\`) ou grave esse arquivo em \`~/.cache/pptsx/${version}/pptsx.mjs\`. Sem isso, o script explica o que falta e sai com código 2.`,
+    ...(releaseBase === undefined
+      ? ['', 'Esta skill foi gerada **sem `repository` no package.json**: o download da release está desligado; ficam o cache, `PPTSX_BUNDLE` e o `npx`.']
+      : []),
     '',
   ].join('\n');
 
@@ -237,9 +243,61 @@ export const guideReferenceOf = (guide: string): string => {
   return [...header(offset), ...lines].join('\n');
 };
 
+/** Seções do guia que entram no essencial: a `##` e quais `###` dela (`'all'` = todas; `[]` = só a introdução). */
+const ESSENTIAL_SECTIONS: readonly { readonly section: RegExp; readonly subs: 'all' | readonly RegExp[] }[] = [
+  { section: /^## 1\./, subs: 'all' },
+  { section: /^## 2\./, subs: [/^### Breakpoints/] },
+  { section: /^## 3\./, subs: [/^### Por primitiva/, /^### Paginação/, /^### Regras de flex e grid/] },
+  { section: /^## 4\./, subs: [/^### Rich text/, /^### NBSP/] },
+  { section: /^## 8\./, subs: [/^### Como ler o `path`/, /^### Códigos/, /^### Checklist/] },
+  { section: /^## 9\./, subs: 'all' },
+];
+
+const ESSENTIALS_PREFACE = [
+  '# pptsx: o essencial',
+  '',
+  '> Gerado do guia completo (`references/guide.md`): só o que um agente precisa antes do primeiro deck. Receitas (§6), gráficos, tabelas, diagramas, texto rico avançado, tema do arquivo e design systems ficam no guia; o índice no topo dele dá a linha de cada seção.',
+  '',
+  ...GUIDE_PREFACE,
+];
+
+interface GuideBlock {
+  readonly level: number;
+  readonly heading: string;
+  readonly lines: readonly string[];
+}
+
+/** O guia em blocos: cada `##`/`###` com o texto até o próximo cabeçalho de qualquer nível. */
+const blocksOf = (guide: string): readonly GuideBlock[] =>
+  guide.split('\n').reduce<GuideBlock[]>((blocks, line) => {
+    const match = /^(#{2,3}) /.exec(line);
+    if (match === null) {
+      const last = blocks.at(-1);
+      return last === undefined ? blocks : [...blocks.slice(0, -1), { ...last, lines: [...last.lines, line] }];
+    }
+    return [...blocks, { level: match[1]!.length, heading: line, lines: [line] }];
+  }, []);
+
+/**
+ * O essencial: as seções de ESSENTIAL_SECTIONS, na ordem do guia. Um `###` entra se a sua `##` pede
+ * `'all'` ou se bate com um dos padrões; a introdução da `##` (antes do 1º `###`) entra sempre.
+ */
+export const essentialsOf = (guide: string): string => {
+  const blocks = blocksOf(guide);
+  const kept = blocks.flatMap((block, index) => {
+    const owner = block.level === 2 ? block : [...blocks.slice(0, index)].reverse().find((candidate) => candidate.level === 2);
+    const rule = owner === undefined ? undefined : ESSENTIAL_SECTIONS.find(({ section }) => section.test(owner.heading));
+    if (rule === undefined) return [];
+    if (block.level === 2 || rule.subs === 'all') return block.lines;
+    return rule.subs.some((pattern) => pattern.test(block.heading)) ? block.lines : [];
+  });
+  return [...ESSENTIALS_PREFACE, ...kept].join('\n').replace(/\n{3,}/g, '\n\n');
+};
+
 /** Os arquivos da pasta da skill (sem o destino na frente). */
 export const skillFolderFiles = (options: SkillOptions): readonly SkillFile[] => [
   { path: 'SKILL.md', content: skillMarkdown(options) },
+  { path: 'references/essentials.md', content: essentialsOf(options.guide) },
   { path: 'references/guide.md', content: guideReferenceOf(options.guide) },
   { path: 'references/props.md', content: propsMarkdown('Props das primitivas do pptsx', options.schema, PRIMITIVE_TITLES) },
   ...(options.ds === undefined ? [] : [{ path: 'references/ds.md', content: dsMarkdown(options.ds) }, { path: 'references/pptsx.config.ts', content: dsConfigOf(options.ds) }]),
@@ -262,6 +320,6 @@ export const skillFiles = (options: SkillOptions): readonly SkillFile[] => {
     ...SKILL_DESTINATIONS.flatMap((destination) => folder.map((file) => ({ ...file, path: `${destination}/${name}/${file.path}` }))),
     { path: '.vscode/mcp.json', content: mcpVsCode(name) },
     { path: '.mcp.json', content: mcpClaudeCode(name) },
-    { path: 'README.md', content: readmeOf(name, options.version) },
+    { path: 'README.md', content: readmeOf(name, options.version, options.releaseBase) },
   ];
 };
