@@ -13,6 +13,12 @@ import type {
   ResolvedSlide,
   SlideElement,
   TextChildren,
+  ContainerBox,
+  ContainerBreakpoint,
+  ContainerResponsive,
+  ContainerResponsiveValue,
+  DeckContext,
+  ResolvedBox,
 } from '../core/types.ts';
 import { Box, primitiveName } from '../primitives/index.ts';
 import { jsx } from '../jsx/jsx-runtime.ts';
@@ -30,7 +36,7 @@ import { assertPlaceholders, assertUniqueLayoutNames, notesOf, resolvedLayoutOf,
 import { assertPaginateInFlow, assertSinglePaginate, assertTablePaginate, assertTextPaginate } from './paginate.ts';
 import { resolvePropsOf } from './props.ts';
 import { pathGeometryOf } from './path.ts';
-import { resolveConnector, slideIdsOf, withMissing } from './connector.ts';
+import { resolveConnector, scopeIds, withMissing } from './connector.ts';
 import { runsOf } from './runs.ts';
 import { assertBoxShape, assertValidShape } from './shape.ts';
 import type { RunStyle } from './runs.ts';
@@ -44,8 +50,28 @@ import type { RunStyle } from './runs.ts';
 
 const SEPARATOR = ' > ';
 
-/** O que desce pela árvore inteira: o contexto responsivo e a IO injetada (leitura de ícones). */
-type ResolveScope = ResponsiveContext & { readonly env: ResolveEnv };
+/**
+ * M19: medida de um `<Container>` feita pela passada anterior: o frame (border-box, que o Box fixa) e a content
+ * box (o que a função recebe). Chave: `containerKeyOf(slide, path)`.
+ */
+export interface ContainerMeasure {
+  readonly frame: { readonly width: number; readonly height: number };
+  readonly content: { readonly width: number; readonly height: number };
+}
+export type ContainerMeasures = ReadonlyMap<string, ContainerMeasure>;
+
+/** Slide (índice do autor, base 0) + path: o path sozinho se repete entre slides. */
+export const containerKeyOf = (slideIndex: number, path: string): string => `${slideIndex}|${path}`;
+
+/**
+ * O que desce pela árvore inteira: o contexto responsivo, a IO injetada (leitura de ícones) e, no M19, as
+ * medidas dos Containers e o índice do slide (para achar a medida de cada um).
+ */
+type ResolveScope = ResponsiveContext & {
+  readonly env: ResolveEnv;
+  readonly containers?: ContainerMeasures;
+  readonly slideIndex?: number;
+};
 
 const joinPath = (parent: string, segment: string): string =>
   parent === '' ? segment : `${parent}${SEPARATOR}${segment}`;
@@ -191,9 +217,52 @@ const resolveBox = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: R
   assertPaginateInFlow(props, n.css.position, path);
   assertBoxShape(props, path);
   const children = resolveChildren(item.element.props.children, path, ctx, parentOf(n));
+  // M19: a paginação divide o conteúdo depois do layout; um Container lá dentro não teria um espaço único para medir.
+  if (props.paginate === true && hasContainer(children.nodes)) throw new ResolveError('<Container> não pode ficar dentro de um Box paginate', path);
   // display: none leva junto os conectores declarados dentro do Box.
   const connectors = n.css.display === 'none' ? NO_CONNECTORS : children.connectors;
   return { nodes: [{ kind: 'box', path, props, css: n.css, children: children.nodes }], connectors };
+};
+
+const CONTAINER_NEEDS_FUNCTION = '<Container> precisa de uma função como filho: {(box) => …} (ela recebe o espaço medido)';
+
+const hasContainer = (nodes: readonly ResolvedNode[]): boolean =>
+  nodes.some((node) => node.kind === 'box' && (node.container !== undefined || hasContainer(node.children)));
+
+/** O espaço medido como a função o recebe: content box, breakpoints de contêiner e o contexto do slide. */
+const containerBoxOf = (measure: ContainerMeasure, ctx: ResolveScope): ContainerBox => {
+  const { width, height } = measure.content;
+  const narrow = width < DEFAULTS.containerQuery.narrow;
+  const short = height < DEFAULTS.containerQuery.short;
+  const pick = <T,>(value: ContainerResponsive<T>): T => {
+    if (!isContainerResponsive(value)) return value;
+    const keys: readonly ContainerBreakpoint[] = narrow && short ? ['small', 'narrow', 'short'] : narrow ? ['narrow'] : short ? ['short'] : [];
+    const key = keys.find((name) => value[name] !== undefined);
+    return key === undefined ? value.base : (value[key] as T);
+  };
+  const slide = { name: ctx.name, aspect: ctx.aspect, scale: ctx.scale } as DeckContext;
+  return { width, height, aspect: height > 0 ? width / height : 0, narrow, short, pick, slide: 'pick' in ctx ? (ctx as unknown as DeckContext) : slide };
+};
+
+const isContainerResponsive = <T,>(value: ContainerResponsive<T>): value is ContainerResponsiveValue<T> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value) && Object.hasOwn(value, 'base');
+
+/**
+ * M19: Container = Box. Sem medida (1ª passada) fica vazio e 'pending', para o layout medir o espaço que o pai lhe
+ * dá. Com medida, chama a função e fixa largura/altura no frame medido (contenção de tamanho): o conteúdo escolhido
+ * não muda o espaço, então irmãos e paths ficam iguais aos da passada que mediu.
+ */
+const resolveContainer = (item: ExpandedPrimitive, path: string, n: Normalized, ctx: ResolveScope): ResolvedChildren => {
+  const props = legacyPropsOf('container', n) as ResolvedBox['props'];
+  const content = item.element.props.children;
+  if (typeof content !== 'function') throw new ResolveError(CONTAINER_NEEDS_FUNCTION, path);
+  const measure = ctx.containers?.get(containerKeyOf(ctx.slideIndex ?? 0, path));
+  if (measure === undefined) return { nodes: [{ kind: 'box', path, props, css: n.css, children: [], container: 'pending' }], connectors: NO_CONNECTORS };
+  const fill = (content as (box: ContainerBox) => Children)(containerBoxOf(measure, ctx));
+  const children = resolveChildren(fill, path, ctx, parentOf(n));
+  const css: CssStyle = { ...n.css, width: measure.frame.width, height: measure.frame.height, flexGrow: 0, flexShrink: 0, flexBasis: 'auto' };
+  const connectors = n.css.display === 'none' ? NO_CONNECTORS : children.connectors;
+  return { nodes: [{ kind: 'box', path, props, css, children: children.nodes, container: 'measured' }], connectors };
 };
 
 /** M17: o nó que a primitiva gerou leva a identidade do componente (os filhos levam a deles). */
@@ -208,6 +277,7 @@ const resolveItem = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, p
 
 const resolvePrimitive = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, parent: ParentInfo): ResolvedChildren => {
   if (item.kind === 'box') return resolveBox(item, path, normalizedOf(item, path, ctx, parent), ctx);
+  if (item.kind === 'container') return resolveContainer(item, path, normalizedOf(item, path, ctx, parent), ctx);
   if (item.kind === 'connector') {
     assertNoChildren(item, path);
     const props = resolvePropsOf(item.element, item.kind, path, ctx);
@@ -222,6 +292,7 @@ const resolveNode = (item: ExpandedPrimitive, path: string, ctx: ResolveScope, p
   switch (item.kind) {
     case 'box':
     case 'connector':
+    case 'container':
       throw new ResolveError(`<${nameOf(item)}> resolvido fora de resolveItem`, path);
     case 'text':
       return resolveText(item, path, n);
@@ -288,8 +359,8 @@ const resolveSlide = (item: ExpandedPrimitive, index: number, ctx: ResolveScope,
   const path = item.segment;
   const n = normalizedOf(item, path, ctx, ROOT_PARENT);
   const children = withFooter(withFixed(item.element.props.children, item.layout), footer);
-  const { nodes, connectors } = resolveChildren(children, path, ctx, parentOf(n));
-  const ids = slideIdsOf(nodes);
+  const resolved = resolveChildren(children, path, { ...ctx, slideIndex: index }, parentOf(n));
+  const { nodes, connectors, ids } = scopeIds(resolved.nodes, resolved.connectors);
   const layout = item.layout === undefined ? undefined : resolvedLayoutOf(item.layout, path);
   assertPlaceholders(nodes, layout);
   const notes = notesOf(n.own.notes, path);
@@ -320,8 +391,13 @@ const expandRoot = (root: SlideElement): ExpandedPrimitive => {
 };
 
 /** Valores responsivos são resolvidos aqui para `ctx`; a árvore resolvida só tem valores concretos. */
-export const resolveDeck = (root: SlideElement, responsive: ResponsiveContext, env: ResolveEnv = createResolveEnv()): ResolvedDeck => {
-  const ctx: ResolveScope = { ...responsive, env };
+export const resolveDeck = (
+  root: SlideElement,
+  responsive: ResponsiveContext,
+  env: ResolveEnv = createResolveEnv(),
+  containers?: ContainerMeasures,
+): ResolvedDeck => {
+  const ctx: ResolveScope = { ...responsive, env, ...(containers === undefined ? {} : { containers }) };
   const deck = expandRoot(root);
   const footer = deck.element.props.footer as Children | undefined;
   const items = onlyPrimitives(expandChild(deck.element.props.children), '');

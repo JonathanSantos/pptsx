@@ -89,23 +89,94 @@ export const resolveConnector = (
 interface IdOwner {
   readonly id: string;
   readonly path: string;
+  /** Path da instância de componente mais próxima que contém o nó ('' = o próprio slide). */
+  readonly scope: string;
 }
 
-const idOwnersOf = (nodes: readonly ResolvedNode[]): readonly IdOwner[] =>
-  nodes.flatMap((node) => [
-    ...(node.props.id === undefined ? [] : [{ id: node.props.id, path: node.path }]),
-    ...(node.kind === 'box' ? idOwnersOf(node.children) : []),
-  ]);
-
-/** Ids do slide; o segundo nó com o mesmo id → ResolveError apontando o primeiro. */
-export const slideIdsOf = (nodes: readonly ResolvedNode[]): ReadonlySet<string> => {
-  const owners = idOwnersOf(nodes);
-  owners.forEach((owner, index) => {
-    const first = owners.findIndex((other) => other.id === owner.id);
-    if (first === index) return;
-    throw new ResolveError(`id "${owner.id}" repetido no slide (já usado em ${owners[first]!.path}); ids têm que ser únicos por slide`, owner.path);
+const idOwnersOf = (nodes: readonly ResolvedNode[], scope = ''): readonly IdOwner[] =>
+  nodes.flatMap((node) => {
+    const own = node.component === undefined ? scope : node.path;
+    return [
+      ...(node.props.id === undefined ? [] : [{ id: node.props.id, path: node.path, scope: own }]),
+      ...(node.kind === 'box' ? idOwnersOf(node.children, own) : []),
+    ];
   });
-  return new Set(owners.map((owner) => owner.id));
+
+/** Paths das instâncias de componente do slide (raízes com `component`), para achar o escopo de um conector. */
+const componentRootsOf = (nodes: readonly ResolvedNode[]): readonly string[] =>
+  nodes.flatMap((node) => [...(node.component === undefined ? [] : [node.path]), ...(node.kind === 'box' ? componentRootsOf(node.children) : [])]);
+
+const within = (path: string, scope: string): boolean => scope === '' || path === scope || path.startsWith(`${scope} > `);
+
+/**
+ * Ids com escopo de componente: o mesmo id pode se repetir em instâncias diferentes de componente (um Flow
+ * repetido numa grade), nunca dentro do mesmo escopo. Cada repetição ganha um id interno único (`id#2`, …) e
+ * cada conector se liga à ocorrência do seu escopo, subindo para os componentes de fora; empate → ResolveError.
+ * Ids únicos no slide saem exatamente como o autor escreveu (nada muda para quem não repete).
+ */
+export interface ScopedIds {
+  readonly nodes: readonly ResolvedNode[];
+  readonly connectors: readonly ResolvedConnector[];
+  readonly ids: ReadonlySet<string>;
+}
+
+const assertUniqueInScope = (owners: readonly IdOwner[]): void =>
+  owners.forEach((owner, index) => {
+    const first = owners.findIndex((other) => other.id === owner.id && other.scope === owner.scope);
+    if (first === index) return;
+    throw new ResolveError(`id "${owner.id}" repetido no slide (já usado em ${owners[first]!.path}); ids têm que ser únicos por slide (ou por instância de componente)`, owner.path);
+  });
+
+/** Id final de cada dono: o 1º de cada id fica como está; as repetições ganham sufixo. */
+const finalIdsOf = (owners: readonly IdOwner[]): ReadonlyMap<string, string> => {
+  const seen = new Map<string, number>();
+  return new Map(owners.map((owner) => {
+    const count = (seen.get(owner.id) ?? 0) + 1;
+    seen.set(owner.id, count);
+    return [owner.path, count === 1 ? owner.id : `${owner.id}#${count}`];
+  }));
+};
+
+/** Escopos do conector, do mais interno ao slide. */
+const scopesOf = (path: string, roots: readonly string[]): readonly string[] =>
+  [...roots.filter((root) => within(path, root)).sort((a, b) => b.length - a.length), ''];
+
+const bindEnd = (id: string, connector: ResolvedConnector, owners: readonly IdOwner[], roots: readonly string[]): IdOwner | undefined => {
+  const named = owners.filter((owner) => owner.id === id);
+  if (named.length <= 1) return named[0];
+  for (const scope of scopesOf(connector.path, roots)) {
+    const visible = named.filter((owner) => within(owner.path, scope));
+    if (visible.length === 0) continue;
+    const exact = visible.filter((owner) => owner.scope === scope);
+    if (visible.length === 1) return visible[0];
+    if (exact.length === 1) return exact[0];
+    throw new ResolveError(`id "${id}" ambíguo para o conector: existe em ${visible.map((owner) => owner.path).join(', ')}; declare o conector dentro do componente do nó que ele liga`, connector.path);
+  }
+  return undefined;
+};
+
+const renameIds = (nodes: readonly ResolvedNode[], finals: ReadonlyMap<string, string>): readonly ResolvedNode[] =>
+  nodes.map((node) => {
+    const renamed = node.props.id === undefined || finals.get(node.path) === node.props.id ? node : { ...node, props: { ...node.props, id: finals.get(node.path)! } };
+    return renamed.kind === 'box' ? { ...renamed, children: renameIds(renamed.children, finals) } : renamed;
+  }) as readonly ResolvedNode[];
+
+export const scopeIds = (nodes: readonly ResolvedNode[], connectors: readonly ResolvedConnector[]): ScopedIds => {
+  const owners = idOwnersOf(nodes);
+  assertUniqueInScope(owners);
+  const repeated = owners.some((owner, index) => owners.findIndex((other) => other.id === owner.id) !== index);
+  if (!repeated) return { nodes, connectors, ids: new Set(owners.map((owner) => owner.id)) };
+  const roots = componentRootsOf(nodes);
+  const finals = finalIdsOf(owners);
+  const endOf = (connector: ResolvedConnector, end: 'from' | 'to'): string => {
+    const owner = bindEnd(connector.props[end], connector, owners, roots);
+    return owner === undefined ? connector.props[end] : finals.get(owner.path)!;
+  };
+  return {
+    nodes: renameIds(nodes, finals),
+    connectors: connectors.map((connector) => ({ ...connector, props: { ...connector.props, from: endOf(connector, 'from'), to: endOf(connector, 'to') } })),
+    ids: new Set(finals.values()),
+  };
 };
 
 /** Pontas cujo id não existe no slide: o fit emite connector-target-missing. */

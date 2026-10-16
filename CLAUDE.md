@@ -3,7 +3,7 @@
 Spec do produto: `docs/spec.md`. Organização do trabalho: `docs/work/README.md`. Próximos marcos: `docs/work/milestones/ROADMAP.md`.
 Contratos entre módulos: `packages/pptsx/src/core/types.ts` (tipos) + `docs/work/CONTRACTS.md` (funções e regras).
 
-Monorepo (npm workspaces, M17): `packages/pptsx` (núcleo), `packages/ds-kit` (`@pptsx/ds-kit`), `packages/ds-base` (`@pptsx/ds-base`). Caminhos de código abaixo (`src/…`, `tests/…`, `examples/…`) são relativos ao pacote. **Se uma funcionalidade só faz sentido com uma marca, não entra no núcleo**; se o núcleo precisa do nome de um componente, falta um gancho. Os DS usam só a API pública de `pptsx` (nada de `pptsx/src/...`).
+Monorepo (npm workspaces, M17): `packages/pptsx` (núcleo), `packages/ds-kit` (`@pptsx/ds-kit`), `packages/ds-base` (`@pptsx/ds-base`); e `packages/pptsx-rs`, o port em Rust do núcleo (workspace Cargo na raiz), que reproduz a saída do TS e tem a mesma versão. Caminhos de código abaixo (`src/…`, `tests/…`, `examples/…`) são relativos ao pacote. **Se uma funcionalidade só faz sentido com uma marca, não entra no núcleo**; se o núcleo precisa do nome de um componente, falta um gancho. Os DS usam só a API pública de `pptsx` (nada de `pptsx/src/...`).
 
 ## Regras invioláveis
 
@@ -11,6 +11,7 @@ Monorepo (npm workspaces, M17): `packages/pptsx` (núcleo), `packages/ds-kit` (`
 - **Só edite os arquivos/pastas que a sua tarefa possui** (coluna "Dono" no marco). Outros agentes trabalham em paralelo.
 - Testes ficam em `tests/` espelhando `src/` e são escritos pelo agente de testes. Agente de código não escreve testes (pode rodar os existentes).
 - Antes de concluir: `npm run typecheck` e `npm test` sem erro nos seus arquivos.
+- **`packages/pptsx-rs` segue o TS, nunca o contrário.** Mudou algo no núcleo que altera a saída (XML, diagnósticos, lint), o Rust acompanha no mesmo PR ou a mudança fica registrada em `packages/pptsx-rs/README.md` ("Ainda não"). As fixtures de `packages/pptsx-rs/fixtures/` vêm do TS (`packages/pptsx-rs/scripts/golden.sh`) e são comparadas por `cargo test`; o CI acusa fixture velha.
 
 ## Convenções de código
 
@@ -30,6 +31,7 @@ Monorepo (npm workspaces, M17): `packages/pptsx` (núcleo), `packages/ds-kit` (`
 
 - `npm test` — vitest (na raiz: os três pacotes; dentro de um pacote: só ele)
 - `npm run typecheck` — tsc
+- `cargo test` / `cargo clippy --release -- -D warnings` — o port em Rust (na raiz); `packages/pptsx-rs/scripts/golden.sh` regenera as fixtures com o TS
 - `node packages/pptsx/bin/pptsx.mjs build <deck.tsx> --size 16x9,4x3 --out dist/`
 - `node packages/ds-kit/bin/pptsx-ds.mjs catalog packages/ds-base/src/ds.ts --out dist/catalog` — catálogo de um DS (`--check` compara com as fixtures)
 - `scripts/keynote-export.sh <arquivo.pptx> <pasta-saida>` — exporta slides via Keynote (validação visual real)

@@ -64,6 +64,7 @@ const PRIMITIVE_TITLES: Readonly<Record<string, string>> = {
   icon: 'Icon',
   connector: 'Connector',
   slideNumber: 'SlideNumber',
+  container: 'Container',
 };
 
 const MODEL_DECK = `\`\`\`tsx

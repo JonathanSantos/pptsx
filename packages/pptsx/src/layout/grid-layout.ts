@@ -7,7 +7,7 @@ import Yoga, {
   PositionType,
   type MeasureFunction,
 } from 'yoga-layout';
-import type { BoxMetrics, CssAlign, CssPlace, CssStyle, LayoutEnv, PositionedNode, Rect, ResolvedBox, ResolvedNode } from '../core/types.ts';
+import type { BoxMetrics, CssAlign, CssPlace, CssStyle, LayoutEnv, Len, PositionedNode, Rect, ResolvedBox, ResolvedNode } from '../core/types.ts';
 import { applyStyle } from './apply.ts';
 import { settleBaselineRows } from './baseline.ts';
 import { settleReplaced } from './replaced.ts';
@@ -142,6 +142,16 @@ const heightIn = (item: ResolvedNode, width: number, container: CssStyle, env: L
 const explicitOf = (text: string | undefined) => parseTrackList(text) ?? [];
 
 /**
+ * Contribuição mínima de um item na largura (CSS Grid §11.5 / §6.6): o mínimo automático (o min-content) só
+ * vale com `min-width: auto`. Com `minWidth` numérico do autor e largura não fixa, o mínimo é o próprio minWidth:
+ * `minWidth={0}` deixa a trilha `1fr` encolher abaixo do conteúdo, como no CSS (antes ele era ignorado).
+ */
+const minContributionOf = (item: ResolvedNode, env: LayoutEnv, gridMin: (box: ResolvedBox) => number): number =>
+  typeof item.css.width !== 'number' && typeof item.css.minWidth === 'number'
+    ? item.css.minWidth
+    : minContentWidthOf(item, env, gridMin);
+
+/**
  * Dimensiona a grade: placement, colunas (com `width` disponível ou indefinida) e depois as
  * linhas, com a altura de cada item medida na largura da sua área (§11.1: colunas primeiro).
  */
@@ -157,7 +167,7 @@ export const gridModelOf = (container: GridContainer, env: LayoutEnv, width: num
   const columnItems: readonly SizingItem[] = items.map((item, index) => {
     const area = placed.areas[index]!;
     const margin = horizontalMarginOf(item);
-    const min = minContentWidthOf(item, env, gridMin) + margin;
+    const min = minContributionOf(item, env, gridMin) + margin;
     const max = Math.max(min, maxContentWidthOf(item, css, env) + margin);
     return { start: area.columnStart, end: area.columnEnd, contribution: { min, max } };
   });
@@ -202,10 +212,26 @@ const ALIGN_IN_AREA: Readonly<Record<CssAlign, YogaAlign>> = {
   baseline: YogaAlign.FlexStart,
 };
 
+const lengthIn = (value: Len | undefined, base: number): number | undefined =>
+  typeof value === 'number' ? value : typeof value === 'string' ? (Number.parseFloat(value) / 100) * base : undefined;
+
+/**
+ * Item com `aspectRatio` esticado na largura: o `maxHeight` se transfere para a largura pela proporção
+ * (CSS Sizing 4 §5.1). Sem isso o grow da área vence e a forma vira elipse (240 × 150 numa célula assim).
+ */
+const transferredMaxWidthOf = (item: ResolvedNode, area: Rect): number | undefined => {
+  const ratio = item.css.aspectRatio;
+  const maxHeight = lengthIn(item.css.maxHeight, area.height);
+  if (ratio === undefined || maxHeight === undefined) return undefined;
+  const own = lengthIn(item.css.maxWidth, area.width);
+  return Math.min(own ?? Number.POSITIVE_INFINITY, maxHeight * ratio);
+};
+
 /** O item numa árvore do tamanho da área: row com justify/align do grid; stretch na horizontal = grow. */
 const placeInArea = (item: ResolvedNode, area: Rect, container: CssStyle, env: LayoutEnv): PositionedNode => {
   const align = alignOf(item, container);
   const stretch = stretchesInline(item, container);
+  const transferred = stretch ? transferredMaxWidthOf(item, area) : undefined;
   return withIsolated(
     item,
     container,
@@ -220,7 +246,11 @@ const placeInArea = (item: ResolvedNode, area: Rect, container: CssStyle, env: L
     { width: area.width, height: area.height },
     env,
     (built) => ({ ...readChildren([built], area, env)[0]!, cell: area }),
-    (built) => applyStyle(built.yoga, stretch ? { flexGrow: 1, flexShrink: 1, flexBasis: 0 } : { flexGrow: 0, flexShrink: 0, flexBasis: 'auto' }),
+    (built) =>
+      applyStyle(built.yoga, {
+        ...(stretch ? { flexGrow: 1, flexShrink: 1, flexBasis: 0 } : { flexGrow: 0, flexShrink: 0, flexBasis: 'auto' }),
+        ...(transferred === undefined ? {} : { maxWidth: transferred }),
+      }),
   );
 };
 

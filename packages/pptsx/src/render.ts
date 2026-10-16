@@ -20,6 +20,7 @@ import type {
   RenderResult,
   PositionedSlide,
   SizeSpec,
+  ResolvedDeck,
   SlideElement,
   Theme,
   ResolvedTheme,
@@ -40,7 +41,8 @@ import {
 } from './fonts/index.ts';
 import { cssNotEmittedOf, fitDeck } from './fit/index.ts';
 import { buildOverview, slideToSvg, svgToPng } from './preview/index.ts';
-import { createResolveEnv, resolveDeck, resolveTheme, type ResolveEnv } from './resolve/index.ts';
+import { createResolveEnv, resolveTheme, type ResolveEnv } from './resolve/index.ts';
+import { resolveWithContainers } from './containers.ts';
 import { createContext, resolveSize } from './sizes.ts';
 import { jsx } from './jsx/jsx-runtime.ts';
 import { Box, Deck, Slide, Text } from './primitives/index.ts';
@@ -247,7 +249,9 @@ const embedPlanOf = (deck: PositionedDeck, settings: RenderSettings): EmbedPlan 
 
 const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: RenderSettings): Promise<RenderResult> => {
   const ctx = createContext(size);
-  const fitted = fitDeck({ deck: resolveDeck(deck(ctx), ctx, settings.resolveEnv), size, env: settings.env });
+  // M19: com <Container>, o resolve mede o espaço numa passada de layout antes do fit.
+  const contained = resolveWithContainers({ root: deck(ctx), responsive: ctx, resolveEnv: settings.resolveEnv, size, layoutEnv: settings.env });
+  const fitted = fitDeck({ deck: contained.deck, size, env: settings.env });
   const { positioned } = fitted;
   const embed = embedPlanOf(positioned, settings);
   const buffer = await emitPptx(positioned, {
@@ -260,7 +264,7 @@ const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: Rende
     ...(settings.document === undefined ? {} : { document: settings.document }),
   });
   // M11: propriedades CSS sem de/para para o PPTX viram warning aqui (uma vez por nó).
-  const diagnostics = [...fitted.diagnostics, ...cssNotEmittedOf(positioned), ...embed.diagnostics];
+  const diagnostics = [...contained.diagnostics, ...fitted.diagnostics, ...cssNotEmittedOf(positioned), ...embed.diagnostics];
   const result: RenderResult = {
     size: size.name,
     buffer,
@@ -270,6 +274,17 @@ const renderSize = async (deck: DeckDefinition, size: SlideSize, settings: Rende
   };
   if (settings.preview === false) return result;
   return { ...result, preview: renderPreview(positioned, diagnostics, settings, settings.preview) };
+};
+
+/**
+ * M19: o deck resolvido de um tamanho com os Containers já medidos (interno: o lint roda as regras dos DS nele,
+ * para enxergar o conteúdo que só existe depois da medição).
+ */
+export const resolveMeasured = (deck: DeckDefinition, spec: SizeSpec, options: RenderOptions = {}): ResolvedDeck => {
+  const settings = settingsOf({ ...options, preview: false });
+  const size = resolveSize(spec);
+  const ctx = createContext(size);
+  return resolveWithContainers({ root: deck(ctx), responsive: ctx, resolveEnv: settings.resolveEnv, size, layoutEnv: settings.env }).deck;
 };
 
 /** API programática: nunca grava arquivo nem imprime. */

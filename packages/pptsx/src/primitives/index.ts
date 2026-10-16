@@ -30,6 +30,8 @@ export const Path = definePrimitive('path');
 export const Icon = definePrimitive('icon');
 export const Connector = definePrimitive('connector');
 export const SlideNumber = definePrimitive('slideNumber');
+/** M19: Box cujo conteúdo é uma função do espaço medido (`{(box) => …}`); ver CONTRACTS, Container. */
+export const Container = definePrimitive('container');
 
 // Componentes (não primitivas): props do autor vêm depois, então vencem o padrão.
 export function B(props: AuthorPropsMap['span']): SlideElement {

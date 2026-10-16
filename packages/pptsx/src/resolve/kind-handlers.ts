@@ -93,6 +93,8 @@ export const KIND_HANDLERS: Readonly<Record<PrimitiveKind, Readonly<Record<strin
     placeholder,
   },
   text: { ...ITEM_OWN, ...TEXT_OWN, href, paginate: pass('paginate'), placeholder },
+  // M19: Container = Box sem paginate/placeholder (o conteúdo vem da função; a paginação ainda não sabe medir).
+  container: { ...ITEM_OWN, shape: pass('shape'), href },
   image: { ...ITEM_OWN, src: pass('src'), objectFit, href, placeholder },
   shape: {
     ...ITEM_OWN,

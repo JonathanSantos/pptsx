@@ -21,6 +21,7 @@ import type {
   CssImagePropsAuthor,
   CssPathPropsAuthor,
   CssSlideNumberPropsAuthor,
+  CssContainerQueryPropsAuthor,
   CssShapePropsAuthor,
   CssSlideProps,
   CssSpanProps,
@@ -788,6 +789,41 @@ export interface BoxMetrics {
 
 // ───────────────────────── JSX / árvore não resolvida ─────────────────────────
 
+// ───────────────────────── Container (M19) ─────────────────────────
+
+/** M19: breakpoints de contêiner: `small` = estreito e baixo ao mesmo tempo. */
+export type ContainerBreakpoint = 'narrow' | 'short' | 'small';
+export type ContainerResponsiveValue<T> = { readonly base: T } & { readonly [name in ContainerBreakpoint]?: T };
+/** M19: valor que depende do espaço do contêiner (como Responsive<T> depende do slide). */
+export type ContainerResponsive<T> = T | ContainerResponsiveValue<T>;
+
+/** M19: o espaço medido de um `<Container>` (content box, em pt), entregue à função filha. */
+export interface ContainerBox {
+  readonly width: Pt;
+  readonly height: Pt;
+  /** width / height (0 quando a altura é 0). */
+  readonly aspect: number;
+  /** width < DEFAULTS.containerQuery.narrow */
+  readonly narrow: boolean;
+  /** height < DEFAULTS.containerQuery.short */
+  readonly short: boolean;
+  /**
+   * Escolhe pelo espaço: small (estreito e baixo) > narrow / short > base. Duas assinaturas, a responsiva primeiro:
+   * com uma só, `pick('texto')` inferia T pelo `String.prototype.small()` do JS e não compilava.
+   */
+  readonly pick: { <T>(value: ContainerResponsiveValue<T>): T; <T>(value: T): T };
+  /** O contexto do slide, para combinar com tall/wide. */
+  readonly slide: DeckContext;
+}
+
+/**
+ * M19: um Box cujo conteúdo é uma função do espaço que ele recebeu. Contenção de tamanho: o tamanho vem do pai
+ * e das props (flex, width/height, grid), nunca do conteúdo; por isso a medição é determinística (ver CONTRACTS).
+ */
+export interface ContainerQueryProps extends Omit<BoxProps, 'children' | 'paginate' | 'placeholder'> {
+  readonly children: (box: ContainerBox) => Child;
+}
+
 export type PrimitiveKind =
   | 'deck'
   | 'slide'
@@ -801,7 +837,8 @@ export type PrimitiveKind =
   | 'path'
   | 'icon'
   | 'connector'
-  | 'slideNumber';
+  | 'slideNumber'
+  | 'container';
 
 /** Props concretas por primitiva (o que a árvore resolvida carrega). */
 export interface PrimitivePropsMap {
@@ -818,6 +855,7 @@ export interface PrimitivePropsMap {
   readonly icon: IconProps;
   readonly connector: ConnectorProps;
   readonly slideNumber: SlideNumberProps;
+  readonly container: ContainerQueryProps;
 }
 
 /**
@@ -838,6 +876,7 @@ export interface AuthorPropsMap {
   readonly icon: CssIconPropsAuthor;
   readonly connector: ConnectorPropsAuthor;
   readonly slideNumber: CssSlideNumberPropsAuthor;
+  readonly container: CssContainerQueryPropsAuthor;
 }
 
 /** Marca que identifica uma primitiva (vs componente do usuário). */
@@ -963,6 +1002,11 @@ interface ResolvedBase<K extends PrimitiveKind, P> {
 
 export interface ResolvedBox extends ResolvedBase<'box', NodeProps<BoxProps, ItemGeometryKey | ContainerGeometryKey | 'radius'>> {
   readonly children: readonly ResolvedNode[];
+  /**
+   * M19: o Box veio de um `<Container>`. 'pending' = ainda sem medida (sem filhos; a 1ª passada mede o espaço);
+   * 'measured' = a função já recebeu o tamanho e o Box tem largura/altura fixadas nele (contenção de tamanho).
+   */
+  readonly container?: 'pending' | 'measured';
 }
 
 /** M8: estilo efetivo de um trecho (herda do Text, sobrescrito pelos Span aninhados). */
@@ -1339,6 +1383,10 @@ export type DiagnosticCode =
   | 'text-illegible'
   | 'box-overflow'
   | 'out-of-slide'
+  /** M19: Container medido com largura ou altura 0 (o pai depende do conteúdo); a função recebe 0 (warning). */
+  | 'container-unsized'
+  /** M19: Container aninhado além de DEFAULTS.containerQuery.maxDepth; o nível de dentro fica vazio (error). */
+  | 'container-depth'
   | 'image-upscaled'
   | 'font-missing'
   /** M8: fonte pedida em embedFonts com fsType restrito; não foi embutida (warning, slide 0, path ''). */

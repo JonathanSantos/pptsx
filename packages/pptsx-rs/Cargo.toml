@@ -1,0 +1,28 @@
+[package]
+name = "pptsx-rs"
+# A mesma versão do núcleo (packages/pptsx/package.json): "reproduz o pptsx 1.0.2". O gate da release confere.
+version = "1.0.2"
+edition = "2024"
+description = "pptsx em Rust: TSX → PPTX num binário só, sem Node"
+license = "MIT"
+repository = "https://github.com/JonathanSantos/pptsx"
+build = "build.rs"
+publish = false
+
+[dependencies]
+imagesize = "0.15.0"
+indexmap = "2.14.2"
+oxc_allocator = "0.154.0"
+oxc_ast = "0.154.0"
+oxc_parser = "0.154.0"
+oxc_span = "0.154.0"
+oxc_syntax = "0.154.0"
+regex = { version = "1.13.1", default-features = false, features = ["std", "unicode"] }
+resvg = { version = "0.48.1", default-features = false, features = ["raster-images"] }
+rustybuzz = "0.20.1"
+taffy = "0.15.0"
+zip = { version = "9.0.3", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+serde_json = "1.0.154"
+

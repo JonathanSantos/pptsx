@@ -14,7 +14,7 @@ type Ts = typeof TS;
 
 const PRIMITIVE_TAGS: Readonly<Record<string, PrimitiveKind>> = {
   Box: 'box', Slide: 'slide', Text: 'text', Image: 'image', Shape: 'shape', Span: 'span', Chart: 'chart',
-  Table: 'table', Path: 'path', Icon: 'icon', SlideNumber: 'slideNumber',
+  Table: 'table', Path: 'path', Icon: 'icon', SlideNumber: 'slideNumber', Container: 'container',
 };
 
 export interface CodemodSkip {

@@ -1,0 +1,26 @@
+[
+  {
+    "size": "16x9",
+    "slide": 1,
+    "severity": "info",
+    "code": "slide-continued",
+    "path": "ContentLayout > Box > Bullets",
+    "message": "Slide 1 do autor virou 3 slides (4 de 12 itens no 1º, 4 no 2º, 4 no 3º). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo.",
+    "data": {
+      "parts": 3,
+      "sourceSlide": 1
+    }
+  },
+  {
+    "size": "4x3",
+    "slide": 1,
+    "severity": "info",
+    "code": "slide-continued",
+    "path": "ContentLayout > Box > Bullets",
+    "message": "Slide 1 do autor virou 2 slides (6 de 12 itens no 1º, 6 no 2º). Para caber em menos slides, reduza o fontSize dos itens ou o conteúdo.",
+    "data": {
+      "parts": 2,
+      "sourceSlide": 1
+    }
+  }
+]

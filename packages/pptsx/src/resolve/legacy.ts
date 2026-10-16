@@ -41,6 +41,7 @@ const BUILDERS: Readonly<Record<PrimitiveKind, PropsBuilder>> = {
   icon: ({ text, own }) => ({ color: text.color, ...own }),
   connector: ownOnly,
   slideNumber: textOf,
+  container: ownOnly,
 };
 
 export type LegacyProps<K extends PrimitiveKind> = Omit<PrimitivePropsMap[K], 'children'>;
