@@ -30,7 +30,8 @@ describe.skipIf(!ENABLED)('package — npm pack → install → init → build',
     ({ tarball, files: packed, size } = pack(ROOT, freshDir('pptsx-pack-')));
   }, TIMEOUT);
 
-  afterAll(removeFreshDirs);
+  // Apagar os node_modules temporários no Windows passa dos 10 s padrão do hook.
+  afterAll(removeFreshDirs, TIMEOUT);
 
   it('the tarball stays under 1.5 MB and carries LICENSE and THIRD_PARTY.md', () => {
     expect(size).toBeLessThanOrEqual(MAX_TARBALL_BYTES);

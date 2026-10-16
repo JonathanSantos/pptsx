@@ -22,7 +22,8 @@ describe.skipIf(!PACKAGE_TEST_ENABLED)('@pptsx/ds-kit — npm pack → install �
     kit = pack(packageDir('ds-kit'), destination);
   }, PACKAGE_TIMEOUT);
 
-  afterAll(removeFreshDirs);
+  // Apagar os node_modules temporários no Windows passa dos 10 s padrão do hook.
+  afterAll(removeFreshDirs, PACKAGE_TIMEOUT);
 
   it('o tarball tem o JS compilado, o bin, o tsconfig base e as licenças; nada de fonte ou teste', () => {
     for (const file of ['package.json', 'bin/pptsx-ds.mjs', 'dist/index.js', 'dist/index.d.ts', 'dist/scaffold.js', 'tsconfig.base.json', 'LICENSE', 'THIRD_PARTY.md']) {

@@ -22,7 +22,8 @@ describe.skipIf(!PACKAGE_TEST_ENABLED)('@pptsx/ds-base — npm pack → install 
     tarballs = packed.map((item) => item.tarball);
   }, PACKAGE_TIMEOUT);
 
-  afterAll(removeFreshDirs);
+  // Apagar os node_modules temporários no Windows passa dos 10 s padrão do hook.
+  afterAll(removeFreshDirs, PACKAGE_TIMEOUT);
 
   it('o tarball tem o JS compilado, a Inter com a OFL, as licenças e o guia; nada de fonte, teste ou exemplo', () => {
     for (const file of ['package.json', 'dist/index.js', 'dist/index.d.ts', 'fonts/inter/Inter-Regular.ttf', 'fonts/inter/OFL.txt', 'LICENSE', 'THIRD_PARTY.md']) {
