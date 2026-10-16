@@ -2,9 +2,13 @@
 
 Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Versões antes da 1.0 podem quebrar a API; o que quebra está em **Mudanças incompatíveis**.
 
-## 1.0.1 — primeira publicação no npm
+## 1.0.2 — primeira publicação no npm
 
-Mesmo motor da 1.0.0 (a 1.0.0 saiu só como release do GitHub, com o núcleo ainda `private`). Publica `pptsx`, `@pptsx/ds-kit` e `@pptsx/ds-base` no npm.
+Mesmo motor da 1.0.1. Publica `pptsx`, `@pptsx/ds-kit` e `@pptsx/ds-base` no npm (a 1.0.1 saiu só como release do GitHub: o job do npm parou num aviso do CI antes de publicar).
+
+## 1.0.1
+
+Mesmo motor da 1.0.0 (a 1.0.0 saiu só como release do GitHub, com o núcleo ainda `private`).
 
 ### Correções
 
