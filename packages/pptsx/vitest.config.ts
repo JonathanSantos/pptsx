@@ -13,5 +13,10 @@ export default defineConfig({
   },
   // Vite 8 transpila com oxc; o bloco `esbuild` antigo só gerava aviso de opções duplicadas.
   oxc: { jsx: { runtime: 'automatic', importSource: 'pptsx' } },
-  test: { include: ['tests/**/*.test.{ts,tsx}'] },
+  test: {
+    include: ['tests/**/*.test.{ts,tsx}'],
+    // Hooks que carregam o resvg nativo e rasterizam (tests/emit) passam de 10 s a frio no runner do
+    // Windows com Node 22 (CI 7fa19d5 e PR #1: "Hook timed out in 10000ms"); 60 s cobre o pior caso.
+    hookTimeout: 60_000,
+  },
 });
