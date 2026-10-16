@@ -2,9 +2,14 @@
 
 Escrito a partir dos commits de gate de cada marco (`docs/work/milestones/`). Versões antes da 1.0 podem quebrar a API; o que quebra está em **Mudanças incompatíveis**.
 
-## Não lançado — M19: composição
+## 1.0.3 — M19: composição; o núcleo em Rust
 
 ### Novidades
+
+- **`pptsx-rs`** (`packages/pptsx-rs`): o núcleo portado para Rust, um binário só, sem Node, com a mesma CLI
+  (`build`, `check`, `lint`, `init`, `mcp`, `--watch`, `--serve`, `--embed-fonts`) e a mesma saída: XML, diagnósticos
+  e lint comparados com o TS em `cargo test` (fixtures geradas pelo TS). A release traz o binário para macOS
+  (arm64 e x86_64), Linux (x86_64 e arm64) e Windows (x86_64), listado no `SHA256SUMS` junto do `pptsx.mjs`.
 
 - **`<Container>`**: Box cujo conteúdo é uma função do espaço medido (`{(box) => …}`), com `box.width/height`,
   `narrow`/`short` e `box.pick({ base, narrow, short, small })`. O tamanho vem do pai (contenção de tamanho); o

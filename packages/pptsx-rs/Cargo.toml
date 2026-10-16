@@ -1,7 +1,7 @@
 [package]
 name = "pptsx-rs"
-# A mesma versão do núcleo (packages/pptsx/package.json): "reproduz o pptsx 1.0.2". O gate da release confere.
-version = "1.0.2"
+# A mesma versão do núcleo (packages/pptsx/package.json): "reproduz o pptsx 1.0.3". O gate da release confere.
+version = "1.0.3"
 edition = "2024"
 description = "pptsx em Rust: TSX → PPTX num binário só, sem Node"
 license = "MIT"
