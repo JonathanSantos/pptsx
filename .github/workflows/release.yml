@@ -1,17 +1,64 @@
-# Release por tag (`v1.0.0`): a release do GitHub com o pptsx.mjs (arquivo único, Node 20+, sem node_modules),
-# o SHA256SUMS que o script da skill confere e os zips das skills. Não depende do npm.
+# Release por tag (`v1.0.1`): a release do GitHub com o pptsx.mjs (arquivo único, Node 20+, sem node_modules),
+# o SHA256SUMS que o script da skill confere e os zips das skills; depois o npm.
+# Não roda a suíte de novo: o job `gate` exige que o workflow CI tenha passado no mesmo commit (o push da main).
+# Fluxo: commit com a versão nova → push da main → tag `v<versão>` → push da tag (a Release espera o CI, se ainda roda).
 # A tag tem de ser a versão do núcleo (packages/pptsx/package.json): a skill baixa de
 # `…/releases/download/v<versão>`, montado a partir do `repository` desse package.json.
-# O npm é opcional: o job `npm` só publica com o segredo NPM_TOKEN (ver docs/work/VALIDACAO-DONO.md §3.2).
+# O npm só publica com o segredo NPM_TOKEN (ver docs/work/VALIDACAO-DONO.md §3.2).
 name: Release
 
 on:
   push:
     tags: ['v*']
 
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  release:
+  gate:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      # actions: read para ler e acompanhar os runs do CI deste commit.
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag igual à versão do núcleo
+        run: |
+          version="v$(node -p "require('./packages/pptsx/package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$version" ]; then
+            echo "::error::a tag $GITHUB_REF_NAME não bate com a versão do núcleo ($version)"
+            exit 1
+          fi
+      - name: CI verde neste commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Um commit pode ter vários runs do CI (re-runs, PR): basta um verde; se não, espera o que ainda roda.
+          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&per_page=100" \
+            --jq '.workflow_runs[] | select(.name == "CI") | "\(.id) \(.status) \(.conclusion)"')
+          echo "${runs:-nenhum run do CI}"
+          if grep -q ' completed success$' <<<"$runs"; then
+            exit 0
+          fi
+          pending=$(awk '$2 != "completed" { print $1; exit }' <<<"$runs")
+          if [ -n "$pending" ]; then
+            gh run watch "$pending" --repo "$GITHUB_REPOSITORY" --exit-status --interval 30
+            exit 0
+          fi
+          echo "::error::sem CI verde no commit $GITHUB_SHA; faça o push da main, espere o CI e só então a tag"
+          exit 1
+
+  release:
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       # contents: write para criar a release da tag.
       contents: write
@@ -21,21 +68,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Tag igual à versão do núcleo
-        run: |
-          version="v$(node -p "require('./packages/pptsx/package.json').version")"
-          if [ "$GITHUB_REF_NAME" != "$version" ]; then
-            echo "::error::a tag $GITHUB_REF_NAME não bate com a versão do núcleo ($version)"
-            exit 1
-          fi
       - run: npm ci
-      # Antes dos testes: os pacotes se importam pelo nome, e o `exports` aponta para dist/.
+      # As skills leem o dist/ dos pacotes; a paridade do bundle já passou no CI deste commit.
       - run: npm run build
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run test:package
-      - name: Bundle de arquivo único (paridade com o build normal)
-        run: npm run test:standalone --workspace pptsx
+      - name: Bundle de arquivo único (pptsx.mjs e SHA256SUMS)
+        run: npm run build:standalone --workspace pptsx
       # M18-8: as skills saem do repo na hora (guia, props, SHA256 do bundle desta tag), nunca escritas à mão.
       - name: Skills (pptsx e ds-base)
         run: |
@@ -49,11 +86,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-  # Opcional: sem o segredo NPM_TOKEN o job termina sem publicar. Antes de ligar, tirar `"private": true`
-  # de packages/pptsx/package.json e ter o escopo @pptsx no npmjs.com.
+  # Sem o segredo NPM_TOKEN o job termina sem publicar.
   npm:
     needs: release
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       id-token: write

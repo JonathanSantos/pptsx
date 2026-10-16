@@ -12,7 +12,8 @@ const strict = process.argv.includes('--strict');
 const workspaces = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).workspaces;
 
 // Avisos que o dry-run sempre dá fora da CI de publicação e não dizem nada do pacote.
-const BENIGN = [/requires you to be logged in/i, /Unknown (cli|env) config/i];
+// O `always-auth` vem do .npmrc que o actions/setup-node grava com `registry-url`; o npm 11 não o conhece mais.
+const BENIGN = [/requires you to be logged in/i, /Unknown (cli|env) config/i, /Unknown user config "always-auth"/i];
 // O pacote ainda `private`: a decisão de tirar é do dono (com --strict, `ownerProblems` acusa).
 const PRIVATE = /marked as private/i;
 

@@ -1,14 +1,27 @@
-# M16-6/M17/M18-5: a suíte dos três pacotes (npm workspaces) em cada push e PR, em macOS, Ubuntu e Windows
-# com Node 20 e 22. Keynote/PowerPoint ficam fora.
+# M16-6/M17/M18-5: a suíte dos três pacotes (npm workspaces) em macOS, Ubuntu e Windows com Node 20 e 22.
+# Keynote/PowerPoint ficam fora. Roda uma vez por commit: no push da main e em cada PR (branches de trabalho
+# entram pelo PR). Tags não disparam o CI: o workflow Release confere que este CI já passou no mesmo commit.
 name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Num PR, um push novo cancela o run anterior. Na main o grupo é o commit: nenhum run fica pendente e é
+# descartado por outro, porque a Release espera o run do commit da tag.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -44,6 +57,7 @@ jobs:
   gallery:
     needs: check
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
