@@ -11,9 +11,9 @@
 </p>
 
 <p align="center">
-  <img alt="pptsx-rs 1.1.2" src="https://img.shields.io/badge/pptsx--rs-1.1.2-4F5BFF?style=flat-square&labelColor=0B1020">
+  <img alt="pptsx-rs 1.1.3" src="https://img.shields.io/badge/pptsx--rs-1.1.3-4F5BFF?style=flat-square&labelColor=0B1020">
   <img alt="binário de 6 MB" src="https://img.shields.io/badge/bin%C3%A1rio-6%20MB-C246D8?style=flat-square&labelColor=0B1020">
-  <img alt="81 testes" src="https://img.shields.io/badge/testes-81%20passando-14B87F?style=flat-square&labelColor=0B1020">
+  <img alt="82 testes" src="https://img.shields.io/badge/testes-82%20passando-14B87F?style=flat-square&labelColor=0B1020">
   <img alt="macOS, Linux e Windows" src="https://img.shields.io/badge/macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-5%20alvos-FF6A3D?style=flat-square&labelColor=0B1020">
   <img alt="Rust 2024" src="https://img.shields.io/badge/Rust-2024-8A93B8?style=flat-square&labelColor=0B1020&logo=rust&logoColor=white">
   <img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-8A93B8?style=flat-square&labelColor=0B1020">
@@ -163,7 +163,7 @@ cargo test
 cargo clippy --release --all-targets -- -D warnings
 ```
 
-Os testes rodam sem Node: 66 unitários, 8 do grupo de fit e 7 que comparam decks inteiros com fixtures em `packages/pptsx-rs/fixtures/`.
+Os testes rodam sem Node: 67 unitários, 8 do grupo de fit e 7 que comparam decks inteiros com fixtures em `packages/pptsx-rs/fixtures/`.
 
 ## Mapa do repositório
 

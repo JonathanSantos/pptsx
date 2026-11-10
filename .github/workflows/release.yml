@@ -1,4 +1,4 @@
-# Release por tag (`v1.1.2`): a release do GitHub com a skill do pptsx-rs por plataforma (pasta `pptsx/` com
+# Release por tag (`v1.1.3`): a release do GitHub com a skill do pptsx-rs por plataforma (pasta `pptsx/` com
 # SKILL.md, references/, mcp/ e o binário em bin/; macOS arm64/x86_64, Linux x86_64/arm64, Windows x86_64) e o
 # SHA256SUMS dos pacotes. Só o binário em Rust é publicado; os pacotes TypeScript são legado e não saem daqui.
 # Não roda a suíte de novo: o job `gate` exige que o workflow CI tenha passado no mesmo commit (o push da main).
