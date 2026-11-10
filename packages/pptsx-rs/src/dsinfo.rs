@@ -54,8 +54,32 @@ fn get_str(v: &Value, key: &str) -> Option<String> {
 }
 
 /// Caminho relativo com `/`, começando por `./` ou `../`.
+/// O caminho absoluto e sem `.`/`..`, com os links simbólicos resolvidos até onde o caminho existe. Uma pasta
+/// que o `init` ainda vai criar não existe para o `canonicalize`: sem isto, `init ../../decks/novo` contava os
+/// `..` como pastas de verdade e o import do DS saía com níveis a mais.
+fn resolved(path: &Path) -> PathBuf {
+    if let Ok(real) = std::fs::canonicalize(path) {
+        return real;
+    }
+    let absolute = if path.is_absolute() { path.to_path_buf() } else { std::env::current_dir().unwrap_or_default().join(path) };
+    let mut clean = PathBuf::new();
+    for part in absolute.components() {
+        match part {
+            std::path::Component::ParentDir => {
+                clean.pop();
+            }
+            std::path::Component::CurDir => {}
+            other => clean.push(other.as_os_str()),
+        }
+    }
+    // O ancestral que já existe pode estar atrás de um link (/tmp → /private/tmp): resolve-o e recoloca o resto.
+    let existing = clean.ancestors().find(|dir| dir.exists()).map(Path::to_path_buf).unwrap_or_default();
+    let rest = clean.strip_prefix(&existing).map(Path::to_path_buf).unwrap_or_default();
+    std::fs::canonicalize(&existing).unwrap_or(existing).join(rest)
+}
+
 fn relative_import(from: &Path, to: &Path) -> String {
-    let (from, to) = (std::fs::canonicalize(from).unwrap_or_else(|_| from.to_path_buf()), std::fs::canonicalize(to).unwrap_or_else(|_| to.to_path_buf()));
+    let (from, to) = (resolved(from), resolved(to));
     let f: Vec<_> = from.components().collect();
     let t: Vec<_> = to.components().collect();
     let common = f.iter().zip(&t).take_while(|(a, b)| a == b).count();
@@ -374,6 +398,18 @@ pub fn markdown(ds: &DsInfo, location: &DsLocation, props_table: impl Fn(&Value)
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn relative_import_resolves_parent_segments_of_a_folder_that_does_not_exist_yet() {
+        let base = std::env::temp_dir().join(format!("pptsx-rel-{}", std::process::id()));
+        std::fs::create_dir_all(base.join("a/b")).unwrap();
+        std::fs::create_dir_all(base.join("ds/src")).unwrap();
+        std::fs::write(base.join("ds/src/index.ts"), "").unwrap();
+        // A pasta do deck ainda não existe e chega com `..`, como em `init ../../out/novo` rodado de a/b.
+        let deck_dir = base.join("a/b/../../out/novo");
+        assert_eq!(relative_import(&deck_dir, &base.join("ds/src/index.ts")), "../../ds/src/index.ts");
+        std::fs::remove_dir_all(&base).unwrap();
+    }
 
     #[test]
     fn signature_lists_required_first_and_marks_optional() {

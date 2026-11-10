@@ -647,6 +647,9 @@ fn table_diagnostics(placed: &[Placed], i: usize, overflow: Option<&Overflow>, s
     out
 }
 
+/// Estouro (pt) acima do qual o número é resíduo de float do flexbox, não uma medida: nenhum slide tem 100 mil pt.
+const DEGENERATE_PT: f64 = 100_000.0;
+
 fn box_message(placed: &[Placed], kids: &[Vec<usize>], o: &Overflow, explained: &HashSet<usize>, slide: usize) -> Diag {
     let e = container_excess(placed, kids, o.index, explained);
     let used = fmt(e.available + e.excess.pt);
@@ -659,6 +662,16 @@ fn box_message(placed: &[Placed], kids: &[Vec<usize>], o: &Overflow, explained: 
         _ if main => format!("Os filhos em fluxo somam {used} pt na {axis} ({direction})"),
         _ => format!("O maior filho em fluxo ocupa {used} pt na {axis} (eixo cruzado da {direction})"),
     };
+    // Numa row em que um filho não pode encolher (nowrap, largura mínima), o flexbox degenera e as larguras
+    // saem na casa dos milhões de pt (o Yoga faz o mesmo). O número não diz nada a quem lê: a mensagem conta
+    // o que aconteceu e o que fazer.
+    if o.pt > DEGENERATE_PT {
+        let d = Diag::new(Level::Error, "box-overflow", slide, placed[o.index].node.label.as_str(), format!(
+            "Os filhos em fluxo não cabem na {axis} ({direction}): a área de conteúdo tem {} pt e um deles não pode encolher (texto nowrap ou largura mínima). Encurte esse texto, tire um item da linha ou dê mais largura ao contêiner.",
+            fmt(e.available)
+        ));
+        return overflow_data(d, o);
+    }
     let d = Diag::new(Level::Error, "box-overflow", slide, placed[o.index].node.label.as_str(), format!(
         "{usage}, mas a área de conteúdo tem {} pt: estouro de {} pt ({}%). Reduza width/height fixos ou gap/padding, permita flexShrink nos filhos (flexShrink={{0}} impede), ou aumente o contêiner.",
         fmt(e.available),
