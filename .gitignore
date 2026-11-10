@@ -7,5 +7,5 @@ dist/
 /target/
 /packages/pptsx-rs/target/
 
-# DS local da marca Vivo Orbit (não versionado)
+# DS local de teste (não versionado)
 /packages/ds-orbit/

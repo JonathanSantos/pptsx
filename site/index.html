@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pptsx-rs por dentro</title>
+<meta name="description" content="Como um binário de 6 MB em Rust lê um deck em TSX e grava um PowerPoint editável: interpretador, layout, texto, ajuste e OOXML, explicados com desenhos.">
+<link rel="icon" href="mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F7F8FD; --card: #FFFFFF; --ink: #0B1020; --mute: #5A6385; --line: #D5DAEC; --soft: #EEF1FA;
+  --indigo: #4F5BFF; --magenta: #C246D8; --coral: #FF6A3D; --green: #14B87F; --amber: #B97A00;
+  --display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --rail: 232px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #0B1020; --card: #121834; --ink: #EEF1FA; --mute: #8A93B8; --line: #283160; --soft: #1A2246; --amber: #F5A524; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink); font: 400 17px/1.6 var(--body);
+  /* A malha é o papel milimetrado do motor: um ponto a cada 24 px. */
+  background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 1.2px); background-size: 24px 24px;
+}
+a { color: var(--indigo); text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; border-radius: 4px; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+code { background: var(--soft); padding: 0.1em 0.35em; border-radius: 4px; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+/* Topo */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 0; }
+.brand { display: flex; align-items: center; gap: 10px; font: 700 20px/1 var(--display); color: var(--ink); text-decoration: none; }
+.brand svg { width: 30px; height: 30px; }
+.top nav { display: flex; gap: 20px; font-size: 15px; }
+.top nav a { color: var(--mute); text-decoration: none; }
+.top nav a:hover { color: var(--ink); }
+
+/* Abertura */
+.hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 32px; align-items: center; padding: 32px 0 72px; }
+.eyebrow { font: 600 13px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
+h1 { font: 800 clamp(40px, 6.2vw, 78px)/0.98 var(--display); letter-spacing: -0.02em; margin: 18px 0 22px; }
+h1 .through { background: linear-gradient(100deg, var(--indigo), var(--magenta) 55%, var(--coral)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lede { font-size: 19px; color: var(--mute); max-width: 34em; margin: 0 0 28px; }
+.facts { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 0; padding: 0; list-style: none; font: 400 14px/1.4 var(--mono); color: var(--mute); }
+.facts b { display: block; font: 700 26px/1.1 var(--display); color: var(--ink); }
+.xray { width: 100%; height: auto; display: block; }
+
+/* A abertura desmonta o slide uma vez: as camadas saem empilhadas e se separam. */
+.layer { animation: explode 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i) * 70ms); }
+@keyframes explode { from { transform: translateY(calc(var(--i) * -104px)); opacity: 0.2; } to { transform: none; opacity: 1; } }
+.tag-line { animation: fade 0.5s 1.1s both; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .layer, .tag-line { animation: none; } html { scroll-behavior: auto; } }
+
+/* Corpo: trilho + estágios */
+.body { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); gap: 40px; align-items: start; }
+.rail { position: sticky; top: 24px; padding: 6px 0 6px 22px; font-size: 14px; }
+.rail::before { content: ""; position: absolute; left: 5px; top: 12px; bottom: 12px; width: 2px; border-radius: 2px; background: linear-gradient(var(--indigo), var(--magenta) 55%, var(--coral)); }
+.rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.rail a { position: relative; display: block; color: var(--mute); text-decoration: none; }
+.rail a::before { content: ""; position: absolute; left: -21px; top: 0.45em; width: 10px; height: 10px; border-radius: 50%; background: var(--paper); border: 2px solid var(--line); }
+.rail a:hover, .rail a.on { color: var(--ink); }
+.rail a.on::before { background: var(--coral); border-color: var(--coral); }
+.rail .sep { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+.stage { padding: 8px 0 72px; scroll-margin-top: 16px; }
+.stage > header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+.step { font: 600 13px/1 var(--mono); color: var(--coral); letter-spacing: 0.06em; }
+h2 { font: 700 clamp(28px, 3.4vw, 40px)/1.08 var(--display); letter-spacing: -0.01em; margin: 0; }
+.where { font: 400 13px/1.4 var(--mono); color: var(--mute); margin: 6px 0 20px; }
+/* O desenho abre o estágio em largura cheia; o texto corre em duas colunas embaixo. */
+.cols { display: flex; flex-direction: column; gap: 22px; }
+.cols > figure { order: -1; }
+.cols > div { columns: 2; column-gap: 36px; }
+.cols p { margin: 0 0 14px; break-inside: avoid; }
+.cols ul { margin: 0 0 14px; padding-left: 1.1em; }
+.cols li { margin-bottom: 8px; break-inside: avoid; }
+.note { break-inside: avoid; }
+figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px 16px; }
+figure svg { width: 100%; height: auto; display: block; }
+figcaption { font-size: 13.5px; color: var(--mute); margin-top: 10px; line-height: 1.45; }
+.note { border-left: 3px solid var(--magenta); background: var(--card); padding: 12px 16px; border-radius: 0 10px 10px 0; font-size: 15.5px; margin: 0 0 14px; }
+.note b { font-family: var(--display); }
+
+/* Curiosidades e números */
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; font-size: 15px; }
+.card h3 { font: 700 18px/1.2 var(--display); margin: 0 0 8px; }
+.card p { margin: 0; color: var(--mute); }
+.card .src { display: block; margin-top: 10px; font: 400 12px/1.3 var(--mono); color: var(--mute); }
+table { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--mute); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-family: var(--mono); font-size: 13.5px; white-space: nowrap; }
+.scroll { overflow-x: auto; }
+footer { border-top: 1px solid var(--line); padding: 28px 0 56px; color: var(--mute); font-size: 14.5px; }
+
+/* Vocabulário dos desenhos */
+svg text { font-family: var(--body); font-size: 12px; fill: var(--ink); }
+svg .m { font-family: var(--mono); font-size: 11px; }
+svg .s { font-size: 10.5px; fill: var(--mute); }
+svg .h { font-family: var(--display); font-weight: 700; font-size: 14px; }
+svg .w { fill: #FFFFFF; }
+.f-card { fill: var(--card); } .f-paper { fill: var(--paper); } .f-soft { fill: var(--soft); } .f-ink { fill: var(--ink); } .f-mute { fill: var(--mute); }
+.f-indigo { fill: var(--indigo); } .f-magenta { fill: var(--magenta); } .f-coral { fill: var(--coral); } .f-green { fill: var(--green); } .f-amber { fill: var(--amber); }
+.k-line { stroke: var(--line); fill: none; } .k-ink { stroke: var(--ink); fill: none; } .k-mute { stroke: var(--mute); fill: none; }
+.k-indigo { stroke: var(--indigo); fill: none; } .k-magenta { stroke: var(--magenta); fill: none; } .k-coral { stroke: var(--coral); fill: none; } .k-green { stroke: var(--green); fill: none; }
+.dash { stroke-dasharray: 4 4; }
+.t-indigo { fill: var(--indigo); } .t-coral { fill: var(--coral); } .t-magenta { fill: var(--magenta); } .t-green { fill: var(--green); } .t-mute { fill: var(--mute); }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .cols > div { columns: 1; }
+  .body { grid-template-columns: minmax(0, 1fr); }
+  .rail { display: none; }
+  .grid3 { grid-template-columns: minmax(0, 1fr); }
+  .top nav a:not(:last-child) { display: none; }
+  .stage > header { flex-direction: column; gap: 8px; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F5BFF"/><stop offset=".55" stop-color="#C246D8"/><stop offset="1" stop-color="#FF6A3D"/></linearGradient>
+    <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4F5BFF"/><stop offset=".55" stop-color="#C246D8"/><stop offset="1" stop-color="#FF6A3D"/></linearGradient>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="#topo" id="topo">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="url(#g)"/><rect x="14.5" y="11" width="40" height="27" rx="5" fill="#fff" opacity=".38"/><rect x="9" y="18" width="46" height="31" rx="6" fill="#fff"/><g fill="none" stroke="url(#g)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,27.5 17,33.5 22,39.5"/><polyline points="42,27.5 47,33.5 42,39.5"/><line x1="35" y1="25.5" x2="29" y2="41.5"/></g></svg>
+      pptsx-rs
+    </a>
+    <nav aria-label="Atalhos">
+      <a href="#ler">Por dentro</a>
+      <a href="#curiosidades">Curiosidades</a>
+      <a href="#numeros">Números</a>
+      <a href="https://github.com/JonathanSantos/pptsx">Código no GitHub</a>
+    </nav>
+  </div>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Por dentro do binário</div>
+      <h1>Um slide <span class="through">atravessa</span> 24 mil linhas de Rust</h1>
+      <p class="lede">O pptsx-rs lê um deck escrito em TSX e grava um PowerPoint editável. Não tem Node, navegador nem motor JavaScript dentro: tem um interpretador próprio, um port do Yoga, um medidor de texto e um escritor de OOXML. Esta página abre cada peça.</p>
+      <ul class="facts">
+        <li><b>6,1 MiB</b>um arquivo executável</li>
+        <li><b>12</b>crates de dependência</li>
+        <li><b>80</b>testes, 7 com decks dourados</li>
+      </ul>
+    </div>
+
+    <svg class="xray" viewBox="0 0 740 760" role="img" aria-label="O mesmo slide em cinco camadas empilhadas: o código TSX, a árvore de elementos, os frames em pontos, o texto medido e o XML do PowerPoint.">
+      <line x1="246" y1="92" x2="246" y2="700" stroke="url(#gv)" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>
+      <!-- 1 código -->
+      <g class="layer" style="--i:0"><g transform="translate(190 20) matrix(.866 .5 -.866 .5 0 0)">
+        <rect width="300" height="170" rx="8" class="f-card k-line" style="stroke:var(--indigo)" stroke-width="1.5"/>
+        <text class="m" x="16" y="30"><tspan class="t-magenta">&lt;Slide</tspan> padding={40} gap={16}<tspan class="t-magenta">&gt;</tspan></text>
+        <text class="m" x="28" y="52"><tspan class="t-magenta">&lt;Text</tspan> fontSize={32}<tspan class="t-magenta">&gt;</tspan>Resultados<tspan class="t-magenta">&lt;/Text&gt;</tspan></text>
+        <text class="m" x="28" y="74"><tspan class="t-magenta">&lt;Box</tspan> display="grid" gap={16}<tspan class="t-magenta">&gt;</tspan></text>
+        <text class="m" x="40" y="96">{kpis.map(k =&gt; <tspan class="t-magenta">&lt;Kpi</tspan> {...k} <tspan class="t-magenta">/&gt;</tspan>)}</text>
+        <text class="m" x="28" y="118"><tspan class="t-magenta">&lt;/Box&gt;</tspan></text>
+        <text class="m" x="16" y="140"><tspan class="t-magenta">&lt;/Slide&gt;</tspan></text>
+      </g></g>
+      <!-- 2 árvore -->
+      <g class="layer" style="--i:1"><g transform="translate(190 142) matrix(.866 .5 -.866 .5 0 0)">
+        <rect width="300" height="170" rx="8" class="f-card k-line" stroke-width="1.5"/>
+        <g class="k-mute" stroke-width="1.2"><path d="M150 44 V58 M70 58 H230 M70 58 V72 M230 58 V72 M230 96 V108 M170 108 H290 M170 108 V120 M230 108 V120 M290 108 V120"/></g>
+        <g class="m"><rect x="120" y="22" width="60" height="22" rx="6" class="f-indigo"/><text class="m w" x="134" y="37">Slide</text>
+        <rect x="40" y="72" width="60" height="24" rx="6" class="f-soft"/><text class="m" x="56" y="88">Text</text>
+        <rect x="200" y="72" width="60" height="24" rx="6" class="f-soft"/><text class="m" x="218" y="88">Box</text>
+        <rect x="148" y="120" width="44" height="22" rx="6" class="f-soft"/><text class="m" x="158" y="135">Kpi</text>
+        <rect x="208" y="120" width="44" height="22" rx="6" class="f-soft"/><text class="m" x="218" y="135">Kpi</text>
+        <rect x="268" y="120" width="24" height="22" rx="6" class="f-soft"/></g>
+      </g></g>
+      <!-- 3 frames -->
+      <g class="layer" style="--i:2"><g transform="translate(190 264) matrix(.866 .5 -.866 .5 0 0)">
+        <rect width="300" height="170" rx="8" class="f-card k-line" stroke-width="1.5"/>
+        <rect x="20" y="18" width="260" height="34" class="k-magenta dash" stroke-width="1.2"/>
+        <rect x="20" y="62" width="80" height="90" class="k-magenta dash" stroke-width="1.2"/>
+        <rect x="110" y="62" width="80" height="90" class="k-magenta dash" stroke-width="1.2"/>
+        <rect x="200" y="62" width="80" height="90" class="k-magenta dash" stroke-width="1.2"/>
+        <text class="m t-magenta" x="26" y="40">640 × 37 pt</text>
+        <text class="m t-magenta" x="26" y="112">202,7</text><text class="m t-magenta" x="116" y="112">202,7</text><text class="m t-magenta" x="206" y="112">202,7</text>
+      </g></g>
+      <!-- 4 texto -->
+      <g class="layer" style="--i:3"><g transform="translate(190 386) matrix(.866 .5 -.866 .5 0 0)">
+        <rect width="300" height="170" rx="8" class="f-card k-line" stroke-width="1.5"/>
+        <text x="20" y="48" style="font:700 30px var(--display)">Resultados</text>
+        <g class="k-coral" stroke-width="1"><path d="M20 54 H182 M20 22 V58 M42 22 V58 M59 22 V58 M77 22 V58 M95 22 V58 M101 22 V58 M112 22 V58 M129 22 V58 M146 22 V58 M163 22 V58 M182 22 V58"/></g>
+        <g class="f-soft"><rect x="20" y="76" width="64" height="16" rx="3"/><rect x="20" y="100" width="40" height="26" rx="3"/><rect x="110" y="76" width="56" height="16" rx="3"/><rect x="110" y="100" width="52" height="26" rx="3"/><rect x="200" y="76" width="36" height="16" rx="3"/><rect x="200" y="100" width="30" height="26" rx="3"/></g>
+      </g></g>
+      <!-- 5 xml -->
+      <g class="layer" style="--i:4"><g transform="translate(190 508) matrix(.866 .5 -.866 .5 0 0)">
+        <rect width="300" height="170" rx="8" class="f-card" style="stroke:var(--coral)" stroke-width="1.5"/>
+        <text class="m" x="16" y="32"><tspan class="t-coral">&lt;p:sp&gt;</tspan></text>
+        <text class="m" x="28" y="54"><tspan class="t-coral">&lt;a:off</tspan> x="508000" y="508000"<tspan class="t-coral">/&gt;</tspan></text>
+        <text class="m" x="28" y="76"><tspan class="t-coral">&lt;a:ext</tspan> cx="8128000" cy="469900"<tspan class="t-coral">/&gt;</tspan></text>
+        <text class="m" x="28" y="98"><tspan class="t-coral">&lt;a:schemeClr</tspan> val="tx1"<tspan class="t-coral">/&gt;</tspan></text>
+        <text class="m" x="28" y="120"><tspan class="t-coral">&lt;a:t&gt;</tspan>Resultados<tspan class="t-coral">&lt;/a:t&gt;</tspan></text>
+        <text class="m" x="16" y="142"><tspan class="t-coral">&lt;/p:sp&gt;</tspan></text>
+      </g></g>
+      <g class="tag-line">
+        <g class="k-mute" stroke-width="1"><path d="M452 170 H492 M452 292 H492 M452 414 H492 M452 536 H492 M452 658 H492"/></g>
+        <text class="h" x="500" y="168">deck.tsx</text><text class="s" x="500" y="184">o que o autor escreve</text>
+        <text class="h" x="500" y="290">árvore de elementos</text><text class="s" x="500" y="306">o interpretador rodou o código</text>
+        <text class="h" x="500" y="412">frames em pontos</text><text class="s" x="500" y="428">flexbox e grid resolvidos</text>
+        <text class="h" x="500" y="534">texto medido</text><text class="s" x="500" y="550">glifo a glifo, com a fonte real</text>
+        <text class="h" x="500" y="656">slide1.xml</text><text class="s" x="500" y="672">em EMU, dentro do .pptx</text>
+      </g>
+    </svg>
+  </section>
+
+  <div class="body">
+    <nav class="rail" aria-label="Estágios do motor">
+      <ol>
+        <li><a href="#ler">1 · Ler o TSX</a></li>
+        <li><a href="#texto">2 · Medir o texto</a></li>
+        <li><a href="#flex">3 · Flexbox em f32</a></li>
+        <li><a href="#grid">4 · Grid</a></li>
+        <li><a href="#caber">5 · Fazer caber</a></li>
+        <li><a href="#diagnostico">6 · Apontar a causa</a></li>
+        <li><a href="#desenhar">7 · Desenhar em OOXML</a></li>
+        <li><a href="#arquivo">8 · Fechar o arquivo</a></li>
+        <li><a href="#conferir">9 · Conferir sem abrir</a></li>
+        <li><a href="#agentes">10 · Falar com agentes</a></li>
+        <li class="sep"><a href="#curiosidades">Curiosidades</a></li>
+        <li><a href="#numeros">Números</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <!-- 1 -->
+      <section class="stage" id="ler">
+        <header><span class="step">ESTÁGIO 1</span><h2>Ler o TSX sem um motor JavaScript</h2></header>
+        <div class="where">src/js/ · interp.rs, module.rs, jsx.rs, node.rs</div>
+        <div class="cols">
+          <div>
+            <p>O <code>oxc</code> faz só o parse. Quem executa o deck é um interpretador de árvore escrito para isso: ele caminha pela AST, mantém uma cadeia de escopos e cria closures que guardam referências diretas aos nós.</p>
+            <p>É um subconjunto de propósito. Um deck tem de dar o mesmo resultado sempre, então <code>Date</code> e <code>Math.random</code> são erros com arquivo, linha e coluna. Classes, <code>async</code>, <code>this</code> e atribuição em propriedade também ficam de fora.</p>
+            <ul>
+              <li><b>Orçamento:</b> cada passo de execução gasta uma unidade de 50.000.000. Acabou, o erro é "orçamento de passos esgotado (laço infinito?)". Todo deck termina.</li>
+              <li><b>Recursão:</b> 1.000 níveis.</li>
+              <li><b>Disco:</b> <code>readFileSync</code> só enxerga a pasta do pacote de um módulo já carregado. Escrita, rede e processos não existem.</li>
+              <li><b>Componentes:</b> são funções chamadas na hora em que o JSX é avaliado. A raiz devolvida guarda o nome e as props de origem, e é isso que aparece depois nos diagnósticos.</li>
+            </ul>
+            <p class="note"><b>O kit mora no binário.</b> <code>import … from '@pptsx/ds-kit'</code> resolve para um caminho virtual, <code>&lt;pptsx-rs&gt;/@pptsx/ds-kit</code>, servido de fontes embutidas. Sem <code>node_modules</code>, um pacote vizinho é achado pelo <code>workspaces</code> do <code>package.json</code>.</p>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 300" role="img" aria-label="O código passa pelo parser oxc, vira uma AST e é executado por um interpretador com orçamento de passos e uma cadeia de escopos.">
+              <rect x="10" y="20" width="150" height="120" rx="10" class="f-soft"/>
+              <text class="s" x="22" y="40">deck.tsx</text>
+              <text class="m" x="22" y="64">const n = [1, 2, 3]</text>
+              <text class="m" x="22" y="84">n.map(x =&gt;</text>
+              <text class="m" x="34" y="104">&lt;Text&gt;{x}&lt;/Text&gt;)</text>
+              <path d="M164 80 H206" class="k-indigo" stroke-width="2" marker-end="url(#ah)"/>
+              <text class="s t-indigo" x="168" y="70">oxc</text>
+              <g class="k-mute" stroke-width="1.2"><path d="M290 52 V70 M240 70 H340 M240 70 V86 M340 70 V86 M340 110 V124 M310 124 H370 M310 124 V136 M370 124 V136"/></g>
+              <rect x="252" y="30" width="76" height="22" rx="6" class="f-indigo"/><text class="m w" x="262" y="45">CallExpr</text>
+              <rect x="210" y="86" width="60" height="24" rx="6" class="f-soft"/><text class="m" x="218" y="102">Member</text>
+              <rect x="306" y="86" width="68" height="24" rx="6" class="f-soft"/><text class="m" x="318" y="102">Arrow</text>
+              <rect x="282" y="136" width="56" height="22" rx="6" class="f-soft"/><text class="m" x="290" y="151">Param</text>
+              <rect x="346" y="136" width="48" height="22" rx="6" class="f-soft"/><text class="m" x="358" y="151">JSX</text>
+              <path d="M398 96 H440" class="k-magenta" stroke-width="2" marker-end="url(#ah)"/>
+              <text class="s t-magenta" x="398" y="86">eval</text>
+              <rect x="446" y="30" width="104" height="128" rx="10" class="f-card k-line"/>
+              <text class="s" x="458" y="50">escopos</text>
+              <rect x="458" y="58" width="80" height="24" rx="5" class="f-soft"/><text class="m" x="466" y="74">x = 2</text>
+              <rect x="458" y="88" width="80" height="24" rx="5" class="f-soft"/><text class="m" x="466" y="104">n = […]</text>
+              <rect x="458" y="118" width="80" height="24" rx="5" class="f-soft"/><text class="m" x="466" y="134">pptsx</text>
+              <text class="s" x="10" y="196">orçamento de passos</text>
+              <rect x="10" y="206" width="540" height="18" rx="9" class="f-soft"/>
+              <rect x="10" y="206" width="48" height="18" rx="9" fill="url(#g)"/>
+              <text class="m" x="66" y="219">um deck comum gasta uma fração</text>
+              <text class="m t-mute" x="446" y="219">50.000.000</text>
+              <text class="s" x="10" y="258">fora do subconjunto, com arquivo:linha:coluna</text>
+              <g class="m"><rect x="10" y="266" width="62" height="22" rx="11" class="k-coral"/><text class="m t-coral" x="24" y="281">Date</text>
+              <rect x="80" y="266" width="102" height="22" rx="11" class="k-coral"/><text class="m t-coral" x="92" y="281">Math.random</text>
+              <rect x="190" y="266" width="58" height="22" rx="11" class="k-coral"/><text class="m t-coral" x="202" y="281">class</text>
+              <rect x="256" y="266" width="58" height="22" rx="11" class="k-coral"/><text class="m t-coral" x="268" y="281">async</text>
+              <rect x="322" y="266" width="50" height="22" rx="11" class="k-coral"/><text class="m t-coral" x="334" y="281">this</text>
+              <rect x="380" y="266" width="76" height="22" rx="11" class="k-coral"/><text class="m t-coral" x="392" y="281">o.x = 1</text></g>
+            </svg>
+            <figcaption>O arena da AST é vazado de propósito (<code>Box::leak</code>): o processo é curto. Por isso o <code>--watch</code> refaz cada build num processo filho e a memória volta a zero.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 2 -->
+      <section class="stage" id="texto">
+        <header><span class="step">ESTÁGIO 2</span><h2>Medir o texto com a fonte de verdade</h2></header>
+        <div class="where">src/text.rs</div>
+        <div class="cols">
+          <div>
+            <p>Layout de slide é, quase todo, saber quanto um texto ocupa. O motor faz o shaping com o <code>rustybuzz</code>, kerning incluído, soma os avanços dos glifos e guarda o resultado num cache por face e texto.</p>
+            <p>A quebra de linha é gulosa: palavra por palavra, com corte permitido depois de <code>-</code> e <code>/</code>. Palavra que não cabe sozinha quebra por caractere e vira um aviso.</p>
+            <ul>
+              <li><b>Folga de 3%:</b> a quebra usa <code>largura × 0,97</code>. É a margem para o PowerPoint e o Keynote, que medem um pouco diferente, não quebrarem a linha de novo.</li>
+              <li><b>Altura da linha:</b> vem da tabela <code>hhea</code> da fonte: ascendente, descendente e entrelinha.</li>
+              <li><b>Arial sem Arial:</b> o binário embute quatro faces da Liberation Sans, que têm as métricas da Arial e da Helvetica. Medição e preview não dependem das fontes da máquina.</li>
+              <li><b>Fonte desconhecida:</b> estimativa de 0,5 × corpo por caractere e 1,2 × corpo por linha, mais o erro <code>font-missing</code>.</li>
+            </ul>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 250" role="img" aria-label="A palavra Receita com o avanço de cada glifo marcado, e uma linha de texto que quebra na marca de 97 por cento da largura disponível.">
+              <text x="20" y="92" style="font:700 64px var(--display)">Receita</text>
+              <g class="k-coral" stroke-width="1"><path d="M20 30 V108 M63 30 V108 M100 30 V108 M133 30 V108 M170 30 V108 M186 30 V108 M209 30 V108 M246 30 V108"/></g>
+              <g class="s t-coral"><text class="m t-coral" x="28" y="124">43</text><text class="m t-coral" x="72" y="124">37</text><text class="m t-coral" x="108" y="124">33</text><text class="m t-coral" x="142" y="124">37</text><text class="m t-coral" x="172" y="124">16</text><text class="m t-coral" x="190" y="124">23</text><text class="m t-coral" x="218" y="124">37</text></g>
+              <text class="s" x="270" y="60">soma dos avanços</text>
+              <text class="h" x="270" y="82">226 unidades</text><text class="s" x="270" y="118">(números do desenho, para ilustrar)</text>
+              <text class="s" x="270" y="100">÷ unidades por em × corpo = largura em pt</text>
+              <rect x="20" y="160" width="520" height="62" rx="8" class="f-soft"/>
+              <rect x="524.4" y="160" width="15.6" height="62" class="f-coral" opacity=".18"/>
+              <path d="M524.4 152 V230" class="k-coral dash" stroke-width="1.5"/>
+              <text class="m t-coral" x="424" y="148">largura × 0,97</text>
+              <rect x="32" y="172" width="74" height="14" rx="3" class="f-ink" opacity=".75"/><rect x="112" y="172" width="120" height="14" rx="3" class="f-ink" opacity=".75"/><rect x="238" y="172" width="54" height="14" rx="3" class="f-ink" opacity=".75"/><rect x="298" y="172" width="150" height="14" rx="3" class="f-ink" opacity=".75"/>
+              <rect x="454" y="172" width="96" height="14" rx="3" class="k-coral dash"/>
+              <rect x="32" y="196" width="96" height="14" rx="3" class="f-coral"/><rect x="134" y="196" width="66" height="14" rx="3" class="f-ink" opacity=".75"/>
+              <path d="M502 190 C 502 204, 160 186, 132 200" class="k-coral" stroke-width="1.2" marker-end="url(#ah)"/>
+            </svg>
+            <figcaption>A palavra que passaria da marca desce para a linha seguinte. A caixa devolvida ao layout é a linha mais larga dividida por 0,97.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 3 -->
+      <section class="stage" id="flex">
+        <header><span class="step">ESTÁGIO 3</span><h2>Flexbox fiel até o último bit do float</h2></header>
+        <div class="where">src/yoga.rs (1.630 linhas), src/yoga_layout.rs</div>
+        <div class="cols">
+          <div>
+            <p>O flexbox é um port do Yoga 3.2.1, arquivo por arquivo: <code>CalculateLayout</code>, <code>FlexLine</code>, <code>AbsoluteLayout</code>, <code>Baseline</code> e <code>Cache</code>. Usa <code>f32</code> em tudo, como o original, e "indefinido" é <code>NaN</code>. Por isso o código tem comparações escritas ao contrário, como <code>!(a &lt; b)</code>: com <code>NaN</code> elas dão verdadeiro, e o Yoga conta com isso.</p>
+            <p>O cache de medidas também veio junto: cada nó lembra o último layout e um anel de até 8 medições.</p>
+            <p class="note"><b>O teste mais estranho do repositório.</b> Numa linha que não cabe, o resíduo em <code>f32</code> da soma dos encolhimentos pode sair positivo. Com larguras mínimas de 74,18, 75,31 e 22,18 pt, os três filhos ficam com 174.529.248, 177.197.616 e 52.187.172 pt. O Yoga real faz o mesmo com os mesmos números, e o teste <code>shrink_residual_matches_yoga</code> garante que o port também faça.</p>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 270" role="img" aria-label="Duas linhas flex quase iguais: na primeira os três filhos cabem; na segunda, com o terceiro filho 2,5 pontos menor, o resíduo em ponto flutuante faz as larguras explodirem.">
+              <text class="s" x="14" y="24">mínimos 74,18 · 75,31 · 24,65</text>
+              <rect x="14" y="34" width="394" height="64" rx="8" class="f-soft"/>
+              <rect x="36" y="46" width="148" height="40" rx="6" class="f-indigo"/><text class="m w" x="48" y="71">74,18 pt</text>
+              <rect x="196" y="46" width="150" height="40" rx="6" class="f-magenta"/><text class="m w" x="208" y="71">75,31 pt</text>
+              <rect x="358" y="46" width="28" height="40" rx="6" class="f-coral"/>
+              <text class="m t-green" x="424" y="71">cabe</text>
+              <text class="s" x="14" y="140">mínimos 74,18 · 75,31 · 22,18</text>
+              <rect x="14" y="150" width="394" height="64" rx="8" class="f-soft"/>
+              <path d="M36 162 H560 V202 H36 Z" class="f-indigo"/>
+              <path d="M520 150 L560 150 L560 214 L520 214" class="f-paper" opacity="0"/>
+              <text class="m w" x="48" y="187">174.529.248 pt</text>
+              <path d="M408 150 V214" class="k-coral dash" stroke-width="1.5"/>
+              <text class="m t-coral" x="414" y="238">fim da linha: 196,7 pt</text>
+              <path d="M530 182 H552" stroke="#fff" stroke-width="2" marker-end="url(#ah)" fill="none"/>
+              <text class="s" x="14" y="260">o motor contorna o caso partindo do piso das palavras, e o port acompanha</text>
+            </svg>
+            <figcaption>Fidelidade aqui significa reproduzir até o defeito. Uma diferença de 10⁻⁶ pt mudaria qual nó o diagnóstico aponta como causa.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 4 -->
+      <section class="stage" id="grid">
+        <header><span class="step">ESTÁGIO 4</span><h2>Um CSS Grid do tamanho de um slide</h2></header>
+        <div class="where">src/grid.rs · model/style.rs</div>
+        <div class="cols">
+          <div>
+            <p>O Yoga não tem grid, então o motor tem o próprio: um subconjunto do CSS Grid Level 1 que segue a especificação seção por seção. Posicionamento (§8), dimensionamento dos trilhos (§11), <code>fr</code>, <code>minmax</code> e <code>repeat</code>.</p>
+            <ul>
+              <li><b>Posicionar:</b> primeiro os itens com linha e coluna, depois os que só têm linha, por fim o resto por um cursor que só avança.</li>
+              <li><b>Dimensionar:</b> contribuições intrínsecas, maximizar, repartir o <code>fr</code> e esticar os <code>auto</code>. A partilha do <code>fr</code> é iterativa: um trilho cuja base passa do quinhão sai do rateio e a conta recomeça.</li>
+              <li><b>Medir:</b> cada item é medido numa árvore Yoga própria e descartável, e depois posicionado numa árvore do tamanho da sua célula.</li>
+            </ul>
+            <p>Ficam de fora áreas nomeadas, <code>subgrid</code>, <code>auto-fill</code> e <code>dense</code>. Para o Yoga de fora, o grid inteiro é uma folha com função de medida.</p>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 250" role="img" aria-label="Três trilhos de grid: com 1fr, o trilho de conteúdo longo empurra a grade para fora; com minmax de zero a 1fr, os três ficam iguais.">
+              <text class="m" x="14" y="24">repeat(3, 1fr)</text>
+              <rect x="14" y="34" width="420" height="70" rx="8" class="f-soft"/>
+              <rect x="24" y="44" width="118" height="50" rx="6" class="f-card k-line"/><text class="m" x="36" y="74">128 mil</text>
+              <rect x="152" y="44" width="118" height="50" rx="6" class="f-card k-line"/><text class="m" x="164" y="74">1,1%</text>
+              <rect x="280" y="44" width="220" height="50" rx="6" class="f-card k-coral"/><text class="m t-coral" x="292" y="74">R$ 52.400.000,00</text>
+              <path d="M434 28 V110" class="k-coral dash" stroke-width="1.5"/>
+              <text class="s t-coral" x="442" y="26">sai do slide</text>
+              <text class="m" x="14" y="150">repeat(3, minmax(0, 1fr))</text>
+              <rect x="14" y="160" width="420" height="70" rx="8" class="f-soft"/>
+              <rect x="24" y="170" width="127" height="50" rx="6" class="f-card k-line"/><text class="m" x="36" y="200">128 mil</text>
+              <rect x="160.5" y="170" width="127" height="50" rx="6" class="f-card k-line"/><text class="m" x="172" y="200">1,1%</text>
+              <rect x="297" y="170" width="127" height="50" rx="6" class="f-card k-green"/><text x="306" y="200" style="font:400 9.5px var(--mono);fill:var(--green)">R$ 52.400.000,00</text>
+              <text class="s t-green" x="442" y="200">o texto encolhe</text>
+            </svg>
+            <figcaption><code>1fr</code> é <code>minmax(auto, 1fr)</code>: nunca fica menor que a palavra mais longa. O lint tem uma regra, <code>grid-fr</code>, só para avisar disso.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 5 -->
+      <section class="stage" id="caber">
+        <header><span class="step">ESTÁGIO 5</span><h2>Quando o texto não cabe</h2></header>
+        <div class="where">src/layout.rs · containers.rs · model/fit_group.rs</div>
+        <div class="cols">
+          <div>
+            <p>Depois do primeiro layout, o motor procura estouros e resolve por escopo: a raiz de componente mais próxima, do mais fundo para o mais raso. Os textos de um mesmo componente encolhem juntos.</p>
+            <ul>
+              <li><b>Busca:</b> o corpo desce em passos inteiros de 1 pt. O motor testa primeiro o mínimo; se nem ali cabe, para e reporta. Senão, faz uma busca binária pelo menor encolhimento que resolve.</li>
+              <li><b>Piso:</b> sem <code>minSize</code>, o mínimo é <code>floor(corpo × 0,75)</code>, nunca abaixo de 10 pt.</li>
+              <li><b>Rodadas:</b> no máximo 12, e o laço termina antes se nenhum corpo mudou.</li>
+              <li><b>Grupo de fit:</b> textos com o mesmo <code>fitGroup</code> terminam com a mesma escala. O nivelamento só desce e é ponto fixo, então o laço continua convergindo.</li>
+              <li><b>Container:</b> um nó cujo conteúdo é uma função do espaço medido. O motor faz o layout, mede, roda a função e resolve de novo, até 3 níveis, com cache por medida.</li>
+              <li><b>Paginar:</b> lista, texto ou tabela que não cabe continua num clone do slide. Uma busca binária acha quantos itens cabem; são no máximo 10 partes e 2 linhas de cada lado de um corte no meio do parágrafo.</li>
+            </ul>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 330" role="img" aria-label="Uma busca binária entre 36 e 27 pontos encontra 31 como o maior corpo que cabe. Abaixo, quatro números de tamanhos diferentes ficam iguais com um grupo de fit.">
+              <text class="s" x="14" y="22">busca do maior corpo que cabe</text>
+              <path d="M40 60 H520" class="k-line" stroke-width="2"/>
+              <g class="m"><text class="m" x="30" y="92">36</text><text class="m" x="140" y="92">34</text><text class="m" x="238" y="92">32</text><text class="m t-green" x="290" y="92">31</text><text class="m" x="345" y="92">30</text><text class="m" x="505" y="92">27</text></g>
+              <text class="s" x="18" y="108">do autor</text><text class="s" x="492" y="108">piso</text>
+              <circle cx="40" cy="60" r="6" class="f-coral"/><circle cx="520" cy="60" r="6" class="f-green"/>
+              <circle cx="253" cy="60" r="6" class="f-coral"/><circle cx="360" cy="60" r="6" class="f-green"/><circle cx="306" cy="60" r="8" class="f-green"/>
+              <path d="M520 46 C 500 20, 280 20, 256 46" class="k-mute" stroke-width="1" marker-end="url(#ah)"/>
+              <path d="M258 74 C 290 96, 330 96, 356 74" class="k-mute" stroke-width="1" marker-end="url(#ah)" transform="translate(0 -30) scale(1 1)" opacity="0"/>
+              <text class="s t-coral" x="70" y="48">estoura</text><text class="s t-green" x="404" y="48">cabe</text>
+              <text class="s" x="14" y="150">sem grupo: cada número encolhe sozinho</text>
+              <g><rect x="14" y="160" width="124" height="60" rx="8" class="f-soft"/><text x="24" y="198" style="font:500 17px var(--display);fill:var(--indigo)">R$ 52,4 mi</text>
+              <rect x="148" y="160" width="124" height="60" rx="8" class="f-soft"/><text x="158" y="200" style="font:500 25px var(--display);fill:var(--indigo)">128 mil</text>
+              <rect x="282" y="160" width="124" height="60" rx="8" class="f-soft"/><text x="292" y="201" style="font:500 27px var(--display);fill:var(--indigo)">1,1%</text>
+              <rect x="416" y="160" width="124" height="60" rx="8" class="f-soft"/><text x="426" y="201" style="font:500 27px var(--display);fill:var(--indigo)">62</text></g>
+              <text class="s" x="14" y="250">com fitGroup: todos pela escala de quem menos coube</text>
+              <g><rect x="14" y="260" width="124" height="60" rx="8" class="f-soft"/><text x="24" y="298" style="font:500 17px var(--display);fill:var(--indigo)">R$ 52,4 mi</text>
+              <rect x="148" y="260" width="124" height="60" rx="8" class="f-soft"/><text x="158" y="298" style="font:500 17px var(--display);fill:var(--indigo)">128 mil</text>
+              <rect x="282" y="260" width="124" height="60" rx="8" class="f-soft"/><text x="292" y="298" style="font:500 17px var(--display);fill:var(--indigo)">1,1%</text>
+              <rect x="416" y="260" width="124" height="60" rx="8" class="f-soft"/><text x="426" y="298" style="font:500 17px var(--display);fill:var(--indigo)">62</text></g>
+            </svg>
+            <figcaption>Num teste do repositório, quatro valores a 36 pt saem em 24, 35, 36 e 26 pt sem grupo, e todos em 24 pt com <code>fitGroup</code>.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 6 -->
+      <section class="stage" id="diagnostico">
+        <header><span class="step">ESTÁGIO 6</span><h2>Dizer qual nó causou o estouro</h2></header>
+        <div class="where">src/report.rs · src/diag.rs</div>
+        <div class="cols">
+          <div>
+            <p>Um título comprido demais empurra tudo o que vem abaixo, e o erro aparece em três lugares. O motor separa a causa das consequências antes de reportar.</p>
+            <ul>
+              <li><b>Causa:</b> num contêiner em coluna sobrecarregado, é o filho que pede mais altura além do que tem. Os outros estouros ganham <code>causedBy</code> e a frase "corrija este primeiro".</li>
+              <li><b>Agrupamento:</b> irmãos com o mesmo problema viram um item só, <code>Box[0..3]</code> se os índices são contíguos, <code>Box[0,2,5]</code> se não. Fica o pior caso, com a contagem.</li>
+              <li><b>Componente do autor:</b> o diagnóstico diz em qual componente, com quais props, o nó estava. É ali que se mexe.</li>
+            </ul>
+            <p>As mensagens são escritas para um modelo ler: dizem o que aconteceu, o número e o que trocar.</p>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 260" role="img" aria-label="Uma coluna com três filhos: o segundo pede 131,9 pontos a mais e é marcado como causa; os outros dois estouros apontam para ele.">
+              <rect x="14" y="14" width="210" height="232" rx="10" class="f-soft"/>
+              <rect x="28" y="28" width="182" height="34" rx="6" class="f-card k-coral dash"/><text class="m" x="38" y="50">Text[0]</text>
+              <rect x="28" y="70" width="182" height="118" rx="6" class="f-coral"/><text class="m w" x="38" y="92">Text[1]</text><text class="m w" x="38" y="112">pede 131,9 pt a mais</text>
+              <rect x="28" y="196" width="182" height="34" rx="6" class="f-card k-coral dash"/><text class="m" x="38" y="218">Box[2]</text>
+              <path d="M214 45 C 250 45, 250 110, 216 120" class="k-coral" stroke-width="1.5" marker-end="url(#ah)"/>
+              <path d="M214 213 C 250 213, 250 150, 216 140" class="k-coral" stroke-width="1.5" marker-end="url(#ah)"/>
+              <text class="s t-coral" x="256" y="84">causedBy</text>
+              <rect x="300" y="14" width="246" height="232" rx="10" class="f-card k-line"/>
+              <text class="m t-coral" x="314" y="40">✖ text-overflow</text>
+              <text class="m" x="314" y="58">Slide &gt; Text[1]</text>
+              <text class="s" x="314" y="76">a causa: encurte ou dê área</text>
+              <path d="M314 90 H532" class="k-line"/>
+              <text class="m t-mute" x="314" y="112">↳ Slide &gt; Text[0]</text>
+              <text class="m t-mute" x="314" y="130">↳ Slide &gt; Box[2]</text>
+              <text class="s" x="314" y="148">somem quando a causa some</text>
+              <path d="M314 162 H532" class="k-line"/>
+              <text class="m" x="314" y="186">• text-shrunk ×4</text>
+              <text class="m" x="314" y="204">Bullets &gt; Box[0..3] &gt; Text</text>
+              <text class="s" x="314" y="222">quatro irmãos, um item</text>
+            </svg>
+            <figcaption>O resumo da linha de comando mostra as consequências sob a causa, com <code>↳</code>, e não as conta no cabeçalho.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 7 -->
+      <section class="stage" id="desenhar">
+        <header><span class="step">ESTÁGIO 7</span><h2>Desenhar em OOXML, escrito à mão</h2></header>
+        <div class="where">src/emit.rs · vector.rs · gradient.rs · objects.rs</div>
+        <div class="cols">
+          <div>
+            <p>Não há biblioteca de PowerPoint nem de XML. Cada forma, parágrafo, tabela e gráfico é escrito com <code>format!</code>, e o escape de texto é próprio.</p>
+            <ul>
+              <li><b>Unidade:</b> o motor pensa em pontos e só converte na saída: 1 pt são 12.700 EMU.</li>
+              <li><b>Curvas:</b> o <code>d</code> de um SVG vira <code>custGeom</code>. Arcos são fatiados em pedaços de até 90° e cada pedaço vira uma cúbica com <code>k = 4/3 · tan(θ/4)</code>.</li>
+              <li><b>Degradê:</b> no CSS, 0° aponta para cima; no DrawingML, para a direita. A conversão é <code>(css − 90) × 60.000</code>.</li>
+              <li><b>Ícones:</b> um SVG só de formas e cores sólidas vira vetor editável. Com <code>transform</code>, gradiente ou opacidade, vira PNG, e o diagnóstico diz o motivo.</li>
+              <li><b>Rótulos de gráfico:</b> dentro de uma barra, se o contraste com a série for menor que 4,5:1, o rótulo troca para branco ou preto.</li>
+              <li><b>Tabelas:</b> colunas sem largura seguem o algoritmo de tabela automática do CSS 2.1.</li>
+            </ul>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 330" role="img" aria-label="Uma régua de pontos para EMU, um quarto de círculo aproximado por uma curva cúbica com seus pontos de controle, e dois mostradores comparando o ângulo zero do CSS e do DrawingML.">
+              <text class="s" x="14" y="22">pontos → EMU</text>
+              <path d="M14 46 H546" class="k-ink" stroke-width="1.5"/>
+              <g class="k-ink" stroke-width="1.2"><path d="M14 38 V54 M147 40 V52 M280 38 V54 M413 40 V52 M546 38 V54"/></g>
+              <text class="m" x="14" y="72">0 pt</text><text class="m" x="262" y="72">360 pt</text><text class="m" x="512" y="72">720 pt</text>
+              <text class="m t-coral" x="14" y="88">0</text><text class="m t-coral" x="246" y="88">4.572.000</text><text class="m t-coral" x="484" y="88">9.144.000</text>
+              <text class="s" x="14" y="126">um quarto de círculo numa cúbica</text>
+              <path d="M40 300 A 150 150 0 0 1 190 150" class="k-line" stroke-width="7"/>
+              <path d="M40 300 C 40 217.2, 107.2 150, 190 150" class="k-indigo" stroke-width="2"/>
+              <path d="M40 300 L40 217.2 M190 150 L107.2 150" class="k-magenta dash" stroke-width="1.2"/>
+              <circle cx="40" cy="300" r="4.5" class="f-indigo"/><circle cx="190" cy="150" r="4.5" class="f-indigo"/>
+              <circle cx="40" cy="217.2" r="4.5" class="f-magenta"/><circle cx="107.2" cy="150" r="4.5" class="f-magenta"/>
+              <text class="m t-magenta" x="50" y="222">k · r</text>
+              <text class="m" x="112" y="246">k = 4/3 · tan(90°/4)</text>
+              <text class="m" x="112" y="264">≈ 0,5523</text>
+              <text class="s" x="330" y="126">onde fica o zero grau</text>
+              <circle cx="380" cy="210" r="46" class="f-soft"/><path d="M380 210 V168" class="k-indigo" stroke-width="2.5" marker-end="url(#ah)"/>
+              <path d="M380 180 A 30 30 0 0 1 410 210" class="k-mute" stroke-width="1" marker-end="url(#ah)"/>
+              <text class="m" x="364" y="282">CSS</text><text class="s" x="346" y="298">para cima, horário</text>
+              <circle cx="494" cy="210" r="46" class="f-soft"/><path d="M494 210 H536" class="k-coral" stroke-width="2.5" marker-end="url(#ah)"/>
+              <path d="M524 210 A 30 30 0 0 1 494 240" class="k-mute" stroke-width="1" marker-end="url(#ah)"/>
+              <text class="m" x="462" y="282">a:lin ang</text><text class="s" x="460" y="298">para a direita</text>
+            </svg>
+            <figcaption>Um arco de 90° exatos pode chegar com um fio a mais por ruído de ponto flutuante. A conta do número de fatias desconta 10⁻⁹ para ele continuar sendo um segmento só.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 8 -->
+      <section class="stage" id="arquivo">
+        <header><span class="step">ESTÁGIO 8</span><h2>Fechar o arquivo</h2></header>
+        <div class="where">src/package.rs · embed.rs · objects.rs</div>
+        <div class="cols">
+          <div>
+            <p>Um <code>.pptx</code> é um zip de XMLs. O motor monta as partes, as relações entre elas e compacta com Deflate; imagens entram sem compressão, e <code>[Content_Types].xml</code> vai primeiro.</p>
+            <ul>
+              <li><b>Cores do tema:</b> uma passada final troca cada <code>srgbClr</code> cujo hex é igual a uma cor declarada do tema por <code>schemeClr</code>. Quem abre o arquivo e troca o tema repinta o deck inteiro.</li>
+              <li><b>Gráficos:</b> cada gráfico leva uma planilha <code>.xlsx</code> mínima, também escrita à mão, e os mesmos valores em cache no XML do gráfico.</li>
+              <li><b>Fontes:</b> com <code>--embed-fonts</code>, as faces do autor entram em EOT: um cabeçalho de 80 bytes copiado das tabelas <code>OS/2</code> e <code>head</code>, cinco strings e o TTF inteiro. Fonte com o bit de licença restrita fica de fora, com aviso.</li>
+              <li><b>Masters:</b> um layout definido pelo autor vira um <code>slideLayout</code> do arquivo, com placeholders de verdade.</li>
+            </ul>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 300" role="img" aria-label="As partes de um arquivo pptx empilhadas como gavetas: tipos de conteúdo, apresentação, tema, slides, gráfico com planilha embutida e fontes. Ao lado, uma cor fixa virando cor do tema.">
+              <g class="m">
+                <rect x="14" y="14" width="250" height="30" rx="6" class="f-soft"/><text class="m" x="26" y="34">[Content_Types].xml</text>
+                <rect x="14" y="50" width="250" height="30" rx="6" class="f-soft"/><text class="m" x="26" y="70">ppt/presentation.xml</text>
+                <rect x="14" y="86" width="250" height="30" rx="6" class="f-indigo"/><text class="m w" x="26" y="106">ppt/theme/theme1.xml</text>
+                <rect x="14" y="122" width="250" height="30" rx="6" class="f-soft"/><text class="m" x="26" y="142">ppt/slideLayouts/…</text>
+                <rect x="14" y="158" width="250" height="30" rx="6" class="f-magenta"/><text class="m w" x="26" y="178">ppt/slides/slide1.xml</text>
+                <rect x="14" y="194" width="250" height="30" rx="6" class="f-soft"/><text class="m" x="26" y="214">ppt/charts/chart1.xml</text>
+                <rect x="36" y="230" width="228" height="30" rx="6" class="f-card k-line"/><text class="m" x="48" y="250">embeddings/…Worksheet1.xlsx</text>
+                <rect x="14" y="266" width="250" height="26" rx="6" class="f-soft"/><text class="m" x="26" y="284">ppt/fonts/font1.fntdata</text>
+              </g>
+              <path d="M24 224 V245 H34" class="k-mute" stroke-width="1.2"/>
+              <text class="s" x="300" y="28">antes da passada do tema</text>
+              <rect x="300" y="38" width="246" height="34" rx="6" class="f-soft"/><text class="m" x="310" y="60">&lt;a:srgbClr val="4F5BFF"/&gt;</text>
+              <path d="M423 78 V104" class="k-indigo" stroke-width="2" marker-end="url(#ah)"/>
+              <text class="s" x="300" y="124">depois</text>
+              <rect x="300" y="132" width="246" height="34" rx="6" class="f-indigo"/><text class="m w" x="310" y="154">&lt;a:schemeClr val="accent1"/&gt;</text>
+              <text class="s" x="300" y="200">o gráfico, duas vezes</text>
+              <rect x="300" y="210" width="118" height="54" rx="6" class="f-soft"/><text class="m" x="310" y="232">cache no XML</text><text class="s" x="310" y="250">o Keynote desenha</text>
+              <rect x="428" y="210" width="118" height="54" rx="6" class="f-soft"/><text class="m" x="438" y="232">planilha</text><text class="s" x="438" y="250">o PowerPoint edita</text>
+            </svg>
+            <figcaption>O zip sai com as datas zeradas em 1980, mas <code>docProps/core.xml</code> leva a hora da geração: dois builds do mesmo deck não são idênticos byte a byte.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 9 -->
+      <section class="stage" id="conferir">
+        <header><span class="step">ESTÁGIO 9</span><h2>Conferir sem abrir o PowerPoint</h2></header>
+        <div class="where">src/preview.rs · numfmt.rs · serve.rs</div>
+        <div class="cols">
+          <div>
+            <p>Junto com o <code>.pptx</code> saem um PNG por slide e uma folha com todos. Eles são desenhados a partir dos mesmos frames do arquivo: cada slide vira um SVG e o <code>resvg</code> rasteriza.</p>
+            <ul>
+              <li><b>Texto em contorno:</b> o preview não usa fontes do sistema. Cada glifo entra como caminho, com a mesma fonte e o mesmo shaping da medição. O <code>resvg</code> é compilado sem o módulo de texto.</li>
+              <li><b>Números como no Excel:</b> um formatador próprio entende <code>0%</code>, <code>#,##0</code> e literais como <code>0" mi"</code>, com vírgula ou ponto conforme o idioma do deck.</li>
+              <li><b>Ao vivo:</b> <code>--serve</code> sobe um servidor HTTP feito com <code>std::net</code>, uma thread por conexão, e avisa o navegador por Server-Sent Events. Sem framework.</li>
+              <li><b>Observar arquivos:</b> é uma sondagem de data de modificação com 150 ms de espera, e cada rebuild roda num processo filho.</li>
+            </ul>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 220" role="img" aria-label="Os frames do layout alimentam dois caminhos: o XML que vai para o arquivo pptx e o SVG que vira PNG pelo resvg.">
+              <rect x="14" y="78" width="130" height="64" rx="10" class="f-soft"/><text class="h" x="30" y="106">frames</text><text class="s" x="30" y="124">pt, já ajustados</text>
+              <path d="M148 96 C 190 96, 190 46, 232 46" class="k-coral" stroke-width="2" marker-end="url(#ah)"/>
+              <path d="M148 124 C 190 124, 190 174, 232 174" class="k-indigo" stroke-width="2" marker-end="url(#ah)"/>
+              <rect x="238" y="18" width="130" height="56" rx="10" class="f-card k-coral"/><text class="m" x="252" y="42">OOXML</text><text class="s" x="252" y="60">emit.rs</text>
+              <rect x="238" y="146" width="130" height="56" rx="10" class="f-card k-indigo"/><text class="m" x="252" y="170">SVG com glifos</text><text class="s" x="252" y="188">preview.rs</text>
+              <path d="M372 46 H412" class="k-coral" stroke-width="2" marker-end="url(#ah)"/>
+              <path d="M372 174 H412" class="k-indigo" stroke-width="2" marker-end="url(#ah)"/>
+              <rect x="418" y="18" width="128" height="56" rx="10" class="f-coral"/><text class="m w" x="432" y="42">deck.pptx</text><text class="s w" x="432" y="60" style="fill:#fff;opacity:.85">editável</text>
+              <rect x="418" y="146" width="128" height="56" rx="10" class="f-indigo"/><text class="m w" x="432" y="170">slide-01.png</text><text class="s w" x="432" y="188" style="fill:#fff;opacity:.85">resvg, 1280 px</text>
+              <text class="s" x="238" y="116">mesma geometria nos dois: o PNG é a prévia do arquivo</text>
+            </svg>
+            <figcaption>O gráfico é a exceção: PowerPoint e Keynote redesenham gráficos nativos, então o PNG deles é uma aproximação.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 10 -->
+      <section class="stage" id="agentes">
+        <header><span class="step">ESTÁGIO 10</span><h2>Falar com agentes</h2></header>
+        <div class="where">src/mcp.rs · lint.rs · dsprops.rs · skill.rs</div>
+        <div class="cols">
+          <div>
+            <p>O binário também é um servidor MCP. O protocolo é JSON-RPC 2.0 por stdio, uma mensagem por linha, e o JSON é lido pelo parser do próprio interpretador. São seis ferramentas: <code>build</code>, <code>diagnose</code>, <code>preview</code>, <code>lint</code>, <code>guide</code> e <code>schema</code>.</p>
+            <ul>
+              <li><b>Regras em JavaScript:</b> um design system registra regras de lint como funções. O motor as chama com o mesmo interpretador que as criou, e cada chamada recebe um orçamento de passos novo.</li>
+              <li><b>Regra de deck:</b> além de olhar um nó por vez, uma regra pode receber todos os slides de uma vez e cobrar o ritmo da apresentação.</li>
+              <li><b>Schema sem compilador:</b> para documentar as props de um componente, o motor acha a interface TypeScript no módulo e extrai nome, tipo, opcional, comentário e valor padrão direto da AST.</li>
+              <li><b>Skill:</b> <code>pptsx-rs skill</code> gera uma pasta com o guia, as props, o design system e o próprio binário, pronta para um agente usar.</li>
+            </ul>
+          </div>
+          <figure>
+            <svg viewBox="0 0 560 240" role="img" aria-label="Uma interface TypeScript com três props vira uma tabela de schema com nome, tipo, se é opcional e o valor padrão.">
+              <rect x="14" y="14" width="250" height="212" rx="10" class="f-soft"/>
+              <text class="m" x="26" y="38"><tspan class="t-magenta">interface</tspan> StatProps {</text>
+              <text class="m t-mute" x="38" y="60">/** O número, já abreviado. */</text>
+              <text class="m" x="38" y="78">value: <tspan class="t-indigo">string</tspan></text>
+              <text class="m t-mute" x="38" y="100">/** Cor da variação. */</text>
+              <text class="m" x="38" y="118">tone?: <tspan class="t-indigo">'brand' | 'soft'</tspan></text>
+              <text class="m" x="26" y="140">}</text>
+              <text class="m" x="26" y="170"><tspan class="t-magenta">function</tspan> Stat({ value,</text>
+              <text class="m" x="38" y="188">tone = <tspan class="t-coral">'soft'</tspan> }) { … }</text>
+              <path d="M268 120 H300" class="k-indigo" stroke-width="2" marker-end="url(#ah)"/>
+              <rect x="306" y="40" width="240" height="150" rx="10" class="f-card k-line"/>
+              <path d="M306 72 H546 M306 122 H546" class="k-line"/>
+              <text class="s" x="318" y="60">prop</text><text class="s" x="382" y="60">tipo</text><text class="s" x="488" y="60">padrão</text>
+              <text class="m" x="318" y="92">value</text><text class="m t-indigo" x="382" y="92">string</text><text class="m t-mute" x="488" y="92">—</text>
+              <text class="s" x="318" y="110">O número, já abreviado.</text>
+              <text class="m" x="318" y="142">tone?</text><text class="m t-indigo" x="382" y="142">'brand'|'soft'</text><text class="m t-coral" x="488" y="142">'soft'</text>
+              <text class="s" x="318" y="160">Cor da variação.</text>
+              <text class="s" x="306" y="212">só parse: nada é inferido</text>
+            </svg>
+            <figcaption>O que precisaria do compilador para abrir, como <code>Omit&lt;…&gt;</code>, fica anotado como texto. Herança entre interfaces é seguida até 8 níveis.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- Curiosidades -->
+      <section class="stage" id="curiosidades">
+        <header><h2>Curiosidades que estão nos comentários do código</h2></header>
+        <div class="where">cada uma com o arquivo de onde saiu</div>
+        <div class="grid3">
+          <div class="card"><h3>O Keynote some com uma parada</h3><p>Num degradê com corte seco, duas paradas ficam na mesma posição. O Keynote descarta a segunda, então ela sai um centésimo de milésimo adiante.</p><span class="src">gradient.rs</span></div>
+          <div class="card"><h3>Um espaço que é margem</h3><p>O Keynote ignora margem por célula de tabela. O respiro de um ícone dentro da célula vai como um caractere de espaço com espaçamento entre letras.</p><span class="src">objects.rs</span></div>
+          <div class="card"><h3>Linha de tabela em meio ponto</h3><p>A altura de cada linha é arredondada para cima em passos de 0,5 pt, que é o passo que o Keynote usa.</p><span class="src">objects.rs</span></div>
+          <div class="card"><h3>EOT ou nada</h3><p>O PowerPoint recusa o arquivo inteiro se a fonte embutida for um TTF cru. Por isso existe um escritor de EOT, com pouco mais de cem linhas. O Keynote ignora a fonte embutida.</p><span class="src">embed.rs</span></div>
+          <div class="card"><h3>Calendário sem biblioteca</h3><p>A data do documento é calculada com o algoritmo <i>civil_from_days</i>, de Howard Hinnant, para não trazer um crate de datas.</p><span class="src">package.rs</span></div>
+          <div class="card"><h3>JSON é JavaScript</h3><p>Um <code>import</code> de arquivo JSON é avaliado como <code>export default (…)</code>. O mesmo parser e o mesmo interpretador dão conta.</p><span class="src">js/module.rs</span></div>
+          <div class="card"><h3>Uma função fora do cercado</h3><p><code>existsSync</code> é livre do sandbox de disco: ele não lê conteúdo, e um design system o usa para sondar fontes instaladas.</p><span class="src">js/node.rs</span></div>
+          <div class="card"><h3>Base64 de próprio punho</h3><p>As imagens entram no SVG do preview em base64, e o codificador tem dezessete linhas, escritas ali mesmo.</p><span class="src">preview.rs</span></div>
+          <div class="card"><h3>Uma dependência só pelos tipos</h3><p>O <code>taffy</code> está no <code>Cargo.toml</code>, mas nenhum algoritmo dele roda: só o tipo <code>Style</code> é aproveitado como modelo.</p><span class="src">model/style.rs</span></div>
+        </div>
+      </section>
+
+      <!-- Números -->
+      <section class="stage" id="numeros">
+        <header><h2>Números</h2></header>
+        <div class="where">medidos no código e no binário desta versão (1.1.0)</div>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>o quê</th><th>quanto</th><th>onde</th></tr></thead>
+            <tbody>
+              <tr><td>linhas de Rust</td><td>24.005 em <code>src/</code></td><td>o maior arquivo é o port do Yoga, com 1.630</td></tr>
+              <tr><td>binário</td><td>6.442.880 bytes</td><td>inclui quatro fontes, o guia, o schema e os tipos para o editor</td></tr>
+              <tr><td>dependências</td><td>12 crates</td><td>oxc (5), rustybuzz, resvg, regex, zip, taffy, indexmap, imagesize</td></tr>
+              <tr><td>testes</td><td>80</td><td>65 unitários, 8 de grupo de fit e 7 que comparam decks inteiros com fixtures</td></tr>
+              <tr><td>orçamento do interpretador</td><td>50.000.000 passos</td><td>renovado a cada regra de lint e a cada Container</td></tr>
+              <tr><td>1 ponto</td><td>12.700 EMU</td><td>a conversão acontece só na saída</td></tr>
+              <tr><td>folga do texto</td><td>3%</td><td><code>textSafety</code> de 0,97, ajustável na config</td></tr>
+              <tr><td>rodadas de ajuste</td><td>até 12</td><td>por slide</td></tr>
+              <tr><td>partes de uma paginação</td><td>até 10</td><td>a última leva o resto</td></tr>
+              <tr><td>níveis de Container</td><td>até 3</td><td>um dentro do outro</td></tr>
+              <tr><td>ferramentas MCP</td><td>6</td><td>build, diagnose, preview, lint, guide, schema</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    pptsx-rs é software livre sob licença MIT. O código está em <a href="https://github.com/JonathanSantos/pptsx">github.com/JonathanSantos/pptsx</a>, na pasta <code>packages/pptsx-rs</code>.
+  </footer>
+</div>
+
+<script>
+// Marca no trilho o estágio que está na tela.
+const links = [...document.querySelectorAll('.rail a')];
+const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+const seen = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    links.forEach((a) => a.classList.remove('on'));
+    byId.get(entry.target.id)?.classList.add('on');
+  }
+}, { rootMargin: '-20% 0px -70% 0px' });
+document.querySelectorAll('.stage').forEach((stage) => seen.observe(stage));
+</script>
+</body>
+</html>
