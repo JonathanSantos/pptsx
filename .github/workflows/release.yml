@@ -1,12 +1,9 @@
-# Release por tag (`v1.0.1`): a release do GitHub com o pptsx.mjs (arquivo único, Node 20+, sem node_modules),
-# a skill do pptsx-rs por plataforma (pasta `pptsx/` com SKILL.md, references/, mcp/ e o binário em bin/;
-# macOS arm64/x86_64, Linux x86_64/arm64, Windows x86_64), o
-# SHA256SUMS que o script da skill confere (bundle e binários) e os zips das skills; depois o npm.
+# Release por tag (`v1.1.0`): a release do GitHub com a skill do pptsx-rs por plataforma (pasta `pptsx/` com
+# SKILL.md, references/, mcp/ e o binário em bin/; macOS arm64/x86_64, Linux x86_64/arm64, Windows x86_64) e o
+# SHA256SUMS dos pacotes. Só o binário em Rust é publicado; os pacotes TypeScript são legado e não saem daqui.
 # Não roda a suíte de novo: o job `gate` exige que o workflow CI tenha passado no mesmo commit (o push da main).
 # Fluxo: commit com a versão nova → push da main → tag `v<versão>` → push da tag (a Release espera o CI, se ainda roda).
-# A tag tem de ser a versão do núcleo (packages/pptsx/package.json): a skill baixa de
-# `…/releases/download/v<versão>`, montado a partir do `repository` desse package.json.
-# O npm só publica com o segredo NPM_TOKEN (ver docs/work/VALIDACAO-DONO.md §3.2).
+# A tag tem de ser a versão de packages/pptsx-rs/Cargo.toml.
 name: Release
 
 on:
@@ -30,19 +27,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Tag igual à versão do núcleo
+      - name: Tag igual à versão do pptsx-rs
         run: |
-          version="v$(node -p "require('./packages/pptsx/package.json').version")"
+          version="v$(grep -m1 '^version' packages/pptsx-rs/Cargo.toml | sed -E 's/.*"(.*)".*/\1/')"
           if [ "$GITHUB_REF_NAME" != "$version" ]; then
-            echo "::error::a tag $GITHUB_REF_NAME não bate com a versão do núcleo ($version)"
-            exit 1
-          fi
-      - name: Versão do pptsx-rs igual à do núcleo
-        run: |
-          rs=$(grep -m1 '^version' packages/pptsx-rs/Cargo.toml | sed -E 's/.*"(.*)".*/\1/')
-          core=$(node -p "require('./packages/pptsx/package.json').version")
-          if [ "$rs" != "$core" ]; then
-            echo "::error::packages/pptsx-rs/Cargo.toml está em $rs e o núcleo em $core"
+            echo "::error::a tag $GITHUB_REF_NAME não bate com a versão do pptsx-rs ($version)"
             exit 1
           fi
       - name: CI verde neste commit
@@ -120,71 +109,22 @@ jobs:
   release:
     needs: [gate, binaries]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     permissions:
       # contents: write para criar a release da tag.
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      # As skills leem o dist/ dos pacotes; a paridade do bundle já passou no CI deste commit.
-      - run: npm run build
-      - name: Bundle de arquivo único (pptsx.mjs e SHA256SUMS)
-        run: npm run build:standalone --workspace pptsx
-      # M18-8: as skills saem do repo na hora (guia, props, SHA256 do bundle desta tag), nunca escritas à mão.
-      - name: Skills (pptsx e ds-base)
-        run: |
-          node packages/pptsx/bin/pptsx.mjs skill --out dist/skill
-          node packages/ds-kit/bin/pptsx-ds.mjs skill packages/ds-base/src/ds.ts --out dist/skill-ds-base
-          (cd dist/skill/.claude/skills && zip -r ../../../pptsx-skill.zip pptsx)
-          (cd dist/skill-ds-base/.claude/skills && zip -r ../../../ds-base-skill.zip pptsx-ds-base)
       - uses: actions/download-artifact@v4
         with:
           pattern: pptsx-rs-*
           path: dist/bin
           merge-multiple: true
-      # O SHA256SUMS tem o bundle (a linha que o script da skill lê) e, abaixo, cada binário.
-      - name: SHA256SUMS com os binários
+      - name: SHA256SUMS dos pacotes
         run: |
-          (cd dist/bin && sha256sum pptsx-rs-*) >> packages/pptsx/dist/standalone/SHA256SUMS
-          cat packages/pptsx/dist/standalone/SHA256SUMS
-      # M18-7: o pptsx.mjs e o SHA256SUMS que o script da skill confere; os binários do pptsx-rs ao lado.
-      - name: Release com o bundle, os binários e as skills
-        run: gh release create "$GITHUB_REF_NAME" packages/pptsx/dist/standalone/pptsx.mjs packages/pptsx/dist/standalone/SHA256SUMS dist/bin/pptsx-rs-* dist/pptsx-skill.zip dist/ds-base-skill.zip --generate-notes
+          (cd dist/bin && sha256sum pptsx-rs-* > SHA256SUMS)
+          cat dist/bin/SHA256SUMS
+      - name: Release com os pacotes por plataforma
+        run: gh release create "$GITHUB_REF_NAME" dist/bin/pptsx-rs-* dist/bin/SHA256SUMS --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
-
-  # Sem o segredo NPM_TOKEN o job termina sem publicar.
-  npm:
-    needs: release
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-    steps:
-      - name: Sem NPM_TOKEN, nada a publicar
-        if: env.NODE_AUTH_TOKEN == ''
-        run: echo "NPM_TOKEN não configurado; a release do GitHub já saiu e o npm fica para depois."
-      - uses: actions/checkout@v4
-        if: env.NODE_AUTH_TOKEN != ''
-      - uses: actions/setup-node@v4
-        if: env.NODE_AUTH_TOKEN != ''
-        with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
-          cache: npm
-      - if: env.NODE_AUTH_TOKEN != ''
-        run: npm install -g npm@11 && npm ci && npm run build
-      - name: Campos e dry-run, agora com os itens do dono
-        if: env.NODE_AUTH_TOKEN != ''
-        run: node scripts/publish-check.mjs --strict
-      - name: Publicar os três (núcleo antes dos DS, na ordem dos workspaces)
-        if: env.NODE_AUTH_TOKEN != ''
-        run: npm publish --workspaces --provenance --access public

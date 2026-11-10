@@ -1,6 +1,8 @@
-# M16-6/M17/M18-5: a suíte dos três pacotes (npm workspaces) em macOS, Ubuntu e Windows com Node 20 e 22.
-# Keynote/PowerPoint ficam fora. Roda uma vez por commit: no push da main e em cada PR (branches de trabalho
-# entram pelo PR). Tags não disparam o CI: o workflow Release confere que este CI já passou no mesmo commit.
+# O motor é o binário em Rust (packages/pptsx-rs) e o CI é só dele: build, clippy sem avisos e os testes
+# (unitários, grupo de fit e os decks dourados de fixtures/). Não precisa de Node: o design system de exemplo
+# é resolvido pelo `workspaces` do package.json e o @pptsx/ds-kit é embutido no binário.
+# Roda uma vez por commit: no push da main e em cada PR. Tags não disparam o CI: o workflow Release confere
+# que este CI já passou no mesmo commit.
 name: CI
 
 on:
@@ -19,93 +21,24 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  check:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 40
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        node: [20, 22]
-    steps:
-      # Fixtures e snapshots são comparados byte a byte: nada de CRLF no checkout do Windows (ver .gitattributes).
-      - run: git config --global core.autocrlf false
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-          cache: npm
-      - run: npm ci
-      # Antes dos testes: os pacotes se importam pelo nome, e o `exports` aponta para dist/.
-      - name: Build dos pacotes
-        run: npm run build
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Lint do repo (variáveis e parâmetros sem uso)
-        run: npm run lint:repo
-      - name: Testes
-        run: npm test
-      - name: Teste dos pacotes empacotados (os três)
-        run: npm run test:package
-      - name: npm publish --dry-run dos três
-        run: npm run publish:check
-      - name: Bundle de arquivo único × build normal (XML, PNG, tempo)
-        run: npm run test:standalone --workspace pptsx
-      - name: npm audit
-        run: npm audit --audit-level=high
-
-  # O port em Rust: build, clippy sem avisos, testes (unitários + dourados contra as fixtures do TS) e a
-  # prova de que fixtures e cópias do guia/schema estão em dia com o TS deste commit.
   rust:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # As fixtures são comparadas byte a byte: nada de CRLF no checkout (ver .gitattributes).
+      - run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - name: Build, clippy e testes
+      - name: Build
+        run: cargo build --release
+      - name: Clippy sem avisos
+        run: cargo clippy --release --all-targets -- -D warnings
+      - name: Testes
+        run: cargo test
+      - name: O binário gera o deck de exemplo do README
         run: |
-          cargo build --release
-          cargo clippy --release --all-targets -- -D warnings
-          cargo test
-      - name: Fixtures e cópias do núcleo em dia com o TS
-        run: |
-          packages/pptsx-rs/scripts/golden.sh
-          git diff --exit-code -- packages/pptsx-rs/fixtures packages/pptsx-rs/assets
-          # Um .d.ts ou fixture novo que não foi commitado também é drift (o diff só vê rastreados). Só os não
-          # rastreados: o `status` listaria todo slide*.xml, que o emissor grava em CRLF e o índice guarda em LF.
-          test -z "$(git ls-files --others --exclude-standard -- packages/pptsx-rs/fixtures packages/pptsx-rs/assets)"
-
-  gallery:
-    needs: check
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: PNGs da galeria
-        run: |
-          for deck in packages/ds-base/examples/gallery/*.tsx; do
-            node packages/pptsx/bin/pptsx.mjs build "$deck" --size 16x9,4x3 --out dist/gallery
-          done
-      - name: Catálogo do ds-base confere com as fixtures
-        run: node packages/ds-kit/bin/pptsx-ds.mjs catalog packages/ds-base/src/ds.ts --check --fixtures packages/ds-base/fixtures
-      - uses: actions/upload-artifact@v4
-        with:
-          name: galeria
-          path: |
-            dist/gallery/*.overview.png
-            dist/gallery/*.pptx
-            dist/gallery/*.diagnostics.json
+          mkdir -p /tmp/exemplo && cp packages/pptsx-rs/docs/exemplo.tsx /tmp/exemplo/deck.tsx
+          ./target/release/pptsx-rs build /tmp/exemplo/deck.tsx --size 16x9,4x3 --out /tmp/exemplo/dist
