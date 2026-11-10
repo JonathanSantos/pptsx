@@ -202,7 +202,7 @@ pub(super) fn axis_of(cx: &Cx, props: &Props, key: &str) -> crate::objects::Axis
 }
 
 pub(super) fn chart_spec(cx: &Cx, props: &Props, t: &Inherit) -> Option<crate::objects::ChartSpec> {
-    use crate::objects::{CHART_PALETTE, ChartKind, ChartSpec, Series};
+    use crate::objects::{CHART_PALETTE, ChartKind, ChartSpec, LabelPosition, Series};
     let kind_name = cx.string(props, "kind")?;
     let hole = cx.num(props, "holeSize").map_or(50, |h| h.clamp(10.0, 90.0) as u32);
     let kind = match kind_name.as_str() {
@@ -279,10 +279,18 @@ pub(super) fn chart_spec(cx: &Cx, props: &Props, t: &Inherit) -> Option<crate::o
         Some(_) => Some("b"),
         None => (pie || series.len() > 1).then_some("b"),
     };
-    let label_format = match cx.get(props, "labels") {
-        Some(Value::Object(o)) => cx.string(&o, "format"),
+    let label_options = match cx.get(props, "labels") {
+        Some(Value::Object(o)) => Some(o),
         _ => None,
     };
+    let label_format = label_options.as_ref().and_then(|o| cx.string(o, "format"));
+    let label_position = label_options.as_ref().and_then(|o| cx.string(o, "position")).and_then(|p| match p.as_str() {
+        "outside" => Some(LabelPosition::Outside),
+        "inside" => Some(LabelPosition::Inside),
+        "center" => Some(LabelPosition::Center),
+        _ => None,
+    });
+    let label_color = label_options.as_ref().and_then(|o| cx.color(o, "color"));
     Some(ChartSpec {
         kind,
         point_colors: if pie { (0..categories.len()).map(color_at).collect() } else { Vec::new() },
@@ -291,6 +299,8 @@ pub(super) fn chart_spec(cx: &Cx, props: &Props, t: &Inherit) -> Option<crate::o
         legend,
         labels: cx.get(props, "labels").is_some_and(|v| v.truthy()),
         label_format,
+        label_position,
+        label_color,
         title: cx.string(props, "title"),
         family: cx.string(props, "font").unwrap_or_else(|| t.family.clone()),
         size: cx.num(props, "size").unwrap_or(12.0),

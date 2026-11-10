@@ -441,6 +441,7 @@ pub(super) fn padding_style(cx: &Cx, props: &Props, style: &mut Style) {
 pub(super) fn paint_of(cx: &Cx, props: &Props, style: &mut Style) -> Paint {
     let mut paint = Paint { opacity: cx.num(props, "opacity").unwrap_or(1.0).clamp(0.0, 1.0), ..Paint::default() };
     paint.fill = cx.color(props, "backgroundColor").or_else(|| cx.string(props, "background").and_then(|bg| parse_color(&bg)));
+    paint.gradient = background_gradient(cx, props);
     paint.background_image = background_image(cx, props);
     if let Some(v) = cx.string(props, "boxShadow") {
         paint.shadow = parse_shadow(&v);
@@ -511,9 +512,18 @@ pub(super) fn paint_of(cx: &Cx, props: &Props, style: &mut Style) -> Paint {
     paint
 }
 
+/// `backgroundImage: "linear-gradient(…)"` (ou `background`). O que não tem de/para já virou
+/// css-not-emitted na validação; aqui só some.
+pub(super) fn background_gradient(cx: &Cx, props: &Props) -> Option<crate::gradient::Gradient> {
+    [cx.string(props, "backgroundImage"), cx.string(props, "background")].into_iter().flatten().find(|v| crate::gradient::looks_like_gradient(v)).and_then(|v| crate::gradient::parse_gradient(&v).ok())
+}
+
 /// `backgroundImage: "url(./x.png)"` (ou `background: "url(…)"`) → arquivo e tamanho natural.
 pub(super) fn background_image(cx: &Cx, props: &Props) -> Option<(PathBuf, (f32, f32))> {
     let raw = cx.string(props, "backgroundImage").or_else(|| cx.string(props, "background").filter(|b| b.trim_start().starts_with("url(")))?;
+    if crate::gradient::looks_like_gradient(&raw) {
+        return None;
+    }
     let src = raw.trim().strip_prefix("url(").and_then(|r| r.strip_suffix(')')).unwrap_or(&raw).trim().trim_matches(|c| c == '"' || c == '\'').to_string();
     let path = if Path::new(&src).is_absolute() { PathBuf::from(&src) } else { cx.base_dir.join(&src) };
     match imagesize::size(&path) {
@@ -576,6 +586,9 @@ pub(super) fn inherit_from(cx: &Cx, props: &Props, parent: &Inherit) -> Inherit 
     if let Some(d) = cx.string(props, "textDecoration") {
         t.underline = d.contains("underline");
         t.strike = d.contains("line-through");
+    }
+    if let Some(g) = cx.string(props, "fitGroup").filter(|g| !g.trim().is_empty()) {
+        t.fit_group = Some(g);
     }
     t
 }

@@ -9,7 +9,8 @@ use std::path::Path;
 use crate::css::{Dash, Rgba, Stroke};
 use crate::layout::{Frame, Placed, SlideLayout};
 use crate::model::{Align, NodeKind, Paint, ShapeSpec, SlideSpec, TextSpec};
-use crate::objects::{ChartKind, ChartSpec, Slot, TableLayout, TableSpec};
+use crate::numfmt::{Locale, format_number};
+use crate::objects::{BarLabel, ChartKind, ChartSpec, LabelPosition, Slot, TableLayout, TableSpec};
 use crate::text::{Fonts, Laid, RunInput};
 
 /// Largura padrão do PNG de cada slide (DEFAULTS.preview.width) e grade do overview.
@@ -200,10 +201,19 @@ fn text(out: &mut String, fonts: &Fonts, p: &Placed, spec: &TextSpec, opacity: f
 
 // ───────────── nós ─────────────
 
+/// Atributos de preenchimento da caixa: o gradiente (a definição entra em `out`, com id único
+/// pelo ponto do documento) vence a cor, como no PPTX.
+fn fill_attrs(out: &mut String, paint: &Paint, f: Frame, opacity: f32) -> Option<String> {
+    let Some(g) = &paint.gradient else { return paint.fill.map(|c| color(c, opacity)) };
+    let id = format!("grad{}", out.len());
+    out.push_str(&g.svg_def(&id, (f.x, f.y, f.w, f.h), opacity));
+    Some(format!("fill=\"url(#{id})\""))
+}
+
 fn decoration(out: &mut String, p: &Placed, paint: &Paint, opacity: f32) {
     let f = p.frame;
-    if let Some(fill) = paint.fill {
-        let _ = write!(out, "<rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" rx=\"{:.2}\" {}/>", f.x, f.y, f.w, f.h, paint.radius, color(fill, opacity));
+    if let Some(fill) = fill_attrs(out, paint, f, opacity) {
+        let _ = write!(out, "<rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" rx=\"{:.2}\" {fill}/>", f.x, f.y, f.w, f.h, paint.radius);
     }
     if let Some((path, _)) = &paint.background_image
         && let Some(uri) = data_uri(path) {
@@ -239,7 +249,7 @@ fn shape(out: &mut String, p: &Placed, spec: &ShapeSpec, paint: &Paint, opacity:
         let _ = write!(out, "<line x1=\"{x1:.2}\" y1=\"{y1:.2}\" x2=\"{x2:.2}\" y2=\"{y2:.2}\" {stroke}/>");
         return;
     }
-    let fill = paint.fill.map_or_else(|| "fill=\"none\"".into(), |c| color(c, opacity));
+    let fill = fill_attrs(out, paint, f, opacity).unwrap_or_else(|| "fill=\"none\"".into());
     let radius = if spec.pill { Some(f.w.min(f.h) / 2.0) } else { spec.radius };
     let _ = write!(out, "{} {fill} {stroke}/>", preset(spec.prst, &spec.adj, radius, f));
 }
@@ -344,9 +354,52 @@ fn label(out: &mut String, fonts: &Fonts, text: &str, size: f32, x: f32, y: f32,
     }
 }
 
-fn short_num(v: f64) -> String {
+fn short_num(v: f64, locale: Locale) -> String {
     let s = crate::js::value::num_to_string((v * 100.0).round() / 100.0);
-    s.replace('.', ",")
+    s.replace('.', &locale.decimal.to_string())
+}
+
+/// Rótulo de valor já posicionado: desenhado depois das formas, para nenhuma série o cobrir.
+struct ValueLabel {
+    text: String,
+    x: f32,
+    y: f32,
+    /// 0 = começa em x, 0.5 = centrado, 1 = termina em x.
+    anchor: f32,
+    color: Rgba,
+}
+
+/// Texto do rótulo como o PowerPoint o mostra: `labels.format` quando o código é dos comuns;
+/// senão o número curto de sempre.
+fn value_text(spec: &ChartSpec, v: f64, locale: Locale) -> String {
+    spec.label_format.as_deref().and_then(|code| format_number(v, code, locale)).unwrap_or_else(|| short_num(v, locale))
+}
+
+/// Rótulo de uma barra (x, y, w, h): fora da ponta, dentro da ponta ou no meio; dentro da barra a
+/// cor vem do contraste com a série.
+fn bar_value_label(spec: &ChartSpec, text: String, rect: (f32, f32, f32, f32), horizontal: bool, place: BarLabel, positive: bool, series: Rgba) -> ValueLabel {
+    let size = spec.size;
+    let (x0, y0, w, h) = rect;
+    let middle = size * 0.35;
+    let color = if place == BarLabel::OutsideEnd { spec.label_text_color() } else { spec.label_color_on(series) };
+    if horizontal {
+        let (x, anchor) = match (place, positive) {
+            (BarLabel::Center, _) => (x0 + w / 2.0, 0.5),
+            (BarLabel::InsideEnd, true) => (x0 + w - 3.0, 1.0),
+            (BarLabel::InsideEnd, false) => (x0 + 3.0, 0.0),
+            (BarLabel::OutsideEnd, true) => (x0 + w + 3.0, 0.0),
+            (BarLabel::OutsideEnd, false) => (x0 - 3.0, 1.0),
+        };
+        return ValueLabel { text, x, y: y0 + h / 2.0 + middle, anchor, color };
+    }
+    let y = match (place, positive) {
+        (BarLabel::Center, _) => y0 + h / 2.0 + middle,
+        (BarLabel::InsideEnd, true) => y0 + size + 1.0,
+        (BarLabel::InsideEnd, false) => y0 + h - 4.0,
+        (BarLabel::OutsideEnd, true) => y0 - 3.0,
+        (BarLabel::OutsideEnd, false) => y0 + h + size + 1.0,
+    };
+    ValueLabel { text, x: x0 + w / 2.0, y, anchor: 0.5, color }
 }
 
 // ───────────── escala do eixo de valores (preview/chart.ts) ─────────────
@@ -408,7 +461,7 @@ fn ticks_of(scale: &Scale) -> Vec<f64> {
 
 /// Número como o PPTX mostra em pt-BR: até `decimals` casas (General) ou exatamente `decimals`
 /// (`fixed`), vírgula decimal, sem separador de milhar (formatValue).
-fn format_value(value: f64, decimals: i32, fixed: bool) -> String {
+fn format_value(value: f64, decimals: i32, fixed: bool, locale: Locale) -> String {
     let mut s = format!("{:.*}", decimals.max(0) as usize, value);
     if !fixed && s.contains('.') {
         s = s.trim_end_matches('0').trim_end_matches('.').to_string();
@@ -416,27 +469,31 @@ fn format_value(value: f64, decimals: i32, fixed: bool) -> String {
     if s == "-0" {
         s = "0".into();
     }
-    s.replace('.', ",")
+    s.replace('.', &locale.decimal.to_string())
 }
 
-/// Formato simples do Excel no preview: '0%' / '0.0%', '0.00'; o resto como 'General' (formatWith).
-fn format_with(value: f64, format: Option<&str>, fallback_decimals: i32, fixed: bool) -> String {
-    let Some(f) = format.filter(|f| *f != "General") else { return format_value(value, fallback_decimals, fixed) };
+/// Formato do Excel no preview: os códigos comuns pelo `numfmt`; fora deles, a leitura antiga
+/// ('0%' / '0.0%', '0.00'; o resto como 'General', formatWith).
+fn format_with(value: f64, format: Option<&str>, fallback_decimals: i32, fixed: bool, locale: Locale) -> String {
+    let Some(f) = format.filter(|f| *f != "General") else { return format_value(value, fallback_decimals, fixed, locale) };
+    if let Some(text) = format_number(value, f, locale) {
+        return text;
+    }
     let decimals = f.find('.').map_or(0, |i| f[i + 1..].chars().take_while(|c| *c == '0').count() as i32);
     if f.contains('%') {
-        return format!("{}%", format_value(value * 100.0, decimals, true));
+        return format!("{}%", format_value(value * 100.0, decimals, true, locale));
     }
-    format_value(value, decimals, true)
+    format_value(value, decimals, true, locale)
 }
 
-fn tick_label(tick: f64, scale: &Scale, format: Option<&str>, percent: bool) -> String {
+fn tick_label(tick: f64, scale: &Scale, format: Option<&str>, percent: bool, locale: Locale) -> String {
     if percent {
-        return format!("{}%", format_value(tick * 100.0, decimals_of(scale.step * 100.0).max(0), false));
+        return format!("{}%", format_value(tick * 100.0, decimals_of(scale.step * 100.0).max(0), false, locale));
     }
-    format_with(tick, format, decimals_of(scale.step), false)
+    format_with(tick, format, decimals_of(scale.step), false, locale)
 }
 
-fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity: f32) {
+fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity: f32, locale: Locale) {
     let f = p.frame;
     let top = if spec.title.is_some() { spec.size * 2.0 } else { 4.0 };
     let bottom = if spec.legend.is_some() { spec.size * 2.2 } else { 4.0 };
@@ -447,6 +504,7 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
         let (cx, cy) = (f.x + f.w / 2.0, plot.y + plot.h / 2.0);
         let r = plot.h.min(f.w) / 2.0;
         let mut angle = -std::f64::consts::FRAC_PI_2;
+        let mut labels: Vec<ValueLabel> = Vec::new();
         for (i, v) in s.values.iter().enumerate() {
             let sweep = if total > 0.0 { v.max(0.0) / total * std::f64::consts::TAU } else { 0.0 };
             let (a0, a1) = (angle, angle + sweep);
@@ -456,9 +514,25 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
             let c = spec.point_colors.get(i).copied().unwrap_or(s.color);
             let _ = write!(out, "<path d=\"M{cx:.2} {cy:.2} L{:.2} {:.2} A{r:.2} {r:.2} 0 {large} 1 {:.2} {:.2} Z\" {} stroke=\"#FFFFFF\" stroke-width=\"1\"/>", p0.0, p0.1, p1.0, p1.1, color(c, opacity));
             angle = a1;
+            if spec.labels && sweep > 0.0 {
+                // Por dentro: no meio do anel (rosca) ou a 2/3 do raio; por fora, logo depois da borda.
+                let inside = spec.slice_label_inside();
+                let at = match (inside, hole) {
+                    (true, Some(h)) => r * (1.0 + h as f32 / 100.0) / 2.0,
+                    (true, None) => r * 0.66,
+                    (false, _) => r + spec.size,
+                };
+                let mid = (a0 + a1) / 2.0;
+                let (x, y) = (cx + at * mid.cos() as f32, cy + at * mid.sin() as f32 + spec.size * 0.35);
+                let anchor = if inside { 0.5 } else { 0.5 - 0.5 * mid.cos() as f32 };
+                labels.push(ValueLabel { text: value_text(spec, *v, locale), x, y, anchor, color: if inside { spec.label_color_on(c) } else { spec.label_text_color() } });
+            }
         }
         if let Some(h) = hole {
             let _ = write!(out, "<circle cx=\"{cx:.2}\" cy=\"{cy:.2}\" r=\"{:.2}\" fill=\"#FFFFFF\"/>", r * h as f32 / 100.0);
+        }
+        for l in &labels {
+            label(out, fonts, &l.text, spec.size, l.x, l.y, l.anchor, l.color);
         }
         return;
     }
@@ -499,7 +573,7 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
         format!("stroke=\"{c}\" stroke-width=\"{w}\"")
     };
     for v in ticks_of(&scale) {
-        let text = tick_label(v, &scale, spec.y_axis.format.as_deref(), percent);
+        let text = tick_label(v, &scale, spec.y_axis.format.as_deref(), percent, locale);
         if horizontal {
             let x = plot.x + pos(v);
             if spec.y_axis.grid != Some(false) {
@@ -532,10 +606,12 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
     let bars: Vec<usize> = (0..spec.series.len()).filter(|&i| matches!(spec.kind, ChartKind::Bar { .. }) || (spec.kind == ChartKind::Combo && !spec.series[i].line)).collect();
     let stacked = grouping != "clustered";
     let mut base = vec![0.0_f64; n];
+    let place = spec.bar_label(stacked);
+    let mut labels: Vec<ValueLabel> = Vec::new();
     for (k, &i) in bars.iter().enumerate() {
         let s = &spec.series[i];
-        for (j, v) in s.values.iter().enumerate() {
-            let v = if grouping == "percentStacked" { v / sum_at(j).max(1e-9) } else { *v };
+        for (j, raw) in s.values.iter().enumerate() {
+            let v = if grouping == "percentStacked" { raw / sum_at(j).max(1e-9) } else { *raw };
             let (slot, count) = if stacked { (0, 1) } else { (k, bars.len()) };
             let thick = band * 0.6 / count as f32;
             let offset = band * j as f32 + band * 0.2 + thick * slot as f32;
@@ -546,8 +622,9 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
             let (a, b) = (pos(from), pos(to));
             let rect = if horizontal { (plot.x + a.min(b), plot.y + offset, (b - a).abs(), thick) } else { (plot.x + offset, plot.bottom() - a.max(b), thick, (b - a).abs()) };
             let _ = write!(out, "<rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" {}/>", rect.0, rect.1, rect.2, rect.3, color(s.color, opacity));
-            if spec.labels && !horizontal {
-                label(out, fonts, &short_num(v), small, rect.0 + thick / 2.0, rect.1 - 3.0, 0.5, spec.color);
+            if spec.labels {
+                // O rótulo mostra o valor do dado (no 100 % também, como o showVal do arquivo).
+                labels.push(bar_value_label(spec, value_text(spec, *raw, locale), rect, horizontal, place, *raw >= 0.0, s.color));
             }
         }
     }
@@ -593,7 +670,18 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
                     let _ = write!(out, "<circle cx=\"{x:.2}\" cy=\"{y:.2}\" r=\"2.5\" {}/>", color(s.color, opacity));
                 }
             }
+            if spec.labels {
+                let dy = match spec.label_position {
+                    Some(LabelPosition::Center) => small * 0.35,
+                    Some(LabelPosition::Inside) => small + 3.0,
+                    _ => -5.0,
+                };
+                labels.extend(pts.iter().zip(&s.values).map(|((x, y), v)| ValueLabel { text: value_text(spec, *v, locale), x: *x, y: y + dy, anchor: 0.5, color: spec.label_text_color() }));
+            }
         }
+    }
+    for l in &labels {
+        label(out, fonts, &l.text, small, l.x, l.y, l.anchor, l.color);
     }
     if !horizontal {
         let _ = write!(out, "<line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" stroke=\"{}\" stroke-width=\"{}\"/>", plot.x, y_of(0.0), plot.right(), y_of(0.0), ZERO_LINE.0, ZERO_LINE.1);
@@ -631,7 +719,8 @@ fn connector(out: &mut String, c: &crate::layout::Routed) {
 }
 
 /// SVG do slide em pt (viewBox = tamanho do slide).
-pub fn slide_svg(slide: &SlideSpec, layout: &SlideLayout, fonts: &Fonts, width: f32, height: f32) -> String {
+pub fn slide_svg(slide: &SlideSpec, layout: &SlideLayout, fonts: &Fonts, width: f32, height: f32, lang: &str) -> String {
+    let locale = Locale::of(lang);
     let mut out = format!("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {width} {height}\" width=\"{width}\" height=\"{height}\">");
     // Sem fundo próprio, vale o do layout (defineLayout background), como no PowerPoint.
     let inherited = if slide.background.is_none() && slide.background_image.is_none() { slide.layout.as_ref().and_then(|l| l.background.clone()) } else { None };
@@ -641,6 +730,10 @@ pub fn slide_svg(slide: &SlideSpec, layout: &SlideLayout, fonts: &Fonts, width: 
     };
     let bg = slide.background.or(layout_color).unwrap_or(Rgba { r: 255, g: 255, b: 255, a: 1.0 });
     let _ = write!(out, "<rect width=\"{width}\" height=\"{height}\" {}/>", color(bg, 1.0));
+    if let Some(g) = slide.background_gradient.as_ref().filter(|_| slide.background_image.is_none()) {
+        out.push_str(&g.svg_def("slide-bg", (0.0, 0.0, width, height), 1.0));
+        let _ = write!(out, "<rect width=\"{width}\" height=\"{height}\" fill=\"url(#slide-bg)\"/>");
+    }
     let image = match &inherited {
         Some(crate::model::LayoutBackground::Image(path)) => Some(path),
         _ => slide.background_image.as_ref().map(|(path, _)| path),
@@ -691,7 +784,7 @@ pub fn slide_svg(slide: &SlideSpec, layout: &SlideLayout, fonts: &Fonts, width: 
             }
             NodeKind::Chart(spec) => {
                 decoration(&mut out, p, paint, op);
-                chart(&mut out, fonts, p, spec, op);
+                chart(&mut out, fonts, p, spec, op, locale);
             }
         }
         out.push_str("</g>");

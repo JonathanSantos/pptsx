@@ -9,8 +9,10 @@ mod containers;
 mod css;
 mod diag;
 mod dsinfo;
+mod dsprops;
 mod embed;
 mod emit;
+mod gradient;
 mod grid;
 mod init;
 mod js;
@@ -18,6 +20,7 @@ mod layout;
 mod lint;
 mod mcp;
 mod model;
+mod numfmt;
 mod objects;
 mod package;
 mod preview;
@@ -37,7 +40,7 @@ use std::time::Instant;
 
 use diag::{Diags, Level};
 
-const USAGE: &str = "pptsx-rs — TSX → PPTX (MVP em Rust)
+const USAGE: &str = "pptsx-rs — TSX → PPTX num binário só
 
 uso:
   pptsx-rs build <deck.tsx> [--size 16x9,4x3] [--out dist/] [--lang pt-BR] [--line-breaks forced|auto]
@@ -45,17 +48,23 @@ uso:
   pptsx-rs check <deck.tsx> [--size 16x9] [--debug] [--json]   avalia, faz o layout e mostra diagnósticos
                                                    (--debug: frames em pt de cada nó)
   pptsx-rs tree  <deck.tsx> [--size 16x9]     mostra a árvore avaliada do deck
-  pptsx-rs lint  <deck.tsx> [--size 16x9,4x3] [--json]
-                 regras da engine e as dos DS registrados no pptsx.config.ts
+  pptsx-rs lint  <deck.tsx> [--size 16x9,4x3] [--json] [--verbose]
+                 regras da engine e as dos DS registrados no pptsx.config.ts; os achados que são
+                 do DS (não do deck) só saem com --verbose ou no --json (\"origin\": \"ds\")
   pptsx-rs init  [pasta] [--ds <pacote|caminho>] [--force] [--json]
                                                    cria deck.tsx, tsconfig.json, pptsx.config.ts e os tipos do
                                                    pptsx para o editor (.pptsx/types); com --ds, o deck usa o DS
-  pptsx-rs types [pasta]                          (re)grava os tipos do pptsx e o `typeRoots` do tsconfig
-  pptsx-rs skill [--out pptsx] [--ds <pacote|caminho>] [--bin <binário> | --no-bin]
-                                                   a skill para agentes (SKILL.md, references/, mcp/) com
-                                                   este binário em bin/: a pasta vai em .github/skills ou .claude/skills
-  pptsx-rs mcp [--ds <ds.ts>]...                  servidor MCP por stdio (build, diagnose,
+  pptsx-rs types [pasta]                          (re)grava os tipos do pptsx e do @pptsx/ds-kit e o `typeRoots` do tsconfig
+  pptsx-rs skill [--out <pasta>] [--name <nome>] [--description <texto>] [--ds <caminho|pacote>]
+                 [--bin <binário> | --no-bin]
+                                                   a skill para agentes (SKILL.md, references/, mcp/) com este
+                                                   binário em bin/; com --ds <caminho>, o DS vai junto em ds/ e a
+                                                   pasta skill/ dele (SKILL.md, references/*.md) entra na skill
+  pptsx-rs mcp [--ds <caminho|pacote>]...         servidor MCP por stdio (build, diagnose,
                                                    preview, lint, guide, schema)
+
+@pptsx/ds-kit (tokens, tema, variantes, slots, regras, createDs) vem dentro do binário: um DS que o importa
+compila sem node_modules.
 
 tamanhos: 16x9, 16x10, 4x3, wide ou <L>x<A>in (ex.: 10x7.5in)";
 
@@ -75,6 +84,10 @@ struct Args {
     watch: bool,
     /// lint --json.
     json: bool,
+    /// lint --verbose: mostra também os achados do design system (`origin: "ds"`).
+    verbose: bool,
+    /// lint --deck-only: tira os achados do design system também do --json (o MCP usa).
+    deck_only: bool,
     /// --line-breaks: "forced" (uma quebra por linha calculada) ou "auto" (o renderizador quebra).
     line_breaks: Option<String>,
     /// Interno (o `--watch` usa): grava os arquivos lidos pela avaliação, um por linha.
@@ -122,6 +135,8 @@ fn parse_args() -> Result<Args, String> {
     let mut preview = true;
     let mut watch = false;
     let mut json = false;
+    let mut verbose = false;
+    let mut deck_only = false;
     let mut line_breaks = None;
     let mut deps_out = None;
     let mut serve = false;
@@ -150,6 +165,8 @@ fn parse_args() -> Result<Args, String> {
             "--debug" => debug = true,
             "--watch" => watch = true,
             "--json" => json = true,
+            "--verbose" => verbose = true,
+            "--deck-only" => deck_only = true,
             "--line-breaks" => {
                 line_breaks = match raw.next().as_deref() {
                     Some(v @ ("forced" | "auto")) => Some(v.to_string()),
@@ -171,7 +188,7 @@ fn parse_args() -> Result<Args, String> {
         }
     }
     let deck = deck.ok_or_else(|| format!("faltou o arquivo do deck\n\n{USAGE}"))?;
-    Ok(Args { command, deck, sizes, out, lang, debug, preview, preview_width, watch, json, line_breaks, deps_out, serve, port, state_out, embed_fonts })
+    Ok(Args { command, deck, sizes, out, lang, debug, preview, preview_width, watch, json, verbose, deck_only, line_breaks, deps_out, serve, port, state_out, embed_fonts })
 }
 
 fn dump(v: &js::Value, depth: usize) {
@@ -373,7 +390,7 @@ fn run(args: &Args, deps: &mut Vec<PathBuf>) -> ExitCode {
     if args.command == "lint" {
         return match lint::lint(&args.deck, &sizes, &config, text_options) {
             Ok(findings) => {
-                println!("{}", if args.json { lint::json(&findings) } else { lint::summary(&findings) });
+                println!("{}", if args.json { lint::json(&findings, !args.deck_only) } else { lint::summary(&findings, args.verbose && !args.deck_only) });
                 // Como o pptsx lint: sai 1 quando há achado error ou warning.
                 if findings.iter().any(|f| f.severity != "info") { ExitCode::from(1) } else { ExitCode::SUCCESS }
             }
@@ -528,7 +545,7 @@ fn run(args: &Args, deps: &mut Vec<PathBuf>) -> ExitCode {
                 }
             }
             if args.command == "build" && (args.preview || args.state_out.is_some()) {
-                let svg = preview::slide_svg(slide, &laid, &fonts, spec.width, spec.height);
+                let svg = preview::slide_svg(slide, &laid, &fonts, spec.width, spec.height, &lang);
                 if let Some(dir) = &args.state_out {
                     let size_dir = dir.join(&ctx.name);
                     let _ = std::fs::create_dir_all(&size_dir);

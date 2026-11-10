@@ -166,6 +166,8 @@ export interface BoxProps extends FlexItemProps, ContainerProps, StrokeProps {
      * (ver CONTRACTS §M9 "Slide de continuação"). Só um Box paginate por slide. Padrão false.
      */
     readonly paginate?: boolean;
+    /** Grupo de fit herdado: vale para todo Text de dentro que não declarar o próprio `fitGroup` (ver TextProps). */
+    readonly fitGroup?: string;
     /**
      * M12: geometria do fundo/borda da caixa (padrão 'rect'; com borderRadius vira 'roundRect').
      * Os filhos continuam posicionados pelo padding, como numa caixa retangular: a forma não
@@ -211,6 +213,13 @@ export interface TextProps extends FlexItemProps, TextStyleProps {
     /** padrão: 75% de size (arredondado para baixo) */
     readonly minSize?: Pt;
     readonly maxLines?: number;
+    /**
+     * Grupo de fit: os Text do mesmo slide com o mesmo nome (e `fit="shrink"`) encolhem pela mesma
+     * escala, a do membro que menos coube (altura, `nowrap` ou palavra partida). Corpos de partida
+     * iguais terminam no mesmo corpo; diferentes mantêm a proporção. O piso é o do membro que menos
+     * pode encolher (o maior minSize/fontSize). Herdável: `fitGroup` num Box vale para os Text de dentro.
+     */
+    readonly fitGroup?: string;
     /** M13: hyperlink no texto inteiro (URL ou `slide:N`); um Span pode ter o próprio. */
     readonly href?: string;
     /**
@@ -429,6 +438,12 @@ export interface ChartLabels {
     /** Código de formato do Excel; padrão: as casas decimais dos dados. */
     readonly format?: string;
     readonly position?: ChartLabelPosition;
+    /**
+     * Cor fixa de todos os rótulos. Sem ela, o rótulo desenhado dentro da barra/fatia (empilhado,
+     * rosca, `position: 'inside' | 'center'`) troca para branco ou preto quando a cor do texto do
+     * gráfico não se lê sobre a cor da série.
+     */
+    readonly color?: Color;
 }
 /**
  * Gráfico nativo (editável no PowerPoint). Folha sem tamanho intrínseco: precisa de
@@ -443,7 +458,7 @@ export interface ChartProps extends FlexItemProps {
     readonly legend?: boolean | {
         readonly position: ChartLegendPosition;
     };
-    /** M14: rótulos de valor sobre as barras/pontos/fatias (true, ou formato e posição); padrão false. */
+    /** M14: rótulos de valor sobre as barras/pontos/fatias (true, ou formato, posição e cor); padrão false. */
     readonly labels?: boolean | ChartLabels;
     /** M14: eixo de categorias (no barH, o vertical), eixo de valores e o secundário (combo). */
     readonly xAxis?: ChartAxis;

@@ -1,5 +1,6 @@
-//! Módulos ESM: `pptsx` é nativo; o resto (arquivos relativos, pacotes em node_modules,
-//! JSON) é lido, parseado pelo oxc e avaliado uma vez.
+//! Módulos ESM: `pptsx` é nativo; `@pptsx/ds-kit` vem das fontes embutidas no binário
+//! (`assets/ds-kit/`); o resto (arquivos relativos, pacotes em node_modules, JSON) é lido,
+//! parseado pelo oxc e avaliado uma vez.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,6 +18,45 @@ use super::{JsError, R, Throw, fail};
 
 const EXTENSIONS: &[&str] = &["tsx", "ts", "jsx", "js", "mjs", "json"];
 
+// ───────────── módulos embutidos ─────────────
+
+include!(concat!(env!("OUT_DIR"), "/ds_kit.rs"));
+
+/// O pacote que o binário serve de dentro dele. A cópia embutida **sempre vence** um
+/// `node_modules/@pptsx/ds-kit`: o kit do npm reexporta catálogo, scaffold e skill, que precisam de
+/// Node, e um DS tem de compilar igual com ou sem `npm install`.
+pub const DS_KIT: &str = "@pptsx/ds-kit";
+const DS_KIT_ENTRY: &str = "index.js";
+/// Raiz virtual dos módulos embutidos: aparece nas mensagens de erro e nunca existe no disco.
+const EMBEDDED_ROOT: &str = "<pptsx-rs>";
+
+fn embedded_path(file: &str) -> PathBuf {
+    Path::new(EMBEDDED_ROOT).join(DS_KIT).join(file)
+}
+
+pub(crate) fn is_embedded(path: &Path) -> bool {
+    path.starts_with(EMBEDDED_ROOT)
+}
+
+/// Fonte de um módulo embutido, pelo caminho virtual.
+pub(crate) fn embedded_source(path: &Path) -> Option<&'static str> {
+    let file = path.strip_prefix(Path::new(EMBEDDED_ROOT).join(DS_KIT)).ok()?.to_str()?;
+    DS_KIT_FILES.iter().find(|(rel, _)| *rel == file).map(|(_, source)| *source)
+}
+
+/// Caminho virtual de um import que cai num módulo embutido: o próprio pacote, de qualquer módulo,
+/// ou um vizinho (`./tokens.js`) quando quem importa já é embutido.
+pub(crate) fn resolve_embedded(importer: &Path, spec: &str) -> Option<PathBuf> {
+    if spec == DS_KIT {
+        return Some(embedded_path(DS_KIT_ENTRY));
+    }
+    if !is_embedded(importer) {
+        return None;
+    }
+    let path = embedded_path(spec.strip_prefix("./")?);
+    embedded_source(&path).map(|_| path)
+}
+
 impl Interp {
     pub fn load_entry(&mut self, path: &Path) -> R<Rc<Obj>> {
         let abs = fs::canonicalize(path).map_err(|e| Throw::Error(JsError { msg: format!("{}: {e}", path.display()), at: None }))?;
@@ -30,10 +70,15 @@ impl Interp {
                 None => fail(format!("import circular envolvendo {}", path.display())),
             };
         }
-        let text = fs::read_to_string(path).map_err(|e| Throw::Error(JsError { msg: format!("{}: {e}", path.display()), at: None }))?;
         let is_json = path.extension().is_some_and(|e| e == "json");
-        // JSON é uma expressão JS válida: o mesmo parser e avaliador servem.
-        let source: &'static str = Box::leak(if is_json { format!("export default ({text});").into_boxed_str() } else { text.into_boxed_str() });
+        let source: &'static str = match embedded_source(path) {
+            Some(source) => source,
+            None => {
+                let text = fs::read_to_string(path).map_err(|e| Throw::Error(JsError { msg: format!("{}: {e}", path.display()), at: None }))?;
+                // JSON é uma expressão JS válida: o mesmo parser e avaliador servem.
+                Box::leak(if is_json { format!("export default ({text});").into_boxed_str() } else { text.into_boxed_str() })
+            }
+        };
         let id = self.modules.len();
         self.modules.push(ModuleRec { path: path.to_path_buf(), source, exports: None });
         self.by_path.insert(path.to_path_buf(), id);
@@ -215,7 +260,11 @@ impl Interp {
         if let Some(m) = super::node::node_module(spec) {
             return Ok(Rc::new(m));
         }
-        let from = self.modules[self.cur].path.parent().map(Path::to_path_buf).unwrap_or_default();
+        let importer = self.modules[self.cur].path.clone();
+        if let Some(path) = resolve_embedded(&importer, spec) {
+            return self.load_module(&path).map_err(|t| self.locate(t, span));
+        }
+        let from = importer.parent().map(Path::to_path_buf).unwrap_or_default();
         let Some(path) = resolve(&from, spec) else {
             return self.err(span, format!("módulo '{spec}' não encontrado"));
         };
@@ -294,7 +343,7 @@ pub(crate) fn resolve(from: &Path, spec: &str) -> Option<PathBuf> {
     resolve_package(from, spec)
 }
 
-/// Pacote em node_modules (subindo pastas). Usa `exports["."]` (source/import/default),
+/// Pacote em node_modules (subindo pastas); `@pptsx/ds-kit` nunca chega aqui (é embutido). Usa `exports["."]` (source/import/default),
 /// `module` ou `main` do package.json; subcaminhos resolvem direto no pacote.
 fn resolve_package(from: &Path, spec: &str) -> Option<PathBuf> {
     let mut parts = spec.splitn(if spec.starts_with('@') { 3 } else { 2 }, '/');
@@ -309,6 +358,52 @@ fn resolve_package(from: &Path, spec: &str) -> Option<PathBuf> {
             }
             let entry = package_entry(&pkg).unwrap_or_else(|| "index".into());
             return file_candidates(&pkg.join(entry)).and_then(|p| fs::canonicalize(p).ok());
+        }
+        dir = d.parent();
+    }
+    resolve_workspace(from, &name, sub)
+}
+
+/// Entrada de um pacote local: a do package.json; se ela aponta para um build que não existe (`dist/`), o fonte.
+fn local_entry(pkg: &Path) -> Option<PathBuf> {
+    let declared = package_entry(pkg).and_then(|entry| file_candidates(&pkg.join(entry)));
+    declared.or_else(|| file_candidates(&pkg.join("src/index"))).or_else(|| file_candidates(&pkg.join("index")))
+}
+
+fn package_json(dir: &Path) -> Option<Rc<Obj>> {
+    match Interp::new().load_entry(&dir.join("package.json")).ok()?.get("default").cloned()? {
+        Value::Object(o) => Some(o),
+        _ => None,
+    }
+}
+
+/// Pastas de um padrão de `workspaces` (`packages/*` ou uma pasta exata).
+fn workspace_dirs(root: &Path, pattern: &str) -> Vec<PathBuf> {
+    let Some(parent) = pattern.strip_suffix("/*") else { return vec![root.join(pattern)] };
+    let Ok(entries) = fs::read_dir(root.join(parent)) else { return Vec::new() };
+    let mut dirs: Vec<PathBuf> = entries.flatten().map(|e| e.path()).filter(|p| p.is_dir()).collect();
+    dirs.sort();
+    dirs
+}
+
+/// Sem node_modules: o pacote pode ser um vizinho do monorepo. Sobe até um package.json com `workspaces` e
+/// procura o pacote pelo `name`, para um repositório de DS compilar sem `npm install`.
+fn resolve_workspace(from: &Path, name: &str, sub: Option<&str>) -> Option<PathBuf> {
+    let mut dir = Some(from);
+    while let Some(d) = dir {
+        let patterns: Vec<String> = match package_json(d).and_then(|o| o.get("workspaces").cloned()) {
+            Some(Value::Array(items)) => items.borrow().iter().filter_map(|v| v.as_str().map(String::from)).collect(),
+            _ => Vec::new(),
+        };
+        let found = patterns.iter().flat_map(|pattern| workspace_dirs(d, pattern)).find(|pkg| {
+            package_json(pkg).and_then(|o| o.get("name").and_then(Value::as_str).map(String::from)).as_deref() == Some(name)
+        });
+        if let Some(pkg) = found {
+            let file = match sub {
+                Some(sub) => file_candidates(&pkg.join(sub)),
+                None => local_entry(&pkg),
+            };
+            return file.and_then(|p| fs::canonicalize(p).ok());
         }
         dir = d.parent();
     }
@@ -567,4 +662,72 @@ fn pptsx_module() -> Obj {
         ),
     );
     m
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("pptsx-rs-module-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("pasta temporária");
+        dir
+    }
+
+    #[test]
+    fn ds_kit_resolves_to_the_embedded_entry_from_any_module() {
+        let path = resolve_embedded(Path::new("/projeto/ds/src/tokens.ts"), DS_KIT).expect("embutido");
+        assert!(is_embedded(&path));
+        assert!(embedded_source(&path).is_some_and(|s| s.contains("defineTokens")));
+    }
+
+    #[test]
+    fn relative_imports_stay_inside_the_embedded_package() {
+        let entry = embedded_path(DS_KIT_ENTRY);
+        assert!(resolve_embedded(&entry, "./tokens.js").is_some());
+        assert!(resolve_embedded(&entry, "./catalog.js").is_none(), "catálogo não é embutido");
+        assert!(resolve_embedded(Path::new("/projeto/deck.tsx"), "./tokens.js").is_none(), "só módulos embutidos importam vizinhos embutidos");
+    }
+
+    #[test]
+    fn every_relative_import_of_the_embedded_kit_exists() {
+        let re = regex::Regex::new(r#"from '(\./[^']+)'"#).expect("regex fixa");
+        for (file, source) in DS_KIT_FILES.iter().filter(|(f, _)| f.ends_with(".js")) {
+            for cap in re.captures_iter(source) {
+                assert!(resolve_embedded(&embedded_path(file), &cap[1]).is_some(), "{file} importa {} que não está em assets/ds-kit", &cap[1]);
+            }
+        }
+    }
+
+    #[test]
+    fn a_ds_importing_the_kit_evaluates_without_node_modules() {
+        let dir = temp_dir("kit");
+        let file = dir.join("ds.ts");
+        fs::write(
+            &file,
+            "import { AA_TEXT, contrastOf, createDs, createVariants, defineComponent, defineRule, defineTokens, slot, themeOf } from '@pptsx/ds-kit';\n\
+             export const tokens = defineTokens({ color: { ink: '#111111', paper: 'white' }, space: { md: 16 } });\n\
+             export const theme = themeOf(tokens, { colors: { dark1: 'color.ink', light1: 'color.paper' } });\n\
+             const variants = createVariants({ base: { padding: 8 }, variants: { size: { lg: { padding: 24 } } } });\n\
+             const Card = defineComponent({ name: 'Card' }, () => null);\n\
+             const rule = defineRule('x/rule', 'warning', () => []);\n\
+             export const padding = variants({ size: 'lg' }).padding;\n\
+             export const fallback = slot(undefined, 'vazio');\n\
+             export const readable = contrastOf(tokens.color.ink, tokens.color.paper) >= AA_TEXT;\n\
+             export const ds = createDs({ name: 'x', version: '1.0.0', components: [Card], theme, rules: [rule] });\n",
+        )
+        .expect("ds.ts");
+        let mut interp = Interp::new();
+        let exports = match interp.load_entry(&file) {
+            Ok(e) => e,
+            Err(t) => panic!("{}", interp.describe(t)),
+        };
+        assert_eq!(exports.get("padding").map(Value::to_num), Some(24.0));
+        assert_eq!(exports.get("fallback").map(Value::to_js_string).as_deref(), Some("vazio"));
+        assert!(matches!(exports.get("readable"), Some(Value::Bool(true))));
+        let Some(Value::Object(ds)) = exports.get("ds") else { panic!("ds não é objeto") };
+        assert_eq!(ds.get("name").map(Value::to_js_string).as_deref(), Some("x"));
+        let _ = fs::remove_dir_all(&dir);
+    }
 }

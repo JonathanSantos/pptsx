@@ -82,6 +82,7 @@ pub(super) fn shape_spec(cx: &Cx, props: &Props, kind: &str, paint: &mut Paint) 
     }
     if line {
         paint.fill = None;
+        paint.gradient = None;
     }
     let radius = match kind {
         "roundRect" => cx.num(props, "radius").or_else(|| cx.num(props, "borderRadius")),

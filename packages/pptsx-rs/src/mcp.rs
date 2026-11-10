@@ -12,7 +12,7 @@ use std::sync::LazyLock;
 use crate::js::value::{Obj, arr_val, obj_val, str_val, to_json};
 use crate::js::{self, Value};
 
-/// docs/AGENT_GUIDE.md e o schema das props do pptsx, embutidos no binário.
+/// O guia do agente e o schema das props das primitivas, embutidos no binário (os originais ficam em assets/).
 pub(crate) const GUIDE: &str = include_str!("../assets/agent-guide.md");
 const SCHEMA_SOURCE: &str = include_str!("../assets/schema.generated.ts");
 const CORE_SOURCE: &str = "pptsx";
@@ -250,9 +250,17 @@ fn lint_tool(input: &Value, cwd: &Path) -> Result<ToolResult, String> {
     let deck = deck_of(input, cwd)?;
     let mut args = vec!["lint".to_string(), deck.display().to_string()];
     args.extend(size_args(input, "sizes"));
+    // Achado do DS (`origin: "ds"`) só entra a pedido: o agente que escreve o deck não o resolve.
+    let verbose = matches!(get(input, "verbose"), Some(Value::Bool(true)));
+    if verbose {
+        args.push("--verbose".into());
+    }
     let (code, summary) = run_self(&args, cwd)?;
     let mut json_args = args.clone();
     json_args.push("--json".into());
+    if !verbose {
+        json_args.push("--deck-only".into());
+    }
     let (_, report) = run_self(&json_args, cwd)?;
     let ds = ds_of_deck(&deck).iter().map(|d| d.name.clone()).collect::<Vec<_>>();
     let ds_line = if ds.is_empty() { String::new() } else { format!("\n\nDS: {}", ds.join(", ")) };
@@ -267,19 +275,29 @@ struct Ds {
     schema: Option<Value>,
 }
 
-fn manifest_of(v: &Value) -> Option<Ds> {
+/// O DS de um manifesto. O schema é o do autor quando ele passou um ao `createDs`; senão, o lido dos
+/// tipos das props nos módulos que o avaliador carregou (dsprops.rs), com os exemplos do catálogo.
+fn manifest_of(interp: &js::Interp, v: &Value) -> Option<Ds> {
     let name = get_str(v, "name")?;
     let guide = get(v, "guide").map(Value::to_js_string);
-    let schema = get(v, "schema").cloned();
+    let schema = crate::dsprops::schema_of(interp, v);
     Some(Ds { name, guide, schema })
 }
 
 fn ds_of_config(path: &Path) -> Vec<Ds> {
-    let Ok((_, cfg)) = js::evaluate_module(path) else { return Vec::new() };
+    let Ok((interp, cfg)) = js::evaluate_module(path) else { return Vec::new() };
     match get(&cfg, "ds") {
-        Some(Value::Array(list)) => list.borrow().iter().filter_map(manifest_of).collect(),
+        Some(Value::Array(list)) => list.borrow().iter().filter_map(|v| manifest_of(&interp, v)).collect(),
         _ => Vec::new(),
     }
+}
+
+/// `--ds <caminho|pasta|pacote>`: o manifesto que o módulo exporta (`ds` nomeado ou default).
+fn ds_of_arg(spec: &str, cwd: &Path) -> Result<Ds, String> {
+    let (file, _) = crate::dsinfo::entry_of(spec, cwd)?;
+    let (interp, exports) = js::evaluate_exports(&file)?;
+    let (manifest, _) = crate::dsinfo::manifest_of(&exports).ok_or("o módulo precisa exportar \"ds\" (ou default) um defineDs/createDs")?;
+    manifest_of(&interp, &manifest).ok_or_else(|| "manifesto sem nome".to_string())
 }
 
 /// DS da config da pasta do deck (ou acima), como o build e o lint.
@@ -370,7 +388,7 @@ fn guide_lookup(markdown: &str, query: Option<&str>, title: &str) -> (String, bo
 
 fn unknown_source(source: &str, ds: &[&Ds]) -> ToolResult {
     let known: String = ds.iter().map(|d| format!(", \"{}\"", d.name)).collect();
-    ToolResult { content: vec![text(&format!("Fonte \"{source}\" não registrada. Fontes: \"{CORE_SOURCE}\"{known}. Um DS entra pelo pptsx.config.ts (ds: [...]) ou por pptsx-rs mcp --ds <ds.ts>."))], is_error: true }
+    ToolResult { content: vec![text(&format!("Fonte \"{source}\" não registrada. Fontes: \"{CORE_SOURCE}\"{known}. Um DS entra pelo pptsx.config.ts (ds: [...]) ou por pptsx-rs mcp --ds <caminho|pacote>."))], is_error: true }
 }
 
 fn sources_line(ds: &[&Ds], has: impl Fn(&Ds) -> bool) -> String {
@@ -387,7 +405,7 @@ fn guide_tool(input: &Value, ds: &[&Ds]) -> ToolResult {
         let (body, found) = guide_lookup(guide, section.as_deref(), &format!("guia do DS \"{}\"", d.name));
         return ToolResult { content: vec![text(&body)], is_error: !found };
     }
-    let (body, found) = guide_lookup(GUIDE, section.as_deref(), "docs/AGENT_GUIDE.md");
+    let (body, found) = guide_lookup(GUIDE, section.as_deref(), "guia do pptsx");
     let extra = if section.is_none() { sources_line(ds, |d| d.guide.is_some()) } else { String::new() };
     ToolResult { content: vec![text(&format!("{body}{extra}"))], is_error: !found }
 }
@@ -406,7 +424,8 @@ pub(crate) fn core_schema() -> Option<Value> {
 fn prop_to_json_schema(raw: &Value) -> Value {
     let ts = get_str(raw, "type").unwrap_or_default().trim().to_string();
     let parts: Vec<&str> = ts.split('|').map(str::trim).filter(|p| !p.is_empty()).collect();
-    let literal = |p: &str| p.strip_prefix('"').and_then(|r| r.strip_suffix('"')).filter(|r| !r.contains('"')).map(str::to_string);
+    // Literal de string com aspas duplas (schema do núcleo) ou simples (tipos lidos de um DS).
+    let literal = |p: &str| ['"', '\''].iter().find_map(|q| p.strip_prefix(*q).and_then(|r| r.strip_suffix(*q)).filter(|r| !r.contains(*q))).map(str::to_string);
     let simple = |p: &str| matches!(p, "string" | "number" | "boolean" | "array" | "object" | "null");
     let mut out: Vec<(&str, Value)> = Vec::new();
     if !parts.is_empty() && parts.iter().all(|p| literal(p).is_some()) {
@@ -417,6 +436,9 @@ fn prop_to_json_schema(raw: &Value) -> Value {
     }
     if let Some(d) = get(raw, "description") {
         out.push(("description", d.clone()));
+    }
+    if let Some(d) = get(raw, "default") {
+        out.push(("x-default", d.clone()));
     }
     if let Some(Value::Array(e)) = get(raw, "examples")
         && !e.borrow().is_empty() {
@@ -442,7 +464,10 @@ fn to_json_schema(source: &str, raw: &Value) -> (Value, Vec<(String, Value)>) {
                 Some(Value::Array(r)) => Value::Array(r.clone()),
                 _ => arr_val(Vec::new()),
             };
-            defs.push((name.to_string(), obj(vec![("type", str_val("object")), ("properties", obj_val(props)), ("required", required)])));
+            let mut fields = vec![("type", str_val("object")), ("properties", obj_val(props)), ("required", required)];
+            // Do schema lido dos tipos: de onde veio e o que as props herdam sem o binário abrir.
+            fields.extend(["x-extends", "x-source"].iter().filter_map(|key| get(def, key).map(|v| (*key, v.clone()))));
+            defs.push((name.to_string(), obj(fields)));
         }
     }
     let mut d = Obj::new();
@@ -524,7 +549,7 @@ fn tools() -> Value {
         tool(
             "guide",
             "Guia do agente",
-            "Trechos do guia. Fonte padrão \"pptsx\" (docs/AGENT_GUIDE.md); um DS registrado é outra fonte (`source` = nome do DS). Sem `section`: o índice (e as fontes). Com \"§8\", \"6.17\" ou parte do título: a seção.",
+            "Trechos do guia. Fonte padrão \"pptsx\" (o guia do binário); um DS registrado é outra fonte (`source` = nome do DS). Sem `section`: o índice (e as fontes). Com \"§8\", \"6.17\" ou parte do título: a seção.",
             input_schema(vec![("source", source()), ("section", obj(vec![("type", str_val("string"))])), ("deck", deck_opt())], &[]),
         ),
         tool(
@@ -536,8 +561,8 @@ fn tools() -> Value {
         tool(
             "lint",
             "Lint do deck",
-            "As regras da engine (props antigas, lineHeight alto, fr solto, cores fora do tema, estrutura) e as dos design systems da config da pasta do deck. isError = há achado error ou warning.",
-            input_schema(vec![("deck", deck_schema()), ("sizes", sizes_schema())], &["deck"]),
+            "As regras da engine (props antigas, lineHeight alto, fr solto, cores fora do tema, estrutura) e as dos design systems da config da pasta do deck (por nó e do deck inteiro). isError = há achado error ou warning. Achados que são do design system e não do deck (`\"origin\": \"ds\"`) só saem com `verbose`.",
+            input_schema(vec![("deck", deck_schema()), ("sizes", sizes_schema()), ("verbose", prop_schema("boolean", "Inclui os achados do design system (cores dos tokens fora do tema, nós de dentro dos componentes). Padrão: false."))], &["deck"]),
         ),
     ])
 }
@@ -592,14 +617,11 @@ impl Server {
 pub fn serve(ds_args: &[String]) -> std::process::ExitCode {
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let mut ds: Vec<Ds> = find_config(&cwd).map(|c| ds_of_config(&c)).unwrap_or_default();
-    for path in ds_args {
-        match js::evaluate_module(&resolve(&cwd, path)) {
-            Ok((_, v)) => match manifest_of(&v) {
-                Some(m) if !ds.iter().any(|d| d.name == m.name) => ds.push(m),
-                Some(_) => {}
-                None => eprintln!("--ds {path}: o módulo precisa exportar default um defineDs({{ ... }})"),
-            },
-            Err(e) => eprintln!("--ds {path}: {e}"),
+    for spec in ds_args {
+        match ds_of_arg(spec, &cwd) {
+            Ok(m) if !ds.iter().any(|d| d.name == m.name) => ds.push(m),
+            Ok(_) => {}
+            Err(e) => eprintln!("--ds {spec}: {e}"),
         }
     }
     let server = Server { cwd, ds };

@@ -43,13 +43,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -355,13 +356,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -444,6 +446,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "display": {
         "type": "\"flex\" | \"block\" | \"grid\" | \"none\" | ResponsiveValue<\"flex\" | \"block\" | \"grid\" | \"none\">"
+      },
+      "fitGroup": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Grupo de fit herdado: vale para todo Text de dentro que não declarar o próprio `fitGroup` (ver Text)."
       },
       "flex": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -679,13 +685,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -772,6 +779,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       "fit": {
         "type": "\"shrink\" | \"truncate\" | \"error\" | ResponsiveValue<FitPolicy>",
         "description": "padrão 'shrink'"
+      },
+      "fitGroup": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Grupo de fit: os Text do mesmo slide com o mesmo nome (e fit=\"shrink\") encolhem pela mesma escala, a do membro que menos coube (altura, nowrap ou palavra partida). Corpos de partida iguais terminam no mesmo corpo; o piso é o do membro que menos pode encolher (o maior minSize/fontSize)."
       },
       "flex": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1017,13 +1028,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1341,13 +1353,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1725,13 +1738,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -1920,7 +1934,7 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "labels": {
         "type": "boolean | ChartLabels | ResponsiveValue<boolean | ChartLabels>",
-        "description": "M14: rótulos de valor sobre as barras/pontos/fatias (true, ou formato e posição); padrão false."
+        "description": "M14: rótulos de valor sobre as barras/pontos/fatias (true, ou `{ format?, position?: 'outside' | 'inside' | 'center', color? }`); padrão false. Dentro da barra/fatia a cor do rótulo se ajusta ao contraste com a série; `color` fixa."
       },
       "left": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"
@@ -2086,13 +2100,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | ResponsiveValue<string>"
@@ -2441,13 +2456,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -2778,13 +2794,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -3153,13 +3170,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -3465,13 +3483,14 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "background": {
         "type": "string | ResponsiveValue<string>",
-        "description": "Shorthand: uma cor ou `url(…)`."
+        "description": "Shorthand: uma cor, `url(…)` ou um gradiente (`linear-gradient(…)`, `radial-gradient(circle, …)`)."
       },
       "backgroundColor": {
         "type": "string | ResponsiveValue<string>"
       },
       "backgroundImage": {
-        "type": "string | ResponsiveValue<string>"
+        "type": "string | ResponsiveValue<string>",
+        "description": "`url(…)` (imagem, cover) ou gradiente nativo: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)` ou `radial-gradient(circle, cor [pos%], …)`."
       },
       "border": {
         "type": "string | number | ResponsiveValue<string | number>"
@@ -3554,6 +3573,10 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
       },
       "display": {
         "type": "\"flex\" | \"block\" | \"grid\" | \"none\" | ResponsiveValue<\"flex\" | \"block\" | \"grid\" | \"none\">"
+      },
+      "fitGroup": {
+        "type": "string | ResponsiveValue<string>",
+        "description": "Grupo de fit herdado: vale para todo Text de dentro que não declarar o próprio `fitGroup` (ver Text)."
       },
       "flex": {
         "type": "string | number | ResponsiveValue<string | number>"

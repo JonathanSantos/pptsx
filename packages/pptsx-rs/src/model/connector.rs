@@ -50,7 +50,7 @@ pub(super) fn connector_spec(cx: &mut Cx, props: &Props, inherit: &Inherit, path
         let children: Vec<Value> = children.into_iter().map(|v| if let Value::Num(n) = v { Value::Str(std::rc::Rc::from(crate::js::value::num_to_string(n))) } else { v }).collect();
         collect_runs(cx, &children, &t, None, &mut runs);
         own_metrics(&mut runs, t.size, &t.family);
-        TextSpec { runs, family: t.family.clone(), size: t.size, min_size: t.size, line_height: LineHeight::Normal, align: Align::Center, letter_spacing: 0.0, nowrap: true, max_lines: None, fit: Fit::Error, sample: None }
+        TextSpec { runs, family: t.family.clone(), size: t.size, min_size: t.size, line_height: LineHeight::Normal, align: Align::Center, letter_spacing: 0.0, nowrap: true, max_lines: None, fit: Fit::Error, sample: None, fit_group: None }
     });
     ConnectorSpec {
         path: path.to_string(),

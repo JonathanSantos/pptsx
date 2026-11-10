@@ -66,6 +66,7 @@ pub(super) fn resolve_slide(cx: &mut Cx, slide: &Element, footer: Option<&Value>
     padding_style(cx, props, &mut style);
     let background = cx.color(props, "backgroundColor").or_else(|| cx.string(props, "background").and_then(|b| parse_color(&b))).or_else(|| cx.color(props, "fill"));
     let background_image = background_image(cx, props);
+    let background_gradient = background_gradient(cx, props);
     let inherit = inherit_from(cx, props, &Inherit::default());
     let notes = match cx.get(props, "notes") {
         Some(Value::Str(s)) => Some(s.to_string()),
@@ -130,6 +131,7 @@ pub(super) fn resolve_slide(cx: &mut Cx, slide: &Element, footer: Option<&Value>
     }
     let root = Node { kind: NodeKind::Container, style, z: None, absolute: false, paint: Paint { opacity: 1.0, ..Paint::default() }, children, label: slide_path, href: None, component: false, id: None, paginate: false, slide_number: None, layered: false, placeholder: None, fixed: false, basis: Basis::None, source: None };
     let mut root = root;
+    super::fit_group::share_floors(&mut root);
     let mut connectors = std::mem::take(&mut cx.connectors);
     let ids = match scope_ids(&mut root, &mut connectors) {
         Ok(ids) => ids,
@@ -145,7 +147,7 @@ pub(super) fn resolve_slide(cx: &mut Cx, slide: &Element, footer: Option<&Value>
             }
         }
     }
-    SlideSpec { root, background, background_image, notes, notes_runs, hidden, connectors, layout }
+    SlideSpec { root, background, background_image, background_gradient, notes, notes_runs, hidden, connectors, layout }
 }
 
 pub(super) fn layout_of(cx: &Cx, props: &Props) -> Option<Rc<LayoutSpec>> {
@@ -549,7 +551,7 @@ pub(super) fn resolve_node(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &
             own_metrics(&mut runs, t.size, &t.family);
             let sample = (el.kind == Kind::SlideNumber).then(|| if cx.string(props, "format").as_deref() == Some("n / total") { "88 / 88".to_string() } else { "88".to_string() });
             let nowrap = nowrap || sample.is_some();
-            let spec = TextSpec { runs, family: t.family.clone(), size: t.size, min_size, line_height: t.line_height, align: t.align, letter_spacing: t.letter_spacing, nowrap, max_lines, fit, sample };
+            let spec = TextSpec { runs, family: t.family.clone(), size: t.size, min_size, line_height: t.line_height, align: t.align, letter_spacing: t.letter_spacing, nowrap, max_lines, fit, sample, fit_group: t.fit_group.clone() };
             mk(NodeKind::Text(spec), style, paint, Vec::new(), label)
         }
         Kind::Shape => {
@@ -701,6 +703,7 @@ pub(super) fn resolve_node(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &
                 max_lines: Some(2),
                 fit: Fit::Truncate,
                 sample: None,
+                fit_group: None,
             };
             mk(NodeKind::Text(spec), style, paint, Vec::new(), label)
         }

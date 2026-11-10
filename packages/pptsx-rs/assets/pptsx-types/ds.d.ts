@@ -11,6 +11,13 @@ export interface DsManifest {
     readonly components: readonly ComponentMeta[];
     readonly theme?: Theme;
     readonly rules: readonly LintRule[];
+    /**
+     * As cores do DS (lista ou árvore de tokens, em qualquer formato de cor CSS). O `off-theme-color` do
+     * lint não cobra do autor do deck uma cor que está aqui: o tema do arquivo só tem 10 slots, e um DS
+     * com mais tokens sempre sobra. `palette` é sinônimo; `theme.colors` já conta.
+     */
+    readonly colors?: readonly string[] | Readonly<Record<string, unknown>>;
+    readonly palette?: readonly string[] | Readonly<Record<string, unknown>>;
     /** Markdown com `##`/`###` (o `guide` do MCP navega por seção). */
     readonly guide?: string;
     /** Props por componente, no formato do `schema` do núcleo. */

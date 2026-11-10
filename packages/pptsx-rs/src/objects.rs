@@ -447,6 +447,10 @@ pub struct ChartSpec {
     pub legend: Option<&'static str>,
     pub labels: bool,
     pub label_format: Option<String>,
+    /// `labels.position` do autor; None = o padrão do kind.
+    pub label_position: Option<LabelPosition>,
+    /// `labels.color`: fixa a cor de todos os rótulos (sem ela, contraste automático por série).
+    pub label_color: Option<Rgba>,
     pub title: Option<String>,
     pub family: String,
     pub size: f32,
@@ -458,6 +462,75 @@ pub struct ChartSpec {
     pub y2_axis: Axis,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LabelPosition {
+    Outside,
+    Inside,
+    Center,
+}
+
+/// Onde o rótulo de uma barra fica em relação a ela.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum BarLabel {
+    OutsideEnd,
+    InsideEnd,
+    Center,
+}
+
+const WHITE: Rgba = Rgba { r: 255, g: 255, b: 255, a: 1.0 };
+const BLACK: Rgba = Rgba { r: 0, g: 0, b: 0, a: 1.0 };
+/// Contraste mínimo de texto normal (WCAG AA): abaixo dele o rótulo troca de cor.
+const MIN_LABEL_CONTRAST: f32 = 4.5;
+
+/// Luminância relativa (WCAG 2): 0 = preto, 1 = branco.
+pub fn luminance(c: Rgba) -> f32 {
+    let channel = |v: u8| {
+        let s = f32::from(v) / 255.0;
+        if s <= 0.04045 { s / 12.92 } else { ((s + 0.055) / 1.055).powf(2.4) }
+    };
+    0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b)
+}
+
+pub fn contrast_ratio(a: Rgba, b: Rgba) -> f32 {
+    let (la, lb) = (luminance(a), luminance(b));
+    (la.max(lb) + 0.05) / (la.min(lb) + 0.05)
+}
+
+/// Cor do rótulo desenhado sobre `background`: a do texto do gráfico enquanto ela se lê; senão
+/// branco ou preto, o que contrastar mais.
+pub fn readable_on(text: Rgba, background: Rgba) -> Rgba {
+    if contrast_ratio(text, background) >= MIN_LABEL_CONTRAST {
+        return text;
+    }
+    if contrast_ratio(WHITE, background) >= contrast_ratio(BLACK, background) { WHITE } else { BLACK }
+}
+
+impl ChartSpec {
+    /// Posição do rótulo nas barras: empilhada não tem "fora" (o OOXML recusa outEnd).
+    pub fn bar_label(&self, stacked: bool) -> BarLabel {
+        match (stacked, self.label_position) {
+            (_, Some(LabelPosition::Inside)) => BarLabel::InsideEnd,
+            (true, _) | (_, Some(LabelPosition::Center)) => BarLabel::Center,
+            _ => BarLabel::OutsideEnd,
+        }
+    }
+
+    /// Rótulos de fatia por dentro: sempre na rosca; na pizza, quando o autor pede.
+    pub fn slice_label_inside(&self) -> bool {
+        matches!(self.kind, ChartKind::Pie { hole: Some(_) }) || matches!(self.label_position, Some(LabelPosition::Inside | LabelPosition::Center))
+    }
+
+    /// Cor dos rótulos fora das formas (e a base dos de dentro).
+    pub fn label_text_color(&self) -> Rgba {
+        self.label_color.unwrap_or(self.color)
+    }
+
+    /// Cor do rótulo desenhado dentro de uma barra/fatia de cor `background`.
+    pub fn label_color_on(&self, background: Rgba) -> Rgba {
+        self.label_color.unwrap_or_else(|| readable_on(self.color, background))
+    }
+}
+
 pub const CHART_PALETTE: [&str; 6] = ["#2F6FED", "#F59E0B", "#10B981", "#EF4444", "#8B5CF6", "#64748B"];
 
 fn num(v: f64) -> String {
@@ -465,11 +538,15 @@ fn num(v: f64) -> String {
 }
 
 fn text_props(spec: &ChartSpec, size: f32, bold: bool) -> String {
+    text_props_in(spec, size, bold, spec.color)
+}
+
+fn text_props_in(spec: &ChartSpec, size: f32, bold: bool, color: Rgba) -> String {
     format!(
         "<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"{}\" b=\"{}\">{}<a:latin typeface=\"{}\"/></a:defRPr></a:pPr><a:endParaRPr lang=\"pt-BR\"/></a:p></c:txPr>",
         (size * 100.0).round() as i64,
         u8::from(bold),
-        solid(spec.color),
+        solid(color),
         esc(&spec.family)
     )
 }
@@ -582,15 +659,87 @@ pub fn chart_workbook(spec: &ChartSpec) -> Vec<u8> {
     zip.finish().map(|c| c.into_inner()).unwrap_or_default()
 }
 
-fn data_labels(spec: &ChartSpec) -> String {
+/// Família do grupo de séries, para as posições de rótulo que o OOXML aceita em cada uma.
+#[derive(Clone, Copy, PartialEq)]
+enum LabelGroup {
+    Bar { stacked: bool },
+    Line,
+    Area,
+    Pie,
+    Doughnut,
+}
+
+/// `<c:dLblPos>` válido por família (área e rosca não têm posição).
+fn label_pos(spec: &ChartSpec, group: LabelGroup) -> Option<&'static str> {
+    let author = spec.label_position;
+    match group {
+        LabelGroup::Area | LabelGroup::Doughnut => None,
+        LabelGroup::Bar { stacked } => Some(match spec.bar_label(stacked) {
+            BarLabel::OutsideEnd => "outEnd",
+            BarLabel::InsideEnd => "inEnd",
+            BarLabel::Center => "ctr",
+        }),
+        LabelGroup::Line => Some(match author {
+            Some(LabelPosition::Center) => "ctr",
+            Some(LabelPosition::Inside) => "b",
+            _ => "t",
+        }),
+        LabelGroup::Pie => Some(match author {
+            Some(LabelPosition::Center) => "ctr",
+            Some(LabelPosition::Inside) => "inEnd",
+            _ => "bestFit",
+        }),
+    }
+}
+
+/// Miolo de um `<c:dLbls>`/`<c:dLbl>`: formato, sem caixa, texto na cor dada, posição e o que mostrar.
+fn label_body(spec: &ChartSpec, group: LabelGroup, color: Rgba) -> String {
+    let fmt = spec.label_format.as_ref().map(|f| format!("<c:numFmt formatCode=\"{}\" sourceLinked=\"0\"/>", esc(f))).unwrap_or_default();
+    let pos = label_pos(spec, group).map(|p| format!("<c:dLblPos val=\"{p}\"/>")).unwrap_or_default();
+    format!(
+        "{fmt}<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>{}{pos}<c:showLegendKey val=\"0\"/><c:showVal val=\"1\"/><c:showCatName val=\"0\"/><c:showSerName val=\"0\"/><c:showPercent val=\"0\"/><c:showBubbleSize val=\"0\"/>",
+        text_props_in(spec, spec.size, false, color)
+    )
+}
+
+/// Rótulos do grupo (valem para as séries sem `<c:dLbls>` próprio).
+fn data_labels(spec: &ChartSpec, group: LabelGroup) -> String {
     if !spec.labels {
         return String::new();
     }
-    let fmt = spec.label_format.as_ref().map(|f| format!("<c:numFmt formatCode=\"{}\" sourceLinked=\"0\"/>", esc(f))).unwrap_or_default();
-    format!(
-        "<c:dLbls>{fmt}<c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>{}<c:showLegendKey val=\"0\"/><c:showVal val=\"1\"/><c:showCatName val=\"0\"/><c:showSerName val=\"0\"/><c:showPercent val=\"0\"/><c:showBubbleSize val=\"0\"/></c:dLbls>",
-        text_props(spec, spec.size, false)
-    )
+    format!("<c:dLbls>{}</c:dLbls>", label_body(spec, group, spec.label_text_color()))
+}
+
+/// Rótulos de uma série de barras: só quando ficam dentro da barra e a cor do texto do gráfico
+/// não se lê sobre a cor dela (roxo escuro com texto preto, por exemplo).
+fn series_labels(spec: &ChartSpec, group: LabelGroup, background: Rgba) -> String {
+    let inside = matches!(group, LabelGroup::Bar { stacked } if spec.bar_label(stacked) != BarLabel::OutsideEnd);
+    if !spec.labels || !inside {
+        return String::new();
+    }
+    let color = spec.label_color_on(background);
+    if color == spec.label_text_color() {
+        return String::new();
+    }
+    format!("<c:dLbls>{}</c:dLbls>", label_body(spec, group, color))
+}
+
+/// Rótulos da pizza/rosca: um `<c:dLbl>` por fatia cuja cor pede outro texto.
+fn slice_labels(spec: &ChartSpec, group: LabelGroup) -> String {
+    if !spec.labels {
+        return String::new();
+    }
+    let base = spec.label_text_color();
+    let points: String = spec
+        .point_colors
+        .iter()
+        .enumerate()
+        .filter(|_| spec.slice_label_inside())
+        .map(|(i, c)| (i, spec.label_color_on(*c)))
+        .filter(|(_, color)| *color != base)
+        .map(|(i, color)| format!("<c:dLbl><c:idx val=\"{i}\"/>{}</c:dLbl>", label_body(spec, group, color)))
+        .collect();
+    format!("<c:dLbls>{points}{}</c:dLbls>", label_body(spec, group, base))
 }
 
 const CAT_AX: u32 = 500_000_001;
@@ -661,9 +810,11 @@ fn marker(spec: &ChartSpec, color: Rgba) -> String {
     }
 }
 
-fn bar_series(spec: &ChartSpec, i: usize) -> String {
+fn bar_series(spec: &ChartSpec, i: usize, stacked: bool) -> String {
     let (tx, cat, val) = series_refs(spec, i);
-    format!("<c:ser><c:idx val=\"{i}\"/><c:order val=\"{i}\"/>{tx}<c:spPr>{}</c:spPr><c:invertIfNegative val=\"0\"/>{cat}{val}</c:ser>", solid(spec.series[i].color))
+    let color = spec.series[i].color;
+    let labels = series_labels(spec, LabelGroup::Bar { stacked }, color);
+    format!("<c:ser><c:idx val=\"{i}\"/><c:order val=\"{i}\"/>{tx}<c:spPr>{}</c:spPr><c:invertIfNegative val=\"0\"/>{labels}{cat}{val}</c:ser>", solid(color))
 }
 
 fn line_series(spec: &ChartSpec, i: usize) -> String {
@@ -683,9 +834,10 @@ pub fn chart_xml(spec: &ChartSpec, lang: &str) -> String {
     match spec.kind {
         ChartKind::Bar { horizontal, grouping } => {
             let _ = write!(plot, "<c:barChart><c:barDir val=\"{}\"/><c:grouping val=\"{grouping}\"/><c:varyColors val=\"0\"/>", if horizontal { "bar" } else { "col" });
-            all.iter().for_each(|&i| plot.push_str(&bar_series(spec, i)));
-            let overlap = if grouping == "clustered" { String::new() } else { "<c:overlap val=\"100\"/>".into() };
-            let _ = write!(plot, "{}<c:gapWidth val=\"80\"/>{overlap}<c:axId val=\"{CAT_AX}\"/><c:axId val=\"{VAL_AX}\"/></c:barChart>", data_labels(spec));
+            let stacked = grouping != "clustered";
+            all.iter().for_each(|&i| plot.push_str(&bar_series(spec, i, stacked)));
+            let overlap = if stacked { "<c:overlap val=\"100\"/>".into() } else { String::new() };
+            let _ = write!(plot, "{}<c:gapWidth val=\"80\"/>{overlap}<c:axId val=\"{CAT_AX}\"/><c:axId val=\"{VAL_AX}\"/></c:barChart>", data_labels(spec, LabelGroup::Bar { stacked }));
             let (cp, vp) = if horizontal { ("l", "b") } else { ("b", "l") };
             // Barras horizontais: a 1ª categoria em cima, como se lê.
             plot.push_str(&cat_axis(spec, &spec.x_axis, CAT_AX, VAL_AX, cp, horizontal, false));
@@ -694,7 +846,7 @@ pub fn chart_xml(spec: &ChartSpec, lang: &str) -> String {
         ChartKind::Line => {
             plot.push_str("<c:lineChart><c:grouping val=\"standard\"/><c:varyColors val=\"0\"/>");
             all.iter().for_each(|&i| plot.push_str(&line_series(spec, i)));
-            let _ = write!(plot, "{}<c:marker val=\"1\"/><c:axId val=\"{CAT_AX}\"/><c:axId val=\"{VAL_AX}\"/></c:lineChart>", data_labels(spec));
+            let _ = write!(plot, "{}<c:marker val=\"1\"/><c:axId val=\"{CAT_AX}\"/><c:axId val=\"{VAL_AX}\"/></c:lineChart>", data_labels(spec, LabelGroup::Line));
             plot.push_str(&cat_axis(spec, &spec.x_axis, CAT_AX, VAL_AX, "b", false, false));
             plot.push_str(&val_axis(spec, &spec.y_axis, VAL_AX, CAT_AX, "l", "autoZero", true, false));
         }
@@ -704,7 +856,7 @@ pub fn chart_xml(spec: &ChartSpec, lang: &str) -> String {
                 let (tx, cat, val) = series_refs(spec, i);
                 let _ = write!(plot, "<c:ser><c:idx val=\"{i}\"/><c:order val=\"{i}\"/>{tx}<c:spPr>{}</c:spPr>{cat}{val}</c:ser>", solid(spec.series[i].color.with_alpha(0.85)));
             }
-            let _ = write!(plot, "{}<c:axId val=\"{CAT_AX}\"/><c:axId val=\"{VAL_AX}\"/></c:areaChart>", data_labels(spec));
+            let _ = write!(plot, "{}<c:axId val=\"{CAT_AX}\"/><c:axId val=\"{VAL_AX}\"/></c:areaChart>", data_labels(spec, LabelGroup::Area));
             plot.push_str(&cat_axis(spec, &spec.x_axis, CAT_AX, VAL_AX, "b", false, false));
             plot.push_str(&val_axis(spec, &spec.y_axis, VAL_AX, CAT_AX, "l", "autoZero", true, false));
         }
@@ -719,7 +871,7 @@ pub fn chart_xml(spec: &ChartSpec, lang: &str) -> String {
                     .map(|(i, c)| format!("<c:dPt><c:idx val=\"{i}\"/><c:bubble3D val=\"0\"/><c:spPr>{}<a:ln w=\"9525\"><a:solidFill><a:srgbClr val=\"F9F9F9\"/></a:solidFill></a:ln></c:spPr></c:dPt>", solid(*c)))
                     .collect();
                 let (tx, cat, val) = series_refs(spec, 0);
-                let _ = write!(plot, "<c:ser><c:idx val=\"0\"/><c:order val=\"0\"/>{tx}{points}{}{cat}{val}</c:ser>", data_labels(spec));
+                let _ = write!(plot, "<c:ser><c:idx val=\"0\"/><c:order val=\"0\"/>{tx}{points}{}{cat}{val}</c:ser>", slice_labels(spec, if hole.is_some() { LabelGroup::Doughnut } else { LabelGroup::Pie }));
             }
             plot.push_str("<c:firstSliceAng val=\"0\"/>");
             if let Some(h) = hole {
@@ -734,7 +886,7 @@ pub fn chart_xml(spec: &ChartSpec, lang: &str) -> String {
                 let (tx, x, y) = series_refs(spec, i);
                 let _ = write!(plot, "<c:ser><c:idx val=\"{i}\"/><c:order val=\"{i}\"/>{tx}<c:spPr><a:ln w=\"25400\"><a:noFill/></a:ln></c:spPr>{}{x}{y}<c:smooth val=\"0\"/></c:ser>", marker(spec, s.color));
             }
-            let _ = write!(plot, "{}<c:axId val=\"{CAT_AX}\"/><c:axId val=\"{VAL_AX}\"/></c:scatterChart>", data_labels(spec));
+            let _ = write!(plot, "{}<c:axId val=\"{CAT_AX}\"/><c:axId val=\"{VAL_AX}\"/></c:scatterChart>", data_labels(spec, LabelGroup::Line));
             plot.push_str(&val_axis(spec, &spec.x_axis, CAT_AX, VAL_AX, "b", "autoZero", false, false));
             plot.push_str(&val_axis(spec, &spec.y_axis, VAL_AX, CAT_AX, "l", "autoZero", true, false));
         }
@@ -751,11 +903,11 @@ pub fn chart_xml(spec: &ChartSpec, lang: &str) -> String {
                 if line {
                     plot.push_str("<c:lineChart><c:grouping val=\"standard\"/><c:varyColors val=\"0\"/>");
                     members.iter().for_each(|&i| plot.push_str(&line_series(spec, i)));
-                    let _ = write!(plot, "{}<c:marker val=\"1\"/><c:axId val=\"{cat}\"/><c:axId val=\"{val}\"/></c:lineChart>", data_labels(spec));
+                    let _ = write!(plot, "{}<c:marker val=\"1\"/><c:axId val=\"{cat}\"/><c:axId val=\"{val}\"/></c:lineChart>", data_labels(spec, LabelGroup::Line));
                 } else {
                     plot.push_str("<c:barChart><c:barDir val=\"col\"/><c:grouping val=\"clustered\"/><c:varyColors val=\"0\"/>");
-                    members.iter().for_each(|&i| plot.push_str(&bar_series(spec, i)));
-                    let _ = write!(plot, "{}<c:gapWidth val=\"80\"/><c:axId val=\"{cat}\"/><c:axId val=\"{val}\"/></c:barChart>", data_labels(spec));
+                    members.iter().for_each(|&i| plot.push_str(&bar_series(spec, i, false)));
+                    let _ = write!(plot, "{}<c:gapWidth val=\"80\"/><c:axId val=\"{cat}\"/><c:axId val=\"{val}\"/></c:barChart>", data_labels(spec, LabelGroup::Bar { stacked: false }));
                 }
             }
             plot.push_str(&cat_axis(spec, &spec.x_axis, CAT_AX, VAL_AX, "b", false, false));
@@ -796,4 +948,104 @@ pub fn chart_frame_xml(id: u32, rid: &str, frame: (f32, f32, f32, f32)) -> Strin
         emu(w),
         emu(h)
     )
+}
+
+#[cfg(test)]
+mod label_tests {
+    use super::*;
+    use crate::css::parse_color;
+
+    fn c(s: &str) -> Rgba {
+        parse_color(s).expect("cor de teste")
+    }
+
+    fn spec(kind: ChartKind) -> ChartSpec {
+        ChartSpec {
+            kind,
+            categories: vec!["A".into()],
+            series: vec![
+                Series { name: "escura".into(), values: vec![1.0], points: Vec::new(), color: c("#2A2F9E"), line: false, secondary: false },
+                Series { name: "clara".into(), values: vec![2.0], points: Vec::new(), color: c("#E6E0EC"), line: false, secondary: false },
+            ],
+            point_colors: vec![c("#2A2F9E"), c("#E6E0EC")],
+            legend: None,
+            labels: true,
+            label_format: None,
+            label_position: None,
+            label_color: None,
+            title: None,
+            family: "Arial".into(),
+            size: 12.0,
+            color: c("#333333"),
+            smooth: false,
+            markers: false,
+            x_axis: Axis::default(),
+            y_axis: Axis::default(),
+            y2_axis: Axis::default(),
+        }
+    }
+
+    const STACKED: ChartKind = ChartKind::Bar { horizontal: false, grouping: "stacked" };
+    const CLUSTERED: ChartKind = ChartKind::Bar { horizontal: false, grouping: "clustered" };
+
+    #[test]
+    fn readable_color_keeps_the_text_color_while_it_reads() {
+        let text = c("#333333");
+        assert_eq!(readable_on(text, c("#E6E0EC")), text);
+        assert_eq!(readable_on(text, c("#FFD700")), text);
+        assert_eq!(readable_on(text, c("#2A2F9E")), WHITE);
+        assert_eq!(readable_on(text, c("#000000")), WHITE);
+        // Texto claro (tema escuro) sobre série clara: preto.
+        assert_eq!(readable_on(c("#FFFFFF"), c("#FFD700")), BLACK);
+        assert_eq!(readable_on(c("#FFFFFF"), c("#2A2F9E")), c("#FFFFFF"));
+    }
+
+    #[test]
+    fn luminance_and_contrast_follow_wcag() {
+        assert!(luminance(BLACK) < 1e-6);
+        assert!((luminance(WHITE) - 1.0).abs() < 1e-4);
+        assert!((contrast_ratio(WHITE, BLACK) - 21.0).abs() < 1e-2);
+    }
+
+    #[test]
+    fn stacked_series_get_their_own_label_color_only_when_needed() {
+        let s = spec(STACKED);
+        let xml = chart_xml(&s, "pt-BR");
+        // Série escura: <c:dLbls> próprio em branco; a clara herda o do grupo (#333333).
+        assert_eq!(xml.matches("<c:dLbls>").count(), 2);
+        assert!(xml.contains("<c:invertIfNegative val=\"0\"/><c:dLbls><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1200\" b=\"0\"><a:solidFill><a:srgbClr val=\"FFFFFF\"/>"));
+        assert!(xml.contains("<c:dLblPos val=\"ctr\"/>"));
+    }
+
+    #[test]
+    fn outside_labels_inherit_and_inside_labels_contrast() {
+        let outside = chart_xml(&spec(CLUSTERED), "pt-BR");
+        assert_eq!(outside.matches("<c:dLbls>").count(), 1);
+        assert!(outside.contains("<c:dLblPos val=\"outEnd\"/>"));
+        assert!(!outside.contains("FFFFFF"));
+        let inside = chart_xml(&ChartSpec { label_position: Some(LabelPosition::Inside), ..spec(CLUSTERED) }, "pt-BR");
+        assert_eq!(inside.matches("<c:dLbls>").count(), 2);
+        assert!(inside.contains("<c:dLblPos val=\"inEnd\"/>"));
+    }
+
+    #[test]
+    fn fixed_label_color_wins_everywhere() {
+        let s = ChartSpec { label_color: Some(c("#FFD700")), ..spec(STACKED) };
+        let xml = chart_xml(&s, "pt-BR");
+        assert_eq!(xml.matches("<c:dLbls>").count(), 1);
+        assert!(xml.contains("<c:dLbls><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz=\"1200\" b=\"0\"><a:solidFill><a:srgbClr val=\"FFD700\"/>"));
+        assert_eq!(s.label_color_on(c("#2A2F9E")), c("#FFD700"));
+    }
+
+    #[test]
+    fn doughnut_slices_get_a_label_per_dark_slice() {
+        let xml = chart_xml(&spec(ChartKind::Pie { hole: Some(50) }), "pt-BR");
+        assert_eq!(xml.matches("<c:dLbl>").count(), 1);
+        assert!(xml.contains("<c:dLbl><c:idx val=\"0\"/>"));
+        assert!(!xml.contains("<c:dLblPos"));
+        // Pizza com rótulo por fora (bestFit): nada por fatia.
+        let pie = chart_xml(&spec(ChartKind::Pie { hole: None }), "pt-BR");
+        assert_eq!(pie.matches("<c:dLbl>").count(), 0);
+        assert!(pie.contains("<c:dLblPos val=\"bestFit\"/>"));
+    }
 }

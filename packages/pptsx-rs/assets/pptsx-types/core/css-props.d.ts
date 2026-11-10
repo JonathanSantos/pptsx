@@ -86,8 +86,12 @@ export interface CssBoxProps {
     readonly outlineColor?: Color;
     readonly outlineWidth?: CssLengthInput;
     readonly backgroundColor?: Color;
+    /**
+     * `url(…)` (imagem, cover) ou gradiente nativo do PPTX: `linear-gradient(<ângulo | to lado/canto>, cor [pos%], …)`
+     * ou `radial-gradient(circle, cor [pos%], …)`. O gradiente pinta por cima do `backgroundColor`.
+     */
     readonly backgroundImage?: string;
-    /** Shorthand: uma cor ou `url(…)`. */
+    /** Shorthand: uma cor, `url(…)` ou um gradiente (como em `backgroundImage`). */
     readonly background?: string;
     readonly boxShadow?: string;
     readonly opacity?: Num;

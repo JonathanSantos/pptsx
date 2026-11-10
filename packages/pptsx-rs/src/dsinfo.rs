@@ -1,7 +1,7 @@
-//! Um design system visto pelo binário (`init --ds`, `skill --ds`): o manifesto que `createDs`/
-//! `defineDs` exportam (`ds` nomeado ou default), lido pelo avaliador do módulo do DS. Espelha
-//! `cli/init.ts loadDsSource` e `skill.ts dsMarkdown` do TS, sem o Node: o módulo pode ser um
-//! pacote em `node_modules` ou um caminho `.ts`/`.tsx`.
+//! Um design system visto pelo binário (`init --ds`, `skill --ds`, `mcp --ds`): o manifesto que
+//! `createDs`/`defineDs` exportam (`ds` nomeado ou default), lido pelo avaliador do módulo do DS, e
+//! o schema das props lido dos tipos (dsprops.rs). O módulo pode ser um caminho `.ts`/`.tsx`, uma
+//! pasta ou um pacote em `node_modules`.
 
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -31,13 +31,16 @@ pub struct DsInfo {
     pub rules: Vec<(String, String)>,
     pub guide: Option<String>,
     pub schema: Option<Value>,
+    /// O arquivo de entrada do DS (canônico) e se ele veio de um caminho local (e não de um pacote).
+    pub entry: PathBuf,
+    pub by_path: bool,
     /// Pasta do DS relativa ao deck quando ele é um caminho `.ts`/`.tsx` fora da pasta (entra no `include`).
     pub ds_dir: Option<String>,
     /// `extends` do tsconfig quando o deck fica dentro do monorepo do pptsx.
     pub tsconfig_extends: Option<String>,
 }
 
-const DS_ENTRIES: [&str; 4] = ["index.ts", "index.tsx", "ds.ts", "index.js"];
+const DS_ENTRIES: [&str; 7] = ["index.ts", "index.tsx", "ds.ts", "index.js", "src/index.ts", "src/index.tsx", "src/ds.ts"];
 
 fn get<'a>(v: &'a Value, key: &str) -> Option<&'a Value> {
     match v {
@@ -67,7 +70,7 @@ fn is_path_spec(spec: &str, cwd: &Path) -> bool {
 }
 
 /// Caminho → o arquivo de entrada (pasta: index.ts, ds.ts…); pacote → resolvido como o deck resolveria.
-fn entry_of(spec: &str, cwd: &Path) -> Result<(PathBuf, bool), String> {
+pub fn entry_of(spec: &str, cwd: &Path) -> Result<(PathBuf, bool), String> {
     if !is_path_spec(spec, cwd) {
         let file = crate::js::resolve_import(cwd, spec).ok_or_else(|| format!("--ds {spec}: pacote não encontrado em node_modules a partir de {}", cwd.display()))?;
         return Ok((file, false));
@@ -119,16 +122,18 @@ fn rules_of(manifest: &Value) -> Vec<(String, String)> {
     list.borrow().iter().filter_map(|r| Some((get_str(r, "id")?, get_str(r, "severity").unwrap_or_else(|| "warning".into())))).collect()
 }
 
+/// O manifesto entre os exports de um módulo de DS: `ds` nomeado (true) ou o default (false).
+pub fn manifest_of(exports: &Obj) -> Option<(Value, bool)> {
+    let named = |key: &str| exports.get(key).filter(|v| get_str(v, "name").is_some()).cloned();
+    named("ds").map(|v| (v, true)).or_else(|| named("default").map(|v| (v, false)))
+}
+
 /// Carrega o módulo do DS e lê o manifesto. `deck_dir` é a pasta do deck que vai importá-lo.
 pub fn load(spec: &str, deck_dir: &Path, cwd: &Path) -> Result<DsInfo, String> {
     let (file, by_path) = entry_of(spec, cwd)?;
-    let (_, exports) = crate::js::evaluate_exports(&file)?;
-    let (manifest, named) = match exports.get("ds").filter(|v| get_str(v, "name").is_some()) {
-        Some(v) => (v.clone(), true),
-        None => match exports.get("default").filter(|v| get_str(v, "name").is_some()) {
-            Some(v) => (v.clone(), false),
-            None => return Err(format!("--ds {spec}: o módulo precisa exportar \"ds\" (ou default) um defineDs/createDs")),
-        },
+    let (interp, exports) = crate::js::evaluate_exports(&file)?;
+    let Some((manifest, named)) = manifest_of(&exports) else {
+        return Err(format!("--ds {spec}: o módulo precisa exportar \"ds\" (ou default) um defineDs/createDs"));
     };
     let is_ts = file.extension().is_some_and(|e| e == "ts" || e == "tsx");
     let import_from = if by_path { relative_import(deck_dir, &file) } else { spec.to_string() };
@@ -147,7 +152,9 @@ pub fn load(spec: &str, deck_dir: &Path, cwd: &Path) -> Result<DsInfo, String> {
         components: components_of(&manifest),
         rules: rules_of(&manifest),
         guide: get_str(&manifest, "guide"),
-        schema: get(&manifest, "schema").cloned(),
+        schema: crate::dsprops::schema_of(&interp, &manifest),
+        entry: std::fs::canonicalize(&file).unwrap_or(file),
+        by_path,
         ds_dir,
         tsconfig_extends: monorepo_tsconfig(deck_dir),
     })
@@ -234,32 +241,97 @@ pub fn config_content(ds: &DsInfo) -> String {
     )
 }
 
-/// `references/ds.md` da skill (skill.ts dsMarkdown): import, componentes com exemplo, regras e guia.
-pub fn markdown(ds: &DsInfo, props_md: impl Fn(&Value) -> String) -> String {
+/// Onde o agente acha o DS, dito no `references/ds.md`: o especificador do import e como registrar.
+pub struct DsLocation {
+    /// O que vai no `from '…'` do deck (um pacote, um caminho, ou um caminho a completar).
+    pub import_from: String,
+    /// Frase sobre o `pptsx.config.ts` (onde está pronto, ou quem o cria).
+    pub config_hint: String,
+}
+
+fn schema_of_component<'a>(ds: &'a DsInfo, name: &str) -> Option<&'a Value> {
+    ds.schema.as_ref().and_then(|schema| get(schema, name))
+}
+
+fn prop_names(schema: &Value) -> Vec<String> {
+    match get(schema, "properties") {
+        Some(Value::Object(p)) => p.keys().map(|k| k.to_string()).collect(),
+        _ => Vec::new(),
+    }
+}
+
+fn required_names(schema: &Value) -> Vec<String> {
+    match get(schema, "required") {
+        Some(Value::Array(a)) => a.borrow().iter().map(Value::to_js_string).collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// A assinatura numa linha: obrigatórias primeiro, opcionais com `?`, e os filhos quando há `children`.
+pub fn signature_of(name: &str, schema: &Value) -> String {
+    let required = required_names(schema);
+    let names = prop_names(schema);
+    let attrs = |wanted: bool| names.iter().filter(|n| n.as_str() != "children" && required.contains(n) == wanted).map(|n| if wanted { n.clone() } else { format!("{n}?") }).collect::<Vec<_>>();
+    let all: Vec<String> = attrs(true).into_iter().chain(attrs(false)).collect();
+    let open = if all.is_empty() { format!("<{name}") } else { format!("<{name} {}", all.join(" ")) };
+    if names.iter().any(|n| n == "children") { format!("{open}>…</{name}>") } else { format!("{open} />") }
+}
+
+/// O que as props herdam e o binário não abriu (`x-extends` do schema lido dos tipos).
+fn extends_line(schema: &Value) -> Option<String> {
+    let Some(Value::Array(list)) = get(schema, "x-extends") else { return None };
+    let names: Vec<String> = list.borrow().iter().map(|v| format!("`{}`", v.to_js_string())).collect();
+    (!names.is_empty()).then(|| format!("Aceita também as props de {}.", names.join(", ")))
+}
+
+fn component_section(ds: &DsInfo, c: &DsComponent, props_table: &impl Fn(&Value) -> String) -> Vec<String> {
+    let mut out = vec![format!("### {}", c.display_name.as_deref().unwrap_or(&c.name)), String::new()];
+    if let Some(g) = &c.guide {
+        out.push(g.trim().to_string());
+        out.push(String::new());
+    }
+    let schema = schema_of_component(ds, &c.name);
+    if let Some(schema) = schema {
+        out.push(format!("Assinatura: `{}`", signature_of(&c.name, schema)));
+        out.push(String::new());
+    }
+    if c.props.is_some() {
+        out.push("```tsx".into());
+        out.push(usage_of(c));
+        out.push("```".into());
+        out.push(String::new());
+    }
+    let Some(schema) = schema else { return out };
+    if !prop_names(schema).is_empty() {
+        out.push(props_table(schema).trim_end().to_string());
+        out.push(String::new());
+    }
+    if let Some(line) = extends_line(schema) {
+        out.push(line);
+        out.push(String::new());
+    }
+    out
+}
+
+/// `references/ds.md` da skill: import, cada componente com assinatura, exemplo e props (dos tipos do
+/// DS, mesmo sem catálogo), as regras e o guia. `props_table` desenha a tabela de um componente.
+pub fn markdown(ds: &DsInfo, location: &DsLocation, props_table: impl Fn(&Value) -> String) -> String {
     let mut out = vec![format!("# {} {}", ds.name, ds.version), String::new()];
     let first: Vec<&str> = ds.components.iter().take(3).map(|c| c.name.as_str()).collect();
     out.push(format!(
-        "Importe de `{}` (`import {{ {} }} from '{}';`) e registre o DS no `pptsx.config.ts` da pasta do deck (o arquivo pronto está em `references/pptsx.config.ts`).",
-        ds.import_from,
+        "Importe de `{}` (`import {{ {} }} from '{}';`) e registre o DS no `pptsx.config.ts` da pasta do deck ({}).",
+        location.import_from,
         first.join(", "),
-        ds.import_from
+        location.import_from,
+        location.config_hint
     ));
     out.push(String::new());
     out.push("## Componentes".into());
     out.push(String::new());
+    out.push("`*` = prop obrigatória. O tipo é o do TypeScript do DS; a nota traz a descrição, o padrão e exemplos do catálogo.".into());
+    out.push(String::new());
     for c in &ds.components {
-        out.push(format!("### {}", c.display_name.as_deref().unwrap_or(&c.name)));
-        out.push(String::new());
-        if let Some(g) = &c.guide {
-            out.push(g.trim().to_string());
-            out.push(String::new());
-        }
-        if c.props.is_some() {
-            out.push("```tsx".into());
-            out.push(usage_of(c));
-            out.push("```".into());
-            out.push(String::new());
-        }
+        out.extend(component_section(ds, c, &props_table));
     }
     if !ds.rules.is_empty() {
         out.push("## Regras de lint".into());
@@ -276,8 +348,18 @@ pub fn markdown(ds: &DsInfo, props_md: impl Fn(&Value) -> String) -> String {
         out.push(body.trim().to_string());
         out.push(String::new());
     }
-    if let Some(schema) = &ds.schema {
-        out.push(props_md(schema));
-    }
     out.join("\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn signature_lists_required_first_and_marks_optional() {
+        let schema = crate::js::parse_json(r#"{ "properties": { "kicker": {}, "title": {}, "children": {} }, "required": ["title"] }"#).expect("json");
+        assert_eq!(signature_of("Content", &schema), "<Content title kicker?>…</Content>");
+        let empty = crate::js::parse_json(r#"{ "properties": {}, "required": [] }"#).expect("json");
+        assert_eq!(signature_of("Divider", &empty), "<Divider />");
+    }
 }

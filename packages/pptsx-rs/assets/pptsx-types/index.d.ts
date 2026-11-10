@@ -4,7 +4,7 @@ export { Fragment } from './jsx/jsx-runtime.ts';
 export { resolveDeck, ResolveError } from './resolve/index.ts';
 export { render, renderFragment, fragmentSlide, type FragmentOptions, type FragmentResult, type FragmentSlideOptions } from './render.ts';
 export { defineDs, type DsManifest } from './ds.ts';
-export type { LintContext, LintRule, RuleFinding } from './lint/rule.ts';
+export type { DeckFinding, DeckLintContext, LintContext, LintDeck, LintProps, LintRule, LintSlide, RuleFinding } from './lint/rule.ts';
 export { lintDeck, type LintFinding, type LintCode, type LintOptions } from './lint/lint.ts';
 export { COMPONENT_META } from './core/types.ts';
 export { isResponsive, mapResponsive, pickResponsive } from './core/responsive.ts';

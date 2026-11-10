@@ -187,7 +187,8 @@ impl Interp {
                 None => return false,
             },
         };
-        self.modules.iter().filter_map(|m| m.path.parent()).any(|dir| {
+        // Um módulo embutido não tem pasta no disco: não abre leitura nenhuma.
+        self.modules.iter().filter(|m| !module::is_embedded(&m.path)).filter_map(|m| m.path.parent()).any(|dir| {
             // A pasta do pacote (o ancestral mais próximo com package.json: um DS lê guide/ ao lado
             // de dist/), senão a do próprio módulo.
             let root = dir.ancestors().find(|a| a.join("package.json").is_file()).unwrap_or(dir);
@@ -234,7 +235,7 @@ pub fn call_function(interp: &mut Interp, f: &Value, args: Vec<Value>) -> Result
     interp.call(f, args).map_err(|t| interp.describe(t))
 }
 
-pub use module::THEME_DEFAULTS;
+pub use module::{DS_KIT_FILES, THEME_DEFAULTS};
 
 /// Achata filhos (arrays, fragments) como o JSX faz; para o footer do Deck.
 pub fn normalize(values: Vec<Value>, out: &mut Vec<Value>) -> R<()> {

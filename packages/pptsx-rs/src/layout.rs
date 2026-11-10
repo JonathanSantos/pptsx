@@ -10,6 +10,8 @@ use crate::text::{Fonts, Laid, RunInput, TextInput, layout_text};
 const EPSILON: f32 = 0.5;
 /// Rodadas da busca binária da escala do shrink (DEFAULTS.maxFitIterations).
 const FIT_ROUNDS: usize = 12;
+/// Diferença de corpo (pt) abaixo da qual dois membros de um grupo de fit já estão na mesma escala.
+const LEVEL_NOISE: f32 = 1e-3;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Frame {
@@ -452,6 +454,44 @@ fn with_delta(sizes: &Scales, placed: &[Placed], participants: &[usize], delta: 
     out
 }
 
+/// Grupos de fit do slide (`fitGroup`): por grupo, os Text que podem encolher (índice na
+/// pré-ordem, corpo do autor).
+struct FitGroups(Vec<Vec<(usize, f32)>>);
+
+impl FitGroups {
+    fn of(placed: &[Placed]) -> Self {
+        let mut names: Vec<&str> = Vec::new();
+        let mut groups: Vec<Vec<(usize, f32)>> = Vec::new();
+        for (i, p) in placed.iter().enumerate() {
+            let NodeKind::Text(t) = &p.node.kind else { continue };
+            let (Some(name), Some(plan)) = (crate::model::fit_group::group_of(t), plan_of(p)) else { continue };
+            match names.iter().position(|n| *n == name) {
+                Some(at) => groups[at].push((i, plan.from)),
+                None => {
+                    names.push(name);
+                    groups.push(vec![(i, plan.from)]);
+                }
+            }
+        }
+        FitGroups(groups)
+    }
+
+    /// Iguala a escala de cada grupo à do membro que mais encolheu. Só desce, e o resultado é
+    /// ponto fixo (nivelar de novo não muda nada): é o que deixa o laço de ajuste convergir.
+    fn level(&self, mut sizes: Scales) -> Scales {
+        for members in &self.0 {
+            let ratio = members.iter().map(|&(i, from)| sizes.get(&i).copied().unwrap_or(from) / from).fold(1.0, f32::min);
+            for &(i, from) in members {
+                let current = sizes.get(&i).copied().unwrap_or(from);
+                if from * ratio < current - LEVEL_NOISE {
+                    sizes.insert(i, from * ratio);
+                }
+            }
+        }
+        sizes
+    }
+}
+
 /// M19 (containers.ts): o espaço de cada `<Container>` pendente numa passada de layout sem fit
 /// (o tamanho do Container vem do pai, não do conteúdo): frame e content box por path.
 pub fn container_measures(slide: &SlideSpec, fonts: &Fonts, paths: &[String]) -> Vec<(String, crate::model::Measure)> {
@@ -472,6 +512,9 @@ pub fn container_measures(slide: &SlideSpec, fonts: &Fonts, paths: &[String]) ->
 pub fn layout_slide<'a>(slide: &'a SlideSpec, fonts: &Fonts, index: usize, diags: &Diags) -> SlideLayout<'a> {
     let mut sizes = Scales::new();
     let mut placed = run(slide, fonts, &sizes);
+    // Todo corpo candidato passa pelo nivelamento antes do layout: o que um membro do grupo
+    // encolhe (por largura ou por altura, em qualquer escopo) os outros encolhem junto.
+    let groups = FitGroups::of(&placed);
     for _ in 0..FIT_ROUNDS {
         let before = sizes.clone();
         let mut scopes: Vec<usize> = triggers(&placed, fonts.options.safety).into_iter().map(|i| scope_of(&placed, i)).collect();
@@ -508,6 +551,7 @@ pub fn layout_slide<'a>(slide: &'a SlideSpec, fonts: &Fonts, index: usize, diags
                     words.insert(i, size);
                 }
             }
+            let words = groups.level(words);
             if words != sizes {
                 sizes = words;
                 placed = run(slide, fonts, &sizes);
@@ -521,7 +565,7 @@ pub fn layout_slide<'a>(slide: &'a SlideSpec, fonts: &Fonts, index: usize, diags
                 continue;
             }
             let high = participants.iter().filter_map(|&i| plan_of(&placed[i])).map(|p| (p.from - p.min).ceil()).fold(0.0, f32::max);
-            let at_min = with_delta(&sizes, &placed, &participants, high);
+            let at_min = groups.level(with_delta(&sizes, &placed, &participants, high));
             let floor = run(slide, fonts, &at_min);
             if triggered_in(&floor, scope, fonts.options.safety) {
                 sizes = at_min;
@@ -544,13 +588,13 @@ pub fn layout_slide<'a>(slide: &'a SlideSpec, fonts: &Fonts, index: usize, diags
             let (mut lo, mut hi) = ((untouched + 1.0).max(floor_delta).min(high), high);
             while lo < hi {
                 let mid = ((lo + hi) / 2.0).floor();
-                if triggered_in(&run(slide, fonts, &with_delta(&sizes, &placed, &participants, mid)), scope, fonts.options.safety) {
+                if triggered_in(&run(slide, fonts, &groups.level(with_delta(&sizes, &placed, &participants, mid))), scope, fonts.options.safety) {
                     lo = mid + 1.0;
                 } else {
                     hi = mid;
                 }
             }
-            sizes = with_delta(&sizes, &placed, &participants, hi);
+            sizes = groups.level(with_delta(&sizes, &placed, &participants, hi));
             placed = run(slide, fonts, &sizes);
         }
         if sizes == before {
@@ -948,4 +992,45 @@ fn paginate_box(slide: &SlideSpec, fonts: &Fonts, path: &[usize]) -> Option<Vec<
         start += best;
     }
     (parts.len() > 1).then_some(parts)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{FitGroups, Scales};
+
+    fn sizes(pairs: &[(usize, f32)]) -> Scales {
+        pairs.iter().copied().collect()
+    }
+
+    #[test]
+    fn level_takes_the_smallest_size_when_members_start_equal() {
+        let groups = FitGroups(vec![vec![(1, 36.0), (2, 36.0), (3, 36.0)]]);
+        let out = groups.level(sizes(&[(1, 23.0), (2, 34.0)]));
+        assert_eq!(out, sizes(&[(1, 23.0), (2, 23.0), (3, 23.0)]));
+    }
+
+    #[test]
+    fn level_keeps_the_hierarchy_when_members_start_different() {
+        // 40 → 30 é escala 0,75: o de 20 vai a 15.
+        let groups = FitGroups(vec![vec![(1, 40.0), (2, 20.0)]]);
+        let out = groups.level(sizes(&[(1, 30.0)]));
+        assert!((out[&2] - 15.0).abs() < 1e-4);
+        assert!((out[&1] - 30.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn level_is_a_fixed_point_and_leaves_other_texts_alone() {
+        let groups = FitGroups(vec![vec![(1, 36.0), (2, 20.0)], vec![(5, 18.0), (6, 18.0)]]);
+        let once = groups.level(sizes(&[(2, 13.0), (9, 11.0)]));
+        assert_eq!(groups.level(once.clone()), once);
+        assert_eq!(once.get(&9), Some(&11.0));
+        // O segundo grupo não encolheu: fica sem entrada (corpo do autor).
+        assert!(!once.contains_key(&5) && !once.contains_key(&6));
+    }
+
+    #[test]
+    fn no_groups_is_the_identity() {
+        let before = sizes(&[(1, 12.0), (4, 30.0)]);
+        assert_eq!(FitGroups(Vec::new()).level(before.clone()), before);
+    }
 }

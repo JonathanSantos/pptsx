@@ -12,9 +12,16 @@ export interface LintFinding {
     readonly code: LintCode | (string & {});
     /** Ausente quando vale para todos os tamanhos. */
     readonly size?: string;
+    /** Base 1; 0 = o deck inteiro (estrutura do Deck, achado de `checkDeck` sem slide). */
     readonly slide: number;
     readonly path: string;
     readonly message: string;
+    /**
+     * 'ds': o achado é do design system e não de quem escreve o deck (cor dos tokens do DS que não coube
+     * nos slots do tema, nó de dentro de um componente do DS). Fica fora do resumo em texto e da contagem;
+     * o `--json` traz com este marcador e o `--verbose` mostra no texto.
+     */
+    readonly origin?: 'ds';
 }
 export interface LintOptions {
     readonly sizes: readonly SizeSpec[];

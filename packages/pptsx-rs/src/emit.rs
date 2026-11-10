@@ -99,6 +99,8 @@ struct Writer<'m> {
     fx: crate::layout::Effects,
     /// Sombra da próxima forma "principal" do nó (consumida pelo sp).
     shadow: Option<crate::model::Shadow>,
+    /// Gradiente da próxima forma preenchida do nó (consumido pelo sp; vence a cor).
+    gradient: Option<crate::gradient::Gradient>,
     fonts: &'m crate::text::Fonts,
 }
 
@@ -221,7 +223,10 @@ impl Writer<'_> {
             let rid = self.rel(RelKind::Hyperlink(url.to_string()));
             format!("<a:hlinkClick r:id=\"{rid}\"/>")
         });
-        let fill = fill.map_or_else(|| "<a:noFill/>".to_string(), |c| self.solid(c));
+        let fill = match self.gradient.take() {
+            Some(g) => g.fill_xml(frame.w, frame.h, self.fx.opacity),
+            None => fill.map_or_else(|| "<a:noFill/>".to_string(), |c| self.solid(c)),
+        };
         let effects = self.effect_list();
         let _ = write!(
             self.out,
@@ -242,12 +247,12 @@ impl Writer<'_> {
         let f = p.frame;
         if let Some((path, natural)) = &paint.background_image {
             // Imagem de fundo (cover) entre o fundo e as bordas: fundo primeiro, se houver.
-            if paint.fill.is_some() || paint.shadow.is_some() {
+            if paint.has_fill() || paint.shadow.is_some() {
                 let only_fill = Paint { borders: [None; 4], background_image: None, ..paint.clone() };
                 self.decoration(p, &only_fill);
             }
             self.picture(f, path, *natural, true, None);
-            let only_borders = Paint { fill: None, shadow: None, background_image: None, ..paint.clone() };
+            let only_borders = Paint { fill: None, gradient: None, shadow: None, background_image: None, ..paint.clone() };
             if only_borders.has_border() {
                 self.decoration(p, &only_borders);
             }
@@ -256,10 +261,11 @@ impl Writer<'_> {
         let uniform = paint.uniform_border();
         let has_any = paint.has_border();
         // Sombra sem fundo ainda desenha (a forma existe só para levar a sombra), como no pptsx.
-        if paint.fill.is_none() && !has_any && paint.shadow.is_none() {
+        if !paint.has_fill() && !has_any && paint.shadow.is_none() {
             return;
         }
         self.shadow = paint.shadow;
+        self.gradient = paint.gradient.clone();
         let shape_of = |frame: Frame, radius: f32| if radius > 0.0 { geom("roundRect", &[("adj", round_adj(radius, frame))]) } else { geom("rect", &[]) };
         match uniform {
             Some(s) => {
@@ -268,9 +274,11 @@ impl Writer<'_> {
                 self.sp("Box", frame, &shape_of(frame, radius), paint.fill, self.line_xml(Some(s), None, None), (false, false), None, p.node.href.as_deref());
             }
             None => {
-                if paint.fill.is_some() {
+                if paint.has_fill() {
                     self.sp("Box", f, &shape_of(f, paint.radius), paint.fill, self.line_xml(None, None, None), (false, false), None, p.node.href.as_deref());
                 }
+                // Sem forma de fundo (só sombra e bordas por lado), o gradiente não vaza para a 1ª linha.
+                self.gradient = None;
                 for (i, side) in paint.borders.iter().enumerate() {
                     let Some(s) = side else { continue };
                     let h = s.width / 2.0;
@@ -289,6 +297,7 @@ impl Writer<'_> {
     fn shape(&mut self, p: &Placed, spec: &ShapeSpec, paint: &Paint) {
         let f = p.frame;
         self.shadow = paint.shadow;
+        self.gradient = if spec.line { None } else { paint.gradient.clone() };
         let adj: Vec<(&str, i64)> = match (spec.radius, spec.pill) {
             (Some(r), _) => vec![("adj", round_adj(r, f))],
             _ => spec.adj.clone(),
@@ -815,7 +824,7 @@ fn auto_paragraphs(t: &TextOut, spec: &crate::model::TextSpec) -> Vec<(Vec<crate
 }
 
 pub fn slide_xml(slide: &SlideSpec, layout: &SlideLayout, media: &mut Media, lang: &str, fonts: &crate::text::Fonts, first_of_layout: bool) -> SlideXml {
-    let mut w = Writer { out: String::new(), next_id: 1, rels: Vec::new(), media, lang, fx: crate::layout::Effects { opacity: 1.0, ..Default::default() }, shadow: None, fonts };
+    let mut w = Writer { out: String::new(), next_id: 1, rels: Vec::new(), media, lang, fx: crate::layout::Effects { opacity: 1.0, ..Default::default() }, shadow: None, gradient: None, fonts };
     let mut fixed: Vec<&Placed> = Vec::new();
     for p in &layout.placed {
         // O próprio slide (raiz) só tem fundo, emitido em <p:bg>.
@@ -855,7 +864,13 @@ pub fn slide_xml(slide: &SlideSpec, layout: &SlideLayout, media: &mut Media, lan
             let rid = w.rel(RelKind::Image(name));
             format!("<p:bg><p:bgPr><a:blipFill dpi=\"0\" rotWithShape=\"1\"><a:blip r:embed=\"{rid}\"/><a:srcRect/><a:stretch><a:fillRect/></a:stretch></a:blipFill><a:effectLst/></p:bgPr></p:bg>")
         }
-        None => slide.background.map(|c| format!("<p:bg><p:bgPr>{}<a:effectLst/></p:bgPr></p:bg>", solid_raw(c))).unwrap_or_default(),
+        None => match &slide.background_gradient {
+            Some(g) => {
+                let (width, height) = layout.placed.iter().find(|p| std::ptr::eq(p.node, &slide.root)).map_or((0.0, 0.0), |p| (p.frame.w, p.frame.h));
+                format!("<p:bg><p:bgPr>{}<a:effectLst/></p:bgPr></p:bg>", g.fill_xml(width, height, 1.0))
+            }
+            None => slide.background.map(|c| format!("<p:bg><p:bgPr>{}<a:effectLst/></p:bgPr></p:bg>", solid_raw(c))).unwrap_or_default(),
+        },
     };
     let show = if slide.hidden { " show=\"0\"" } else { "" };
     let xml = format!(
@@ -866,7 +881,7 @@ pub fn slide_xml(slide: &SlideSpec, layout: &SlideLayout, media: &mut Media, lan
 }
 
 fn layout_part(spec: &crate::model::LayoutSpec, layout: &SlideLayout, fixed: &[&Placed], media: &mut Media, lang: &str, fonts: &crate::text::Fonts) -> LayoutPart {
-    let mut w = Writer { out: String::new(), next_id: LAYOUT_FIRST_SHAPE_ID - 1, rels: Vec::new(), media, lang, fx: crate::layout::Effects { opacity: 1.0, ..Default::default() }, shadow: None, fonts };
+    let mut w = Writer { out: String::new(), next_id: LAYOUT_FIRST_SHAPE_ID - 1, rels: Vec::new(), media, lang, fx: crate::layout::Effects { opacity: 1.0, ..Default::default() }, shadow: None, gradient: None, fonts };
     for p in fixed {
         w.fx = p.effects.clone();
         emit_placed(&mut w, p);

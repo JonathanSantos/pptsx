@@ -433,6 +433,16 @@ pub fn broken_words(content: &str, laid: &Laid) -> Vec<String> {
 
 // ───────────── diagnósticos por nó (fit/fit.ts) ─────────────
 
+/// text-shrunk do Text; num grupo de fit a mensagem diz que o corpo é o do grupo (quem coube
+/// folgado encolheu por causa de outro membro, e é nele que o autor mexe).
+fn shrunk_diag(spec: &crate::model::TextSpec, slide: usize, path: &str, from: f64, to: f64) -> Diag {
+    let Some(name) = crate::model::fit_group::group_of(spec) else {
+        return sizes_data(Diag::new(Level::Info, "text-shrunk", slide, path, format!("Texto reduzido de {} pt para {} pt para caber na área. Se a redução incomodar, encurte o conteúdo ou aumente a área.", fmt(from), fmt(to))), from, to);
+    };
+    let msg = format!("Texto reduzido de {} pt para {} pt junto com o grupo de fit \"{name}\" (todos na mesma escala, a do texto que menos coube). Se a redução incomodar, encurte o maior conteúdo do grupo ou aumente a área dele.", fmt(from), fmt(to));
+    sizes_data(Diag::new(Level::Info, "text-shrunk", slide, path, msg), from, to).with("fitGroup", Data::Str(name.to_string()))
+}
+
 fn text_diagnostics(placed: &[Placed], i: usize, heights: &HashMap<usize, &Overflow>, widths: &HashMap<usize, &Overflow>, slide: usize, fonts: &Fonts) -> Vec<Diag> {
     let p = &placed[i];
     let (NodeKind::Text(spec), Some(t)) = (&p.node.kind, &p.text) else { return Vec::new() };
@@ -461,7 +471,7 @@ fn text_diagnostics(placed: &[Placed], i: usize, heights: &HashMap<usize, &Overf
                 overflows.push(sizes_data(overflow_data(d, o).with("axis", Data::Str("width".into())), from, to));
             }
             if overflows.is_empty() && to < from {
-                out.push(sizes_data(Diag::new(Level::Info, "text-shrunk", slide, path, format!("Texto reduzido de {} pt para {} pt para caber na área. Se a redução incomodar, encurte o conteúdo ou aumente a área.", fmt(from), fmt(to))), from, to));
+                out.push(shrunk_diag(spec, slide, path, from, to));
             }
             out.extend(overflows);
             if to < from && to < MIN_LEGIBLE {

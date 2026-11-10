@@ -1,70 +1,43 @@
-//! O MCP embute o guia e o schema do núcleo (`include_str!` em assets/). Dentro do monorepo, este
-//! build copia os originais de packages/pptsx para assets/ quando mudam, para a cópia nunca ficar
-//! velha (o CI confere com `git diff`); fora dele, a cópia versionada basta e o crate compila sozinho.
+//! O binário embute o que está em `assets/`: o guia do agente, o schema das primitivas, os `.d.ts` do pptsx
+//! (para o `init`/`types`) e o `@pptsx/ds-kit` (JS que o avaliador serve e `.d.ts` para o editor). Os arquivos
+//! de `assets/` são os originais: este build só gera as listas com `include_str!` de cada um, sem copiar
+//! nada de fora do crate.
 use std::fs;
 use std::path::Path;
 
-fn sync(source: &str, target: &str) {
-    println!("cargo:rerun-if-changed={source}");
-    println!("cargo:rerun-if-changed={target}");
-    let (source, target) = (Path::new(source), Path::new(target));
-    if !source.is_file() {
-        assert!(target.is_file(), "falta {} e não há {} para copiar", target.display(), source.display());
-        return;
-    }
-    let fresh = fs::read(source).expect("leitura do original");
-    if fs::read(target).ok().as_deref() != Some(fresh.as_slice()) {
-        fs::write(target, fresh).expect("escrita da cópia em assets/");
-    }
-}
-
-/// Os `.d.ts` de packages/pptsx/dist (saída de `npm run build`) → assets/pptsx-types/, e a lista
-/// `FILES` com `include_str!` de cada um, para o `init` gravar os tipos no projeto sem npm.
-fn sync_types() {
-    let source = Path::new("../pptsx/dist");
-    let target = Path::new("assets/pptsx-types");
-    println!("cargo:rerun-if-changed=../pptsx/dist");
-    println!("cargo:rerun-if-changed=assets/pptsx-types");
-    if source.is_dir() {
-        let fresh = collect(source, source);
-        if !fresh.is_empty() {
-            let _ = fs::remove_dir_all(target);
-            for rel in &fresh {
-                let to = target.join(rel);
-                fs::create_dir_all(to.parent().expect("pasta")).expect("pasta dos tipos");
-                fs::copy(source.join(rel), &to).expect("cópia do .d.ts");
-            }
-        }
-    }
-    let mut files = collect(target, target);
-    files.sort();
-    assert!(!files.is_empty(), "sem .d.ts em assets/pptsx-types (rode `npm run build` no monorepo)");
-    let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR");
-    let entries: Vec<String> = files
-        .iter()
-        .map(|rel| format!("    ({:?}, include_str!({:?})),", rel, format!("{manifest}/assets/pptsx-types/{rel}")))
-        .collect();
-    let out = Path::new(&std::env::var("OUT_DIR").expect("OUT_DIR")).join("pptsx_types.rs");
-    fs::write(out, format!("/// (caminho relativo, conteúdo) de cada .d.ts do pptsx.\npub static FILES: &[(&str, &str)] = &[\n{}\n];\n", entries.join("\n"))).expect("pptsx_types.rs");
-}
-
-/// Caminhos relativos (com `/`) de todo `.d.ts` abaixo de `dir`.
-fn collect(dir: &Path, root: &Path) -> Vec<String> {
+/// Caminhos relativos (com `/`) de todo arquivo abaixo de `dir` que `keep` aceita.
+fn collect(dir: &Path, root: &Path, keep: &dyn Fn(&str) -> bool) -> Vec<String> {
     let mut out = Vec::new();
     let Ok(entries) = fs::read_dir(dir) else { return out };
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
-            out.extend(collect(&path, root));
-        } else if path.to_string_lossy().ends_with(".d.ts") {
-            out.push(path.strip_prefix(root).expect("dentro da raiz").to_string_lossy().replace('\\', "/"));
+            out.extend(collect(&path, root, keep));
+            continue;
+        }
+        let rel = path.strip_prefix(root).expect("dentro da raiz").to_string_lossy().replace('\\', "/");
+        if keep(&rel) {
+            out.push(rel);
         }
     }
     out
 }
 
+/// Gera `<OUT_DIR>/<out_name>` com `pub static <name>: &[(&str, &str)]` (caminho relativo, conteúdo).
+fn embed(folder: &str, out_name: &str, name: &str, doc: &str, keep: &dyn Fn(&str) -> bool) {
+    println!("cargo:rerun-if-changed=assets/{folder}");
+    let root = Path::new("assets").join(folder);
+    let mut files = collect(&root, &root, keep);
+    files.sort();
+    assert!(!files.is_empty(), "assets/{folder} está vazio");
+    let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR");
+    let entries: Vec<String> = files.iter().map(|rel| format!("    ({:?}, include_str!({:?})),", rel, format!("{manifest}/assets/{folder}/{rel}"))).collect();
+    let out = Path::new(&std::env::var("OUT_DIR").expect("OUT_DIR")).join(out_name);
+    fs::write(out, format!("/// {doc}\npub static {name}: &[(&str, &str)] = &[\n{}\n];\n", entries.join("\n"))).expect("lista de assets");
+}
+
 fn main() {
-    sync("../pptsx/docs/AGENT_GUIDE.md", "assets/agent-guide.md");
-    sync("../pptsx/src/mcp/schema.generated.ts", "assets/schema.generated.ts");
-    sync_types();
+    println!("cargo:rerun-if-changed=build.rs");
+    embed("pptsx-types", "pptsx_types.rs", "FILES", "(caminho relativo, conteúdo) de cada .d.ts do pptsx.", &|rel| rel.ends_with(".d.ts"));
+    embed("ds-kit", "ds_kit.rs", "DS_KIT_FILES", "(caminho relativo, conteúdo) de cada arquivo do @pptsx/ds-kit embutido (.js e .d.ts).", &|rel| rel.ends_with(".js") || rel.ends_with(".d.ts"));
 }

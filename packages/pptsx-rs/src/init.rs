@@ -4,8 +4,8 @@
 //! deck.tsx existente aborta; .gitignore, package.json e tsconfig.json existentes são mesclados,
 //! nunca apagados. `--ds <pacote|caminho>` monta o deck com os componentes do DS (um slide por
 //! caso de catálogo) e a config que o registra, lendo o manifesto pelo avaliador (dsinfo.rs).
-//! Sempre grava os tipos do pptsx em `.pptsx/types/` e o `typeRoots` do tsconfig (types.rs): o editor
-//! entende o deck sem `npm install`.
+//! Sempre grava os tipos do pptsx e do `@pptsx/ds-kit` em `.pptsx/types/` e o `typeRoots` do tsconfig
+//! (types.rs): o editor entende o deck e um DS sem `npm install`.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -437,7 +437,7 @@ pub fn run_types(argv: &[String]) -> ExitCode {
             "tsconfig.json criado".into()
         }
     };
-    println!("Tipos do pptsx {} em {}/{} ({n} arquivos); {}.", env!("CARGO_PKG_VERSION"), dir.display(), crate::types::TYPES_DIR, note.trim_end_matches('.'));
+    println!("Tipos do pptsx {} e do @pptsx/ds-kit em {}/{} ({n} arquivos); {}.", env!("CARGO_PKG_VERSION"), dir.display(), crate::types::TYPES_ROOT, note.trim_end_matches('.'));
     ExitCode::SUCCESS
 }
 
@@ -472,7 +472,7 @@ pub fn run(argv: &[String]) -> ExitCode {
         return ExitCode::from(1);
     }
     match crate::types::write(&args.dir) {
-        Ok(n) => plan.types = Some(format!("{}/ ({n} .d.ts do pptsx {}; typeRoots do tsconfig: o editor entende o deck sem npm install)", crate::types::TYPES_DIR, env!("CARGO_PKG_VERSION"))),
+        Ok(n) => plan.types = Some(format!("{}/ ({n} .d.ts do pptsx {} e do @pptsx/ds-kit; typeRoots do tsconfig: o editor entende o deck e um DS sem npm install)", crate::types::TYPES_ROOT, env!("CARGO_PKG_VERSION"))),
         Err(e) => plan.warnings.push(format!("tipos do pptsx não gravados: {e}")),
     }
     for (path, content) in &plan.writes {

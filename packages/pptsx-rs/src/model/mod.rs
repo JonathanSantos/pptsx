@@ -62,6 +62,8 @@ pub struct TextSpec {
     pub fit: Fit,
     /// SlideNumber: conteúdo de pior caso medido para a largura ("88", "88 / 88").
     pub sample: Option<String>,
+    /// Grupo de fit: os Text do slide com o mesmo nome encolhem pela mesma escala.
+    pub fit_group: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -146,9 +148,16 @@ pub struct Paint {
     pub translate: (f32, f32),
     /// `backgroundImage: url(…)` (cover), com o tamanho natural em pt.
     pub background_image: Option<(PathBuf, (f32, f32))>,
+    /// `backgroundImage: linear-gradient(…)`: pinta por cima da cor de fundo (vence-a no PPTX).
+    pub gradient: Option<crate::gradient::Gradient>,
 }
 
 impl Paint {
+    /// Tem preenchimento (cor ou gradiente)?
+    pub fn has_fill(&self) -> bool {
+        self.fill.is_some() || self.gradient.is_some()
+    }
+
     pub fn uniform_border(&self) -> Option<Stroke> {
         let first = self.borders[0]?;
         self.borders
@@ -240,6 +249,8 @@ pub struct SlideSpec {
     pub background: Option<Rgba>,
     /// Imagem de fundo do slide (vence a cor, como em slideBackgroundOf).
     pub background_image: Option<(PathBuf, (f32, f32))>,
+    /// Gradiente de fundo do slide (vence a cor; a imagem vence os dois).
+    pub background_gradient: Option<crate::gradient::Gradient>,
     pub notes: Option<String>,
     /// Notas com estilo (negrito, itálico, cor, sublinhado, link): o pacote grava o corpo rico.
     pub notes_runs: Vec<StyledRun>,
@@ -314,6 +325,8 @@ struct Inherit {
     transform: Option<String>,
     underline: bool,
     strike: bool,
+    /// `fitGroup` do Box/Container mais próximo: vale para os Text de dentro sem o próprio.
+    fit_group: Option<String>,
 }
 
 impl Default for Inherit {
@@ -331,6 +344,7 @@ impl Default for Inherit {
             transform: None,
             underline: false,
             strike: false,
+            fit_group: None,
         }
     }
 }
@@ -417,6 +431,7 @@ impl Cx<'_> {
 
 mod connector;
 mod data;
+pub(crate) mod fit_group;
 mod resolve;
 mod shape;
 mod style;

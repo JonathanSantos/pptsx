@@ -515,7 +515,7 @@ fn background(key: &str, v: &Value) -> Outcome {
             return removed(key, &format!("backgroundImage=\"url({})\"", o.get("image").map(Value::to_js_string).unwrap_or_default()));
         }
     if let Some(s) = str_of(v) {
-        if s.trim().starts_with("url(") {
+        if s.trim().starts_with("url(") || crate::gradient::looks_like_gradient(s) {
             return background_image(v);
         }
         if !parse_color(v) && IMAGE_EXT_RE.is_match(s.trim()) {
@@ -525,9 +525,20 @@ fn background(key: &str, v: &Value) -> Outcome {
     strict_color(key, v)
 }
 
+const BACKGROUND_IMAGE: &str = "só url(...), linear-gradient(...) e radial-gradient(circle, ...) saem no PPTX";
+
 fn background_image(v: &Value) -> Outcome {
-    let ok = str_of(v).is_some_and(|s| URL_RE.is_match(s.trim()));
-    if ok { Outcome::Ok } else { reject("só url(...) sai no PPTX (gradiente não tem de/para)") }
+    let Some(s) = str_of(v) else { return reject(BACKGROUND_IMAGE) };
+    if URL_RE.is_match(s.trim()) {
+        return Outcome::Ok;
+    }
+    if !crate::gradient::looks_like_gradient(s) {
+        return reject(BACKGROUND_IMAGE);
+    }
+    match crate::gradient::parse_gradient(s) {
+        Ok(_) => Outcome::Ok,
+        Err(reason) => reject(&reason),
+    }
 }
 
 /// Handlers de CSS (CSS_HANDLERS do normalize); None = chave desconhecida.
@@ -652,6 +663,7 @@ fn kind_handler(kind: Kind, key: &str, v: &Value) -> Option<Outcome> {
     let id = |v: &Value| if str_of(v).is_some_and(|s| !s.trim().is_empty()) { Outcome::Ok } else { invalid("id", v, "use um texto não vazio, único no slide") };
     let placeholder = |v: &Value| if str_of(v).is_some_and(|s| !s.trim().is_empty()) { Outcome::Ok } else { invalid("placeholder", v, "use o nome de um placeholder do layout (\"title\", \"body\"…)") };
     let white_space = |v: &Value| if one_of(v, &["nowrap", "normal"]) { Outcome::Ok } else { reject("só normal e nowrap") };
+    let fit_group = |v: &Value| if str_of(v).is_some_and(|s| !s.trim().is_empty()) { Outcome::Ok } else { invalid("fitGroup", v, "use um nome de grupo não vazio (os Text do slide com o mesmo nome encolhem juntos)") };
     let pass = Outcome::Ok;
     Some(match (kind, key) {
         (Slide, "notes" | "hidden") => pass,
@@ -664,6 +676,7 @@ fn kind_handler(kind: Kind, key: &str, v: &Value) -> Option<Outcome> {
         (Text | SlideNumber, "whiteSpace") => white_space(v),
         (Text | SlideNumber, "nowrap" | "fit" | "minSize" | "maxLines") => pass,
         (Text, "paginate") => pass,
+        (Box | Container | Text, "fitGroup") => fit_group(v),
         (SlideNumber, "format") => pass,
         (Image, "src") => pass,
         (Image, "objectFit") => if one_of(v, &["contain", "cover"]) { pass } else { reject("só contain e cover") },
@@ -773,7 +786,8 @@ impl Walker<'_> {
         if get("overflow").is_some_and(|v| one_of(&v, &["hidden"])) && el.kind != Kind::Image {
             note("overflow", "hidden", "o PPTX não recorta formas; os filhos saem inteiros");
         }
-        let has_bg = get("backgroundColor").is_some() || get("background").is_some_and(|b| parse_color(&b));
+        let gradient = |k: &str| get(k).is_some_and(|b| str_of(&b).is_some_and(|s| crate::gradient::parse_gradient(s).is_ok()));
+        let has_bg = get("backgroundColor").is_some() || get("background").is_some_and(|b| parse_color(&b)) || gradient("background") || gradient("backgroundImage");
         let shadow = get("boxShadow").is_some_and(|s| !one_of(&s, &["none"]) && matches!(shadow(&s), Outcome::Ok | Outcome::Reject(_)) && str_of(&s).is_some_and(|t| t.split(',').next().is_some_and(|f| !f.to_lowercase().contains("inset"))));
         if shadow && !has_bg && !matches!(el.kind, Kind::Shape | Kind::Path | Kind::Icon) {
             note("boxShadow", "sombra", "sem backgroundColor a forma não tem preenchimento e a sombra não aparece no PPTX");
@@ -959,7 +973,7 @@ pub fn validate(deck: &Element, ctx: &DeckCtx) -> Validation {
 /// css-not-emitted (fit/css.ts messageOf).
 pub fn note_diag(slide: usize, n: &Note) -> Diag {
     Diag::new(Level::Warn, "css-not-emitted", slide, n.path.clone(), format!(
-        "A propriedade CSS {}: {} não sai no PPTX: {}. O preview também não a desenha; remova-a ou troque por uma suportada (ver docs/AGENT_GUIDE.md).",
+        "A propriedade CSS {}: {} não sai no PPTX: {}. O preview também não a desenha; remova-a ou troque por uma suportada (ver o guia: `pptsx-rs skill` ou a ferramenta guide do MCP).",
         n.property, n.value, n.reason
     ))
 }
