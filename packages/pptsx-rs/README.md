@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img alt="pptsx-rs 1.1.1" src="https://img.shields.io/badge/pptsx--rs-1.1.1-4F5BFF?style=flat-square&labelColor=0B1020">
+  <img alt="pptsx-rs 1.1.2" src="https://img.shields.io/badge/pptsx--rs-1.1.2-4F5BFF?style=flat-square&labelColor=0B1020">
   <img alt="sem Node nem npm" src="https://img.shields.io/badge/sem%20Node-sem%20npm-14B87F?style=flat-square&labelColor=0B1020">
   <img alt="binário de 6 MB" src="https://img.shields.io/badge/bin%C3%A1rio-6%20MB-C246D8?style=flat-square&labelColor=0B1020">
   <img alt="macOS, Linux e Windows" src="https://img.shields.io/badge/macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-5%20alvos-FF6A3D?style=flat-square&labelColor=0B1020">
@@ -248,6 +248,8 @@ Para cada `defineComponent<XProps>(meta, fn)` dos módulos do DS, o binário ach
 ### `init --ds` e `skill --ds`
 
 `pptsx-rs init <pasta> --ds <caminho|pasta|pacote>` cria o deck com um slide por componente do DS que tem caso de catálogo, a config que o registra e o tsconfig.
+
+Um DS pode trazer o próprio deck inicial: um `starter.tsx` na raiz dele (ao lado do `package.json`, ou na pasta da entrada) vira o `deck.tsx` do projeto, com `{{ds}}` trocado pelo caminho de import. Sem ele, o `init` gera o catálogo.
 
 `pptsx-rs skill --ds <caminho> --name <nome> [--description <texto>] --out <pasta>` gera a skill **autocontida** de um DS, sem Node:
 

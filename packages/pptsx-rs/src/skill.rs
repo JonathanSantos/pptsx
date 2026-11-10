@@ -270,20 +270,29 @@ fn cell(text: &str) -> String {
     text.replace('|', "\\|").split('\n').filter(|l| !l.is_empty()).collect::<Vec<_>>().join(" ")
 }
 
-/// A 1ª frase basta na tabela; o guia tem o resto.
+/// A 1ª frase basta na tabela; o guia tem o resto. Ponto, interrogação ou exclamação só fecham a frase fora
+/// de crases, aspas e parênteses e quando o que vem depois começa com maiúscula (ou é o fim): "vs. Q2",
+/// `{ text? }` e ("R$ 52,4 mi") não cortam a nota no meio.
 fn first_sentence(text: &str) -> String {
     let t = text.trim();
-    let mut end = None;
+    let (mut depth, mut code, mut quoted) = (0usize, false, false);
     for (i, c) in t.char_indices() {
-        if matches!(c, '.' | '!' | '?') {
-            let next = t[i + c.len_utf8()..].chars().next();
-            if next.is_none_or(char::is_whitespace) {
-                end = Some(i + c.len_utf8());
-                break;
+        match c {
+            '`' => code = !code,
+            '"' if !code => quoted = !quoted,
+            '(' if !code && !quoted => depth += 1,
+            ')' if !code && !quoted => depth = depth.saturating_sub(1),
+            '.' | '!' | '?' if !code && !quoted && depth == 0 => {
+                let rest = &t[i + c.len_utf8()..];
+                let starts_sentence = rest.trim_start().chars().next().is_none_or(char::is_uppercase);
+                if starts_sentence && rest.chars().next().is_none_or(char::is_whitespace) {
+                    return t[..i + c.len_utf8()].trim().to_string();
+                }
             }
+            _ => {}
         }
     }
-    end.map_or(t.to_string(), |e| t[..e].trim().to_string())
+    t.to_string()
 }
 
 fn examples_note(prop: &Value) -> String {
@@ -683,6 +692,15 @@ pub fn run(argv: &[String]) -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn first_sentence_ignores_dots_inside_code_quotes_and_parentheses() {
+        assert_eq!(first_sentence("Variação (\"+14% vs. Q2\"). Cor pelo sentimento."), "Variação (\"+14% vs. Q2\").");
+        assert_eq!(first_sentence("De 3 a 6 tópicos: `{ title, text? }`. Em ordem."), "De 3 a 6 tópicos: `{ title, text? }`.");
+        assert_eq!(first_sentence("Custo em R$ 3.5 mi por cidade"), "Custo em R$ 3.5 mi por cidade");
+        assert_eq!(first_sentence("Uma frase. Outra frase."), "Uma frase.");
+        assert_eq!(first_sentence("Sem ponto final"), "Sem ponto final");
+    }
 
     #[test]
     fn reads_name_and_description_from_the_ds_skill_frontmatter() {

@@ -195,8 +195,28 @@ pub fn usage_of(component: &DsComponent) -> String {
     if attrs.is_empty() { format!("<{} />", component.name) } else { format!("<{} {} />", component.name, attrs.join(" ")) }
 }
 
-/// Deck inicial com o DS (ds-scaffold.ts dsDeckContent): um slide por componente com caso de catálogo.
+/// Nome do deck inicial que um DS pode trazer na própria raiz.
+pub const STARTER_FILE: &str = "starter.tsx";
+
+/// O deck inicial do próprio DS: `starter.tsx` na pasta da entrada ou na de cima (a raiz do pacote), com
+/// `{{ds}}` trocado pelo especificador de import. Um DS com layouts de slide sabe começar um deck melhor do
+/// que um catálogo em `<Slide>` cru, e o agente parte de um exemplo que segue as regras do DS.
+fn starter_of(ds: &DsInfo) -> Option<String> {
+    let own = ds.entry.parent()?;
+    let template = [Some(own), own.parent()].into_iter().flatten().find_map(|dir| std::fs::read_to_string(dir.join(STARTER_FILE)).ok())?;
+    Some(template.replace("{{ds}}", &ds.import_from))
+}
+
+/// Deck inicial com o DS: o `starter.tsx` dele, se houver; senão um slide por componente com caso de catálogo.
 pub fn deck_content(ds: &DsInfo) -> String {
+    if let Some(starter) = starter_of(ds) {
+        return starter;
+    }
+    catalog_deck(ds)
+}
+
+/// Deck de catálogo (ds-scaffold.ts dsDeckContent): um slide por componente com caso de catálogo.
+fn catalog_deck(ds: &DsInfo) -> String {
     let mut slide_props = vec!["padding={40}".to_string(), "gap={16}".to_string()];
     if let Some(bg) = &ds.background {
         slide_props.push(format!("backgroundColor=\"{bg}\""));
