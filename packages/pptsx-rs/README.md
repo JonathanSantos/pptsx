@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img alt="pptsx-rs 1.1.0" src="https://img.shields.io/badge/pptsx--rs-1.1.0-4F5BFF?style=flat-square&labelColor=0B1020">
+  <img alt="pptsx-rs 1.1.1" src="https://img.shields.io/badge/pptsx--rs-1.1.1-4F5BFF?style=flat-square&labelColor=0B1020">
   <img alt="sem Node nem npm" src="https://img.shields.io/badge/sem%20Node-sem%20npm-14B87F?style=flat-square&labelColor=0B1020">
   <img alt="binário de 6 MB" src="https://img.shields.io/badge/bin%C3%A1rio-6%20MB-C246D8?style=flat-square&labelColor=0B1020">
   <img alt="macOS, Linux e Windows" src="https://img.shields.io/badge/macOS%20%C2%B7%20Linux%20%C2%B7%20Windows-5%20alvos-FF6A3D?style=flat-square&labelColor=0B1020">
