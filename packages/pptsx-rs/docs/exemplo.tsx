@@ -14,7 +14,7 @@ export default defineDeck(() => (
     </Slide>
     <Slide padding={40} gap={20} backgroundColor="#FFFFFF" color="#0B1020">
       <Text fontSize={28} fontWeight="bold">Os três indicadores fecharam acima da meta</Text>
-      <Box display="grid" gridTemplateColumns={{ base: 'repeat(3, minmax(0, 1fr))', tall: 'minmax(0, 1fr)' }} gap={16} flex={1}>
+      <Box display="grid" gridTemplateColumns="repeat(3, minmax(0, 1fr))" gap={16} flex={1}>
         {kpis.map((kpi) => (
           <Box backgroundColor="#EEF1FA" borderRadius={12} padding={20} gap={6} justifyContent="center">
             <Text fontSize={14} color="#5A6385">{kpi.label}</Text>
