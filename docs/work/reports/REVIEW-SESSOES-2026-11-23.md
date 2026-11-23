@@ -34,6 +34,24 @@ Tudo em **1.1.3**: `packages/pptsx-rs/Cargo.toml`, `Cargo.lock`, os badges dos d
 | B7 | `--help` dos subcomandos não mostra ajuda | `build`, `check`, `lint`, `init`, `skill`, `tree` com `--help`; `mcp --help` | Os seis saem 2 com "opção desconhecida"; o `mcp --help` sobe o servidor calado. Agentes tentam `--help` primeiro |
 | B8 | O guia promete selo amarelo no overview | `agent-guide.md` §"O overview PNG" | `preview::overview_svg` só desenha o vermelho (error) |
 
+### Correções (mesmo dia)
+
+Cada uma com teste que falhava antes; os 7 decks dourados não mudaram.
+
+| # | O que mudou | Testes |
+|---|---|---|
+| B1 | `css::parse_color` recusa hex com caractere não ASCII em vez de fatiar bytes; o deck recebe o diagnóstico de sempre da prop. Cor inválida no `theme.colors` do config agora avisa (antes sumia calada) | `css.rs`, `config.rs`, `tests/diagnostics.rs` (borda, degradê e tema) |
+| B2 | `parse_border` separa as palavras fora de parênteses, e uma palavra desconhecida anula a borda: o arquivo passa a bater com o `css-not-emitted` ("ignorado"), que antes convivia com uma borda preta de 1 pt no PPTX. Unidades e palavras-chave passam a valer sem caixa, como no validate: `1px Solid red` e `1px DASHED #ccc` continuam desenhando (o `DASHED` agora tracejado) e `2PX` sai com 2 pt (o 1.1.3 desenhava 3 pt) | `css.rs` |
+| B3 | Código novo `image-missing` (warning), com o path do nó e o caminho resolvido, para `Image` e `backgroundImage: url(…)`; entra no `--json`, no `diagnostics.json`, no MCP e no selo do overview. Está no guia e no `DiagnosticCode` | `tests/diagnostics.rs` |
+| B4 | `off-theme-color` (Rust) e `paintedColorsOf` do `@pptsx/ds-kit` embutido leem cabeçalho, listra, grade (`border`) e células `{ color, fill }` da `Table` e `colors` do `Chart`; as props que as regras recebem trazem essas cores em `#RRGGBB` (célula de texto não é cor) | `lint.rs` (puro e com regra `colorsFromTokens`) |
+| B5 | O `box-overflow` degenerado sai sem `overflowPt`/`overflowPct` no `data` | `tests/diagnostics.rs` |
+| B6, B7 | `--help`/`-h` (sozinho ou depois de qualquer comando) mostra a ajuda daquele comando e sai 0, antes de o comando rodar | `main.rs`, `tests/cli.rs` (os 8 comandos, sem gravar nada) |
+| B8 | O overview desenha o selo amarelo (`#F5B800`, o do legado) em slide com warning | `preview.rs`, `tests/diagnostics.rs` (lê o PNG) |
+
+`cargo test`: 120 unitários, 2 de CLI, 6 de diagnósticos, 8 de `fitGroup`, 7 dourados (143 no total). Além dos dourados, o 1.1.3 e o binário novo rodaram sobre os 91 decks de `examples/`, `packages/ds-base/examples`, `packages/ds-orbit/examples` e `packages/pptsx/examples` (16:9 e 4:3): XML dos 1.176 slides, mídia, `diagnostics.json` e código de saída idênticos. As mudanças só aparecem nos casos dos bugs.
+
+Ficou de fora: `cell` (função) da `Table` não é avaliado pelo lint, só as células declaradas; e `thin`/`medium`/`thick` na `border` seguem desenhando embora o validate as marque `css-not-emitted` (divergência antiga, no sentido oposto ao do B2).
+
 ## Atritos de documentação e mensagem
 
 | # | O quê | Quem tropeçou |
@@ -66,9 +84,9 @@ Os módulos sem nenhum `#[test]` eram 29 de 43. Entraram testes nos de lógica p
 | `src/js/regex.rs` | 8 | flags, `\/`, lookahead recusado com mensagem, `$1`/`$&`/`$$`, `split` com grupos e casos vazios do JS, índice em caracteres |
 | `tests/diagnostics.rs` | 3 | o caso degenerado do `bac49fa` (mensagem sem número, `causedBy`), o estouro comum com as contas, deck limpo |
 
-Ficaram de fora de propósito: os casos que hoje estão errados (B1, B2, B5) ganham teste junto com a correção. Seguem sem teste unitário `text.rs`, `validate.rs`, `report.rs` (só pelo teste de ponta a ponta), `package.rs`, `embed.rs`, `mcp.rs` e o interpretador (`js/interp.rs`, `js/builtins.rs`), cobertos hoje só pelos decks dourados.
+Os casos errados (B1, B2, B5) não entraram nesta rodada; ganharam teste junto com a correção (ver "Correções"). Seguem sem teste unitário `text.rs`, `validate.rs`, `report.rs` (só pelo teste de ponta a ponta), `package.rs`, `embed.rs`, `mcp.rs` e o interpretador (`js/interp.rs`, `js/builtins.rs`), cobertos hoje só pelos decks dourados.
 
-`cargo test`: 104 unitários (eram 67), 3 de diagnósticos, 8 de `fitGroup`, 7 dourados. `cargo clippy --release --all-targets -- -D warnings` limpo.
+Nesta primeira rodada, `cargo test` ficou com 104 unitários (eram 67), 3 de diagnósticos, 8 de `fitGroup` e 7 dourados; os números depois das correções estão em "Correções". `cargo clippy --release --all-targets -- -D warnings` limpo.
 
 ## CI
 
@@ -79,4 +97,4 @@ Ficaram de fora de propósito: os casos que hoje estão errados (B1, B2, B5) gan
 - versões: `Cargo.lock` e badges (no Linux), `--version`, `serverInfo` do MCP e `SKILL.md` gerado (nos três);
 - o caminho de quem baixa a release: `skill` → `init` → `build` 16:9 e 4:3 numa pasta `Apresentações Clientes/proposta café`, e `init --ds packages/ds-base` → `build` → `lint`.
 
-O workflow continua chamado `CI`, que é o nome que o gate da Release procura; um sistema vermelho agora bloqueia a Release. O roteiro de fumaça foi rodado localmente no macOS; no Windows e no Linux só vale depois do primeiro run.
+O workflow continua chamado `CI`, que é o nome que o gate da Release procura; um sistema vermelho agora bloqueia a Release. O primeiro run (`bf7986f`, com os testes e o CI, antes das correções) passou nos três sistemas, com o fluxo em pasta acentuada conferido no log do Windows. As correções foram verificadas só no macOS até o próximo push.
