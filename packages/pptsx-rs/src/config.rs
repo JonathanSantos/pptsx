@@ -85,6 +85,17 @@ pub fn theme_of(v: &Value) -> Option<Theme> {
     Some(theme)
 }
 
+/// Cores de `theme.colors` que não são cor: ficam fora do tema, e quem escreveu precisa saber.
+fn invalid_theme_colors(v: &Value) -> Vec<String> {
+    let Value::Object(o) = v else { return Vec::new() };
+    let Some(Value::Object(colors)) = get(o, "colors") else { return Vec::new() };
+    colors
+        .iter()
+        .filter(|(_, c)| crate::css::parse_color(&c.to_js_string()).is_none())
+        .map(|(k, c)| format!("theme.colors.{k}: \"{}\" não é uma cor; ficou fora do tema", c.to_js_string()))
+        .collect()
+}
+
 pub fn load(deck: &Path) -> Result<Config, String> {
     let Some(path) = find(deck) else { return Ok(Config::default()) };
     let value = crate::js::evaluate_default(&path)?;
@@ -111,6 +122,7 @@ pub fn load(deck: &Path) -> Result<Config, String> {
     config.line_breaks = string(&o, "lineBreaks");
     config.embed_fonts = matches!(get(&o, "embedFonts"), Some(Value::Bool(true)));
     config.theme = get(&o, "theme").and_then(theme_of);
+    config.warnings.extend(get(&o, "theme").map(invalid_theme_colors).unwrap_or_default());
     if let Some(Value::Object(doc)) = get(&o, "document") {
         config.title = string(doc, "title");
         config.document = Document {
@@ -214,4 +226,27 @@ fn system_faces() -> Vec<SystemFace> {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn theme_value(colors: &str) -> Value {
+        crate::js::parse_json(&format!("{{ \"name\": \"t\", \"colors\": {colors} }}")).expect("JSON fixo")
+    }
+
+    #[test]
+    fn theme_keeps_valid_colors_as_hex_and_drops_the_rest() {
+        let theme = theme_of(&theme_value(r##"{ "accent1": "#112233", "accent2": "red", "accent3": "#aéaaa", "accent4": "azul" }"##)).expect("tema");
+        assert_eq!(theme.colors, [("accent1".to_string(), "112233".to_string()), ("accent2".to_string(), "FF0000".to_string())]);
+        assert_eq!(theme.name.as_deref(), Some("t"));
+    }
+
+    #[test]
+    fn invalid_theme_colors_are_reported_by_key() {
+        let warnings = invalid_theme_colors(&theme_value(r##"{ "accent1": "#112233", "accent3": "#aéaaa" }"##));
+        assert_eq!(warnings, ["theme.colors.accent3: \"#aéaaa\" não é uma cor; ficou fora do tema"]);
+        assert!(invalid_theme_colors(&Value::Undefined).is_empty());
+    }
 }

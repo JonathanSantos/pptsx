@@ -120,9 +120,6 @@ fn parse_size(token: &str) -> Result<js::DeckCtx, String> {
 fn parse_args() -> Result<Args, String> {
     let mut raw = std::env::args().skip(1);
     let command = raw.next().ok_or_else(|| USAGE.to_string())?;
-    if command == "--help" || command == "-h" {
-        return Err(USAGE.into());
-    }
     if command == "--version" || command == "-V" {
         println!("pptsx-rs {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
@@ -229,8 +226,31 @@ fn stem_of(path: &Path) -> String {
     path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "deck".into())
 }
 
+/// Pediu ajuda (`--help`/`-h`, sozinho ou depois de um comando): o texto, antes de o comando tratar a flag
+/// como pasta (`types --help` criava a pasta `--help`) ou subir o servidor (`mcp --help`).
+fn help_text(raw: &[String]) -> Option<String> {
+    if !raw.iter().any(|a| a == "--help" || a == "-h") {
+        return None;
+    }
+    let block = raw.first().and_then(|command| usage_of(command));
+    Some(block.map_or_else(|| USAGE.to_string(), |b| format!("uso:\n{b}\n`pptsx-rs --help` lista todos os comandos.")))
+}
+
+/// O bloco de um comando no USAGE: a linha dele e as de continuação, até o próximo comando ou linha vazia.
+fn usage_of(command: &str) -> Option<String> {
+    let head = format!("  pptsx-rs {command}");
+    let mut lines = USAGE.lines().skip_while(|l| l.strip_prefix(&head).is_none_or(|rest| !rest.is_empty() && !rest.starts_with(' ')));
+    let first = lines.next()?;
+    let rest = lines.take_while(|l| !l.is_empty() && !l.starts_with("  pptsx-rs "));
+    Some(std::iter::once(first).chain(rest).collect::<Vec<_>>().join("\n"))
+}
+
 fn main() -> ExitCode {
     let raw: Vec<String> = std::env::args().skip(1).collect();
+    if let Some(text) = help_text(&raw) {
+        println!("{text}");
+        return ExitCode::SUCCESS;
+    }
     if raw.first().map(String::as_str) == Some("init") {
         return init::run(&raw[1..]);
     }
@@ -677,10 +697,10 @@ fn run(args: &Args, deps: &mut Vec<PathBuf>) -> ExitCode {
                         });
                     }
                 });
-                let marks: Vec<(String, bool, bool)> = svgs
+                let marks: Vec<(String, Option<Level>, bool)> = svgs
                     .into_iter()
                     .enumerate()
-                    .map(|(i, svg)| (svg, list.iter().any(|d| d.level == Level::Error && d.slide == i + 1), output[i].hidden))
+                    .map(|(i, svg)| (svg, preview::slide_badge(&list, i + 1), output[i].hidden))
                     .collect();
                 let overview = preview::overview_svg(&marks, spec.width, spec.height, &fonts);
                 if let Some(png) = resvg::usvg::Tree::from_str(&overview, &resvg::usvg::Options::default()).ok().and_then(|t| {
@@ -730,4 +750,45 @@ fn run(args: &Args, deps: &mut Vec<PathBuf>) -> ExitCode {
         return ExitCode::from(1);
     }
     ExitCode::SUCCESS
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn args(list: &[&str]) -> Vec<String> {
+        list.iter().map(|a| a.to_string()).collect()
+    }
+
+    #[test]
+    fn help_is_only_for_the_help_flags() {
+        assert!(help_text(&args(&["build", "deck.tsx"])).is_none());
+        assert!(help_text(&args(&[])).is_none());
+    }
+
+    #[test]
+    fn plain_help_is_the_whole_usage() {
+        assert_eq!(help_text(&args(&["--help"])).as_deref(), Some(USAGE));
+        assert_eq!(help_text(&args(&["-h"])).as_deref(), Some(USAGE));
+        assert_eq!(help_text(&args(&["nada", "--help"])).as_deref(), Some(USAGE));
+    }
+
+    #[test]
+    fn command_help_is_the_block_of_that_command_with_its_continuation_lines() {
+        let build = help_text(&args(&["build", "deck.tsx", "-h"])).expect("ajuda");
+        assert!(build.contains("pptsx-rs build <deck.tsx>") && build.contains("--watch") && build.contains("--serve"), "{build}");
+        assert!(!build.contains("pptsx-rs check"), "{build}");
+        let types = help_text(&args(&["types", "--help"])).expect("ajuda");
+        assert!(types.contains("pptsx-rs types [pasta]") && !types.contains("pptsx-rs skill"), "{types}");
+        let mcp = help_text(&args(&["mcp", "--help"])).expect("ajuda");
+        assert!(mcp.contains("servidor MCP por stdio") && mcp.contains("preview, lint, guide, schema"), "{mcp}");
+    }
+
+    #[test]
+    fn every_command_in_the_usage_has_a_block() {
+        for command in ["build", "check", "tree", "lint", "init", "types", "skill", "mcp"] {
+            assert!(usage_of(command).is_some_and(|b| b.starts_with(&format!("  pptsx-rs {command} "))), "{command}");
+        }
+        assert!(usage_of("buil").is_none());
+    }
 }

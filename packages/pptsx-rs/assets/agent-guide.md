@@ -944,6 +944,7 @@ Campos de `data` (opcionais): `overflowPt`/`overflowPct`, `fromSize`/`toSize`, `
 | `font-weight-fallback` | warning | `fontWeight` sem face registrada a até 100; `data.requestedWeight` / `data.usedWeight` | registre a face desse peso em `fonts` ou use um peso que existe |
 | `link-target-missing` | error | `href="slide:N"` com N maior que os slides do `<Deck>`; o link não sai | corrija o N (número do `<Slide>` no seu Deck, a partir de 1) |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi | arquivo com mais resolução ou área menor |
+| `image-missing` | warning | o arquivo de um `Image` (ou de um `backgroundImage: url(…)`) não existe ou não abre; a mensagem traz o caminho resolvido. O `Image` sai como um retângulo cinza; o fundo, não sai | corrija o caminho (relativo à pasta do deck) ou ponha o arquivo lá; se a imagem ainda vai chegar, o retângulo cinza serve de lugar |
 | `font-missing` | error | família não registrada ou não achada; único diagnóstico desse Text | tire `fontFamily` (Arial), registre a face ou instale |
 | `connector-target-missing` | error | `from`/`to` de um `Connector` sem nó com esse `id` no slide (a mensagem lista os ids do slide); o conector não sai | ponha `id` no nó certo ou corrija o nome |
 | `placeholder-unused` | info | o layout declara um placeholder que nenhum nó do 1º slide dele marca (`data.layout`, `data.placeholders`); ele não sai no layout | marque um nó com `placeholder="…"` ou tire o nome da lista |

@@ -362,6 +362,8 @@ struct Cx<'a> {
     containers: Option<&'a RefCell<ContainerRun>>,
     /// 1º ResolveError do slide (o pptsx lança e para).
     fatal: Option<crate::validate::Fatal>,
+    /// Path do nó sendo resolvido (`Slide > Box[1] > Image`), para os diagnósticos que nascem no resolve.
+    path: String,
 }
 
 type Props = crate::js::value::Obj;
@@ -427,6 +429,22 @@ impl Cx<'_> {
     fn warn(&self, msg: String) {
         self.diags.warn(self.slide, msg);
     }
+
+    /// `image-missing`: o arquivo de uma imagem (ou de um fundo) não existe ou não abre. O slide sai com o
+    /// retângulo cinza (ou sem o fundo); o caminho resolvido diz a base dos relativos, a pasta do deck.
+    fn image_missing(&self, what: &str, src: &str, path: &Path, error: impl std::fmt::Display) {
+        // `components` descarta os `.` do meio: "deck/./fotos/x.jpg" sai "deck/fotos/x.jpg".
+        let shown: PathBuf = path.components().collect();
+        let why = if path.exists() { format!("não pôde ser lida ({error})") } else { format!("não existe ({})", shown.display()) };
+        let effect = if what == "imagem" { "no lugar dela sai um retângulo cinza" } else { "o fundo não sai" };
+        let msg = format!("{} \"{src}\" {why}: {effect}. Confira o caminho (relativo à pasta do deck) ou use um arquivo que exista.", capitalized(what));
+        self.diags.add(crate::diag::Diag::new(crate::diag::Level::Warn, "image-missing", self.slide, self.path.as_str(), msg));
+    }
+}
+
+fn capitalized(s: &str) -> String {
+    let mut chars = s.chars();
+    chars.next().map(|c| c.to_uppercase().chain(chars).collect()).unwrap_or_default()
 }
 
 mod connector;

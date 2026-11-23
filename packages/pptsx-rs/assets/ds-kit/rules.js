@@ -4,13 +4,26 @@ export const defineRule = (id, severity, check) => {
         throw new Error('defineRule: id vazio');
     return Object.freeze({ id, severity, check });
 };
-/** Cores que o nó pinta: fundo, bordas, contorno, cor de texto e dos trechos, fill/stroke de forma. */
+const isObject = (value) => value !== null && typeof value === 'object';
+/** Cores de dentro da tabela (cabeçalho, listra, grade, células `{ color, fill }`) e a paleta do gráfico. */
+const contentColorsOf = (node) => {
+    const own = node.props;
+    if (node.kind === 'chart')
+        return Array.isArray(own.colors) ? own.colors : [];
+    if (node.kind !== 'table')
+        return [];
+    const header = isObject(own.header) ? [own.header.fill, own.header.color] : [];
+    const cells = Array.isArray(own.rows) ? own.rows.flat().filter(isObject).flatMap((cell) => [cell.color, cell.fill]) : [];
+    return [...header, own.stripe, own.border, ...cells];
+};
+/** Cores que o nó pinta: fundo, bordas, contorno, cor de texto e dos trechos, fill/stroke de forma, cabeçalho,
+ * listra e células da tabela e a paleta do gráfico. */
 export const paintedColorsOf = (node) => {
     const css = node.css;
     const borders = ['top', 'right', 'bottom', 'left'].flatMap((side) => (css.border[side].width > 0 ? [css.border[side].color] : []));
     const own = node.props;
     const runs = node.kind === 'text' ? node.runs.map((run) => run.color) : [];
-    return [css.backgroundColor, css.outline?.color, ...borders, own.color, own.fill, own.stroke, ...runs]
+    return [css.backgroundColor, css.outline?.color, ...borders, own.color, own.fill, own.stroke, ...runs, ...contentColorsOf(node)]
         .filter((value) => typeof value === 'string')
         .map((value) => value.toUpperCase());
 };

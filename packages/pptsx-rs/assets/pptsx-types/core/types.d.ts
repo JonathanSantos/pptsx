@@ -1228,6 +1228,8 @@ export type DiagnosticCode = 'text-overflow' | 'text-shrunk' | 'text-truncated' 
  | 'container-unsized'
 /** M19: Container aninhado além de DEFAULTS.containerQuery.maxDepth; o nível de dentro fica vazio (error). */
  | 'container-depth' | 'image-upscaled' | 'font-missing'
+/** pptsx-rs: o arquivo de um Image ou de um backgroundImage não existe ou não abre (warning; o Image sai cinza). */
+ | 'image-missing'
 /** M8: fonte pedida em embedFonts com fsType restrito; não foi embutida (warning, slide 0, path ''). */
  | 'font-not-embeddable'
 /** M9: slide do autor dividido em partes por um Box paginate (info, só na 1ª parte). */

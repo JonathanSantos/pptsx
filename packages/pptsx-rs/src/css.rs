@@ -28,7 +28,9 @@ impl Rgba {
 }
 
 pub fn parse_len(s: &str) -> Option<Len> {
-    let t = s.trim();
+    // Unidades e `auto` sem caixa, como no CSS e no validate: "2PX" vale 2 pt.
+    let lower = s.trim().to_ascii_lowercase();
+    let t = lower.as_str();
     if t == "auto" {
         return Some(Len::Auto);
     }
@@ -113,6 +115,10 @@ pub fn parse_color(s: &str) -> Option<Rgba> {
         return parse_color(&format!("#{hex}"));
     }
     if let Some(hex) = t.strip_prefix('#') {
+        // As fatias abaixo são por byte: um `é` no meio cortaria um caractere ao meio (panic).
+        if !hex.is_ascii() {
+            return None;
+        }
         let expand: String;
         let hex = if hex.len() == 3 || hex.len() == 4 {
             expand = hex.chars().flat_map(|c| [c, c]).collect();
@@ -164,14 +170,38 @@ pub struct Stroke {
     pub dash: Dash,
 }
 
+/// Palavras separadas por espaço fora de parênteses: `rgba(0, 0, 0, 0.5)` é uma palavra só.
+fn words(s: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let (mut depth, mut start) = (0_i32, None);
+    for (i, ch) in s.char_indices() {
+        match ch {
+            '(' => depth += 1,
+            ')' => depth -= 1,
+            c if c.is_whitespace() && depth <= 0 => {
+                out.extend(start.take().map(|st| &s[st..i]));
+                continue;
+            }
+            _ => {}
+        }
+        start.get_or_insert(i);
+    }
+    out.extend(start.map(|st| &s[st..]));
+    out
+}
+
 /// `border: '1px solid #ccc'` (ordem livre). Número puro = largura sólida preta.
-/// `style none` → None. Sem estilo explícito vale sólido (o pptsx também desenha).
+/// `style none` → None. Sem estilo explícito vale sólido (o pptsx também desenha). Uma palavra que não é
+/// largura, estilo nem cor também → None: o validate a reporta como `css-not-emitted` ("ignorado"), e o
+/// arquivo tem de bater com isso em vez de desenhar uma borda preta.
 pub fn parse_border(s: &str) -> Option<Stroke> {
     let mut width = None;
     let mut color = None;
     let mut dash = Dash::Solid;
-    for token in s.split_whitespace() {
-        match token {
+    for word in words(s) {
+        // Palavras-chave sem caixa ("Solid", "DASHED"), como o validate as aceita.
+        let token = word.to_ascii_lowercase();
+        match token.as_str() {
             "none" | "hidden" => return None,
             "solid" => dash = Dash::Solid,
             "dashed" => dash = Dash::Dashed,
@@ -181,7 +211,7 @@ pub fn parse_border(s: &str) -> Option<Stroke> {
             "thick" => width = Some(5.0),
             t => match parse_len(t) {
                 Some(Len::Pt(w)) => width = Some(w),
-                _ => color = parse_color(t).or(color),
+                _ => color = Some(parse_color(t)?),
             },
         }
     }
@@ -207,6 +237,13 @@ mod tests {
         assert_eq!(parse_len(" 8.5pt "), Some(Len::Pt(8.5)));
         assert_eq!(parse_len("50%"), Some(Len::Pct(0.5)));
         assert_eq!(parse_len("auto"), Some(Len::Auto));
+    }
+
+    #[test]
+    fn len_units_ignore_case_like_css() {
+        assert_eq!(parse_len("2PX"), Some(Len::Pt(2.0)));
+        assert_eq!(parse_len("3Pt"), Some(Len::Pt(3.0)));
+        assert_eq!(parse_len("AUTO"), Some(Len::Auto));
     }
 
     #[test]
@@ -284,6 +321,44 @@ mod tests {
         assert_eq!(parse_border("solid red").map(|b| b.width), Some(3.0));
         let b = parse_border("2").expect("borda");
         assert_eq!((b.width, b.color, b.dash), (2.0, rgba(0, 0, 0, 1.0), Dash::Solid));
+    }
+
+    #[test]
+    fn color_hex_with_non_ascii_is_invalid_instead_of_panicking() {
+        for bad in ["#aéaaa", "#é", "#ééé", "#aaaaéa", "#☃"] {
+            assert_eq!(parse_color(bad), None, "{bad:?}");
+        }
+    }
+
+    #[test]
+    fn words_keep_function_arguments_together() {
+        assert_eq!(words("  1px solid rgba(1, 2, 3, 0.5)  "), ["1px", "solid", "rgba(1, 2, 3, 0.5)"]);
+        assert_eq!(words("rgb(1 2 3) dashed"), ["rgb(1 2 3)", "dashed"]);
+        assert!(words("   ").is_empty());
+    }
+
+    #[test]
+    fn border_color_function_may_have_spaces_inside() {
+        let b = parse_border("2px solid rgba(255, 0, 0, 0.5)").expect("borda");
+        assert_eq!((b.width, b.color, b.dash), (2.0, rgba(255, 0, 0, 0.5), Dash::Solid));
+        let b = parse_border("rgb(0 128 0) dotted 1").expect("borda");
+        assert_eq!((b.width, b.color, b.dash), (1.0, rgba(0, 128, 0, 1.0), Dash::Dotted));
+    }
+
+    #[test]
+    fn border_keywords_and_units_ignore_case() {
+        let b = parse_border("1px Solid red").expect("borda");
+        assert_eq!((b.width, b.color, b.dash), (1.0, rgba(255, 0, 0, 1.0), Dash::Solid));
+        assert_eq!(parse_border("1px DASHED #ccc").map(|b| b.dash), Some(Dash::Dashed));
+        assert_eq!(parse_border("2PX solid RED").map(|b| (b.width, b.color)), Some((2.0, rgba(255, 0, 0, 1.0))));
+        assert!(parse_border("NONE").is_none());
+    }
+
+    #[test]
+    fn border_with_an_unknown_word_draws_nothing_instead_of_black() {
+        for bad in ["1px solid #aéaaa", "1px solid notacolor", "50% solid red"] {
+            assert!(parse_border(bad).is_none(), "{bad:?}");
+        }
     }
 
     #[test]

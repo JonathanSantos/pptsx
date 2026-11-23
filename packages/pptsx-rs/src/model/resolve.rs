@@ -48,7 +48,7 @@ pub fn resolve_deck(deck: &Element, ctx: &DeckCtx, deck_path: &Path, diags: &Dia
         .iter()
         .enumerate()
         .map(|(i, slide)| {
-            let mut cx = Cx { ctx, base_dir, diags, slide: i + 1, total, connectors: Vec::new(), fixed: false, containers, fatal: None };
+            let mut cx = Cx { ctx, base_dir, diags, slide: i + 1, total, connectors: Vec::new(), fixed: false, containers, fatal: None, path: "Slide".into() };
             let spec = resolve_slide(&mut cx, slide, footer.as_ref());
             if fatal.is_none() {
                 fatal = cx.fatal.take();
@@ -454,6 +454,14 @@ pub(super) fn resolve_children_with(cx: &mut Cx, children: &[Value], inherit: &I
 }
 
 pub(super) fn resolve_node(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &str, in_grid: bool) -> Option<Node> {
+    // O path do nó fica no contexto durante a resolução dele e volta ao do pai na saída (mesmo nos `?`).
+    let parent = std::mem::replace(&mut cx.path, path.to_string());
+    let node = resolve_node_at(cx, el, inherit, path, in_grid);
+    cx.path = parent;
+    node
+}
+
+fn resolve_node_at(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &str, in_grid: bool) -> Option<Node> {
     let props = &el.props;
     if cx.string(props, "display").as_deref() == Some("none") {
         return None;
@@ -569,7 +577,7 @@ pub(super) fn resolve_node(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &
             let natural = match imagesize::size(&path) {
                 Ok(s) => (s.width as f32 * PX_TO_PT, s.height as f32 * PX_TO_PT),
                 Err(e) => {
-                    cx.warn(format!("imagem \"{src}\" não pôde ser lida ({e})"));
+                    cx.image_missing("imagem", &src, &path, e);
                     return mk(NodeKind::Container, style, Paint { fill: parse_color("#E5E7EB"), ..paint }, Vec::new(), label);
                 }
             };

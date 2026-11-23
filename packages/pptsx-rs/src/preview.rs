@@ -20,6 +20,9 @@ const COLUMNS: usize = 4;
 const MARGIN: f32 = 24.0;
 const GAP: f32 = 24.0;
 const LABEL: f32 = 22.0;
+/// Selos do overview (src/preview/overview.ts BADGE_COLORS): vermelho = error, amarelo = warning.
+const BADGE_ERROR: &str = "#E02424";
+const BADGE_WARNING: &str = "#F5B800";
 
 fn color(c: Rgba, opacity: f32) -> String {
     let a = c.a * opacity;
@@ -813,9 +816,23 @@ pub fn render_png(svg: &str, width_px: u32) -> Option<Vec<u8>> {
     pixmap.encode_png().ok()
 }
 
-/// Grade de miniaturas (src/preview/overview.ts): número embaixo, selo vermelho em slide com erro,
-/// miniatura esmaecida em slide oculto.
-pub fn overview_svg(slides: &[(String, bool, bool)], width: f32, height: f32, fonts: &Fonts) -> String {
+/// O selo de um slide no overview: o pior diagnóstico dele, se for warning ou error. As notas sem código
+/// (`note`) não entram: o overview mostra o que o `diagnostics.json` diz.
+pub fn slide_badge(diags: &[crate::diag::Diag], slide: usize) -> Option<crate::diag::Level> {
+    diags.iter().filter(|d| d.slide == slide && d.code != "note" && d.level >= crate::diag::Level::Warn).map(|d| d.level).max()
+}
+
+fn badge_color(level: Option<crate::diag::Level>) -> Option<&'static str> {
+    match level? {
+        crate::diag::Level::Error => Some(BADGE_ERROR),
+        crate::diag::Level::Warn => Some(BADGE_WARNING),
+        crate::diag::Level::Info => None,
+    }
+}
+
+/// Grade de miniaturas (src/preview/overview.ts): número embaixo, selo vermelho em slide com error e
+/// amarelo com warning, miniatura esmaecida em slide oculto.
+pub fn overview_svg(slides: &[(String, Option<crate::diag::Level>, bool)], width: f32, height: f32, fonts: &Fonts) -> String {
     let thumb_h = THUMB_WIDTH * height / width;
     let rows = slides.len().div_ceil(COLUMNS);
     let cols = slides.len().clamp(1, COLUMNS);
@@ -823,7 +840,7 @@ pub fn overview_svg(slides: &[(String, bool, bool)], width: f32, height: f32, fo
     let total_h = MARGIN * 2.0 + rows as f32 * (thumb_h + LABEL) + rows.saturating_sub(1) as f32 * GAP;
     let mut out = format!("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {total_w} {total_h}\" width=\"{total_w}\" height=\"{total_h}\"><rect width=\"{total_w}\" height=\"{total_h}\" fill=\"#EEEEEE\"/>");
     let scale = THUMB_WIDTH / width;
-    for (i, (svg, error, hidden)) in slides.iter().enumerate() {
+    for (i, (svg, badge, hidden)) in slides.iter().enumerate() {
         let (c, r) = (i % COLUMNS, i / COLUMNS);
         let x = MARGIN + c as f32 * (THUMB_WIDTH + GAP);
         let y = MARGIN + r as f32 * (thumb_h + LABEL + GAP);
@@ -834,8 +851,8 @@ pub fn overview_svg(slides: &[(String, bool, bool)], width: f32, height: f32, fo
             let _ = write!(out, "<rect x=\"{x}\" y=\"{y}\" width=\"{THUMB_WIDTH}\" height=\"{thumb_h}\" fill=\"#FFFFFF\" fill-opacity=\"0.6\"/>");
         }
         let _ = write!(out, "<rect x=\"{x}\" y=\"{y}\" width=\"{THUMB_WIDTH}\" height=\"{thumb_h}\" fill=\"none\" stroke=\"#C8C8C8\" stroke-width=\"1\"/>");
-        if *error {
-            let _ = write!(out, "<circle cx=\"{}\" cy=\"{}\" r=\"12\" fill=\"#E02424\" stroke=\"#FFFFFF\" stroke-width=\"2.5\"/>", x + THUMB_WIDTH - 18.0, y + 18.0);
+        if let Some(color) = badge_color(*badge) {
+            let _ = write!(out, "<circle cx=\"{}\" cy=\"{}\" r=\"12\" fill=\"{color}\" stroke=\"#FFFFFF\" stroke-width=\"2.5\"/>", x + THUMB_WIDTH - 18.0, y + 18.0);
         }
         let label = if *hidden { format!("{} · oculto", i + 1) } else { (i + 1).to_string() };
         let (d, w) = fonts.glyph_path(0, &label, 14.0, 0.0, 0.0, 0.0);
@@ -843,4 +860,30 @@ pub fn overview_svg(slides: &[(String, bool, bool)], width: f32, height: f32, fo
     }
     out.push_str("</svg>");
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::diag::{Diag, Level};
+
+    #[test]
+    fn badge_is_the_worst_warning_or_error_of_the_slide_without_notes() {
+        let diags = [
+            Diag::new(Level::Info, "text-shrunk", 1, "", ""),
+            Diag::new(Level::Warn, "image-missing", 2, "", ""),
+            Diag::new(Level::Error, "box-overflow", 2, "", ""),
+            Diag::new(Level::Warn, "note", 3, "", ""),
+            Diag::new(Level::Warn, "text-word-broken", 4, "", ""),
+        ];
+        assert_eq!([1, 2, 3, 4, 5].map(|slide| slide_badge(&diags, slide)), [None, Some(Level::Error), None, Some(Level::Warn), None]);
+    }
+
+    #[test]
+    fn badge_colors_follow_the_legacy_overview() {
+        assert_eq!(badge_color(Some(Level::Error)), Some(BADGE_ERROR));
+        assert_eq!(badge_color(Some(Level::Warn)), Some(BADGE_WARNING));
+        assert_eq!(badge_color(Some(Level::Info)), None);
+        assert_eq!(badge_color(None), None);
+    }
 }

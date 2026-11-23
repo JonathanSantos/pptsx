@@ -340,6 +340,7 @@ fn painted_colors(n: &LNode, ctx: &DeckCtx) -> Vec<String> {
             out.push(v.to_string());
         }
     }
+    out.extend(content_colors(&props));
     let mut unique: Vec<String> = Vec::new();
     for c in out.into_iter().map(|c| c.to_ascii_uppercase()) {
         if !unique.contains(&c) {
@@ -347,6 +348,65 @@ fn painted_colors(n: &LNode, ctx: &DeckCtx) -> Vec<String> {
         }
     }
     unique
+}
+
+/// Cores pintadas por dentro do nó, que não são CSS dele: cabeçalho, listra, grade e células `{ color, fill }`
+/// da `Table` e a paleta (`colors`) do `Chart`. Célula que é texto não é cor, mesmo que se chame "red".
+fn content_colors(props: &Obj) -> Vec<String> {
+    let strings_at = |v: Option<&Value>, keys: &[&str]| -> Vec<String> {
+        match v {
+            Some(Value::Object(o)) => keys.iter().filter_map(|k| match o.get(*k) {
+                Some(Value::Str(c)) => hex_of(c),
+                _ => None,
+            }).collect(),
+            _ => Vec::new(),
+        }
+    };
+    let mut out = strings_at(props.get("header"), &["fill", "color"]);
+    // `stripe` e `border` da Table são cores (a da listra e a da grade); no Box, `border` não chega aqui.
+    for key in ["stripe", "border"] {
+        if let Some(Value::Str(c)) = props.get(key) {
+            out.extend(hex_of(c));
+        }
+    }
+    if let Some(Value::Array(rows)) = props.get("rows") {
+        for row in rows.borrow().iter() {
+            if let Value::Array(cells) = row {
+                out.extend(cells.borrow().iter().flat_map(|cell| strings_at(Some(cell), &["color", "fill"])));
+            }
+        }
+    }
+    if let Some(Value::Array(colors)) = props.get("colors") {
+        out.extend(colors.borrow().iter().filter_map(|c| match c {
+            Value::Str(c) => hex_of(c),
+            _ => None,
+        }));
+    }
+    out
+}
+
+/// O objeto com as cores das chaves `keys` em '#RRGGBB'; o que não é objeto fica como está.
+fn with_hex_keys(v: &Value, keys: &[&str]) -> Value {
+    let Value::Object(o) = v else { return v.clone() };
+    let mut out = (**o).clone();
+    for key in keys {
+        if let Some(Value::Str(c)) = o.get(*key)
+            && let Some(hex) = hex_of(c)
+        {
+            out.insert(Rc::from(*key), str_val(&hex));
+        }
+    }
+    obj_val(out)
+}
+
+/// `rows` com as cores das células-objeto em '#RRGGBB'; o texto das células não muda.
+fn rows_with_hex(v: &Value) -> Value {
+    let Value::Array(rows) = v else { return v.clone() };
+    let mapped = rows.borrow().iter().map(|row| match row {
+        Value::Array(cells) => arr_val(cells.borrow().iter().map(|cell| with_hex_keys(cell, &["color", "fill"])).collect()),
+        other => other.clone(),
+    }).collect();
+    arr_val(mapped)
 }
 
 /// Props da primitiva que não são CSS (kind-handlers.ts); as de cor seguem como '#RRGGBB'.
@@ -421,6 +481,19 @@ fn put_own(o: &mut Obj, kind: Kind, key: &str, v: Value) {
         }
         "stripe" | "border" if kind == Kind::Table => {
             o.insert(Rc::from(key), hex(&v));
+        }
+        "header" if kind == Kind::Table => {
+            o.insert(Rc::from(key), with_hex_keys(&v, &["fill", "color"]));
+        }
+        "rows" if kind == Kind::Table => {
+            o.insert(Rc::from(key), rows_with_hex(&v));
+        }
+        "colors" if kind == Kind::Chart => {
+            let mapped = match &v {
+                Value::Array(colors) => arr_val(colors.borrow().iter().map(&hex).collect()),
+                other => other.clone(),
+            };
+            o.insert(Rc::from(key), mapped);
         }
         // No Chart, `font`/`size` são os dos rótulos: os mesmos nomes CSS do Text valem para eles.
         "font" if kind == Kind::Chart => put_alias(o, "fontFamily", "font", v),
@@ -1133,9 +1206,13 @@ export default defineDeck(() => (
 "##;
 
     fn run(name: &str) -> Vec<Finding> {
+        run_with(name, DS, CONFIG, DECK)
+    }
+
+    fn run_with(name: &str, ds: &str, config: &str, deck_src: &str) -> Vec<Finding> {
         let dir = std::env::temp_dir().join(format!("pptsx-rs-lint-{name}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("pasta temporária");
-        for (file, text) in [("ds.tsx", DS), (crate::config::CONFIG_FILE, CONFIG), ("deck.tsx", DECK)] {
+        for (file, text) in [("ds.tsx", ds), (crate::config::CONFIG_FILE, config), ("deck.tsx", deck_src)] {
             std::fs::write(dir.join(file), text).expect("arquivo de teste");
         }
         let deck = dir.join("deck.tsx");
@@ -1195,6 +1272,56 @@ export default defineDeck(() => (
         assert!(summary(&findings, true).contains("#ABCDEF"));
         assert!(json(&findings, true).contains("\"origin\": \"ds\""));
         assert!(!json(&findings, false).contains("\"origin\""));
+    }
+
+    #[test]
+    fn content_colors_read_table_header_stripe_object_cells_and_chart_palette() {
+        let props = match crate::js::parse_json(r##"{
+            "header": { "fill": "#e0a800", "color": "white", "weight": "bold" },
+            "stripe": "#E0A803",
+            "border": "#e0a805",
+            "rows": [["red", { "text": "x", "color": "#E0A801", "fill": "rgb(224, 168, 2)" }], [3, null]],
+            "colors": ["#E0A804", 7]
+        }"##) {
+            Some(Value::Object(o)) => (*o).clone(),
+            _ => panic!("JSON fixo"),
+        };
+        // A célula "red" é texto, não cor.
+        assert_eq!(content_colors(&props), ["#E0A800", "#FFFFFF", "#E0A803", "#E0A805", "#E0A801", "#E0A802", "#E0A804"]);
+        assert!(content_colors(&Obj::new()).is_empty());
+    }
+
+    /// Cores de dentro da Table e do Chart escapavam do off-theme-color e das regras de DS (paintedColorsOf).
+    #[test]
+    fn table_and_chart_colors_reach_engine_and_ds_rules() {
+        let ds = r##"import { defineDs } from 'pptsx';
+import { colorsFromTokens } from '@pptsx/ds-kit';
+export const ds = defineDs({ name: 'cores', version: '0.0.0', components: [], rules: [colorsFromTokens('cores/tokens', { color: { ink: '#112233' } })] });
+"##;
+        let config = r##"import { defineConfig } from 'pptsx';
+import { ds } from './ds.tsx';
+export default defineConfig({ ds: [ds], theme: { name: 'T', colors: { dark1: '#112233' } } });
+"##;
+        let deck = r##"import { Chart, Deck, Slide, Table, defineDeck } from 'pptsx';
+export default defineDeck(() => (
+  <Deck>
+    <Slide color="#112233">
+      <Table color="#112233" border="#E0A805" header={{ fill: '#E0A800', color: '#112233' }} stripe="#E0A803" columns={[{ header: 'S' }]} rows={[[{ text: 'red', color: '#E0A801', fill: '#E0A802' }]]} />
+      <Chart kind="bar" colors={['#E0A804']} data={{ categories: ['a'], series: [{ name: 's', values: [1] }] }} height={100} />
+    </Slide>
+  </Deck>
+));
+"##;
+        let findings = run_with("content", ds, config, deck);
+        let messages = |code: &str, path: &str| -> String { findings.iter().filter(|f| f.code == code && f.path.ends_with(path)).map(|f| f.message.as_str()).collect() };
+        for code in ["off-theme-color", "cores/tokens"] {
+            let table = messages(code, "Table");
+            for color in ["#E0A800", "#E0A801", "#E0A802", "#E0A803", "#E0A805"] {
+                assert!(table.contains(color), "{code} na Table sem {color}: {table}");
+            }
+            let all: Vec<String> = findings.iter().map(|f| format!("{} {} {}", f.code, f.path, f.message)).collect();
+            assert!(messages(code, "Chart").contains("#E0A804"), "{code} no Chart: {all:?}");
+        }
     }
 
     #[test]

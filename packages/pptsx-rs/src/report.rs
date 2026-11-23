@@ -664,13 +664,12 @@ fn box_message(placed: &[Placed], kids: &[Vec<usize>], o: &Overflow, explained: 
     };
     // Numa row em que um filho não pode encolher (nowrap, largura mínima), o flexbox degenera e as larguras
     // saem na casa dos milhões de pt (o Yoga faz o mesmo). O número não diz nada a quem lê: a mensagem conta
-    // o que aconteceu e o que fazer.
+    // o que aconteceu e o que fazer, e o `data` fica sem overflowPt/Pct (um agente leria 7 bilhões de pt).
     if o.pt > DEGENERATE_PT {
-        let d = Diag::new(Level::Error, "box-overflow", slide, placed[o.index].node.label.as_str(), format!(
+        return Diag::new(Level::Error, "box-overflow", slide, placed[o.index].node.label.as_str(), format!(
             "Os filhos em fluxo não cabem na {axis} ({direction}): a área de conteúdo tem {} pt e um deles não pode encolher (texto nowrap ou largura mínima). Encurte esse texto, tire um item da linha ou dê mais largura ao contêiner.",
             fmt(e.available)
         ));
-        return overflow_data(d, o);
     }
     let d = Diag::new(Level::Error, "box-overflow", slide, placed[o.index].node.label.as_str(), format!(
         "{usage}, mas a área de conteúdo tem {} pt: estouro de {} pt ({}%). Reduza width/height fixos ou gap/padding, permita flexShrink nos filhos (flexShrink={{0}} impede), ou aumente o contêiner.",

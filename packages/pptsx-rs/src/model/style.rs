@@ -529,7 +529,7 @@ pub(super) fn background_image(cx: &Cx, props: &Props) -> Option<(PathBuf, (f32,
     match imagesize::size(&path) {
         Ok(s) => Some((path, (s.width as f32 * PX_TO_PT, s.height as f32 * PX_TO_PT))),
         Err(e) => {
-            cx.warn(format!("imagem de fundo \"{src}\" não pôde ser lida ({e})"));
+            cx.image_missing("imagem de fundo", &src, &path, e);
             None
         }
     }
