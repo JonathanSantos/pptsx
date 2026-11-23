@@ -1,8 +1,9 @@
 # O motor é o binário em Rust (packages/pptsx-rs) e o CI é só dele: build, clippy sem avisos e os testes
-# (unitários, grupo de fit e os decks dourados de fixtures/). Não precisa de Node: o design system de exemplo
-# é resolvido pelo `workspaces` do package.json e o @pptsx/ds-kit é embutido no binário.
+# (unitários, grupo de fit, diagnósticos e os decks dourados de fixtures/), em Linux, Windows e macOS, os três
+# sistemas para os quais a Release publica o binário. Não precisa de Node: o design system de exemplo é
+# resolvido pelo `workspaces` do package.json e o @pptsx/ds-kit é embutido no binário.
 # Roda uma vez por commit: no push da main e em cada PR. Tags não disparam o CI: o workflow Release confere
-# que este CI já passou no mesmo commit.
+# que este CI já passou no mesmo commit (pelo nome "CI": não renomeie). Um sistema vermelho bloqueia a Release.
 name: CI
 
 on:
@@ -22,8 +23,18 @@ concurrency:
 
 jobs:
   rust:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    name: rust (${{ matrix.os }})
+    strategy:
+      # Um sistema que quebra não esconde o resultado dos outros.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    defaults:
+      run:
+        # O mesmo script nos três sistemas (no Windows, o bash do Git; ele acha o .exe sem a extensão).
+        shell: bash
     steps:
       # As fixtures são comparadas byte a byte: nada de CRLF no checkout (ver .gitattributes).
       - run: git config --global core.autocrlf false
@@ -38,7 +49,46 @@ jobs:
         run: cargo clippy --release --all-targets -- -D warnings
       - name: Testes
         run: cargo test
+      - name: A versão do Cargo.toml é a do Cargo.lock e dos badges dos READMEs
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          v="$(grep -m1 '^version' packages/pptsx-rs/Cargo.toml | sed -E 's/.*"(.*)".*/\1/')"
+          grep -A1 '^name = "pptsx-rs"$' Cargo.lock | grep -qx "version = \"$v\"" || { echo "::error::Cargo.lock não está em $v: rode cargo build"; exit 1; }
+          for readme in README.md packages/pptsx-rs/README.md; do
+            grep -q "pptsx--rs-$v-" "$readme" || { echo "::error::o badge de $readme não está em $v"; exit 1; }
+          done
       - name: O binário gera o deck de exemplo do README
         run: |
-          mkdir -p /tmp/exemplo && cp packages/pptsx-rs/docs/exemplo.tsx /tmp/exemplo/deck.tsx
-          ./target/release/pptsx-rs build /tmp/exemplo/deck.tsx --size 16x9,4x3 --out /tmp/exemplo/dist
+          work="$RUNNER_TEMP/exemplo"
+          mkdir -p "$work" && cp packages/pptsx-rs/docs/exemplo.tsx "$work/deck.tsx"
+          ./target/release/pptsx-rs build "$work/deck.tsx" --size 16x9,4x3 --out "$work/dist"
+      # O caminho de quem baixa a release: a skill com o binário em bin/, um deck novo e um com o DS de exemplo,
+      # numa pasta com espaço e acento (Windows e macOS normalizam e codificam nomes de jeitos diferentes).
+      - name: Versão, MCP e o fluxo da skill (skill → init → build → lint) numa pasta com espaço e acento
+        run: |
+          set -euo pipefail
+          v="$(grep -m1 '^version' packages/pptsx-rs/Cargo.toml | sed -E 's/.*"(.*)".*/\1/')"
+          bin=./target/release/pptsx-rs
+          got="$("$bin" --version | tr -d '\r')"
+          [ "$got" = "pptsx-rs $v" ] || { echo "::error::--version deu '$got', esperado 'pptsx-rs $v'"; exit 1; }
+          init='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'
+          mcp="$(printf '%s\n' "$init" | "$bin" mcp 2>/dev/null | tr -d '\r')"
+          grep -q "\"version\": *\"$v\"" <<<"$mcp" || { echo "::error::serverInfo do MCP sem a versão $v: $mcp"; exit 1; }
+          base="$RUNNER_TEMP/Apresentações Clientes"
+          mkdir -p "$base"
+          "$bin" skill --out "$base/.claude/skills/pptsx" >/dev/null
+          grep -q "pptsx $v" "$base/.claude/skills/pptsx/SKILL.md" || { echo "::error::SKILL.md sem a versão $v"; exit 1; }
+          skill_bin="$base/.claude/skills/pptsx/bin/pptsx-rs"
+          if [ "$RUNNER_OS" = "Windows" ]; then skill_bin="$skill_bin.exe"; fi
+          "$skill_bin" --version
+          deck="$base/proposta café"
+          "$skill_bin" init "$deck"
+          "$skill_bin" build "$deck/deck.tsx" --size 16x9,4x3 --out "$deck/dist"
+          for f in deck.16x9.pptx deck.4x3.pptx deck.16x9.overview.png deck.4x3/slide-01.png deck.diagnostics.json; do
+            [ -f "$deck/dist/$f" ] || { echo "::error::o build não gravou $f"; ls -R "$deck/dist"; exit 1; }
+          done
+          ds="$base/com ds"
+          "$skill_bin" init "$ds" --ds "$GITHUB_WORKSPACE/packages/ds-base"
+          "$skill_bin" build "$ds/deck.tsx" --size 16x9 --out "$ds/dist"
+          "$skill_bin" lint "$ds/deck.tsx" --size 16x9
