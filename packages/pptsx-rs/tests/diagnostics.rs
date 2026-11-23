@@ -128,3 +128,85 @@ fn overview_badges_warning_in_yellow_and_error_in_red() {
     let clean = r#"<Slide padding={40}><Text>Olá</Text></Slide>"#;
     assert_eq!(overview_pixels("clean", clean, YELLOW) + overview_pixels("clean-red", clean, RED), 0, "slide limpo sem selo");
 }
+
+/// XML do 1º slide do build 16x9 de um deck com estes slides (imports de primitivas comuns).
+fn slide_xml(name: &str, slides: &str) -> String {
+    use std::io::Read;
+    let dir: PathBuf = std::env::temp_dir().join(format!("pptsx-rs-xml-{name}-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("pasta temporária");
+    let deck = format!("import {{ Box, Deck, Path, Slide, defineDeck }} from 'pptsx';\nexport default defineDeck(() => (<Deck>{slides}</Deck>));\n");
+    fs::write(dir.join("deck.tsx"), deck).expect("deck.tsx");
+    let out = dir.join("out");
+    Command::new(env!("CARGO_BIN_EXE_pptsx-rs")).args(["build", &dir.join("deck.tsx").display().to_string(), "--size", "16x9", "--out", &out.display().to_string(), "--preview", "none"]).output().expect("rodar o binário");
+    let file = fs::File::open(out.join("deck.16x9.pptx")).expect("pptx gravado");
+    let mut xml = String::new();
+    zip::ZipArchive::new(file).expect("pptx é zip").by_name("ppt/slides/slide1.xml").expect("slide 1").read_to_string(&mut xml).expect("xml");
+    let _ = fs::remove_dir_all(&dir);
+    xml
+}
+
+/// `display="flex"` no Slide não vira linha, mas o aviso é do lint (um DS usa o flex do Slide como contêiner):
+/// o build continua limpo.
+#[test]
+fn flex_display_on_slide_keeps_the_build_clean() {
+    let (diagnostics, output) = check("slide-flex", r##"<Slide padding={40} display="flex"><Box height={40} /><Box height={40} /></Slide>"##);
+    assert!(diagnostics.is_empty(), "{output}");
+}
+
+/// `viewBox` na forma do SVG ("x y w h") vale como moldura, igual a `[w, h]`; antes a string era ignorada e
+/// o desenho esticava até a caixa do `d`.
+#[test]
+fn svg_style_view_box_frames_the_path_like_the_array_form() {
+    let path = |vb: &str| format!(r##"<Slide padding={{40}}><Box width={{200}} height={{200}}><Path width={{200}} height={{200}} viewBox={vb} d="M40 40 L60 40 L60 60 L40 60 Z" fill="#CC0000" /></Box></Slide>"##);
+    let array = slide_xml("vb-array", &path("{[100, 100]}"));
+    let string = slide_xml("vb-string", &path("\"0 0 100 100\""));
+    let stretched = slide_xml("vb-none", &path("{undefined}"));
+    assert_eq!(array, string, "a string do SVG e o array dão o mesmo desenho");
+    assert_ne!(array, stretched, "sem viewBox o d estica até a caixa");
+    // viewBox inválido é prop inválida (erro do build, como uma cor inválida), com o formato esperado.
+    let dir: PathBuf = std::env::temp_dir().join(format!("pptsx-rs-vb-bad-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("pasta temporária");
+    fs::write(dir.join("deck.tsx"), "import { Deck, Path, Slide, defineDeck } from 'pptsx';\nexport default defineDeck(() => (<Deck><Slide><Path width={100} height={100} viewBox=\"0 0 100\" d=\"M0 0 L10 10\" /></Slide></Deck>));\n").expect("deck");
+    let run = Command::new(env!("CARGO_BIN_EXE_pptsx-rs")).args(["check", &dir.join("deck.tsx").display().to_string()]).output().expect("rodar o binário");
+    let _ = fs::remove_dir_all(&dir);
+    let output = format!("{}{}", String::from_utf8_lossy(&run.stdout), String::from_utf8_lossy(&run.stderr));
+    assert!(!run.status.success() && output.contains("viewBox") && output.contains("x y largura altura"), "{output}");
+}
+
+/// SVG num <Image> existe mas não é lido: a mensagem aponta o <Icon> (antes mandava "usar um arquivo que exista").
+#[test]
+fn svg_in_image_points_to_icon() {
+    let dir: PathBuf = std::env::temp_dir().join(format!("pptsx-rs-svg-image-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("pasta temporária");
+    fs::write(dir.join("logo.svg"), r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#000"/></svg>"##).expect("svg");
+    fs::write(dir.join("deck.tsx"), "import { Deck, Image, Slide, defineDeck } from 'pptsx';\nexport default defineDeck(() => (<Deck><Slide padding={40}><Image src=\"./logo.svg\" width={80} /></Slide></Deck>));\n").expect("deck");
+    let run = Command::new(env!("CARGO_BIN_EXE_pptsx-rs")).args(["check", &dir.join("deck.tsx").display().to_string(), "--json"]).output().expect("rodar o binário");
+    let _ = fs::remove_dir_all(&dir);
+    let diagnostics: Vec<Value> = serde_json::from_slice(&run.stdout).expect("lista JSON");
+    let missing = with_code(&diagnostics, "image-missing");
+    assert_eq!(missing.len(), 1, "{diagnostics:?}");
+    let message = missing[0]["message"].as_str().expect("mensagem");
+    assert!(message.contains("existe mas não pôde ser lida") && message.contains("<Icon") && !message.contains("Confira o caminho"), "{message}");
+}
+
+/// Caractere que a fonte não tem vira `glyph-missing` (info) no nó, com o código Unicode; antes o preview
+/// mostrava um quadrado sem nenhum aviso. Acentos, travessão e seta (que a Liberation Sans tem) não contam.
+#[test]
+fn missing_glyphs_are_reported_with_their_code_points() {
+    let (diagnostics, output) = check("glyphs", r#"<Slide padding={40}><Text>Ação — ok → feito ✓ ★</Text><Text>Só texto comum, ção.</Text></Slide>"#);
+    let glyphs = with_code(&diagnostics, "glyph-missing");
+    assert_eq!(glyphs.len(), 1, "{output}");
+    assert_eq!(glyphs[0]["severity"], "info", "{output}");
+    assert_eq!(glyphs[0]["path"], "Slide > Text[0]", "{output}");
+    let message = glyphs[0]["message"].as_str().expect("mensagem");
+    assert!(message.contains("U+2713") && message.contains("U+2605") && !message.contains("U+2192") && !message.contains("U+2014"), "{message}");
+    assert!(message.contains("na fonte \"Arial\""), "a família do autor, não a Liberation da medida: {message}");
+    // Irmãos com glifos diferentes não se agrupam num aviso que cita só o primeiro.
+    let (diagnostics, output) = check("glyph-siblings", r#"<Slide padding={40}><Text>✓ feito</Text><Text>★ destaque</Text></Slide>"#);
+    let glyphs = with_code(&diagnostics, "glyph-missing");
+    let all: String = glyphs.iter().filter_map(|d| d["message"].as_str()).collect();
+    assert!(glyphs.len() == 2 && all.contains("U+2713") && all.contains("U+2605"), "{output}");
+}

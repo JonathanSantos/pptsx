@@ -2763,8 +2763,8 @@ export const PROPS_SCHEMA: Readonly<Record<string, PrimitiveSchema>> = {
         "type": "string | ResponsiveValue<string>"
       },
       "viewBox": {
-        "type": "readonly [number, number] | ResponsiveValue<readonly [number, number]>",
-        "description": "[largura, altura] com origem em 0,0; padrão: a caixa envolvente do `d`."
+        "type": "readonly [number, number] | readonly [number, number, number, number] | string | ResponsiveValue<readonly [number, number] | readonly [number, number, number, number] | string>",
+        "description": "[largura, altura] (origem em 0,0), [x, y, largura, altura] ou a string do SVG \"x y largura altura\"; padrão: a caixa envolvente do `d`."
       },
       "width": {
         "type": "number | `${number}px` | `${number}pt` | `${number}%` | ResponsiveValue<CssLengthInput>"

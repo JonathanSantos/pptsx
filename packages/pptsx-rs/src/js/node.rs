@@ -13,9 +13,26 @@ fn arg_str(a: &[Value], i: usize) -> String {
     a.get(i).map(Value::to_js_string).unwrap_or_default()
 }
 
-/// Aceita caminho ou URL `file://` (o resultado de `new URL(...)` aqui já é caminho).
+/// Aceita caminho ou URL `file://` (o resultado de `new URL(...)` aqui já é caminho). `file:///C:/x` (Windows)
+/// perde a barra antes da letra do disco.
 fn to_path(s: &str) -> PathBuf {
-    PathBuf::from(s.strip_prefix("file://").unwrap_or(s))
+    let Some(rest) = s.strip_prefix("file://") else { return PathBuf::from(s) };
+    let bytes = rest.as_bytes();
+    let drive = bytes.len() >= 3 && bytes[0] == b'/' && bytes[1].is_ascii_alphabetic() && bytes[2] == b':';
+    PathBuf::from(if drive { &rest[1..] } else { rest })
+}
+
+/// Caminho relativo vale a partir do arquivo que chama (o deck ou o módulo do DS), como `import` e `Image`:
+/// pelo diretório de onde o comando roda, o mesmo deck acharia ou não os dados (e o MCP roda de outra pasta).
+fn resolve(it: &super::Interp, raw: &str) -> PathBuf {
+    let path = to_path(raw);
+    if path.is_absolute() {
+        return path;
+    }
+    match it.modules.get(it.cur).map(|m| m.path.as_path()).filter(|p| !super::module::is_embedded(p)).and_then(Path::parent) {
+        Some(dir) => normalize(&dir.join(path)),
+        None => path,
+    }
 }
 
 fn normalize(p: &Path) -> PathBuf {
@@ -62,15 +79,15 @@ pub fn node_module(spec: &str) -> Option<Obj> {
         "fs" | "fs/promises" => {
             let mut m = module(&[
                 ("readFileSync", |it, _, a| {
-                    let path = to_path(&arg_str(a, 0));
+                    let path = resolve(it, &arg_str(a, 0));
                     allowed(it, &path)?;
                     fs::read_to_string(&path).map(|s| str_val(&s)).or_else(|e| fail(format!("{}: {e}", path.display())))
                 }),
                 // existsSync não lê conteúdo: um DS sonda fontes do sistema com ele
                 // (ds-orbit/src/fonts.ts), então fica livre; readFileSync e readdirSync não.
-                ("existsSync", |_, _, a| Ok(Value::Bool(to_path(&arg_str(a, 0)).exists()))),
+                ("existsSync", |it, _, a| Ok(Value::Bool(resolve(it, &arg_str(a, 0)).exists()))),
                 ("readdirSync", |it, _, a| {
-                    let path = to_path(&arg_str(a, 0));
+                    let path = resolve(it, &arg_str(a, 0));
                     allowed(it, &path)?;
                     let mut names: Vec<String> = match fs::read_dir(&path) {
                         Ok(entries) => entries.filter_map(|e| e.ok()).map(|e| e.file_name().to_string_lossy().into_owned()).collect(),
@@ -116,4 +133,22 @@ pub fn node_module(spec: &str) -> Option<Obj> {
         "module" | "os" | "process" | "child_process" | "crypto" | "http" | "https" | "net" => Obj::new(),
         _ => return None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn file_urls_become_paths_on_every_system() {
+        assert_eq!(to_path("file:///home/a/x.csv"), PathBuf::from("/home/a/x.csv"));
+        assert_eq!(to_path("file:///C:/dados/x.csv"), PathBuf::from("C:/dados/x.csv"));
+        assert_eq!(to_path("file://C:\\dados\\x.csv"), PathBuf::from("C:\\dados\\x.csv"));
+        assert_eq!(to_path("./x.csv"), PathBuf::from("./x.csv"));
+    }
+
+    #[test]
+    fn normalize_drops_dots_and_climbs_parents() {
+        assert_eq!(normalize(Path::new("/a/b/./c/../d")), PathBuf::from("/a/b/d"));
+    }
 }

@@ -864,6 +864,25 @@ fn deck_findings(ext: &mut External, slides: &[Value], paths: &[String], at: &Si
 
 // ───────────── junção ─────────────
 
+/// Achados do próprio nó `Slide` (o `walk_engine` só visita os filhos). O Slide é sempre coluna (DEFAULTS.css):
+/// `display="flex"` não o vira em linha, como faria num Box. É lint e não build porque um DS usa
+/// `display="flex"` no Slide só como contêiner flex, sem querer linha.
+fn slide_findings(n: &LNode, cx: &EngineCx, slide: usize, scope: &Scope, out: &mut Vec<Finding>) {
+    let (el, ctx) = (&n.el, cx.ctx);
+    if prop_str(el, ctx, "display").as_deref() != Some("flex") || prop(el, ctx, "flexDirection").is_some() || prop(el, ctx, "direction").is_some() {
+        return;
+    }
+    out.push(Finding {
+        severity: "info".into(),
+        code: "slide-display-flex".into(),
+        size: None,
+        slide,
+        path: n.path.clone(),
+        message: "display=\"flex\" no Slide não o vira em linha: o Slide é sempre coluna. Para linha, flexDirection=\"row\" no Slide ou um <Box display=\"flex\" flex={1}> dentro dele.".into(),
+        origin: scope.inside_ds.then_some(ORIGIN_DS),
+    });
+}
+
 fn walk_engine(n: &LNode, cx: &EngineCx, slide: usize, scope: &Scope, out: &mut Vec<Finding>) {
     for c in &n.children {
         let inner = scope.enter(c, cx.ds);
@@ -1052,7 +1071,9 @@ pub fn lint(deck_path: &Path, sizes: &[DeckCtx], config: &Config, options: crate
         let slides = slides_of(&filled, ctx);
         let cx = EngineCx { ctx, declared: declared.as_ref(), ds: &ds };
         for (i, slide) in slides.iter().enumerate() {
-            walk_engine(slide, &cx, i + 1, &Scope::default().enter(slide, &ds), &mut found);
+            let scope = Scope::default().enter(slide, &ds);
+            slide_findings(slide, &cx, i + 1, &scope, &mut found);
+            walk_engine(slide, &cx, i + 1, &scope, &mut found);
         }
         if let Some(ext) = external.as_mut() {
             external_pass(ext, &slides, &spec, &fonts, ctx, &mut found);
@@ -1322,6 +1343,23 @@ export default defineDeck(() => (
             let all: Vec<String> = findings.iter().map(|f| format!("{} {} {}", f.code, f.path, f.message)).collect();
             assert!(messages(code, "Chart").contains("#E0A804"), "{code} no Chart: {all:?}");
         }
+    }
+
+    #[test]
+    fn flex_display_on_slide_is_an_info_finding_unless_a_direction_is_given() {
+        let deck = r##"import { Box, Deck, Slide, defineDeck } from 'pptsx';
+export default defineDeck(() => (
+  <Deck>
+    <Slide display="flex"><Box height={40} /></Slide>
+    <Slide display="flex" flexDirection="row"><Box height={40} /></Slide>
+  </Deck>
+));
+"##;
+        let findings = run_with("slide-flex", DS, CONFIG, deck);
+        let found = by_code(&findings, "slide-display-flex");
+        assert_eq!(found.len(), 1);
+        assert_eq!((found[0].slide, found[0].severity.as_str()), (1, "info"));
+        assert!(found[0].message.contains("flexDirection=\"row\""));
     }
 
     #[test]

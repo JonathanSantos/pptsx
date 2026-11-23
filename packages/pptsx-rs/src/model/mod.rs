@@ -433,13 +433,32 @@ impl Cx<'_> {
     /// `image-missing`: o arquivo de uma imagem (ou de um fundo) não existe ou não abre. O slide sai com o
     /// retângulo cinza (ou sem o fundo); o caminho resolvido diz a base dos relativos, a pasta do deck.
     fn image_missing(&self, what: &str, src: &str, path: &Path, error: impl std::fmt::Display) {
-        // `components` descarta os `.` do meio: "deck/./fotos/x.jpg" sai "deck/fotos/x.jpg".
-        let shown: PathBuf = path.components().collect();
-        let why = if path.exists() { format!("não pôde ser lida ({error})") } else { format!("não existe ({})", shown.display()) };
         let effect = if what == "imagem" { "no lugar dela sai um retângulo cinza" } else { "o fundo não sai" };
-        let msg = format!("{} \"{src}\" {why}: {effect}. Confira o caminho (relativo à pasta do deck) ou use um arquivo que exista.", capitalized(what));
+        let msg = format!("{} \"{src}\" {}: {effect}. {}", capitalized(what), image_problem(path, &error.to_string()), image_fix(path));
         self.diags.add(crate::diag::Diag::new(crate::diag::Level::Warn, "image-missing", self.slide, self.path.as_str(), msg));
     }
+}
+
+/// O que deu errado com o arquivo: não existe (com o caminho resolvido, que diz a base dos relativos) ou existe
+/// mas não é um formato que se lê.
+fn image_problem(path: &Path, error: &str) -> String {
+    // `components` descarta os `.` do meio: "deck/./fotos/x.jpg" sai "deck/fotos/x.jpg".
+    let shown: PathBuf = path.components().collect();
+    if !path.exists() {
+        return format!("não existe ({})", shown.display());
+    }
+    format!("existe mas não pôde ser lida ({error})")
+}
+
+/// O conserto, pela causa: caminho errado, SVG (que vai no `<Icon>`) ou um formato que o PPTX não leva.
+fn image_fix(path: &Path) -> &'static str {
+    if !path.exists() {
+        return "Confira o caminho (relativo à pasta do deck) ou ponha o arquivo lá.";
+    }
+    if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("svg")) {
+        return "SVG não entra em <Image>: use <Icon src=\"…\" /> (vira forma editável; size e color ajustam).";
+    }
+    "Use PNG ou JPEG."
 }
 
 fn capitalized(s: &str) -> String {
@@ -460,3 +479,25 @@ use connector::*;
 use data::*;
 use shape::*;
 use style::*;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn image_messages_tell_missing_file_from_unreadable_format() {
+        let dir = std::env::temp_dir().join(format!("pptsx-rs-img-msg-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("pasta");
+        let svg = dir.join("logo.svg");
+        let bad = dir.join("foto.png");
+        std::fs::write(&svg, "<svg/>").expect("svg");
+        std::fs::write(&bad, "não é png").expect("png falso");
+        let missing = dir.join("./fotos/nada.jpg");
+        assert!(image_problem(&missing, "x").starts_with("não existe (") && !image_problem(&missing, "x").contains("/./"));
+        assert!(image_fix(&missing).contains("Confira o caminho"));
+        assert_eq!(image_problem(&svg, "Could not decode image"), "existe mas não pôde ser lida (Could not decode image)");
+        assert!(image_fix(&svg).contains("<Icon"));
+        assert_eq!(image_fix(&bad), "Use PNG ou JPEG.");
+        std::fs::remove_dir_all(&dir).expect("limpar");
+    }
+}

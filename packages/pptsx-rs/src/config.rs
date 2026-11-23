@@ -105,14 +105,7 @@ pub fn load(deck: &Path) -> Result<Config, String> {
     let dir = path.parent().map(Path::to_path_buf).unwrap_or_default();
     let mut config = Config { path: Some(path.clone()), ..Config::default() };
     if let Some(Value::Array(sizes)) = get(&o, "sizes") {
-        config.sizes = sizes
-            .borrow().iter()
-            .map(|s| match s {
-                // { width, height } em polegadas vira o token "<L>x<A>in".
-                Value::Object(wh) => format!("{}x{}in", wh.get("width").map(Value::to_js_string).unwrap_or_default(), wh.get("height").map(Value::to_js_string).unwrap_or_default()),
-                other => other.to_js_string(),
-            })
-            .collect();
+        config.sizes = sizes_of(&sizes.borrow());
     }
     config.lang = string(&o, "lang");
     config.text_safety = match get(&o, "textSafety") {
@@ -136,43 +129,82 @@ pub fn load(deck: &Path) -> Result<Config, String> {
             },
         };
     }
+    let mut system: Option<Vec<SystemFace>> = None;
     if let Some(Value::Array(fonts)) = get(&o, "fonts") {
-        let mut system: Option<Vec<SystemFace>> = None;
-        for f in fonts.borrow().iter() {
-            let Value::Object(face) = f else { continue };
-            let family = string(face, "family").unwrap_or_default();
-            let weight: u16 = match get(face, "weight") {
-                Some(Value::Num(n)) => n.clamp(1.0, 1000.0) as u16,
-                Some(Value::Str(s)) if &**s == "bold" => 700,
-                Some(Value::Str(s)) => s.parse::<f64>().map_or(400, |n| n.clamp(1.0, 1000.0) as u16),
-                _ => 400,
-            };
-            let italic = matches!(get(face, "italic"), Some(Value::Bool(true)));
-            let postscript = string(face, "postscriptName");
-            let file = match string(face, "file") {
-                Some(file) => {
-                    let p = PathBuf::from(&file);
-                    if p.is_absolute() { p } else { dir.join(p) }
-                }
-                None => {
-                    // M8: sem `file`, procura a face nas pastas de fontes do sistema.
-                    let list = system.get_or_insert_with(system_faces);
-                    match list.iter().filter(|s| s.family.eq_ignore_ascii_case(&family) && s.italic == italic).min_by_key(|s| s.weight.abs_diff(weight)) {
-                        Some(found) => {
-                            config.fonts.push(FontFile { family, weight, italic, path: found.path.clone(), postscript: Some(found.postscript.clone()) });
-                            continue;
-                        }
-                        None => {
-                            config.warnings.push(format!("fonte \"{family}\" não encontrada no sistema"));
-                            continue;
-                        }
-                    }
-                }
-            };
-            config.fonts.push(FontFile { family, weight, italic, path: file, postscript });
+        let list: Vec<Value> = fonts.borrow().clone();
+        add_fonts(&list, &dir, &mut config, &mut system);
+    }
+    // Um DS pode declarar as fontes e os tamanhos dele (`createDs({ fonts, sizes })`): o deck que o registra
+    // os herda sem repetir na config. A config vence: face já registrada e `sizes` próprio ficam como estão.
+    for ds in ds_manifests(&o) {
+        if let Some(Value::Array(fonts)) = get(&ds, "fonts") {
+            let list: Vec<Value> = fonts.borrow().clone();
+            add_fonts(&list, &dir, &mut config, &mut system);
+        }
+        if config.sizes.is_empty()
+            && let Some(Value::Array(sizes)) = get(&ds, "sizes")
+        {
+            config.sizes = sizes_of(&sizes.borrow());
         }
     }
     Ok(config)
+}
+
+/// Tamanhos da config ou de um DS: token (`"wide"`) ou `{ width, height }` em polegadas, que vira `"<L>x<A>in"`.
+fn sizes_of(list: &[Value]) -> Vec<String> {
+    list.iter()
+        .map(|s| match s {
+            Value::Object(wh) => format!("{}x{}in", wh.get("width").map(Value::to_js_string).unwrap_or_default(), wh.get("height").map(Value::to_js_string).unwrap_or_default()),
+            other => other.to_js_string(),
+        })
+        .collect()
+}
+
+/// Os manifestos de `ds` na config (os objetos; o resto é ignorado aqui e cobrado pelo lint).
+fn ds_manifests(o: &Obj) -> Vec<Obj> {
+    match get(o, "ds") {
+        Some(Value::Array(list)) => list.borrow().iter().filter_map(|d| match d {
+            Value::Object(m) => Some((**m).clone()),
+            _ => None,
+        }).collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// Registra as faces (`FontFace` da config ou de um DS). Face já registrada (família, peso, itálico) não entra
+/// de novo: a primeira vence, e a config vem antes do DS. Sem `file`, procura nas pastas de fontes do sistema.
+fn add_fonts(list: &[Value], dir: &Path, config: &mut Config, system: &mut Option<Vec<SystemFace>>) {
+    for f in list {
+        let Value::Object(face) = f else { continue };
+        let family = string(face, "family").unwrap_or_default();
+        let weight: u16 = match get(face, "weight") {
+            Some(Value::Num(n)) => n.clamp(1.0, 1000.0) as u16,
+            Some(Value::Str(s)) if &**s == "bold" => 700,
+            Some(Value::Str(s)) => s.parse::<f64>().map_or(400, |n| n.clamp(1.0, 1000.0) as u16),
+            _ => 400,
+        };
+        let italic = matches!(get(face, "italic"), Some(Value::Bool(true)));
+        if config.fonts.iter().any(|r| r.family.eq_ignore_ascii_case(&family) && r.weight == weight && r.italic == italic) {
+            continue;
+        }
+        let postscript = string(face, "postscriptName");
+        let file = match string(face, "file") {
+            Some(file) => {
+                let p = PathBuf::from(&file);
+                if p.is_absolute() { p } else { dir.join(p) }
+            }
+            None => {
+                // M8: sem `file`, procura a face nas pastas de fontes do sistema.
+                let list = system.get_or_insert_with(system_faces);
+                match list.iter().filter(|s| s.family.eq_ignore_ascii_case(&family) && s.italic == italic).min_by_key(|s| s.weight.abs_diff(weight)) {
+                    Some(found) => config.fonts.push(FontFile { family, weight, italic, path: found.path.clone(), postscript: Some(found.postscript.clone()) }),
+                    None => config.warnings.push(format!("fonte \"{family}\" não encontrada no sistema")),
+                }
+                continue;
+            }
+        };
+        config.fonts.push(FontFile { family, weight, italic, path: file, postscript });
+    }
 }
 
 struct SystemFace {

@@ -14,6 +14,8 @@ pub struct DsComponent {
     pub guide: Option<String>,
     /// Props do 1º caso do catálogo (o exemplo do deck inicial e do ds.md).
     pub props: Option<Rc<Obj>>,
+    /// Já é um slide inteiro (a raiz do que devolve é `<Slide>`): no deck inicial vai direto no `<Deck>`.
+    pub slide: bool,
 }
 
 pub struct DsInfo {
@@ -136,9 +138,29 @@ fn components_of(manifest: &Value) -> Vec<DsComponent> {
                 }),
                 _ => None,
             };
-            Some(DsComponent { name, display_name: get_str(meta, "displayName"), guide: get_str(meta, "guide"), props })
+            Some(DsComponent { name, display_name: get_str(meta, "displayName"), guide: get_str(meta, "guide"), props, slide: false })
         })
         .collect()
+}
+
+/// Marca os componentes que já são um slide inteiro, chamando cada um com as props do catálogo: sem isso o
+/// catálogo do `init --ds` os punha dentro de outro `<Slide>` e o deck inicial não compilava. A função vem do
+/// export com o nome do componente ou de `implementations` (createDs), na ordem de `components`.
+fn mark_slides(interp: &mut crate::js::Interp, manifest: &Value, exports: &Obj, components: &mut [DsComponent]) {
+    let metas: Vec<Value> = match get(manifest, "components") {
+        Some(Value::Array(list)) => list.borrow().clone(),
+        _ => return,
+    };
+    let implementations: Vec<Value> = match get(manifest, "implementations") {
+        Some(Value::Array(list)) => list.borrow().clone(),
+        _ => Vec::new(),
+    };
+    for c in components.iter_mut() {
+        let Some(props) = &c.props else { continue };
+        let position = metas.iter().position(|m| get_str(m, "name").as_deref() == Some(c.name.as_str()));
+        let Some(f) = exports.get(c.name.as_str()).cloned().or_else(|| position.and_then(|i| implementations.get(i).cloned())) else { continue };
+        c.slide = matches!(interp.call(&f, vec![crate::js::value::obj_val((**props).clone())]), Ok(Value::Element(e)) if e.kind == crate::js::Kind::Slide);
+    }
 }
 
 fn rules_of(manifest: &Value) -> Vec<(String, String)> {
@@ -155,7 +177,7 @@ pub fn manifest_of(exports: &Obj) -> Option<(Value, bool)> {
 /// Carrega o módulo do DS e lê o manifesto. `deck_dir` é a pasta do deck que vai importá-lo.
 pub fn load(spec: &str, deck_dir: &Path, cwd: &Path) -> Result<DsInfo, String> {
     let (file, by_path) = entry_of(spec, cwd)?;
-    let (interp, exports) = crate::js::evaluate_exports(&file)?;
+    let (mut interp, exports) = crate::js::evaluate_exports(&file)?;
     let Some((manifest, named)) = manifest_of(&exports) else {
         return Err(format!("--ds {spec}: o módulo precisa exportar \"ds\" (ou default) um defineDs/createDs"));
     };
@@ -165,6 +187,8 @@ pub fn load(spec: &str, deck_dir: &Path, cwd: &Path) -> Result<DsInfo, String> {
     let ds_dir = (by_path && is_ts && !inside).then(|| file.parent().map(|p| relative_import(deck_dir, p)).unwrap_or_else(|| ".".into()));
     let theme = get(&manifest, "theme").and_then(crate::config::theme_of);
     let color = |slot: &str| theme.as_ref().and_then(|t| t.colors.iter().find(|(k, _)| k == slot).map(|(_, hex)| format!("#{hex}")));
+    let mut components = components_of(&manifest);
+    mark_slides(&mut interp, &manifest, &exports, &mut components);
     Ok(DsInfo {
         name: get_str(&manifest, "name").unwrap_or_else(|| spec.to_string()),
         version: get_str(&manifest, "version").unwrap_or_else(|| "0.0.0".into()),
@@ -173,7 +197,7 @@ pub fn load(spec: &str, deck_dir: &Path, cwd: &Path) -> Result<DsInfo, String> {
         has_theme: theme.is_some(),
         background: color("light1"),
         ink: color("dark1"),
-        components: components_of(&manifest),
+        components,
         rules: rules_of(&manifest),
         guide: get_str(&manifest, "guide"),
         schema: crate::dsprops::schema_of(&interp, &manifest),
@@ -254,7 +278,10 @@ fn catalog_deck(ds: &DsInfo) -> String {
     let slides: Vec<String> = if shown.is_empty() {
         vec![format!("    <Slide {slide_props}>\n      <Text fontSize={{24}}>Nenhum componente do {} tem caso de catálogo.</Text>\n    </Slide>", ds.name)]
     } else {
-        shown.iter().map(|c| format!("    <Slide {slide_props}>\n      <Text fontSize={{24}} fontWeight=\"bold\">{}</Text>\n      {}\n    </Slide>", c.name, usage_of(c))).collect()
+        shown
+            .iter()
+            .map(|c| if c.slide { format!("    {}", usage_of(c)) } else { format!("    <Slide {slide_props}>\n      <Text fontSize={{24}} fontWeight=\"bold\">{}</Text>\n      {}\n    </Slide>", c.name, usage_of(c)) })
+            .collect()
     };
     let mut out = vec![
         format!("// Deck criado por `pptsx-rs init --ds`: um slide por componente do {}, com as props do catálogo.", ds.name),

@@ -131,9 +131,9 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 | `Span` | `fontWeight`, `fontStyle`, `color`, `textDecoration`, `fontSize`, `fontFamily`, `verticalAlign` (`'super' \| 'sub'`), `href` (**sem** `lineHeight`: é do Text) | strings/números e outros `Span`/`B`/`I`/`Sup`/`Sub`; **só dentro de `Text`** |
 | `B` / `I` / `Sup` / `Sub` | atalhos de `Span fontWeight="bold"` / `fontStyle="italic"` / `verticalAlign="super"` / `verticalAlign="sub"` | como `Span` |
 | `SlideNumber` | `format?: 'n' \| 'n / total'` (padrão `'n'`), mais as props de texto (`fontSize`, `color`, `fontWeight`…) | nenhum |
-| `Image` | `src: string` (obrigatório; relativo ao arquivo do deck), `objectFit?: 'contain' \| 'cover'` (padrão `'contain'`), `href?`, `placeholder?` (§5) | nenhum |
+| `Image` | `src: string` (obrigatório; relativo ao arquivo do deck; PNG ou JPEG, SVG vai em `Icon`), `objectFit?: 'contain' \| 'cover'` (padrão `'contain'`), `href?`, `placeholder?` (§5) | nenhum |
 | `Shape` | `kind` (obrigatório; 24 formas, ver "Diagramas"), `backgroundColor` (cor da forma), `stroke`/`strokeWidth` (linha da forma; `line` e `bracketPair` sem `stroke` saem pretas), `radius` (roundRect), `flipH`/`flipV`, `lineStyle` (`'solid' \| 'dashed' \| 'dotted'`), `lineCap` (`'flat' \| 'round'`), `startArrow`/`endArrow` (**só em `line`**: `'arrow' \| 'triangle' \| 'stealth' \| 'diamond' \| 'oval'`) | nenhum |
-| `Path` | `d` (obrigatório; `M L H V C S Q T A Z` do SVG), `viewBox?: [w, h]` (padrão: a caixa do `d`), `fill`, `stroke`, `strokeWidth` (pt), `lineCap`, `lineJoin` (`'miter' \| 'round' \| 'bevel'`), `lineStyle` | nenhum |
+| `Path` | `d` (obrigatório; `M L H V C S Q T A Z` do SVG), `viewBox?: [w, h]`, `[x, y, w, h]` ou a string do SVG `"x y w h"` (padrão: a caixa do `d`), `fill`, `stroke`, `strokeWidth` (pt), `lineCap`, `lineJoin` (`'miter' \| 'round' \| 'bevel'`), `lineStyle` | nenhum |
 | `Icon` | `src` (obrigatório; `.svg`), `size?` (altura em pt, padrão 24), `color?` (padrão: a cor de texto herdada), `recolor?` (padrão `true`: preto também vira `color`), `render?: 'auto' \| 'shape' \| 'image'` | nenhum |
 | `Connector` | `from`, `to` (ids, obrigatórios), `fromSide`/`toSide` (`'top' \| 'right' \| 'bottom' \| 'left' \| 'auto'`), `route` (`'straight' \| 'elbow'`), `startArrow`/`endArrow` (padrão: só `triangle` no fim), `stroke`, `strokeWidth` (1,5), `lineStyle`, `label`, `labelStyle={{ fontSize, color, background, font }}` (padrões: 12 pt, `#333333`, sem fundo, a fonte herdada do pai) | nenhum (só props; **não aceita CSS**) |
 | `Chart` | `kind` (12, ver "Gráficos") e `data: { categories: string[], series: { name, values: number[], color?, as?, axis? }[] }` (obrigatórios; scatter: `series: { name, points: [x, y][] }[]`, sem `categories`), `colors?` (por série; na pizza/rosca por fatia), `legend?: boolean \| { position: 'bottom' \| 'top' \| 'left' \| 'right' }` (padrão: só com 2+ séries; pizza/rosca sempre), `labels?: boolean \| { format?, position?: 'outside' \| 'inside' \| 'center' }` `xAxis?`/`yAxis?`/`y2Axis?: { title?, min?, max?, step?, format?, grid?, hidden? }`, `holeSize?` (rosca, 10–90, padrão 50), `smooth?`, `markers?` (linha), `title?`, `size?` (12, tamanho dos rótulos) | nenhum |
@@ -150,7 +150,7 @@ Unidades: número = **pt**; `'12px'` e `'12pt'` = 12 pt; `'50%'` = percentual do
 | kind | quando usar | dados |
 |---|---|---|
 | `bar` | comparar categorias (poucas, rótulos curtos) | `categories` + séries |
-| `barH` | ranking ou rótulos longos (a 1ª categoria fica **embaixo**, como no PowerPoint: ordene do menor para o maior se quer o maior no topo) | idem |
+| `barH` | ranking ou rótulos longos (a 1ª categoria fica **no topo**, na ordem dos dados: para um ranking, ordene do maior para o menor) | idem |
 | `stackedBar` / `stackedBarH` | composição de um total por categoria | idem, 2+ séries |
 | `stackedBar100` | participação (%) por categoria; o PPTX normaliza cada categoria, os valores **não** precisam somar 100; eixo sai em % | idem |
 | `line` | tendência no tempo (`smooth`, `markers`) | idem |
@@ -413,6 +413,7 @@ export default defineConfig({
 - Sem `file`, a engine procura a família nas pastas de fontes do sistema. Não achou: a CLI imprime `▲ fontes não encontradas no sistema: Inter bold` e todo `Text` que usa a face recebe `font-missing` (error).
 - Itálico sem face `italic: true` registrada é medido com a face reta.
 - **Pesos:** registre cada peso como uma face (`{ family: 'Inter', weight: 300, file: … }`, `weight: 600`…; `'regular'` = 400 e `'bold'` = 700). `fontWeight` escolhe a face mais próxima pela regra do CSS (500 tenta 400; 600 tenta 700 antes de descer). Fora de 400/700 o `.pptx` usa o nome da própria face (`Inter SemiBold`): aparece certo onde a fonte está **instalada** ou embutida (`--embed-fonts`, só PowerPoint); sem ela, o renderizador cai para a família base. Peso sem face a até 100 → `font-weight-fallback` (warning) e o texto sai com a face mais próxima.
+- **Fontes de um DS:** `createDs({ fonts })` (§5) declara as faces da marca; o deck que registra o DS em `ds` as herda sem repeti-las em `fonts` (a face que a config registrar vence). No DS, use `file` absoluto, relativo ao módulo: `new URL('../fonts/Inter-Regular.ttf', import.meta.url).pathname`.
 - `--embed-fonts` (§7) embute as faces no `.pptx`, mas **só o PowerPoint usa** (o Keynote ignora). Só TrueType de uma face (`.ttf`) com licença que permite embed; o resto gera `font-not-embeddable`.
 
 ## 5. Design systems: componentes, tokens e tema ficam fora do núcleo
@@ -482,10 +483,11 @@ export const ds = createDs({
 | `defineRule(id, severity, (node, ctx) => achados)` | regra do DS no `pptsx-rs lint` (`ctx.component`, `ctx.slide`, `ctx.path`, `ctx.theme`); entra pelo `rules` do `createDs` ou por `lint: { rules }` na config. Prontas: `colorsFromTokens`, `fontsFromTheme`, `maxChildren`, `onlyOnSlide` |
 | regra de deck: `{ id, severity, checkDeck(deck, ctx) }` | vista do deck inteiro, uma vez por tamanho: `deck.slides` são os slides resolvidos (`component`, `props`, `css`, `children`, `sourceSlide`); devolve `{ message, slide?, path?, severity? }`. Para ritmo (três slides seguidos com o mesmo layout, deck sem encerramento). Uma regra pode ter `check`, `checkDeck` ou os dois |
 | `node.props` numa regra | os nomes que o autor escreve (`fontSize`, `fontFamily`, `fontWeight`, `fontStyle`, `textAlign`, `backgroundColor` de Shape) e `fittedFontSize` (o corpo depois do fit); os nomes da 0.x (`size`, `font`, `weight`, `fill`) continuam como alias |
-| `createDs({ name, version, components, rules, theme, tokens?, guide?, schema? })` | o manifesto: o lint lê as regras, o MCP e a skill leem o guia e o schema (`pptsx-rs mcp --ds <caminho>` ou `ds` na config). `guide` é um markdown ou partes `{ title, markdown }`; sem ele, junta os `meta.guide` dos componentes; com `tokens`, as cores deles deixam de aparecer como `off-theme-color` no lint |
+| `createDs({ name, version, components, rules, theme, tokens?, guide?, schema?, fonts?, sizes? })` | o manifesto: o lint lê as regras, o MCP e a skill leem o guia e o schema (`pptsx-rs mcp --ds <caminho>` ou `ds` na config). `guide` é um markdown ou partes `{ title, markdown }`; sem ele, junta os `meta.guide` dos componentes; com `tokens`, as cores deles deixam de aparecer como `off-theme-color` no lint. `fonts` (faces da marca, §4 "Fontes") e `sizes` (os tamanhos para que o DS foi desenhado, ex.: `['wide', '4x3']`) valem para o deck que registra o DS: a config vence quando define os dela |
 
 - **Sem `npm`:** `pptsx-rs init`/`types` gravam os tipos de `pptsx` e de `@pptsx/ds-kit` em `.pptsx/types/`, e o editor confere o DS e o deck. O `@pptsx/ds-kit` do binário vence um que esteja em `node_modules`.
-- **O que o código de um DS pode usar:** o mesmo subconjunto do deck (funções puras, sem classes nem `async`); `node:fs` só para **ler** arquivos da própria pasta do DS (um `guide.md`, por exemplo).
+- **O que o código de um DS pode usar:** o mesmo subconjunto do deck (funções puras, sem classes nem `async`); `node:fs` só para **ler** arquivos da própria pasta do DS (um `guide.md`, por exemplo). Caminho relativo em `node:fs` vale a partir do módulo que chama, como `import`; para passar adiante (fonte, ícone), use `new URL('./x', import.meta.url).pathname`.
+- **Deck inicial do `init --ds`:** um `starter.tsx` na pasta da entrada do DS (ou na de cima) vira o `deck.tsx`, com `{{ds}}` trocado pelo import: é o lugar de um deck de exemplo que segue as regras do DS (capa, conteúdo, fechamento). Sem ele, o `init` monta um catálogo: um slide por componente com caso de catálogo, e o componente que já é um slide inteiro (devolve `<Slide>`) entra direto no `<Deck>`.
 - **Skill de um DS:** `pptsx-rs skill --ds <pasta do DS> --name <nome> --out <pasta>` gera uma skill autocontida: o binário em `bin/`, o DS em `ds/`, `references/ds.md` (assinatura, exemplo e props de cada componente) e as entradas do MCP já com `--ds`. Uma pasta `skill/` na raiz do DS entra na skill: `skill/SKILL.md` substitui o `SKILL.md` genérico (o frontmatter dele dá nome e descrição; `{{bin}}` e `{{ds}}` viram os caminhos) e `skill/references/*.md` são copiados para `references/`.
 
 ### Layout do arquivo (`defineLayout`, `placeholder`)
@@ -857,6 +859,29 @@ Para uma linha de tendência no scatter, passe-a como outra série de pontos (os
 
 40 linhas viram 4 slides em 16:9 (12/12/12/4) e 3 em 4:3, com título e cabeçalho repetidos; o `slide-continued` diz as linhas por parte.
 
+### 6.20 Deck a partir de dados (CSV ao lado do deck)
+
+O deck é uma função pura sobre os dados: troque o arquivo e rode o build de novo. O caminho é relativo ao arquivo do deck, de qualquer pasta de onde o comando rode.
+
+```tsx
+import { readFileSync, readdirSync } from 'node:fs';
+
+// O CSV mais recente de dados/ (vendas-AAAA-MM.csv), em linhas de objetos.
+const arquivo = readdirSync('./dados').filter((n) => n.endsWith('.csv')).sort().at(-1)!;
+const [cabecalho, ...linhas] = readFileSync(`./dados/${arquivo}`, 'utf8').trim().split('\n');
+const campos = cabecalho.split(',');
+const vendas = linhas.map((l) => Object.fromEntries(l.split(',').map((v, i) => [campos[i], v])));
+const total = vendas.reduce((soma, v) => soma + Number(v.receita), 0);
+
+<Slide padding={40} gap={12}>
+  <Text fontSize={16} color="#52606D">Receita do mês</Text>
+  <Text fontSize={60} fontWeight="bold">R$ {(Math.round(total / 1e5) / 10).toLocaleString('pt-BR')} mi</Text>
+  <Chart kind="bar" data={{ categories: vendas.map((v) => v.regiao), series: [{ name: 'Receita', values: vendas.map((v) => Number(v.receita)) }] }} labels flex={1} />
+</Slide>
+```
+
+Um deck por segmento (região, cliente) ainda não tem flag própria: escreva um `deck.<segmento>.tsx` de duas linhas por segmento, que importa a função do deck e passa o filtro.
+
 ## 7. CLI e fluxo de trabalho
 
 **Caminho preferido, se o servidor MCP do pptsx estiver conectado** (é o próprio binário: `pptsx-rs mcp`, com `--ds <caminho|pacote>` para registrar um DS): use as ferramentas em vez do shell — `diagnose({ deck })` para iterar (rápido, sem PNG), `preview({ deck, size, slide })` para ver um slide, `build({ deck, sizes })` no fim (grava o .pptx e devolve o overview), `lint({ deck })`, `guide({ section: "§8" })` e `schema({ primitive: "text" })` para consultar. `isError: true` quer dizer que o deck tem diagnóstico `error` (a ferramenta funcionou). Sem o MCP, a CLI abaixo faz o mesmo.
@@ -873,11 +898,11 @@ pptsx-rs lint  deck.tsx                            # regras da engine e as do DS
 |---|---|
 | `build <deck.tsx>` | grava os arquivos abaixo. Flags: `--size`, `--out` (padrão `dist/`), `--preview native\|none` e `--preview-width 1280` (os PNGs), `--lang pt-BR`, `--line-breaks forced\|auto` (padrão `forced`: cada linha medida vira quebra manual, igual ao PNG), `--embed-fonts`, `--watch` (refaz a cada mudança salva), `--serve [--port 4173]` (preview ao vivo no navegador) |
 | `check <deck.tsx>` | avalia e mede sem gravar; `--json` põe **só** a lista de diagnósticos no stdout; `--debug` imprime o frame (em pt) de cada nó |
-| `lint <deck.tsx>` | riscos antes do build (`legacy-prop`, `keynote-line-height`, `grid-fr`, `off-theme-color`, `structure`) e as regras dos DS da config; `--json` |
+| `lint <deck.tsx>` | riscos antes do build (`legacy-prop`, `keynote-line-height`, `grid-fr`, `slide-display-flex`, `off-theme-color`, `structure`) e as regras dos DS da config; `--json` |
 | `init [pasta]`, `types [pasta]` | a pasta do deck e os tipos do editor (acima) |
 | `skill`, `mcp` | a skill para agentes e o servidor MCP (§5 e o topo desta seção) |
 
-`--size` aceita `16x9`, `16x10`, `4x3`, `wide` ou `10x7.5in`, separados por vírgula; sem ele vale `sizes` da config, senão `16x9`.
+`--size` aceita `16x9`, `16x10`, `4x3`, `wide` ou `10x7.5in`, separados por vírgula; sem ele vale `sizes` da config, senão o do DS registrado, senão `16x9`. `16x9` e `wide` têm a mesma proporção em escalas diferentes (720 × 405 e 960 × 540 pt): um DS desenhado num deles estoura no outro. `--out` é relativo à pasta de onde o comando roda.
 
 Arquivos gerados (`<deck>` = nome do arquivo sem extensão):
 
@@ -892,7 +917,9 @@ dist/
 
 - `check --json` põe no stdout **só** a lista de diagnósticos (`[]` = limpo); o progresso vai para o stderr. Se o deck nem rodar (erro de sintaxe, texto fora de `<Text>`…), a mensagem sai no stderr com `arquivo:linha:coluna` e o código de saída é 1.
 - **Exit code**: `1` se houver qualquer diagnóstico `error` ou falha; `0` caso contrário. `warning`/`info` não falham.
-- Sempre gere **os dois tamanhos** (`16x9,4x3`); inclua `wide` se o deck usa esse breakpoint.
+- Sempre gere **os dois tamanhos** (`16x9,4x3`, ou os do DS); inclua `wide` se o deck usa esse breakpoint.
+- **PDF** não sai do pptsx. O `.pptx` aberto no PowerPoint ou no Keynote exporta PDF com texto; juntar os PNGs (`--preview-width 2000`) dá um PDF só de imagem.
+- **O time vai editar no PowerPoint:** `lineBreaks: 'auto'` (sem uma quebra manual por linha medida; o texto reflui ao editar) e `embedFonts: true` com fonte própria. O arquivo tem um layout só, a não ser que o deck use `defineLayout` (§5): "Novo slide" no PowerPoint sai sem a marca.
 - Config opcional `pptsx.config.ts` (`defineConfig({ fonts?, sizes?, lang?, textSafety?, lineBreaks?, embedFonts?, theme?, document? })`), lida da pasta do deck (ou da mais próxima acima dela); flags vencem a config.
 
 ## 8. Diagnósticos
@@ -944,6 +971,7 @@ Campos de `data` (opcionais): `overflowPt`/`overflowPct`, `fromSize`/`toSize`, `
 | `font-weight-fallback` | warning | `fontWeight` sem face registrada a até 100; `data.requestedWeight` / `data.usedWeight` | registre a face desse peso em `fonts` ou use um peso que existe |
 | `link-target-missing` | error | `href="slide:N"` com N maior que os slides do `<Deck>`; o link não sai | corrija o N (número do `<Slide>` no seu Deck, a partir de 1) |
 | `image-upscaled` | info | imagem ampliada acima de 96 dpi | arquivo com mais resolução ou área menor |
+| `glyph-missing` | info | caractere sem glifo na fonte do trecho (`✓`, `★` na Arial; a mensagem dá o código `U+…`): o preview mostra um quadrado e o PowerPoint troca por outra fonte, com outra largura | outro caractere, um `Icon`, ou uma fonte que o tenha |
 | `image-missing` | warning | o arquivo de um `Image` (ou de um `backgroundImage: url(…)`) não existe ou não abre; a mensagem traz o caminho resolvido. O `Image` sai como um retângulo cinza; o fundo, não sai | corrija o caminho (relativo à pasta do deck) ou ponha o arquivo lá; se a imagem ainda vai chegar, o retângulo cinza serve de lugar |
 | `font-missing` | error | família não registrada ou não achada; único diagnóstico desse Text | tire `fontFamily` (Arial), registre a face ou instale |
 | `connector-target-missing` | error | `from`/`to` de um `Connector` sem nó com esse `id` no slide (a mensagem lista os ids do slide); o conector não sai | ponha `id` no nó certo ou corrija o nome |
@@ -1074,11 +1102,12 @@ Só um nó paginate (<Box paginate> ou <Text paginate>) por slide; encontrados 2
 - **Master não faz layout**: o PowerPoint não reposiciona nada pelo placeholder quando o texto muda; a engine já calculou cada slide.
 - **Notas com `slide:N`** saem como texto (link de nota só para URL).
 - **`stackedBar100` não precisa somar 100**: o PPTX calcula a participação; passe os valores absolutos.
-- **`barH` inverte a ordem**: a 1ª categoria fica embaixo. Para o maior no topo, ordene do menor para o maior.
+- **`barH` segue a ordem dos dados**: a 1ª categoria fica no topo. Para um ranking, ordene do maior para o menor.
 - **Linha coberta por merge não repete a célula**: com `rowSpan: 3`, as duas linhas de baixo têm uma célula a menos; repetir dá "tem N células para M colunas".
 - **Merge não cruza parte**: com `Table paginate`, um `rowSpan` nunca é cortado; um grupo grande vai inteiro para o slide seguinte e pode deixar a parte anterior curta.
 - **Ícone na célula não é parte da tabela** (`table-cell-icon`): é uma forma por cima; e a célula com ícone não quebra linha.
 - **Rótulo escuro em série escura**: os rótulos do gráfico usam a cor de texto herdada (sem diagnóstico); confira no PNG.
+- **O JS do deck é um subconjunto:** funções puras, sem classes, `async`, rede nem `process`; regex sem lookahead nem backreference (agrupe milhar com `toLocaleString('pt-BR')`, que ignora as opções e mostra até 3 casas: arredonde antes); `new URL(x, import.meta.url)` dá o caminho (`.pathname`, `.href`); há `decodeURIComponent`/`encodeURIComponent`. `node:fs` só lê, e só a pasta do deck, da config e dos módulos importados: caminho relativo vale a partir do arquivo que chama (dados ao lado do deck: `readFileSync('./dados/x.csv', 'utf8')`), não do diretório de onde o comando roda.
 - **`cell()` recebe o valor cru**: `typeof value === 'number'` só se a célula foi escrita como número; devolva `text` para formatar.
 - **Diagrama com `position="absolute"`** funciona, mas não se adapta a 4:3; prefira grid com `placeItems="center"` e tamanhos fixos nos nós.
 

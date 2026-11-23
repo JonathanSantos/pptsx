@@ -58,6 +58,8 @@ export const createDs = (input) => {
         ...(guide === undefined ? {} : { guide }),
         schema,
         ...(input.examples === undefined ? {} : { examples: input.examples }),
+        ...(input.fonts === undefined ? {} : { fonts: input.fonts }),
+        ...(input.sizes === undefined ? {} : { sizes: input.sizes }),
     });
     return Object.freeze({ ...manifest, ...(input.tokens === undefined ? {} : { colors: colorsOf(input.tokens) }), implementations: input.components, warnings: input.theme === undefined ? [] : checkTheme(input.theme) });
 };

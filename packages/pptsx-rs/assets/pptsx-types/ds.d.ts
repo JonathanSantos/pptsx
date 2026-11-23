@@ -1,4 +1,4 @@
-import type { ComponentMeta, Theme } from './core/types.ts';
+import type { ComponentMeta, FontFace, SizeSpec, Theme } from './core/types.ts';
 import type { LintRule } from './lint/rule.ts';
 /**
  * M17: o contrato do que um design system entrega ao núcleo. O núcleo só lê: as regras vão para o
@@ -24,6 +24,10 @@ export interface DsManifest {
     readonly schema?: Readonly<Record<string, unknown>>;
     /** Decks de exemplo (caminhos), para quem quer ver o DS em uso. */
     readonly examples?: readonly string[];
+    /** pptsx-rs: fontes da marca, herdadas pelo deck que registra o DS (a config vence na mesma face). `file` absoluto. */
+    readonly fonts?: readonly FontFace[];
+    /** pptsx-rs: tamanhos para que o DS foi desenhado; valem quando a config não define `sizes`. */
+    readonly sizes?: readonly SizeSpec[];
 }
 /** Identidade tipada (como `defineConfig`), com as checagens que valem para qualquer DS. */
 export declare const defineDs: (manifest: DsManifest) => DsManifest;

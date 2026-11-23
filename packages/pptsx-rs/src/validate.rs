@@ -41,6 +41,7 @@ const SOLID_ONLY: &str = "o PPTX só tem contorno sólido; sai sólido";
 const COLOR_EXPECTED: &str = "use #RGB, #RRGGBB, rgb()/rgba(), transparent ou um nome básico (black, white, red…)";
 const TEXT_CHILD_ERROR: &str = "<Text> só aceita strings, números e <Span>/<B>/<I> como filhos";
 const SPAN_OUTSIDE_TEXT: &str = "<Span> só pode aparecer dentro de <Text>";
+const VIEW_BOX_EXPECTED: &str = "use [largura, altura], [x, y, largura, altura] ou a string do SVG \"x y largura altura\", com largura e altura maiores que 0";
 
 /// Handler de uma prop: tudo certo, notas (não sai no PPTX) ou erro de valor (InvalidPropError).
 enum Outcome {
@@ -683,7 +684,8 @@ fn kind_handler(kind: Kind, key: &str, v: &Value) -> Option<Outcome> {
         (Shape, "kind" | "strokeWidth" | "radius" | "flipH" | "flipV" | "lineStyle" | "lineCap" | "startArrow" | "endArrow") => pass,
         (Shape | Path, "fill" | "stroke" | "backgroundColor") => strict_color(key, v),
         (Shape, _) => return shape_css(key, v),
-        (Path, "d" | "viewBox" | "strokeWidth" | "lineCap" | "lineJoin" | "lineStyle") => pass,
+        (Path, "d" | "strokeWidth" | "lineCap" | "lineJoin" | "lineStyle") => pass,
+        (Path, "viewBox") => if crate::vector::parse_view_box(v).is_some() { Outcome::Ok } else { invalid(key, v, VIEW_BOX_EXPECTED) },
         (Path, "borderRadius") => reject("o Path não tem cantos; desenhe-os no d"),
         (Path, "backgroundImage") => reject(NO_BOX),
         (Path, _) => return shape_css(key, v),

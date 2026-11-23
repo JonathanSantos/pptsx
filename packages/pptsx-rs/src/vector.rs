@@ -309,6 +309,25 @@ fn cubic_at(p0: f64, p1: f64, p2: f64, p3: f64, t: f64) -> f64 {
 }
 
 /// Caixa envolvente exata (curvas pelos extremos, não pelos controles).
+/// `viewBox` do Path: `[w, h]`, `[x, y, w, h]` ou a string do SVG (`"x y w h"`, também `"w h"`), com largura e
+/// altura maiores que 0. None = o valor não é um viewBox (o validate o recusa; antes a string sumia calada e o
+/// desenho esticava até a caixa do `d`).
+pub fn parse_view_box(v: &crate::js::Value) -> Option<Bounds> {
+    use crate::js::Value;
+    let nums: Vec<f64> = match v {
+        Value::Array(items) => items.borrow().iter().map(Value::to_num).collect(),
+        Value::Str(s) => s.split(|c: char| c.is_whitespace() || c == ',').filter(|p| !p.is_empty()).map(|p| p.parse().unwrap_or(f64::NAN)).collect(),
+        _ => return None,
+    };
+    let (x, y, w, h) = match nums[..] {
+        [w, h] => (0.0, 0.0, w, h),
+        [x, y, w, h] => (x, y, w, h),
+        _ => return None,
+    };
+    let finite = [x, y, w, h].iter().all(|n| n.is_finite());
+    (finite && w > 0.0 && h > 0.0).then_some(Bounds { x, y, w, h })
+}
+
 pub fn bounds_of(cmds: &[Cmd]) -> Bounds {
     let mut pts: Vec<(f64, f64)> = Vec::new();
     let (mut x, mut y) = (0.0, 0.0);
@@ -787,4 +806,25 @@ mod tests {
     fn compact_arc_flags() {
         assert!(parse_path("M0 0a1 1 0 01 5 5").is_ok());
     }
+
+    #[test]
+    fn view_box_accepts_pair_quad_and_svg_strings() {
+        use crate::js::value::{arr_val, str_val};
+        use crate::js::Value;
+        let b = |v: &Value| parse_view_box(v).map(|b| (b.x, b.y, b.w, b.h));
+        assert_eq!(b(&arr_val(vec![Value::Num(100.0), Value::Num(50.0)])), Some((0.0, 0.0, 100.0, 50.0)));
+        assert_eq!(b(&arr_val([10.0, 20.0, 100.0, 50.0].map(Value::Num).to_vec())), Some((10.0, 20.0, 100.0, 50.0)));
+        assert_eq!(b(&str_val("0 0 120 120")), Some((0.0, 0.0, 120.0, 120.0)));
+        assert_eq!(b(&str_val("-5,-5, 10,10")), Some((-5.0, -5.0, 10.0, 10.0)));
+        assert_eq!(b(&str_val("24 24")), Some((0.0, 0.0, 24.0, 24.0)));
+    }
+
+    #[test]
+    fn view_box_rejects_three_numbers_zero_size_and_garbage() {
+        use crate::js::value::str_val;
+        for bad in ["0 0 120", "0 0 0 10", "0 0 10 -1", "a b c d", ""] {
+            assert!(parse_view_box(&str_val(bad)).is_none(), "{bad:?}");
+        }
+    }
 }
+

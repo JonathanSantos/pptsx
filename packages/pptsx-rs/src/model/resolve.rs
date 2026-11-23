@@ -627,10 +627,7 @@ fn resolve_node_at(cx: &mut Cx, el: &Element, inherit: &Inherit, path: &str, in_
                     Vec::new()
                 }
             };
-            let view_box = match cx.get(props, "viewBox") {
-                Some(Value::Array(v)) if v.borrow().len() == 2 => crate::vector::Bounds { x: 0.0, y: 0.0, w: v.borrow()[0].to_num(), h: v.borrow()[1].to_num() },
-                _ => crate::vector::bounds_of(&cmds),
-            };
+            let view_box = cx.get(props, "viewBox").and_then(|v| crate::vector::parse_view_box(&v)).unwrap_or_else(|| crate::vector::bounds_of(&cmds));
             // pathPaintOf: sem fill nem stroke, fill preto (como o SVG).
             let mut fill = cx.color(props, "fill");
             let stroke = cx.color(props, "stroke");

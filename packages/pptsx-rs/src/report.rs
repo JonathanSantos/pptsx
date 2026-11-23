@@ -443,6 +443,35 @@ fn shrunk_diag(spec: &crate::model::TextSpec, slide: usize, path: &str, from: f6
     sizes_data(Diag::new(Level::Info, "text-shrunk", slide, path, msg), from, to).with("fitGroup", Data::Str(name.to_string()))
 }
 
+/// `glyph-missing`: caracteres que a fonte do trecho não tem. O preview mostra um quadrado e o PowerPoint
+/// troca por outra fonte; sem aviso, o agente só veria o quadrado no PNG (ou nem isso).
+fn glyph_missing(spec: &crate::model::TextSpec, fonts: &Fonts, slide: usize, path: &str) -> Option<Diag> {
+    let runs = crate::layout::runs_of(spec, fonts, 1.0);
+    let mut chars: Vec<char> = Vec::new();
+    let mut faces: Vec<String> = Vec::new();
+    for run in runs.iter().filter(|r| !r.missing) {
+        let missing = fonts.missing_chars(run.face, &run.text);
+        if missing.is_empty() {
+            continue;
+        }
+        // A família que o autor escreveu: sem face própria registrada, é a Arial (medida com a Liberation Sans).
+        let face = fonts.author_face(run.face).map_or_else(|| "Arial".to_string(), |a| a.family.clone());
+        if !faces.contains(&face) {
+            faces.push(face);
+        }
+        chars.extend(missing.into_iter().filter(|c| !chars.contains(c)).collect::<Vec<_>>());
+    }
+    if chars.is_empty() {
+        return None;
+    }
+    let shown: Vec<String> = chars.iter().map(|c| format!("\"{c}\" (U+{:04X})", u32::from(*c))).collect();
+    Some(Diag::new(Level::Info, "glyph-missing", slide, path, format!(
+        "{} sem glifo na fonte {}: o preview desenha um quadrado e o PowerPoint troca por outra fonte, com outra largura. Use outro caractere (\"->\" no lugar de uma seta), um <Icon>, ou uma fonte que o tenha.",
+        shown.join(", "),
+        faces.iter().map(|f| format!("\"{f}\"")).collect::<Vec<_>>().join(", ")
+    )))
+}
+
 fn text_diagnostics(placed: &[Placed], i: usize, heights: &HashMap<usize, &Overflow>, widths: &HashMap<usize, &Overflow>, slide: usize, fonts: &Fonts) -> Vec<Diag> {
     let p = &placed[i];
     let (NodeKind::Text(spec), Some(t)) = (&p.node.kind, &p.text) else { return Vec::new() };
@@ -509,6 +538,9 @@ fn text_diagnostics(placed: &[Placed], i: usize, heights: &HashMap<usize, &Overf
                 .num("requestedWeight", requested as f64)
                 .num("usedWeight", used as f64),
         );
+    }
+    if let Some(d) = glyph_missing(spec, fonts, slide, path) {
+        out.push(d);
     }
     if t.laid.truncated {
         let shown: usize = t.laid.paragraphs.iter().map(Vec::len).sum();
@@ -909,7 +941,7 @@ fn attribute_causes(diags: Vec<Diag>, placed: &[Placed], kids: &[Vec<usize>], ov
 // ───────────── agrupamento (fit/group.ts) ─────────────
 
 /// Nesses códigos o motivo está só na mensagem: mensagens diferentes não se agrupam.
-const MESSAGE_IDENTITY: [&str; 4] = ["icon-rasterized", "path-invalid", "connector-target-missing", "connector-omitted"];
+const MESSAGE_IDENTITY: [&str; 5] = ["icon-rasterized", "path-invalid", "connector-target-missing", "connector-omitted", "glyph-missing"];
 
 fn identity_of(d: &Diag) -> String {
     let data = |k: &str| match d.get(k) {

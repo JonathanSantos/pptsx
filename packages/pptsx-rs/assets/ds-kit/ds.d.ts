@@ -1,5 +1,5 @@
 import type { TokenSource } from './tokens.ts';
-import { type Component, type ComponentCatalogCase, type ComponentMeta, type DsManifest, type LintRule, type Theme } from 'pptsx';
+import { type Component, type ComponentCatalogCase, type ComponentMeta, type DsManifest, type FontFace, type LintRule, type SizeSpec, type Theme } from 'pptsx';
 /**
  * `createDs`: monta o `DsManifest` do núcleo a partir das funções dos componentes (o núcleo só guarda os
  * metas; o catálogo precisa das funções, que ficam em `implementations`). O guia junta as partes em
@@ -19,6 +19,13 @@ export interface DsInput {
     readonly examples?: readonly string[];
     /** Os tokens do DS: as cores deles vão para `colors` do manifesto, e o lint deixa de apontá-las como fora do tema. */
     readonly tokens?: TokenSource;
+    /**
+     * As fontes da marca: o deck que registra o DS na config as herda (a config vence se registrar a mesma face).
+     * Use `file` absoluto, relativo a este módulo: `new URL('../fonts/Inter-Regular.ttf', import.meta.url).pathname`.
+     */
+    readonly fonts?: readonly FontFace[];
+    /** Os tamanhos para que o DS foi desenhado (ex.: `['wide', '4x3']`): valem quando a config não define `sizes`. */
+    readonly sizes?: readonly SizeSpec[];
 }
 export interface GuidePart {
     readonly title: string;

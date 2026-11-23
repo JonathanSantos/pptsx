@@ -150,6 +150,15 @@ pub fn install_globals(env: &Env) {
     env.define("parseFloat", native("parseFloat", parse_float, Value::Undefined), false);
     env.define("isNaN", native("isNaN", |_, _, a| Ok(Value::Bool(arg(a, 0).to_num().is_nan())), Value::Undefined), false);
     env.define("isFinite", native("isFinite", |_, _, a| Ok(Value::Bool(arg(a, 0).to_num().is_finite())), Value::Undefined), false);
+    env.define("encodeURIComponent", native("encodeURIComponent", |_, _, a| Ok(str_val(&encode_uri_component(&arg(a, 0).to_js_string()))), Value::Undefined), false);
+    env.define(
+        "decodeURIComponent",
+        native("decodeURIComponent", |_, _, a| {
+            let raw = arg(a, 0).to_js_string();
+            decode_uri_component(&raw).map(|s| str_val(&s)).map_or_else(|| fail(format!("URI malformada: \"{raw}\"")), Ok)
+        }, Value::Undefined),
+        false,
+    );
     env.define("Infinity", num(f64::INFINITY), false);
     env.define("NaN", num(f64::NAN), false);
 }
@@ -295,6 +304,43 @@ pub fn pick_responsive(value: &Value, name: &str, aspect: f64, scale: f64) -> Va
 
 // ───────────── acesso a propriedades ─────────────
 
+fn url_prop(s: &str, key: &str) -> Option<Value> {
+    if !matches!(key, "pathname" | "href") {
+        return None;
+    }
+    let path = s.strip_prefix("file://").unwrap_or(s);
+    // `/a/b` não é absoluto no Windows para o Path, mas é o caminho de um URL `file://`.
+    if !std::path::Path::new(path).is_absolute() && !path.starts_with('/') && !s.starts_with("file://") {
+        return None;
+    }
+    Some(str_val(&if key == "href" { format!("file://{path}") } else { path.to_string() }))
+}
+
+/// encodeURIComponent: tudo em %XX (UTF-8) menos letras, dígitos e `-_.!~*'()`.
+fn encode_uri_component(s: &str) -> String {
+    s.bytes()
+        .map(|b| if b.is_ascii_alphanumeric() || b"-_.!~*'()".contains(&b) { (b as char).to_string() } else { format!("%{b:02X}") })
+        .collect()
+}
+
+/// decodeURIComponent: %XX em bytes UTF-8; sequência malformada é erro (o URIError do JS).
+fn decode_uri_component(s: &str) -> Option<String> {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' {
+            let hex = s.get(i + 1..i + 3)?;
+            out.push(u8::from_str_radix(hex, 16).ok()?);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).ok()
+}
+
 pub fn get_prop(obj: &Value, key: &str) -> R<Value> {
     match obj {
         Value::Object(o) => Ok(o.get(key).cloned().unwrap_or(Value::Undefined)),
@@ -313,6 +359,11 @@ pub fn get_prop(obj: &Value, key: &str) -> R<Value> {
         Value::Str(s) => {
             if key == "length" {
                 return Ok(Value::Num(s.encode_utf16().count() as f64));
+            }
+            // `new URL(x, import.meta.url)` devolve o caminho como string (fs, Image e path o usam direto);
+            // `.pathname` e `.href` nela dão o caminho e o `file://`, como o URL do Node. Só em caminho absoluto.
+            if let Some(v) = url_prop(s, key) {
+                return Ok(v);
             }
             if let Ok(i) = key.parse::<usize>() {
                 return Ok(s.chars().nth(i).map_or(Value::Undefined, |c| str_val(&c.to_string())));
@@ -931,5 +982,28 @@ impl JsonParser<'_> {
                 other => bytes.push(other),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn url_props_exist_only_on_absolute_paths_and_file_urls() {
+        assert_eq!(url_prop("/a/dados/x.csv", "pathname").map(|v| v.to_js_string()), Some("/a/dados/x.csv".into()));
+        assert_eq!(url_prop("/a/x.csv", "href").map(|v| v.to_js_string()), Some("file:///a/x.csv".into()));
+        assert_eq!(url_prop("file:///a/x.csv", "pathname").map(|v| v.to_js_string()), Some("/a/x.csv".into()));
+        assert!(url_prop("texto qualquer", "pathname").is_none());
+        assert!(url_prop("/a/x.csv", "host").is_none());
+    }
+
+    #[test]
+    fn uri_component_round_trips_utf8_and_reserved_characters() {
+        assert_eq!(encode_uri_component("a b/ç?"), "a%20b%2F%C3%A7%3F");
+        assert_eq!(decode_uri_component("a%20b%2F%C3%A7%3F").as_deref(), Some("a b/ç?"));
+        assert_eq!(decode_uri_component("Apresenta%C3%A7%C3%B5es").as_deref(), Some("Apresentações"));
+        assert!(decode_uri_component("%E0%A4%A").is_none());
+        assert!(decode_uri_component("%ZZ").is_none());
     }
 }

@@ -199,6 +199,19 @@ impl Fonts {
         self.face_names.get(face).map_or("", String::as_str)
     }
 
+    /// Caracteres que a face não tem (sem glifo): o preview desenha um quadrado e a medida usa o `.notdef`;
+    /// o PowerPoint troca por outra fonte, com outra largura. Espaços e caracteres de formatação não contam.
+    pub fn missing_chars(&self, face: usize, text: &str) -> Vec<char> {
+        let Some(f) = self.faces.get(face) else { return Vec::new() };
+        let mut out: Vec<char> = Vec::new();
+        for c in text.chars().filter(|c| !is_invisible(*c)) {
+            if f.glyph_index(c).is_none() && !out.contains(&c) {
+                out.push(c);
+            }
+        }
+        out
+    }
+
     pub fn face_for(&self, family: &str, weight: u16, italic: bool) -> usize {
         self.matching(family, weight, italic).face
     }
@@ -293,6 +306,11 @@ impl Fonts {
 }
 
 // ───────────── quebra ─────────────
+
+/// Espaço, controle e formatação (ZWJ, seletor de variação, BOM): não têm glifo próprio por definição.
+fn is_invisible(c: char) -> bool {
+    c.is_whitespace() || c.is_control() || matches!(c, '\u{ad}' | '\u{200b}'..='\u{200f}' | '\u{2060}'..='\u{206f}' | '\u{fe00}'..='\u{fe0f}' | '\u{feff}')
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Piece {

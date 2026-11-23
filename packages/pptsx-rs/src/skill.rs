@@ -61,10 +61,10 @@ export default defineDeck(() => (
   <Deck>
     <Slide padding={40} gap={16} backgroundColor="#FFFFFF" color="#1F2933">
       <Text fontSize={32} fontWeight="bold">Resultados do trimestre</Text>
-      <Box display="grid" gridTemplateColumns={{ base: 'repeat(3, minmax(0, 1fr))', tall: 'minmax(0, 1fr)' }} gap={16} flex={1}>
+      <Box display="grid" gridTemplateColumns={{ base: 'repeat(3, minmax(0, 1fr))', tall: 'minmax(0, 1fr)' }} gridTemplateRows={{ base: 'minmax(0, 1fr)', tall: 'repeat(3, minmax(0, 1fr))' }} gap={16} flex={1}>
         <Box backgroundColor="#EEF2FF" borderRadius={8} padding={16} gap={6}>
-          <Text fontSize={14} color="#52606D">Receita</Text>
-          <Text fontSize={28} fontWeight="bold">R$ 52,4 mi</Text>
+          <Text fontSize={18} color="#52606D">Receita</Text>
+          <Text fontSize={32} fontWeight="bold">R$ 52,4 mi</Text>
         </Box>
       </Box>
       <Text fontSize={11} color="#52606D" marginTop="auto">Fonte: relatório trimestral</Text>
@@ -115,14 +115,14 @@ fn skill_md(version: &str, identity: &Identity, ds: Option<&SkillDs>, extra_refe
 
 Você descreve a **estrutura** dos slides num `.tsx`; o pptsx calcula o layout, mede o texto com a fonte real e grava um `.pptx` editável, os PNGs de cada slide e os diagnósticos. Não existem coordenadas x/y.
 
-O motor é o binário desta skill, sem Node nem instalação: `{BIN}` (Windows: `bin\pptsx-rs.exe`). Se o servidor MCP `{name}` estiver conectado, prefira as ferramentas dele (`diagnose`, `build`, `preview`, `lint`, `guide`, `schema`) ao shell; é o mesmo binário (`bin/pptsx-rs mcp`; os `mcp/*.json` prontos estão nesta pasta).
+O motor é o binário desta skill, sem Node nem instalação: `{BIN}` (Windows: `bin\pptsx-rs.exe`). Ele é do sistema em que a skill foi gerada ou baixada; para outro sistema, use o pacote dele em https://github.com/JonathanSantos/pptsx/releases/latest (um por sistema, mesma skill). Se o servidor MCP `{name}` estiver conectado, prefira as ferramentas dele (`diagnose`, `build`, `preview`, `lint`, `guide`, `schema`) ao shell; é o mesmo binário (`bin/pptsx-rs mcp`; os `mcp/*.json` prontos estão nesta pasta).
 
 ## Fluxo (meta: entregar em até 2 builds)
 
 1. **Pasta do deck:** `{BIN} init <pasta>` cria `deck.tsx` de exemplo, `tsconfig.json` e `pptsx.config.ts`. Ou escreva só o `deck.tsx` como no modelo abaixo (a config só é precisa para fontes próprias, tema ou um design system).
-2. **Escreva os slides** seguindo as regras abaixo. Antes do primeiro deck, leia `references/essentials.md` (≈ 420 linhas: primitivas, `Container`, texto, paginação, diagnósticos e armadilhas). O resto está em `references/guide.md` (o índice no topo dá a linha de cada seção; §6 receitas) e `references/props.md` (todas as props, com o tipo).
-3. **Itere com** `{BIN} check <pasta>/deck.tsx --json` (só diagnósticos, sem gravar) até zerar os `error`.
-4. **Compile:** `{BIN} build <pasta>/deck.tsx --size 16x9,4x3` (`--size 16x9` se pedirem um formato só). Sai em `dist/`: `.pptx` por tamanho, `overview.png` (todos os slides numa grade, selo vermelho onde há error), `slide-NN.png` e `diagnostics.json`.
+2. **Escreva os slides** seguindo as regras abaixo. Antes do primeiro deck, leia `references/essentials.md` (≈ 430 linhas: primitivas, `Container`, texto, paginação, diagnósticos e armadilhas). O resto está em `references/guide.md` (o índice no topo dá a linha de cada seção; §6 receitas) e `references/props.md` (todas as props, com o tipo).
+3. **Itere com** `{BIN} check <pasta>/deck.tsx --size 16x9,4x3 --json` (só diagnósticos, sem gravar) até zerar os `error`. Passe em `--size` os formatos que vai entregar: sem ele vale o `sizes` da config ou do design system, senão só o 16x9.
+4. **Compile:** `{BIN} build <pasta>/deck.tsx --size 16x9,4x3` (`--size 16x9` se pedirem um formato só). Sai em `dist/`, relativo à pasta de onde você roda (`--out` muda), com o nome do arquivo do deck: `deck.16x9.pptx` por tamanho, `deck.16x9.overview.png` (todos os slides numa grade; selo vermelho onde há error, amarelo onde há warning), `deck.16x9/slide-NN.png` e `deck.diagnostics.json`.
 5. **Leia os diagnósticos:** cada um tem o slide, o caminho do nó (`Slide > Box[1] > Text` é o Text do 2º Box do slide), a mensagem com o conserto e, num estouro, `causedBy`. Abra o overview PNG para ver o layout.
 6. **Entregue** o `.pptx` e conte o que sobrou de diagnóstico. Código de saída 1 = ainda há `error`.
 
@@ -135,15 +135,19 @@ O motor é o binário desta skill, sem Node nem instalação: `{BIN}` (Windows: 
 - `export default defineDeck((ctx) => <Deck>…</Deck>)`; os filhos do `Deck` são só `Slide`.
 - **Todo texto dentro de `<Text>`** (string solta num Box é erro). Negrito e itálico no meio do texto: `<B>`, `<I>`, `<Span color=…>` dentro do Text.
 - O layout é **CSS em camelCase** como props: `padding`, `gap`, `margin`, `width`, `height`, `flex`, `alignItems`, `justifyContent`, `backgroundColor`, `border`, `borderRadius`, `fontSize`, `fontWeight`, `color`, `textAlign`, `lineHeight`. Números são pt (o slide 16:9 tem 720 × 405 pt; o 4:3, 720 × 540).
-- `Box` sem `display` é **coluna**; `display="flex"` é **linha**. Colunas iguais: `display="grid" gridTemplateColumns="repeat(3, minmax(0, 1fr))"` (sempre `minmax(0, 1fr)`, nunca `1fr` solto) ou `flex={{1}}` em cada filho de uma linha.
+- `Box` sem `display` é **coluna**; `display="flex"` é **linha** (o `Slide` é sempre coluna: nele, `flexDirection="row"`). Colunas iguais: `display="grid" gridTemplateColumns="repeat(3, minmax(0, 1fr))"` (sempre `minmax(0, 1fr)`, nunca `1fr` solto) ou `flex={{1}}` em cada filho de uma linha. Grid que vira uma coluna no 4:3: dê também `gridTemplateRows` com `minmax(0, 1fr)` por linha, como no modelo; linhas `auto` não encolhem e estouram.
 - Ocupar a altura que sobra: `flex={{1}}`. Rodapé no fim: `marginTop="auto"` no último filho.
 - Fonte e cor declaradas no `Slide` ou num `Box` **descem** para os `Text` de dentro: defina uma vez e escreva só o que muda.
 - O 4:3 é mais **alto** que o 16:9 (mesma largura). Valor por formato: `{{ base: …, tall: … }}` (`tall` = 4:3; o 16:10 cai no `base`), nunca `if` sobre o formato.
 - Lista ou tabela longa: `<Box paginate flex={{1}}>` (ou `Table paginate`) divide o conteúdo em vários slides. Texto que não cabe encolhe até um mínimo e, depois disso, vira `error` com o conserto.
 - Gráfico nativo: `<Chart kind="bar" data={{{{ categories: [...], series: [{{ name, values: [...] }}] }}}} labels flex={{1}} />` (precisa de altura: `flex={{1}}` ou `height`). Tabela: `<Table columns={{[{{ header: "Área" }}, {{ header: "Q3", align: "right" }}]}} rows={{[["Varejo", "22,6"]]}} />` (números como texto mantêm a vírgula).
-- Imagem: `<Image src="./logo.png" width={{120}} />`, com o caminho relativo ao deck.
+- Imagem: `<Image src="./logo.png" width={{120}} />` (PNG ou JPEG), com o caminho relativo ao deck. SVG vai em `<Icon src="./logo.svg" size={{48}} />` (vira forma editável).
+- Legibilidade: corpo ≥ 18 pt e título ≥ 28 pt para projetor e tela (fonte e rodapé podem ser menores); para celular, uma mensagem por slide com um número grande. Texto que encolheu para caber sai como `text-shrunk` (info): confira o corpo final.
 - Degradê é nativo: `backgroundImage="linear-gradient(135deg, #2A2F9E, #0B1020)"` em Slide, Box e Shape. O que o PPTX não tem (`overflow: hidden`, `filter`…) vira o aviso `css-not-emitted`: troque por algo que exista. Não invente props; na dúvida, `references/props.md`.
-- Design system: é um módulo TS (uma pasta ou um pacote) que exporta `ds`. Importe os componentes dele, registre no `pptsx.config.ts` (`defineConfig({{ ds: [ds] }})`) e prefira-os às primitivas; `{BIN} lint deck.tsx` aplica as regras dele. `{BIN} init <pasta> --ds <caminho|pacote>` cria o deck já com os componentes. O `@pptsx/ds-kit` (o kit de quem escreve um DS) vem dentro do binário: não precisa de `npm install`.
+- Design system: é um módulo TS (uma pasta ou um pacote) que exporta `ds`. Importe os componentes dele, registre no `pptsx.config.ts` (`defineConfig({{ ds: [ds] }})`) e prefira-os às primitivas; `{BIN} lint deck.tsx` aplica as regras dele. `{BIN} init <pasta> --ds <caminho|pacote>` cria o deck já com os componentes. O `@pptsx/ds-kit` (o kit de quem escreve um DS) vem dentro do binário: não precisa de `npm install`. Um DS pode declarar `fonts` e `sizes` (o deck que o registra herda). Se ele é desenhado em `wide`, entregue `--size wide,4x3`: o `16x9` tem a mesma proporção com 720 pt de largura em vez de 960, e o DS estoura nele.
+- Dados: `readFileSync('./dados/vendas.csv', 'utf8')` (de `node:fs`) lê arquivos da pasta do deck, com caminho relativo ao arquivo do deck; o deck vira uma função pura sobre eles. O JS do deck não tem rede, `process`, classes, `async` nem lookahead em regex (guia §9).
+- PDF não sai do pptsx: entregue o `.pptx` (PowerPoint e Keynote exportam PDF com texto) ou, se a pessoa aceitar um PDF só de imagem, junte os PNGs (`--preview-width 2000`).
+- Se o time vai editar no PowerPoint: `lineBreaks: 'auto'` na config (sem uma quebra manual por linha medida) e, com fonte própria, `embedFonts: true` (só o PowerPoint usa).
 - Tipos: o `init` grava os `.d.ts` do pptsx em `.pptsx/types/` e aponta o `tsconfig.json` para lá; o editor entende `pptsx` e `@pptsx/ds-kit` sem `npm install`. Se o editor não achar `pptsx`, `{BIN} types <pasta>`.
 - Lendo diagnósticos: `data.component` diz o componente do autor e as props dele (`<Risks items=[4 itens] status="warn" />`) quando o nó estourado fica dentro de um componente; é ali que se mexe, não no path interno. O `lint` não mostra `off-theme-color` de cores do design system (só com `--verbose`): o que aparece é seu.
 - `module-warning` (slide 0) é um `console.warn` do deck ou do DS, como um ícone com nome desconhecido: corrija o que ele diz.

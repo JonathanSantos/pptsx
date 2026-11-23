@@ -302,8 +302,8 @@ export interface ShapeProps extends FlexItemProps, StrokeProps {
  */
 export interface PathProps extends FlexItemProps, StrokeProps {
     readonly d: string;
-    /** [largura, altura] com origem em 0,0; padrão: a caixa envolvente do `d`. */
-    readonly viewBox?: readonly [number, number];
+    /** [largura, altura] (origem em 0,0), [x, y, largura, altura] ou a string do SVG "x y largura altura"; padrão: a caixa envolvente do `d`. */
+    readonly viewBox?: readonly [number, number] | readonly [number, number, number, number] | string;
     /** Padrão 'flat' e 'miter' (os do PPTX). */
     readonly lineCap?: LineCap;
     readonly lineJoin?: LineJoin;
@@ -1230,6 +1230,8 @@ export type DiagnosticCode = 'text-overflow' | 'text-shrunk' | 'text-truncated' 
  | 'container-depth' | 'image-upscaled' | 'font-missing'
 /** pptsx-rs: o arquivo de um Image ou de um backgroundImage não existe ou não abre (warning; o Image sai cinza). */
  | 'image-missing'
+/** pptsx-rs: caracteres sem glifo na fonte do trecho; o preview mostra um quadrado e o PowerPoint troca de fonte (info). */
+ | 'glyph-missing'
 /** M8: fonte pedida em embedFonts com fsType restrito; não foi embutida (warning, slide 0, path ''). */
  | 'font-not-embeddable'
 /** M9: slide do autor dividido em partes por um Box paginate (info, só na 1ª parte). */
