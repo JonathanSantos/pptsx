@@ -210,3 +210,46 @@ fn missing_glyphs_are_reported_with_their_code_points() {
     let all: String = glyphs.iter().filter_map(|d| d["message"].as_str()).collect();
     assert!(glyphs.len() == 2 && all.contains("U+2713") && all.contains("U+2605"), "{output}");
 }
+
+/// Estouro de tracks do grid sugere minmax(0, 1fr) nos tracks, não flexShrink (que não vale no grid).
+#[test]
+fn grid_track_overflow_points_to_minmax_tracks() {
+    let card = r#"<Box padding={16} gap={6}><Text fontSize={44} fontWeight="bold">R$ 52,4 mi</Text><Text fontSize={14}>Comentário mais longo, de duas ou três linhas, que explica o número e dá contexto.</Text></Box>"#;
+    let slides = format!(r#"<Slide padding={{40}} gap={{16}}><Text fontSize={{32}}>Resultados</Text><Box display="grid" gridTemplateColumns="minmax(0, 1fr)" gap={{16}} flex={{1}}>{card}{card}{card}</Box></Slide>"#);
+    let (diagnostics, output) = check("grid-tracks", &slides);
+    let boxes: Vec<&str> = with_code(&diagnostics, "box-overflow").iter().filter_map(|d| d["message"].as_str()).collect();
+    assert!(boxes.iter().any(|m| m.starts_with("Os tracks do grid") && m.contains("minmax(0, 1fr)") && !m.contains("flexShrink")), "{output}");
+}
+
+/// O PNG do 1º slide (1280 px) de um deck 16x9, decodificado.
+fn slide_png(name: &str, slides: &str) -> resvg::tiny_skia::Pixmap {
+    let dir: PathBuf = std::env::temp_dir().join(format!("pptsx-rs-slide-png-{name}-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).expect("pasta temporária");
+    let deck = format!("import {{ Box, Chart, Deck, Slide, Text, defineDeck }} from 'pptsx';\nexport default defineDeck(() => (<Deck>{slides}</Deck>));\n");
+    fs::write(dir.join("deck.tsx"), deck).expect("deck.tsx");
+    let out = dir.join("out");
+    Command::new(env!("CARGO_BIN_EXE_pptsx-rs")).args(["build", &dir.join("deck.tsx").display().to_string(), "--size", "16x9", "--out", &out.display().to_string()]).output().expect("rodar o binário");
+    let png = fs::read(out.join("deck.16x9/slide-01.png")).expect("PNG do slide");
+    let _ = fs::remove_dir_all(&dir);
+    resvg::tiny_skia::Pixmap::decode_png(&png).expect("PNG válido")
+}
+
+/// Rosca no preview como no arquivo: o furo mostra o fundo do slide (era um círculo branco por cima) e a
+/// legenda aparece (o preview só a desenhava nos gráficos de eixo).
+#[test]
+fn donut_preview_keeps_the_background_in_the_hole_and_draws_the_legend() {
+    let slide = r##"<Slide padding={40} backgroundColor="#FBF7EE"><Chart kind="doughnut" legend="bottom" colors={['#1F4D2B', '#9BD15A', '#E4572E']} data={{ categories: ['Produto', 'Logística', 'Marketing'], series: [{ name: 'Uso', values: [40, 35, 25] }] }} flex={1} /></Slide>"##;
+    let pixmap = slide_png("donut", slide);
+    let (w, h) = (pixmap.width() as usize, pixmap.height() as usize);
+    let at = |x: usize, y: usize| { let p = pixmap.pixels()[y * w + x]; (p.red(), p.green(), p.blue()) };
+    let white = pixmap.pixels().iter().filter(|p| (p.red(), p.green(), p.blue()) == (255, 255, 255)).count();
+    assert!(white < w * h / 100, "furo pintado de branco: {white} px brancos");
+    // O centro da rosca é o fundo do slide.
+    let center = (0..h).map(|y| at(w / 2, y)).filter(|c| *c == (0xFB, 0xF7, 0xEE)).count();
+    assert!(center > h / 4, "o centro não mostra o fundo");
+    // A legenda: a cor de 'Marketing' aparece também na faixa de baixo, onde não há fatia.
+    let legend_rows = (h * 82 / 100)..(h * 92 / 100);
+    let marketing = legend_rows.flat_map(|y| (0..w).map(move |x| (x, y))).filter(|(x, y)| at(*x, *y) == (0xE4, 0x57, 0x2E)).count();
+    assert!(marketing > 20, "sem legenda: {marketing} px da cor de Marketing na faixa de baixo");
+}

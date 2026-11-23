@@ -27,6 +27,16 @@ const DS_SKILL_DIR: &str = "skill";
 const DS_BUNDLE_DIR: &str = "ds";
 /// Pastas que não são código do DS: não entram na cópia.
 const BUNDLE_SKIP: [&str; 3] = ["node_modules", "dist", "target"];
+/// Pastas de desenvolvimento do DS (testes, fixtures, cobertura): não são código que o deck usa e só incham a
+/// skill (o `@pptsx/ds-base` levava 98 arquivos). `files` do package.json não serve: o de um DS publica `dist/`.
+const BUNDLE_DEV_DIRS: [&str; 6] = ["tests", "test", "__tests__", "__snapshots__", "fixtures", "coverage"];
+
+/// Arquivo de teste ou de configuração de teste/build, que a skill não usa.
+fn is_dev_file(name: &str) -> bool {
+    let test = [".test.", ".spec."].iter().any(|t| name.contains(t));
+    let config = ["vitest.", "jest.config", "tsconfig.build"].iter().any(|p| name.starts_with(p));
+    test || config
+}
 const MAX_NAME: usize = 64;
 
 /// Nome e descrição da skill (o frontmatter do `SKILL.md`).
@@ -84,6 +94,24 @@ fn frontmatter(identity: &Identity) -> String {
     format!("---\nname: {}\ndescription: {}\n---\n", identity.name, yaml_scalar(&identity.description))
 }
 
+/// Necessidade → onde está. As referências somam centenas de KB: sem isto o agente lê tudo para achar a tabela.
+/// Os nomes batem com os títulos do guia (o `essentials.md` é um recorte dele, com os mesmos títulos).
+const WHERE_TO_FIND: &str = "## Onde achar
+
+| preciso de… | onde |
+|---|---|
+| props de uma primitiva | `references/props.md` (por primitiva) e `essentials.md` §3 \"Por primitiva\" |
+| tabela (cronograma, parcelas, comparação) | `guide.md` §3 \"Tabelas\"; receitas §6.9 (resultados) e §6.19 (longa, em vários slides) |
+| gráfico | `guide.md` §3 \"Gráficos\"; receita §6.8 |
+| linha do tempo, fluxo, ícones | `guide.md` §3 \"Diagramas\"; receitas §6.11 a §6.13 |
+| lista longa em vários slides | `essentials.md` §3 \"Paginação\" |
+| outro valor no 4:3 | `essentials.md` §2 \"Breakpoints\" |
+| fonte própria | `guide.md` §4 \"Fontes\" |
+| ler dados (CSV, JSON) | `guide.md` §6.20 e §9 (limites do JS do deck) |
+| criar um design system | `guide.md` §5, \"Receita: um DS de marca do zero\" |
+| entender um diagnóstico | `essentials.md` §8 \"Códigos\" |
+";
+
 fn ds_section(ds: &SkillDs) -> String {
     let name = &ds.info.name;
     let location = ds.location();
@@ -91,7 +119,23 @@ fn ds_section(ds: &SkillDs) -> String {
         Some(_) => format!("Ele vem dentro desta skill, em `{SKILL_ROOT}/{DS_BUNDLE_DIR}/` (entrada: `{location}`): no deck, importe-o pelo caminho relativo da pasta do deck até lá. `{BIN} init <pasta> --ds {location}` cria um deck que já o importa e o `pptsx.config.ts` que o registra (regras no lint, tema no arquivo)."),
         None => format!("Ele é o pacote `{location}`: precisa estar no `node_modules` da pasta do deck. `references/pptsx.config.ts` é a config que o registra (regras no lint, tema no arquivo): copie para a pasta do deck. `{BIN} init <pasta> --ds {location}` cria um deck que já o importa e registra."),
     };
-    format!("## Design system: {name}\n\nEsta skill usa o DS **{name}**. {where_it_is} Prefira os componentes dele às primitivas: `references/ds.md` tem cada componente com a assinatura, um exemplo, as props (com tipo, padrão e descrição) e as regras.\n\n")
+    let mut facts: Vec<String> = Vec::new();
+    if !ds.info.sizes.is_empty() {
+        facts.push(format!("Tamanhos do DS: `{}` (use em `--size`; sem ele, `check` e `build` já usam estes).", ds.info.sizes.join(",")));
+    }
+    if !ds.info.fonts.is_empty() {
+        facts.push(format!("As fontes da marca ({}) vêm com o DS: não registre na config.", ds.info.fonts.join(", ")));
+    }
+    let slides: Vec<String> = ds.info.components.iter().filter(|c| c.slide).map(|c| format!("`{}`", c.name)).collect();
+    if !slides.is_empty() {
+        facts.push(format!("Slides inteiros, direto no `<Deck>`: {}.", slides.join(", ")));
+    }
+    if ds.info.has_starter {
+        facts.push("O `init --ds` parte do deck inicial do DS (`starter.tsx`): edite o conteúdo dele.".into());
+    }
+    facts.push("O que o DS não tem (cronograma, tabela de parcelas…): monte com as primitivas e os `tokens` que o DS exporta, seguindo as receitas do guia (§6); cor fora dos tokens o lint cobra. Limites de texto de cada componente estão no `references/ds.md`.".into());
+    let facts = if facts.is_empty() { String::new() } else { format!("\n\n- {}", facts.join("\n- ")) };
+    format!("## Design system: {name}\n\nEsta skill usa o DS **{name}**. {where_it_is} Prefira os componentes dele às primitivas. Antes do primeiro slide, leia o topo de `references/ds.md` (como começar e o índice dos componentes); depois, cada componente tem a assinatura, um exemplo, as props (com tipo, padrão e descrição) e as regras.{facts}\n\n")
 }
 
 fn skill_md(version: &str, identity: &Identity, ds: Option<&SkillDs>, extra_references: &[String]) -> String {
@@ -144,7 +188,7 @@ O motor é o binário desta skill, sem Node nem instalação: `{BIN}` (Windows: 
 - Imagem: `<Image src="./logo.png" width={{120}} />` (PNG ou JPEG), com o caminho relativo ao deck. SVG vai em `<Icon src="./logo.svg" size={{48}} />` (vira forma editável).
 - Legibilidade: corpo ≥ 18 pt e título ≥ 28 pt para projetor e tela (fonte e rodapé podem ser menores); para celular, uma mensagem por slide com um número grande. Texto que encolheu para caber sai como `text-shrunk` (info): confira o corpo final.
 - Degradê é nativo: `backgroundImage="linear-gradient(135deg, #2A2F9E, #0B1020)"` em Slide, Box e Shape. O que o PPTX não tem (`overflow: hidden`, `filter`…) vira o aviso `css-not-emitted`: troque por algo que exista. Não invente props; na dúvida, `references/props.md`.
-- Design system: é um módulo TS (uma pasta ou um pacote) que exporta `ds`. Importe os componentes dele, registre no `pptsx.config.ts` (`defineConfig({{ ds: [ds] }})`) e prefira-os às primitivas; `{BIN} lint deck.tsx` aplica as regras dele. `{BIN} init <pasta> --ds <caminho|pacote>` cria o deck já com os componentes. O `@pptsx/ds-kit` (o kit de quem escreve um DS) vem dentro do binário: não precisa de `npm install`. Um DS pode declarar `fonts` e `sizes` (o deck que o registra herda). Se ele é desenhado em `wide`, entregue `--size wide,4x3`: o `16x9` tem a mesma proporção com 720 pt de largura em vez de 960, e o DS estoura nele.
+- Design system: é um módulo TS (uma pasta ou um pacote) que exporta `ds`. Importe os componentes dele, registre no `pptsx.config.ts` (`defineConfig({{ ds: [ds] }})`) e prefira-os às primitivas; `{BIN} lint deck.tsx` aplica as regras dele. `{BIN} init <pasta> --ds <caminho|pacote>` cria o deck já com os componentes. O `@pptsx/ds-kit` (o kit de quem escreve um DS) vem dentro do binário: não precisa de `npm install`. Um DS pode declarar `fonts`, `sizes`, `lineBreaks` e `embedFonts` (o deck que o registra herda). Para **criar** um DS: guia §5, "Receita: um DS de marca do zero" (tokens, tema, fontes, logo, layouts, deck inicial e a skill do time). Se ele é desenhado em `wide`, entregue `--size wide,4x3`: o `16x9` tem a mesma proporção com 720 pt de largura em vez de 960, e o DS estoura nele.
 - Dados: `readFileSync('./dados/vendas.csv', 'utf8')` (de `node:fs`) lê arquivos da pasta do deck, com caminho relativo ao arquivo do deck; o deck vira uma função pura sobre eles. O JS do deck não tem rede, `process`, classes, `async` nem lookahead em regex (guia §9).
 - PDF não sai do pptsx: entregue o `.pptx` (PowerPoint e Keynote exportam PDF com texto) ou, se a pessoa aceitar um PDF só de imagem, junte os PNGs (`--preview-width 2000`).
 - Se o time vai editar no PowerPoint: `lineBreaks: 'auto'` na config (sem uma quebra manual por linha medida) e, com fonte própria, `embedFonts: true` (só o PowerPoint usa).
@@ -152,7 +196,8 @@ O motor é o binário desta skill, sem Node nem instalação: `{BIN}` (Windows: 
 - Lendo diagnósticos: `data.component` diz o componente do autor e as props dele (`<Risks items=[4 itens] status="warn" />`) quando o nó estourado fica dentro de um componente; é ali que se mexe, não no path interno. O `lint` não mostra `off-theme-color` de cores do design system (só com `--verbose`): o que aparece é seu.
 - `module-warning` (slide 0) é um `console.warn` do deck ou do DS, como um ícone com nome desconhecido: corrija o que ele diz.
 
-{ds_section}## Referências
+{ds_section}{WHERE_TO_FIND}
+## Referências
 
 - `references/essentials.md`: o essencial do guia; leia inteiro antes do primeiro deck.
 - `references/guide.md`: o guia completo (primitivas, texto, receitas, diagnósticos, armadilhas), com índice de linhas.
@@ -277,6 +322,22 @@ fn cell(text: &str) -> String {
 /// A 1ª frase basta na tabela; o guia tem o resto. Ponto, interrogação ou exclamação só fecham a frase fora
 /// de crases, aspas e parênteses e quando o que vem depois começa com maiúscula (ou é o fim): "vs. Q2",
 /// `{ text? }` e ("R$ 52,4 mi") não cortam a nota no meio.
+/// O 1º parágrafo de um markdown (sem título), para um índice de uma linha: é onde o guia de um componente
+/// costuma dar os limites ("até ~7 caracteres, 3 por linha"). Longo demais, só a 1ª frase.
+pub fn first_line_sentence(markdown: &str) -> String {
+    let paragraph: Vec<&str> = markdown
+        .lines()
+        .map(str::trim)
+        .skip_while(|l| l.is_empty() || l.starts_with('#'))
+        .take_while(|l| !l.is_empty() && !l.starts_with('#') && !l.starts_with("```"))
+        .collect();
+    let joined = paragraph.join(" ");
+    if joined.chars().count() <= INDEX_PARAGRAPH_MAX { joined } else { first_sentence(&joined) }
+}
+
+/// Até quantos caracteres o 1º parágrafo do guia de um componente entra inteiro no índice do `ds.md`.
+const INDEX_PARAGRAPH_MAX: usize = 240;
+
 fn first_sentence(text: &str) -> String {
     let t = text.trim();
     let (mut depth, mut code, mut quoted) = (0usize, false, false);
@@ -483,6 +544,9 @@ fn copy_tree(from: &Path, to: &Path, exclude: &Path, top: bool) -> Result<usize,
         if kind.is_symlink() || name.starts_with('.') || BUNDLE_SKIP.contains(&name.as_str()) || (top && name == DS_SKILL_DIR) || canonical(&source) == exclude {
             continue;
         }
+        if (kind.is_dir() && BUNDLE_DEV_DIRS.contains(&name.as_str())) || (kind.is_file() && is_dev_file(&name)) {
+            continue;
+        }
         if kind.is_dir() {
             copied += copy_tree(&source, &to.join(&name), exclude, false)?;
             continue;
@@ -623,7 +687,12 @@ fn generate(args: &Args, cwd: &Path) -> Result<(PathBuf, String, Vec<String>), S
     let skill_text = match &own_md {
         Some(md) => {
             let vars = [("bin", BIN), ("ds", ds_location.as_str()), ("name", name.as_str()), ("version", version), ("ds_name", info.as_ref().map_or("", |i| i.name.as_str())), ("ds_version", info.as_ref().map_or("", |i| i.version.as_str()))];
-            format!("{}\n{}", frontmatter(&identity), fill(&md.body, &vars))
+            // O SKILL.md do DS manda no texto, mas os fatos do DS (tamanhos, fontes, slides inteiros) e o
+            // "Onde achar" vêm sempre: sem eles, o agente que usa a skill não sabe onde está a tabela.
+            let body = fill(&md.body, &vars);
+            let ds_facts = ds.as_ref().map(ds_section).unwrap_or_default();
+            let index = if body.contains("## Onde achar") { String::new() } else { format!("\n\n{WHERE_TO_FIND}") };
+            format!("{}\n{}\n\n{}{index}", frontmatter(&identity), body.trim_end(), ds_facts.trim_end())
         }
         None => skill_md(version, &identity, ds.as_ref(), &extra_names),
     };
@@ -698,6 +767,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn where_to_find_points_at_sections_that_exist_in_the_guide() {
+        let guide = crate::mcp::GUIDE;
+        for section in ["Por primitiva", "Tabelas", "Gráficos", "Diagramas", "Paginação", "Breakpoints", "Fontes", "Receita: um DS de marca do zero", "Códigos", "6.8 ", "6.9 ", "6.11 ", "6.13 ", "6.19 ", "6.20 "] {
+            assert!(guide.lines().any(|l| l.starts_with("### ") && l.contains(section)), "{section}");
+            assert!(WHERE_TO_FIND.contains(section.trim_end()), "{section}");
+        }
+    }
+
+    #[test]
+    fn index_line_is_the_first_paragraph_unless_it_is_long() {
+        assert_eq!(first_line_sentence("Número grande com legenda. Valor até ~7 caracteres.\n\nOutro parágrafo."), "Número grande com legenda. Valor até ~7 caracteres.");
+        assert_eq!(first_line_sentence("# Título\n\nLinha um\nlinha dois."), "Linha um linha dois.");
+        let long = format!("Primeira frase. Segunda {}", "palavra ".repeat(60));
+        assert_eq!(first_line_sentence(&long), "Primeira frase.");
+    }
+
+    #[test]
     fn first_sentence_ignores_dots_inside_code_quotes_and_parentheses() {
         assert_eq!(first_sentence("Variação (\"+14% vs. Q2\"). Cor pelo sentimento."), "Variação (\"+14% vs. Q2\").");
         assert_eq!(first_sentence("De 3 a 6 tópicos: `{ title, text? }`. Em ordem."), "De 3 a 6 tópicos: `{ title, text? }`.");
@@ -768,13 +854,23 @@ mod tests {
     }
 
     #[test]
+    fn dev_files_are_tests_and_test_or_build_configs() {
+        for dev in ["card.test.tsx", "x.spec.ts", "vitest.config.ts", "vitest.package.config.ts", "jest.config.js", "tsconfig.build.json"] {
+            assert!(is_dev_file(dev), "{dev}");
+        }
+        for keep in ["index.ts", "tokens.ts", "tsconfig.json", "testimonials.tsx", "guide.md"] {
+            assert!(!is_dev_file(keep), "{keep}");
+        }
+    }
+
+    #[test]
     fn bundling_skips_what_is_not_ds_code() {
         let base = std::env::temp_dir().join(format!("pptsx-rs-skill-bundle-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&base);
-        for dir in ["ds/src", "ds/node_modules/x", "ds/skill/references", "ds/.git", "ds/src/skill"] {
+        for dir in ["ds/src", "ds/node_modules/x", "ds/skill/references", "ds/.git", "ds/src/skill", "ds/tests", "ds/fixtures"] {
             std::fs::create_dir_all(base.join(dir)).expect("pastas");
         }
-        for file in ["ds/package.json", "ds/src/index.ts", "ds/node_modules/x/index.js", "ds/skill/SKILL.md", "ds/.git/HEAD", "ds/src/skill/keep.ts"] {
+        for file in ["ds/package.json", "ds/src/index.ts", "ds/node_modules/x/index.js", "ds/skill/SKILL.md", "ds/.git/HEAD", "ds/src/skill/keep.ts", "ds/tests/a.test.ts", "ds/fixtures/f.json", "ds/src/card.test.tsx", "ds/vitest.config.ts", "ds/tsconfig.build.json"] {
             std::fs::write(base.join(file), "x").expect("arquivo");
         }
         let out = base.join("ds/out");

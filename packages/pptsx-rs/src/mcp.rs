@@ -417,7 +417,37 @@ pub(crate) fn core_schema() -> Option<Value> {
     let at = SCHEMA_SOURCE.find("PROPS_SCHEMA")?;
     let start = at + SCHEMA_SOURCE[at..].find("= {")? + 2;
     let end = SCHEMA_SOURCE.rfind('}')? + 1;
-    js::parse_json(&SCHEMA_SOURCE[start..end])
+    js::parse_json(&SCHEMA_SOURCE[start..end]).map(|schema| clean_descriptions(&schema))
+}
+
+/// Tira das descrições os marcadores de marco do projeto (`M13: `, `M8-H: `): são história de quem fez o
+/// núcleo, não informação para quem escreve o deck. Serve ao `props.md` da skill e à ferramenta `schema`.
+fn clean_descriptions(v: &Value) -> Value {
+    match v {
+        Value::Object(o) => js::value::obj_val(
+            o.iter()
+                .map(|(k, x)| match (&**k, x) {
+                    ("description", Value::Str(d)) => (k.clone(), js::value::str_val(&without_milestone(d))),
+                    _ => (k.clone(), clean_descriptions(x)),
+                })
+                .collect(),
+        ),
+        Value::Array(items) => js::value::arr_val(items.borrow().iter().map(clean_descriptions).collect()),
+        other => other.clone(),
+    }
+}
+
+/// `"M14: estilo por célula"` → `"Estilo por célula"`; sem marcador, o texto como está.
+fn without_milestone(text: &str) -> String {
+    let marker = text.strip_prefix('M').and_then(|rest| {
+        let digits = rest.chars().take_while(char::is_ascii_digit).count();
+        let after = &rest[digits..];
+        let after = after.strip_prefix('-').map_or(after, |a| a.trim_start_matches(|c: char| c.is_ascii_alphanumeric()));
+        (digits > 0).then_some(after)?.strip_prefix(": ")
+    });
+    let Some(rest) = marker else { return text.to_string() };
+    let mut chars = rest.chars();
+    chars.next().map(|c| c.to_uppercase().chain(chars).collect()).unwrap_or_default()
 }
 
 /// Um tipo TypeScript (texto) → o JSON Schema que dá para dizer: enum de literais, tipos simples, ou só `x-tsType`.
@@ -648,4 +678,27 @@ pub fn serve(ds_args: &[String]) -> std::process::ExitCode {
         }
     }
     std::process::ExitCode::SUCCESS
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn milestone_markers_leave_descriptions() {
+        assert_eq!(without_milestone("M14: estilo por célula calculado"), "Estilo por célula calculado");
+        assert_eq!(without_milestone("M8-H: uma exportação por vez"), "Uma exportação por vez");
+        assert_eq!(without_milestone("Margem interna da célula"), "Margem interna da célula");
+        assert_eq!(without_milestone("MFA obrigatório: sim"), "MFA obrigatório: sim");
+        assert_eq!(without_milestone("M: nada"), "M: nada");
+    }
+
+    #[test]
+    fn core_schema_has_no_milestone_markers() {
+        let mut text = String::new();
+        js::value::to_json(&core_schema().expect("schema do núcleo"), &mut text);
+        let marker = regex::Regex::new(r#""description":\s*"M\d+(-\w+)?: "#).expect("regex fixa");
+        assert!(!marker.is_match(&text), "sobrou marcador de marco nas descrições");
+        assert!(text.contains("\"description\""), "as descrições continuam lá");
+    }
 }

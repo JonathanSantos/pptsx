@@ -99,6 +99,8 @@ export interface LintRule {
     /** Vira o `code` do achado; prefixe com o DS (`ds-base/kpi-row-max-4`). */
     readonly id: string;
     readonly severity: Severity;
+    /** pptsx-rs: uma linha sobre o que a regra cobra; o `references/ds.md` da skill a mostra ao lado do id. */
+    readonly description?: string;
     /** Por nó: chamada para cada slide e cada descendente. `node.props` segue `LintProps`. */
     readonly check?: (node: ResolvedNode | ResolvedSlide, ctx: LintContext) => readonly RuleFinding[];
     /**

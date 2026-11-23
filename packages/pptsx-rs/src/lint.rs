@@ -588,7 +588,9 @@ fn css_value(css: &Css, el: &Element, ctx: &DeckCtx) -> Value {
         border.insert(Rc::from(*side), obj_val(s));
     }
     o.insert(Rc::from("border"), obj_val(border));
-    for key in ["display", "gridTemplateColumns", "gridTemplateRows", "flexDirection"] {
+    // O tipo promete o CSS do nó (`ResolvedBase.css`): o que uma regra de marca cobra (sombra, degradê, raio,
+    // transparência) tem de chegar, senão a regra nunca dispara e ninguém avisa.
+    for key in ["display", "gridTemplateColumns", "gridTemplateRows", "flexDirection", "boxShadow", "backgroundImage", "borderRadius", "opacity"] {
         if let Some(v) = prop(el, ctx, key) {
             o.insert(Rc::from(key), v);
         }
@@ -1343,6 +1345,35 @@ export default defineDeck(() => (
             let all: Vec<String> = findings.iter().map(|f| format!("{} {} {}", f.code, f.path, f.message)).collect();
             assert!(messages(code, "Chart").contains("#E0A804"), "{code} no Chart: {all:?}");
         }
+    }
+
+    #[test]
+    fn rules_see_shadow_gradient_radius_and_opacity_in_node_css() {
+        let ds = r##"import { defineDs } from 'pptsx';
+import { defineRule } from '@pptsx/ds-kit';
+const flat = defineRule('marca/plano', 'warning', (node) => {
+  const css = node.css;
+  return css.boxShadow || css.backgroundImage ? [{ message: `sombra=${css.boxShadow ?? '-'} fundo=${css.backgroundImage ?? '-'} raio=${css.borderRadius} opacidade=${css.opacity}` }] : [];
+});
+export const ds = defineDs({ name: 'marca', version: '0.0.0', components: [], rules: [flat] });
+"##;
+        let config = "import { defineConfig } from 'pptsx';\nimport { ds } from './ds.tsx';\nexport default defineConfig({ ds: [ds] });\n";
+        let deck = r##"import { Box, Deck, Slide, defineDeck } from 'pptsx';
+export default defineDeck(() => (
+  <Deck>
+    <Slide>
+      <Box width={100} height={60} backgroundColor="#FFFFFF" boxShadow="0 2px 8px rgba(0,0,0,0.2)" borderRadius={12} opacity={0.9} />
+      <Box width={100} height={60} backgroundImage="linear-gradient(90deg, #112233, #445566)" />
+      <Box width={100} height={60} backgroundColor="#FFFFFF" />
+    </Slide>
+  </Deck>
+));
+"##;
+        let findings = run_with("node-css", ds, config, deck);
+        let found: Vec<&str> = by_code(&findings, "marca/plano").iter().map(|f| f.message.as_str()).collect();
+        assert_eq!(found.len(), 2, "{found:?}");
+        assert!(found[0].contains("sombra=0 2px 8px") && found[0].contains("raio=12") && found[0].contains("opacidade=0.9"), "{found:?}");
+        assert!(found[1].contains("fundo=linear-gradient"), "{found:?}");
     }
 
     #[test]

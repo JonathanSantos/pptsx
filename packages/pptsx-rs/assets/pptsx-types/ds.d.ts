@@ -28,6 +28,9 @@ export interface DsManifest {
     readonly fonts?: readonly FontFace[];
     /** pptsx-rs: tamanhos para que o DS foi desenhado; valem quando a config não define `sizes`. */
     readonly sizes?: readonly SizeSpec[];
+    /** pptsx-rs: `lineBreaks` e `embedFonts` padrão do deck que registra o DS; a config vence. */
+    readonly lineBreaks?: 'forced' | 'auto';
+    readonly embedFonts?: boolean;
 }
 /** Identidade tipada (como `defineConfig`), com as checagens que valem para qualquer DS. */
 export declare const defineDs: (manifest: DsManifest) => DsManifest;

@@ -574,7 +574,7 @@ fn pptsx_module() -> Obj {
                 let mut this = Obj::new();
                 this.insert(Rc::from("layout"), obj_val(layout));
                 this.insert(Rc::from("component"), a.get(2).cloned().unwrap_or(Value::Undefined));
-                Ok(native(
+                let wrapped = native(
                     "Layout",
                     |it, this, args| {
                         let Value::Object(this) = this else { return Ok(Value::Undefined) };
@@ -589,7 +589,16 @@ fn pptsx_module() -> Obj {
                         }
                     },
                     obj_val(this),
-                ))
+                );
+                // Layout por cima de um defineComponent leva a identidade dele (nome, catálogo, guia): entra no
+                // `createDs` como componente, com o mesmo segmento de path de antes.
+                Ok(match a.get(2) {
+                    Some(Value::Func(f)) => match &**f {
+                        Func::Component { name, meta, .. } => Value::Func(Rc::new(Func::Component { name: name.clone(), inner: wrapped, defaults: None, meta: meta.clone() })),
+                        _ => wrapped,
+                    },
+                    _ => wrapped,
+                })
             },
             Value::Undefined,
         ),

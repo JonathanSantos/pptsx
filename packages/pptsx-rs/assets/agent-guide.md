@@ -253,6 +253,8 @@ Baseline de cada filho: `Text` = 1ª linha; `Box` = a do 1º filho em fluxo; `Im
 - **Ocupar o resto da altura:** `flex={1}` no Box do corpo. **Empurrar para o fim:** `marginTop="auto"` no último filho (rodapé), sem Box de enchimento.
 - **Text numa row:** `flex={1}` para ele ocupar a largura que sobra e quebrar linha nela. **Só em row**: numa coluna, `flex={1}` num Text pode colapsá-lo (§9).
 - **Tamanho que não pode encolher** (ícone, marcador): `flexShrink={0}` (o padrão é 1, como no CSS).
+- **`flex={0}` não é "sem flex":** como no CSS, vira `flex: 0 1 0%` (base 0): num Text, a área fica com 0 pt e sai `text-overflow`. Para "não cresce", `flexGrow={0}`; responsivo: `flexGrow={{ base: 0, tall: 1 }}`, nunca `flex={{ base: 0, … }}`.
+- **Grid que vira uma coluna no 4:3:** dê também `gridTemplateRows` com `minmax(0, 1fr)` por linha (`{ base: 'minmax(0, 1fr)', tall: 'repeat(3, minmax(0, 1fr))' }`); linhas `auto` crescem com o conteúdo e estouram.
 
 ### Container (layout que depende do espaço medido)
 
@@ -514,6 +516,153 @@ export const Conteudo = defineLayout('Conteúdo', {
 - `Text`/`Image` marcados ficam **ligados** ao placeholder. `Box` marcado só reserva a área no layout (o conteúdo continua como objetos do slide).
 - `fixed` (logotipo, faixa, assinatura) sai no layout do master, atrás do conteúdo; `background` (cor ou `{ image }`) é o fundo do layout.
 - Sem `defineLayout`, o arquivo fica como antes (sem layouts próprios). Nome do layout único no deck.
+
+### Receita: um DS de marca do zero
+
+Um DS completo de uma marca fictícia (Lumen Energia): tokens, tema, fontes, logo, dois slides inteiros que viram layouts do arquivo, um bloco, uma regra, o deck inicial e a skill do time. Copie a estrutura e troque a marca.
+
+```
+lumen/
+├── src/index.tsx          ← o DS (abaixo)
+├── starter.tsx            ← o deck inicial do `init --ds`
+├── skill/SKILL.md         ← opcional: o SKILL.md da skill do time
+└── assets/logo.svg, assets/fonts/Inter-Regular.ttf, assets/fonts/Inter-Bold.ttf
+```
+
+```tsx file=lumen/src/index.tsx
+import { Box, Icon, Slide, Text, defineLayout, type Children } from 'pptsx';
+import { colorsFromTokens, createDs, defineComponent, defineTokens, themeOf } from '@pptsx/ds-kit';
+
+export const tokens = defineTokens({
+  color: { ink: '#1D1B4B', paper: '#F7F5EF', sun: '#FFC83D', leaf: '#2E7D5B', white: '#FFFFFF' },
+  type: { title: 32, body: 18, number: 44 },
+  space: { page: 40, gap: 16 },
+});
+export const theme = themeOf(tokens, { colors: { dark1: 'color.ink', light1: 'color.paper', accent1: 'color.sun', accent2: 'color.leaf' }, fonts: { heading: 'Inter', body: 'Inter' } });
+
+// Arquivos do DS pelo caminho do próprio módulo: valem de qualquer deck e de dentro de uma skill.
+const asset = (file: string) => new URL(`../assets/${file}`, import.meta.url).pathname;
+const FONT = 'Inter';
+
+export interface AberturaProps {
+  /** Título da capa, até ~40 caracteres (2 linhas). */
+  readonly title: string;
+  /** Linha de apoio: área, data. */
+  readonly subtitle?: string;
+}
+
+// Slide inteiro: vai direto no <Deck>. defineLayout por cima de defineComponent dá o layout do arquivo
+// ("Novo slide" no PowerPoint sai com a marca) e mantém a identidade que o createDs e o catálogo pedem.
+export const Abertura = defineLayout('Abertura', { placeholders: ['title', 'subtitle'] }, defineComponent<AberturaProps>(
+  { name: 'Abertura', guide: 'Capa do deck, uma por deck: título até ~40 caracteres.', catalog: [{ name: 'padrão', props: { title: 'Plano de expansão 2027', subtitle: 'Diretoria · março' } }] },
+  ({ title, subtitle = '' }) => (
+    <Slide padding={tokens.space.page} gap={tokens.space.gap} backgroundColor={tokens.color.ink} color={tokens.color.white} fontFamily={FONT} justifyContent="center">
+      <Icon src={asset('logo.svg')} size={64} color={tokens.color.sun} />
+      <Text placeholder="title" fontSize={tokens.type.title} fontWeight="bold">{title}</Text>
+      <Text placeholder="subtitle" fontSize={tokens.type.body}>{subtitle}</Text>
+    </Slide>
+  ),
+));
+
+export interface PaginaProps {
+  /** Título do slide, até ~60 caracteres (uma linha em 16:9). */
+  readonly title: string;
+  readonly children?: Children;
+}
+
+export const Pagina = defineLayout('Página', { placeholders: ['title', 'body'] }, defineComponent<PaginaProps>(
+  { name: 'Pagina', guide: 'Slide de conteúdo: título até ~60 caracteres; os filhos ocupam o resto do slide.', catalog: [{ name: 'padrão', props: { title: 'Onde estamos' } }] },
+  ({ title, children }) => (
+    <Slide padding={tokens.space.page} gap={tokens.space.gap} backgroundColor={tokens.color.paper} color={tokens.color.ink} fontFamily={FONT}>
+      <Icon src={asset('logo.svg')} size={20} color={tokens.color.ink} position="absolute" right={24} top={20} />
+      <Text placeholder="title" fontSize={tokens.type.title} fontWeight="bold">{title}</Text>
+      <Box placeholder="body" flex={1} gap={tokens.space.gap}>{children}</Box>
+    </Slide>
+  ),
+));
+
+export interface IndicadorProps {
+  /** O número, até ~7 caracteres ("1,2 GW", "99,1%"): em 44 pt cabem 3 por linha em 16:9. */
+  readonly value: string;
+  /** O que o número mede, em uma ou duas linhas. */
+  readonly label: string;
+  /** Destaca em verde; no máximo um por slide. */
+  readonly highlight?: boolean;
+}
+
+export const Indicador = defineComponent<IndicadorProps>(
+  { name: 'Indicador', guide: 'Número grande com legenda. Valor até ~7 caracteres, 3 por linha em 16:9 (grid repeat(3, minmax(0, 1fr))) e um por linha no 4:3.', catalog: [{ name: 'padrão', props: { value: '1,2 GW', label: 'capacidade instalada' } }] },
+  ({ value, label, highlight = false }) => (
+    <Box padding={tokens.space.gap} gap={6} borderRadius={8} backgroundColor={tokens.color.white}>
+      <Text fontSize={tokens.type.number} fontWeight="bold" nowrap fitGroup="indicador" color={highlight ? tokens.color.leaf : tokens.color.ink}>{value}</Text>
+      <Text fontSize={tokens.type.body}>{label}</Text>
+    </Box>
+  ),
+);
+
+export const ds = createDs({
+  name: 'lumen',
+  version: '1.0.0',
+  components: [Abertura, Pagina, Indicador],
+  theme,
+  tokens,
+  // O deck que registra o DS herda fontes, tamanhos e os padrões de quem edita no PowerPoint.
+  fonts: [
+    { family: FONT, weight: 400, file: asset('fonts/Inter-Regular.ttf') },
+    { family: FONT, weight: 700, file: asset('fonts/Inter-Bold.ttf') },
+  ],
+  sizes: ['16x9', '4x3'],
+  lineBreaks: 'auto',
+  embedFonts: true,
+  rules: [colorsFromTokens('lumen/cores', tokens)],
+});
+```
+
+```tsx file=lumen/starter.tsx
+import { Box, Deck, defineDeck } from 'pptsx';
+import { Abertura, Indicador, Pagina } from '{{ds}}';
+
+export default defineDeck(() => (
+  <Deck>
+    <Abertura title="Título da apresentação" subtitle="Área · data" />
+    <Pagina title="Três números">
+      <Box display="grid" gridTemplateColumns={{ base: 'repeat(3, minmax(0, 1fr))', tall: 'minmax(0, 1fr)' }} gridTemplateRows={{ base: 'minmax(0, 1fr)', tall: 'repeat(3, minmax(0, 1fr))' }} gap={16} flex={1}>
+        <Indicador value="1,2 GW" label="capacidade instalada" highlight />
+        <Indicador value="38" label="usinas em operação" />
+        <Indicador value="99,1%" label="disponibilidade" />
+      </Box>
+    </Pagina>
+  </Deck>
+));
+```
+
+```md file=lumen/skill/SKILL.md
+---
+name: lumen-deck
+description: Apresentações da Lumen Energia (.pptx editável) com a marca: cores, Inter, logo e layouts. Use quando pedirem slides, deck ou apresentação da Lumen.
+---
+
+# Decks da Lumen
+
+- Comece com `{{bin}} init <pasta> --ds {{ds}}`: o deck sai do deck inicial da marca, com a config que registra o DS.
+- Itere com `{{bin}} check <pasta>/deck.tsx --json` (os tamanhos do DS já valem) e entregue com `{{bin}} build <pasta>/deck.tsx`.
+- Componentes, props e limites de texto: `references/ds.md`. Regras do motor: `references/essentials.md`.
+```
+
+```
+pptsx-rs init deck --ds lumen/src/index.tsx                 # deck.tsx a partir do starter.tsx; config registrando o DS
+pptsx-rs check deck/deck.tsx --json                         # sem --size: os tamanhos do DS
+pptsx-rs skill --ds lumen --name lumen-deck --out lumen-deck   # a skill do time: binário, DS, fontes, logo e o SKILL.md acima
+```
+
+- **Slides inteiros** (`Abertura`, `Pagina`) devolvem `<Slide>` e vão direto no `<Deck>`; o `init --ds` e o `references/ds.md` os marcam assim. `defineLayout` por cima de `defineComponent` (ou o contrário) entra no `createDs`; um `defineLayout` sobre uma função comum não (o `createDs` diz como compor).
+- **Arquivos do DS** (logo, fontes, imagens): `new URL('../assets/x', import.meta.url).pathname` dá o caminho absoluto a partir do módulo; `src` relativo num componente do DS seria relativo ao deck de quem usa. SVG vai em `<Icon>` (vira forma; `color` recolore só o preto). Logo de várias cores: `recolor={false}` e, para fundo escuro, uma variante clara do SVG (a cor da marca igual ao fundo some, sem aviso).
+- **`fonts`, `sizes`, `lineBreaks`, `embedFonts` no `createDs`** valem para o deck que registra o DS; a config vence quando define os dela.
+- **Diga os limites no `guide` de cada componente** (caracteres, itens por linha, em 16:9 e 4:3), no 1º parágrafo: é ele que vai para o índice do `references/ds.md`. Meça antes de escrever: ponha no `catalog` um caso com o texto no limite e confira o PNG nos dois tamanhos (a largura útil desconta padding e o que divide a linha, como o logo). No JSDoc das props também.
+- **Título que tem de caber em N linhas:** `maxLines={N}` no `Text` do componente. Texto mais longo vira `text-truncated` (warning) no `check` de quem usa, em vez de quebrar calado e só aparecer no PNG.
+- **`{{bin}}` e `{{ds}}`** no `skill/SKILL.md` viram o caminho do binário e o do **arquivo de entrada** do DS dentro da skill (`<pasta-desta-skill>/ds/src/index.tsx`), não o da pasta. O `skill/SKILL.md` só precisa do que é da marca: o gerador acrescenta no fim os fatos do DS (tamanhos, fontes, slides inteiros) e o "Onde achar" das referências.
+- **Regra com descrição:** `defineRule(id, severity, check, 'o que ela cobra')`; as prontas (`colorsFromTokens`…) já trazem a delas, e o `references/ds.md` as mostra.
+- **O que o DS não cobre** (um cronograma, uma tabela de parcelas): o deck monta com as primitivas e os `tokens` exportados pelo DS, seguindo a §6; o lint cobra as cores fora dos tokens.
 
 ## 6. Receitas
 
@@ -916,11 +1065,12 @@ dist/
 ```
 
 - `check --json` põe no stdout **só** a lista de diagnósticos (`[]` = limpo); o progresso vai para o stderr. Se o deck nem rodar (erro de sintaxe, texto fora de `<Text>`…), a mensagem sai no stderr com `arquivo:linha:coluna` e o código de saída é 1.
-- **Exit code**: `1` se houver qualquer diagnóstico `error` ou falha; `0` caso contrário. `warning`/`info` não falham.
+- **Exit code**: `1` se houver qualquer diagnóstico `error` ou falha; `0` caso contrário. `warning`/`info` não falham. No `lint`, `warning` também sai 1 (é um risco a tratar); só `info` sai 0.
 - Sempre gere **os dois tamanhos** (`16x9,4x3`, ou os do DS); inclua `wide` se o deck usa esse breakpoint.
 - **PDF** não sai do pptsx. O `.pptx` aberto no PowerPoint ou no Keynote exporta PDF com texto; juntar os PNGs (`--preview-width 2000`) dá um PDF só de imagem.
 - **O time vai editar no PowerPoint:** `lineBreaks: 'auto'` (sem uma quebra manual por linha medida; o texto reflui ao editar) e `embedFonts: true` com fonte própria. O arquivo tem um layout só, a não ser que o deck use `defineLayout` (§5): "Novo slide" no PowerPoint sai sem a marca.
 - Config opcional `pptsx.config.ts` (`defineConfig({ fonts?, sizes?, lang?, textSafety?, lineBreaks?, embedFonts?, theme?, document? })`), lida da pasta do deck (ou da mais próxima acima dela); flags vencem a config.
+- **`textSafety`** (padrão `0.97`): o texto quebra em 97% da largura da área, uma folga para a diferença de renderização entre PowerPoint, Keynote e o preview. Um título medido "no limite" quebra antes do que o PNG parece permitir: ao escrever os limites de um DS, meça com o `check` e não pelo olho.
 
 ## 8. Diagnósticos
 

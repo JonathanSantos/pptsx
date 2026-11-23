@@ -30,7 +30,7 @@ pub struct DsInfo {
     pub background: Option<String>,
     pub ink: Option<String>,
     pub components: Vec<DsComponent>,
-    pub rules: Vec<(String, String)>,
+    pub rules: Vec<(String, String, Option<String>)>,
     pub guide: Option<String>,
     pub schema: Option<Value>,
     /// O arquivo de entrada do DS (canônico) e se ele veio de um caminho local (e não de um pacote).
@@ -40,6 +40,14 @@ pub struct DsInfo {
     pub ds_dir: Option<String>,
     /// `extends` do tsconfig quando o deck fica dentro do monorepo do pptsx.
     pub tsconfig_extends: Option<String>,
+    /// `sizes` do manifesto (`createDs({ sizes })`): os tamanhos para que o DS foi desenhado.
+    pub sizes: Vec<String>,
+    /// `fonts` do manifesto, como "Família peso" (o deck que registra o DS herda essas faces).
+    pub fonts: Vec<String>,
+    /// O DS traz `starter.tsx` (o deck inicial do `init --ds`).
+    pub has_starter: bool,
+    /// O que o módulo exporta além do manifesto e dos componentes (`tokens`, `theme`…).
+    pub extra_exports: Vec<String>,
 }
 
 const DS_ENTRIES: [&str; 7] = ["index.ts", "index.tsx", "ds.ts", "index.js", "src/index.ts", "src/index.tsx", "src/ds.ts"];
@@ -163,9 +171,18 @@ fn mark_slides(interp: &mut crate::js::Interp, manifest: &Value, exports: &Obj, 
     }
 }
 
-fn rules_of(manifest: &Value) -> Vec<(String, String)> {
+/// Os itens de uma lista do manifesto que `f` sabe ler.
+fn list_of(manifest: &Value, key: &str, f: impl Fn(&Value) -> Option<String>) -> Vec<String> {
+    match get(manifest, key) {
+        Some(Value::Array(items)) => items.borrow().iter().filter_map(f).collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// (id, severidade, descrição) de cada regra do manifesto; a descrição vem de `defineRule(..., description)`.
+fn rules_of(manifest: &Value) -> Vec<(String, String, Option<String>)> {
     let Some(Value::Array(list)) = get(manifest, "rules") else { return Vec::new() };
-    list.borrow().iter().filter_map(|r| Some((get_str(r, "id")?, get_str(r, "severity").unwrap_or_else(|| "warning".into())))).collect()
+    list.borrow().iter().filter_map(|r| Some((get_str(r, "id")?, get_str(r, "severity").unwrap_or_else(|| "warning".into()), get_str(r, "description")))).collect()
 }
 
 /// O manifesto entre os exports de um módulo de DS: `ds` nomeado (true) ou o default (false).
@@ -189,6 +206,13 @@ pub fn load(spec: &str, deck_dir: &Path, cwd: &Path) -> Result<DsInfo, String> {
     let color = |slot: &str| theme.as_ref().and_then(|t| t.colors.iter().find(|(k, _)| k == slot).map(|(_, hex)| format!("#{hex}")));
     let mut components = components_of(&manifest);
     mark_slides(&mut interp, &manifest, &exports, &mut components);
+    let entry = std::fs::canonicalize(&file).unwrap_or(file);
+    let has_starter = entry.parent().is_some_and(|own| [Some(own), own.parent()].into_iter().flatten().any(|dir| dir.join(STARTER_FILE).is_file()));
+    let extra_exports: Vec<String> = exports
+        .keys()
+        .map(|k| k.to_string())
+        .filter(|k| k != "ds" && k != "default" && !components.iter().any(|c| &c.name == k))
+        .collect();
     Ok(DsInfo {
         name: get_str(&manifest, "name").unwrap_or_else(|| spec.to_string()),
         version: get_str(&manifest, "version").unwrap_or_else(|| "0.0.0".into()),
@@ -201,7 +225,23 @@ pub fn load(spec: &str, deck_dir: &Path, cwd: &Path) -> Result<DsInfo, String> {
         rules: rules_of(&manifest),
         guide: get_str(&manifest, "guide"),
         schema: crate::dsprops::schema_of(&interp, &manifest),
-        entry: std::fs::canonicalize(&file).unwrap_or(file),
+        sizes: list_of(&manifest, "sizes", |v| match v {
+            Value::Str(s) => Some(s.to_string()),
+            _ => None,
+        }),
+        fonts: list_of(&manifest, "fonts", |f| {
+            let family = get_str(f, "family")?;
+            let weight = get(f, "weight").map_or_else(|| "400".to_string(), |w| match w.to_js_string().as_str() {
+                "regular" => "400".to_string(),
+                "bold" => "700".to_string(),
+                other => other.to_string(),
+            });
+            let italic = matches!(get(f, "italic"), Some(Value::Bool(true)));
+            Some(format!("{family} {weight}{}", if italic { " itálico" } else { "" }))
+        }),
+        has_starter,
+        extra_exports,
+        entry,
         by_path,
         ds_dir,
         tsconfig_extends: monorepo_tsconfig(deck_dir),
@@ -285,7 +325,7 @@ fn catalog_deck(ds: &DsInfo) -> String {
     };
     let mut out = vec![
         format!("// Deck criado por `pptsx-rs init --ds`: um slide por componente do {}, com as props do catálogo.", ds.name),
-        "//   pptsx-rs build deck.tsx --size 16x9,4x3".to_string(),
+        format!("//   {}", build_command(&ds.sizes)),
         "//   pptsx-rs lint deck.tsx   (regras do núcleo + as do DS registrado no pptsx.config.ts)".to_string(),
         "import { Deck, Slide, Text, defineDeck } from 'pptsx';".to_string(),
     ];
@@ -300,6 +340,15 @@ fn catalog_deck(ds: &DsInfo) -> String {
     out.push("));".into());
     out.push(String::new());
     out.join("\n")
+}
+
+/// O comando de build que um `init` sugere: com os tamanhos do DS, sem `--size` (a config herda os dele);
+/// sem DS ou sem `sizes`, os dois formatos de sempre.
+pub fn build_command(ds_sizes: &[String]) -> String {
+    if ds_sizes.is_empty() {
+        return "pptsx-rs build deck.tsx --size 16x9,4x3".into();
+    }
+    format!("pptsx-rs build deck.tsx   (sem --size: os tamanhos do DS, {})", ds_sizes.join(","))
 }
 
 /// `pptsx.config.ts` que registra o DS (regras no lint, tema no arquivo).
@@ -384,6 +433,42 @@ fn component_section(ds: &DsInfo, c: &DsComponent, props_table: &impl Fn(&Value)
     out
 }
 
+/// O que um agente precisa saber antes do primeiro slide com o DS: como o deck nasce, os tamanhos, as fontes,
+/// quais componentes são slides inteiros e o índice dos componentes (o detalhe de cada um vem depois).
+pub fn getting_started(ds: &DsInfo) -> Vec<String> {
+    let mut out = vec!["## Como começar".to_string(), String::new()];
+    let start = if ds.has_starter { "a partir do deck inicial do DS (`starter.tsx`), que segue as regras dele" } else { "com um slide por componente (o catálogo): troque pelo seu conteúdo" };
+    out.push(format!("- `pptsx-rs init <pasta> --ds <entrada do DS>` cria o `pptsx.config.ts` que registra o DS e o `deck.tsx` {start}."));
+    if !ds.sizes.is_empty() {
+        let sizes: Vec<String> = ds.sizes.iter().map(|s| format!("`{s}`")).collect();
+        out.push(format!("- Tamanhos do DS: {}. Sem `--size`, `check` e `build` usam estes; entregue nesses formatos (`wide` e `16x9` têm a mesma proporção em escalas diferentes, e um DS desenhado num estoura no outro).", sizes.join(", ")));
+    }
+    if !ds.fonts.is_empty() {
+        out.push(format!("- Fontes que o DS registra (o deck herda, não precisa repetir na config): {}.", ds.fonts.join(", ")));
+    }
+    let slides: Vec<String> = ds.components.iter().filter(|c| c.slide).map(|c| format!("`{}`", c.name)).collect();
+    if !slides.is_empty() {
+        out.push(format!("- Slides inteiros (vão direto no `<Deck>`, nunca dentro de outro `<Slide>`): {}. Os demais componentes vão dentro de um `<Slide>` ou de um desses.", slides.join(", ")));
+    }
+    if !ds.extra_exports.is_empty() {
+        let names: Vec<String> = ds.extra_exports.iter().map(|n| format!("`{n}`")).collect();
+        out.push(format!("- O módulo também exporta {}: importe do mesmo lugar (ex.: os tokens para cor e tamanho fora dos componentes; o lint cobra as cores fora deles).", names.join(", ")));
+    }
+    out.push(String::new());
+    if ds.components.is_empty() {
+        return out;
+    }
+    out.push("| componente | é | para quê |".into());
+    out.push("|---|---|---|".into());
+    for c in &ds.components {
+        let what = if c.slide { "slide inteiro" } else { "bloco" };
+        let purpose = c.guide.as_deref().map(crate::skill::first_line_sentence).unwrap_or_default();
+        out.push(format!("| `{}` | {what} | {} |", c.name, purpose.replace('|', "\\|")));
+    }
+    out.push(String::new());
+    out
+}
+
 /// `references/ds.md` da skill: import, cada componente com assinatura, exemplo e props (dos tipos do
 /// DS, mesmo sem catálogo), as regras e o guia. `props_table` desenha a tabela de um componente.
 pub fn markdown(ds: &DsInfo, location: &DsLocation, props_table: impl Fn(&Value) -> String) -> String {
@@ -397,6 +482,7 @@ pub fn markdown(ds: &DsInfo, location: &DsLocation, props_table: impl Fn(&Value)
         location.config_hint
     ));
     out.push(String::new());
+    out.extend(getting_started(ds));
     out.push("## Componentes".into());
     out.push(String::new());
     out.push("`*` = prop obrigatória. O tipo é o do TypeScript do DS; a nota traz a descrição, o padrão e exemplos do catálogo.".into());
@@ -409,7 +495,10 @@ pub fn markdown(ds: &DsInfo, location: &DsLocation, props_table: impl Fn(&Value)
         out.push(String::new());
         out.push("O `lint` e o `build` apontam estas regras do DS, com o caminho do nó:".into());
         out.push(String::new());
-        out.extend(ds.rules.iter().map(|(id, sev)| format!("- `{id}` ({sev})")));
+        out.extend(ds.rules.iter().map(|(id, sev, description)| match description {
+            Some(d) => format!("- `{id}` ({sev}): {d}."),
+            None => format!("- `{id}` ({sev})"),
+        }));
         out.push(String::new());
     }
     if let Some(guide) = &ds.guide {

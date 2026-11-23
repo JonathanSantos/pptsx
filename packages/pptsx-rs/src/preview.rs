@@ -346,10 +346,11 @@ fn table(out: &mut String, fonts: &Fonts, p: &Placed, spec: &TableSpec, layout: 
 }
 
 /// Gráfico simplificado (barras, linhas, áreas, pizza, dispersão): o arquivo tem o gráfico nativo.
-/// Rótulo do gráfico em contornos de glifo (face regular), centrado em `cx` ou alinhado à direita.
+/// Rótulo do gráfico em contornos de glifo (face regular da família do gráfico, a mesma que o arquivo grava),
+/// centrado em `cx` ou alinhado à direita.
 #[allow(clippy::too_many_arguments)]
-fn label(out: &mut String, fonts: &Fonts, text: &str, size: f32, x: f32, y: f32, anchor: f32, c: Rgba) {
-    let face = fonts.face_for("Arial", 400, false);
+fn label(out: &mut String, fonts: &Fonts, family: &str, text: &str, size: f32, x: f32, y: f32, anchor: f32, c: Rgba) {
+    let face = fonts.face_for(family, 400, false);
     let (_, w) = fonts.glyph_path(face, text, size, 0.0, 0.0, 0.0);
     let (d, _) = fonts.glyph_path(face, text, size, 0.0, x - w * anchor, y);
     if !d.is_empty() {
@@ -508,6 +509,14 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
         let r = plot.h.min(f.w) / 2.0;
         let mut angle = -std::f64::consts::FRAC_PI_2;
         let mut labels: Vec<ValueLabel> = Vec::new();
+        // O furo da rosca é transparente no arquivo (mostra o fundo do slide): aqui também, por máscara, e não
+        // um círculo branco por cima.
+        let mask = hole.map(|h| {
+            // Centro, raio e furo: duas roscas no mesmo slide (ou na mesma grade do overview) não dividem a máscara.
+            let id = format!("hole-{:.0}-{:.0}-{:.0}-{h}", cx * 100.0, cy * 100.0, r * 100.0);
+            let _ = write!(out, "<mask id=\"{id}\"><rect x=\"{:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" fill=\"#FFFFFF\"/><circle cx=\"{cx:.2}\" cy=\"{cy:.2}\" r=\"{:.2}\" fill=\"#000000\"/></mask><g mask=\"url(#{id})\">", cx - r - 1.0, cy - r - 1.0, r * 2.0 + 2.0, r * 2.0 + 2.0, r * h as f32 / 100.0);
+            id
+        });
         for (i, v) in s.values.iter().enumerate() {
             let sweep = if total > 0.0 { v.max(0.0) / total * std::f64::consts::TAU } else { 0.0 };
             let (a0, a1) = (angle, angle + sweep);
@@ -531,18 +540,24 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
                 labels.push(ValueLabel { text: value_text(spec, *v, locale), x, y, anchor, color: if inside { spec.label_color_on(c) } else { spec.label_text_color() } });
             }
         }
-        if let Some(h) = hole {
-            let _ = write!(out, "<circle cx=\"{cx:.2}\" cy=\"{cy:.2}\" r=\"{:.2}\" fill=\"#FFFFFF\"/>", r * h as f32 / 100.0);
+        if mask.is_some() {
+            out.push_str("</g>");
         }
         for l in &labels {
-            label(out, fonts, &l.text, spec.size, l.x, l.y, l.anchor, l.color);
+            label(out, fonts, &spec.family, &l.text, spec.size, l.x, l.y, l.anchor, l.color);
+        }
+        // Pizza e rosca também têm legenda no arquivo (uma entrada por categoria): o preview a desenhava só nos
+        // gráficos de eixo, e o PNG contradizia o .pptx.
+        if spec.legend.is_some() {
+            let entries: Vec<(&str, Rgba)> = spec.categories.iter().enumerate().map(|(i, c)| (c.as_str(), spec.point_colors.get(i).copied().unwrap_or(s.color))).collect();
+            legend(out, fonts, spec, f, &entries, opacity);
         }
         return;
     }
     // preview/chart.ts: rótulos de eixo, categorias e legenda no corpo dos rótulos (`size`, padrão 12).
     let small = spec.size;
     if let Some(t) = &spec.title {
-        label(out, fonts, t, spec.size + 2.0, f.x + f.w / 2.0, f.y + spec.size + 2.0, 0.5, spec.color);
+        label(out, fonts, &spec.family, t, spec.size + 2.0, f.x + f.w / 2.0, f.y + spec.size + 2.0, 0.5, spec.color);
     }
     let (horizontal, grouping) = match spec.kind {
         ChartKind::Bar { horizontal, grouping } => (horizontal, grouping),
@@ -583,7 +598,7 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
                 let _ = write!(out, "<line x1=\"{x:.2}\" y1=\"{:.2}\" x2=\"{x:.2}\" y2=\"{:.2}\" {}/>", plot.y, plot.bottom(), grid_attrs(v));
             }
             if !spec.y_axis.hidden {
-                label(out, fonts, &text, small, x, plot.bottom() + small + 3.0, 0.5, spec.color);
+                label(out, fonts, &spec.family, &text, small, x, plot.bottom() + small + 3.0, 0.5, spec.color);
             }
         } else {
             let y = plot.bottom() - pos(v);
@@ -591,7 +606,7 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
                 let _ = write!(out, "<line x1=\"{:.2}\" y1=\"{y:.2}\" x2=\"{:.2}\" y2=\"{y:.2}\" {}/>", plot.x, plot.right(), grid_attrs(v));
             }
             if !spec.y_axis.hidden {
-                label(out, fonts, &text, small, plot.x - 4.0, y + small / 3.0, 1.0, spec.color);
+                label(out, fonts, &spec.family, &text, small, plot.x - 4.0, y + small / 3.0, 1.0, spec.color);
             }
         }
     }
@@ -599,9 +614,9 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
     if spec.kind != ChartKind::Scatter {
         for (j, cat) in spec.categories.iter().enumerate() {
             if horizontal {
-                label(out, fonts, cat, small, plot.x - 4.0, plot.y + band * (j as f32 + 0.5) + small / 3.0, 1.0, spec.color);
+                label(out, fonts, &spec.family, cat, small, plot.x - 4.0, plot.y + band * (j as f32 + 0.5) + small / 3.0, 1.0, spec.color);
             } else {
-                label(out, fonts, cat, small, plot.x + band * (j as f32 + 0.5), plot.bottom() + small + 3.0, 0.5, spec.color);
+                label(out, fonts, &spec.family, cat, small, plot.x + band * (j as f32 + 0.5), plot.bottom() + small + 3.0, 0.5, spec.color);
             }
         }
     }
@@ -684,21 +699,28 @@ fn chart(out: &mut String, fonts: &Fonts, p: &Placed, spec: &ChartSpec, opacity:
         }
     }
     for l in &labels {
-        label(out, fonts, &l.text, small, l.x, l.y, l.anchor, l.color);
+        label(out, fonts, &spec.family, &l.text, small, l.x, l.y, l.anchor, l.color);
     }
     if !horizontal {
         let _ = write!(out, "<line x1=\"{:.2}\" y1=\"{:.2}\" x2=\"{:.2}\" y2=\"{:.2}\" stroke=\"{}\" stroke-width=\"{}\"/>", plot.x, y_of(0.0), plot.right(), y_of(0.0), ZERO_LINE.0, ZERO_LINE.1);
     }
     if spec.legend.is_some() {
         let names: Vec<(&str, Rgba)> = spec.series.iter().map(|s| (s.name.as_str(), s.color)).collect();
-        let widths: Vec<f32> = names.iter().map(|(n, _)| fonts.glyph_path(0, n, small, 0.0, 0.0, 0.0).1 + small * 2.0).collect();
-        let mut x = f.x + (f.w - widths.iter().sum::<f32>()) / 2.0;
-        let y = f.bottom() - small;
-        for ((name, c), w) in names.iter().zip(&widths) {
-            let _ = write!(out, "<rect x=\"{x:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" {}/>", y - small * 0.7, small * 0.7, small * 0.7, color(*c, opacity));
-            label(out, fonts, name, small, x + small, y, 0.0, spec.color);
-            x += w;
-        }
+        legend(out, fonts, spec, f, &names, opacity);
+    }
+}
+
+/// A legenda embaixo do gráfico, centrada: um quadrado da cor e o nome, medidos na fonte do gráfico.
+fn legend(out: &mut String, fonts: &Fonts, spec: &ChartSpec, f: Frame, entries: &[(&str, Rgba)], opacity: f32) {
+    let small = spec.size;
+    let face = fonts.face_for(&spec.family, 400, false);
+    let widths: Vec<f32> = entries.iter().map(|(n, _)| fonts.glyph_path(face, n, small, 0.0, 0.0, 0.0).1 + small * 2.0).collect();
+    let mut x = f.x + (f.w - widths.iter().sum::<f32>()) / 2.0;
+    let y = f.bottom() - small;
+    for ((name, c), w) in entries.iter().zip(&widths) {
+        let _ = write!(out, "<rect x=\"{x:.2}\" y=\"{:.2}\" width=\"{:.2}\" height=\"{:.2}\" {}/>", y - small * 0.7, small * 0.7, small * 0.7, color(*c, opacity));
+        label(out, fonts, &spec.family, name, small, x + small, y, 0.0, spec.color);
+        x += w;
     }
 }
 

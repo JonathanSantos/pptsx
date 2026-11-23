@@ -146,6 +146,13 @@ pub fn load(deck: &Path) -> Result<Config, String> {
         {
             config.sizes = sizes_of(&sizes.borrow());
         }
+        // Um DS de marca que o time edita no PowerPoint pede `lineBreaks: 'auto'` e `embedFonts`.
+        if config.line_breaks.is_none() {
+            config.line_breaks = string(&ds, "lineBreaks");
+        }
+        if get(&o, "embedFonts").is_none() && matches!(get(&ds, "embedFonts"), Some(Value::Bool(true))) {
+            config.embed_fonts = true;
+        }
     }
     Ok(config)
 }

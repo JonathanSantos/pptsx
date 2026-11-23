@@ -383,7 +383,7 @@ fn plan(dir: &Path, force: bool, ds: Option<&crate::dsinfo::DsInfo>) -> Result<P
     Ok(out)
 }
 
-fn summary(dir: &Path, p: &Plan) -> String {
+fn summary(dir: &Path, p: &Plan, ds_sizes: &[String]) -> String {
     let cwd = std::env::current_dir().unwrap_or_default();
     let target = dir.strip_prefix(&cwd).map(|r| r.display().to_string()).unwrap_or_else(|_| dir.display().to_string());
     let mut lines = vec![format!("Projeto pptsx em {}:", dir.display())];
@@ -396,8 +396,9 @@ fn summary(dir: &Path, p: &Plan) -> String {
     if !target.is_empty() {
         lines.push(format!("  cd {target}"));
     }
-    lines.push(format!("  {NEXT_COMMAND}"));
-    lines.push(format!("  {NEXT_COMMAND} --watch"));
+    let next = if ds_sizes.is_empty() { NEXT_COMMAND.to_string() } else { crate::dsinfo::build_command(ds_sizes) };
+    lines.push(format!("  {next}"));
+    lines.push(format!("  {} --watch", next.split("   (").next().unwrap_or(&next)));
     lines.join("\n")
 }
 
@@ -500,7 +501,7 @@ pub fn run(argv: &[String]) -> ExitCode {
         }
         println!("{}", crate::mcp::pretty_json(&obj_val(o)));
     } else {
-        println!("{}", summary(&args.dir, &plan));
+        println!("{}", summary(&args.dir, &plan, ds.as_ref().map_or(&[][..], |d| d.sizes.as_slice())));
     }
     ExitCode::SUCCESS
 }

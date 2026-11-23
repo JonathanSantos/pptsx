@@ -703,8 +703,14 @@ fn box_message(placed: &[Placed], kids: &[Vec<usize>], o: &Overflow, explained: 
             fmt(e.available)
         ));
     }
+    // No grid, flexShrink não vale: quem cresce são os tracks `auto`, que seguem o conteúdo.
+    let fix = if e.layout == Some("grid") {
+        "Dê aos tracks minmax(0, 1fr) (gridTemplateRows/gridTemplateColumns; um track auto cresce com o conteúdo e não encolhe), reduza gap/padding ou o conteúdo das células, ou aumente o contêiner."
+    } else {
+        "Reduza width/height fixos ou gap/padding, permita flexShrink nos filhos (flexShrink={0} impede), ou aumente o contêiner."
+    };
     let d = Diag::new(Level::Error, "box-overflow", slide, placed[o.index].node.label.as_str(), format!(
-        "{usage}, mas a área de conteúdo tem {} pt: estouro de {} pt ({}%). Reduza width/height fixos ou gap/padding, permita flexShrink nos filhos (flexShrink={{0}} impede), ou aumente o contêiner.",
+        "{usage}, mas a área de conteúdo tem {} pt: estouro de {} pt ({}%). {fix}",
         fmt(e.available),
         fmt(o.pt),
         fmt(o.pct)

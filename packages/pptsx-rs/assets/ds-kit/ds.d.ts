@@ -26,6 +26,10 @@ export interface DsInput {
     readonly fonts?: readonly FontFace[];
     /** Os tamanhos para que o DS foi desenhado (ex.: `['wide', '4x3']`): valem quando a config não define `sizes`. */
     readonly sizes?: readonly SizeSpec[];
+    /** Padrão do DS para `lineBreaks` (`'auto'` quando o time edita os slides no PowerPoint); a config vence. */
+    readonly lineBreaks?: 'forced' | 'auto';
+    /** Padrão do DS para `embedFonts` (embute as fontes da marca; só o PowerPoint usa); a config vence. */
+    readonly embedFonts?: boolean;
 }
 export interface GuidePart {
     readonly title: string;

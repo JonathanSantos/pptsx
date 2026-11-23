@@ -4,7 +4,7 @@ import { colorsOf } from './tokens.js';
 export const metaOfComponent = (component) => {
     const meta = component[COMPONENT_META];
     if (meta === undefined)
-        throw new Error(`createDs: "${component.name || 'anônimo'}" não foi criado com defineComponent (o DS precisa da identidade dele)`);
+        throw new Error(`createDs: "${component.name || 'anônimo'}" não foi criado com defineComponent (o DS precisa da identidade dele). Um layout entra assim: defineLayout('Capa', { placeholders: ['title'] }, defineComponent({ name: 'Capa', catalog }, (props) => <Slide>…</Slide>))`);
     return meta;
 };
 /** Guia em partes → um markdown com uma seção `##` por parte (o `guide` do MCP navega por elas). */
@@ -60,6 +60,8 @@ export const createDs = (input) => {
         ...(input.examples === undefined ? {} : { examples: input.examples }),
         ...(input.fonts === undefined ? {} : { fonts: input.fonts }),
         ...(input.sizes === undefined ? {} : { sizes: input.sizes }),
+        ...(input.lineBreaks === undefined ? {} : { lineBreaks: input.lineBreaks }),
+        ...(input.embedFonts === undefined ? {} : { embedFonts: input.embedFonts }),
     });
     return Object.freeze({ ...manifest, ...(input.tokens === undefined ? {} : { colors: colorsOf(input.tokens) }), implementations: input.components, warnings: input.theme === undefined ? [] : checkTheme(input.theme) });
 };

@@ -2,7 +2,8 @@ import type { LintContext, LintRule, ResolvedNode, ResolvedSlide, RuleFinding, S
 import { type TokenSource } from './tokens.ts';
 /** Regras de lint para DS: `defineRule` e regras prontas (prefixe o id com o nome do DS). */
 type Node = ResolvedNode | ResolvedSlide;
-export declare const defineRule: (id: string, severity: Severity, check: (node: Node, ctx: LintContext) => readonly RuleFinding[]) => LintRule;
+/** `description`: uma linha sobre o que a regra cobra; o `references/ds.md` da skill a mostra ao lado do id. */
+export declare const defineRule: (id: string, severity: Severity, check: (node: Node, ctx: LintContext) => readonly RuleFinding[], description?: string) => LintRule;
 /** Cores que o nó pinta: fundo, bordas, contorno, cor de texto e dos trechos, fill/stroke de forma, cabeçalho,
  * listra e células da tabela e a paleta do gráfico. */
 export declare const paintedColorsOf: (node: Node) => readonly string[];

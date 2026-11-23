@@ -41,6 +41,8 @@ fn ds_fonts_sizes_and_slide_components_work_from_init_without_touching_the_confi
 
     let (ok, output) = run(&root, &["init", "deck", "--ds", "ds/index.tsx"]);
     assert!(ok, "{output}");
+    // Os próximos passos sugerem os tamanhos do DS, não o 16x9,4x3 de sempre.
+    assert!(output.contains("os tamanhos do DS, wide,4x3") && !output.contains("--size 16x9,4x3"), "{output}");
     let deck = fs::read_to_string(root.join("deck/deck.tsx")).expect("deck gerado");
     // O componente de slide vai direto no <Deck>; o outro, num <Slide> do catálogo.
     assert!(deck.contains("\n    <Capa title=\"Olá\" />\n"), "{deck}");
