@@ -191,3 +191,105 @@ pub fn parse_border(s: &str) -> Option<Stroke> {
     }
     Some(Stroke { width, color: color.unwrap_or(Rgba { r: 0, g: 0, b: 0, a: 1.0 }), dash })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rgba(r: u8, g: u8, b: u8, a: f32) -> Rgba {
+        Rgba { r, g, b, a }
+    }
+
+    #[test]
+    fn len_accepts_pt_px_percent_and_auto() {
+        assert_eq!(parse_len("12"), Some(Len::Pt(12.0)));
+        assert_eq!(parse_len("12px"), Some(Len::Pt(12.0)));
+        assert_eq!(parse_len(" 8.5pt "), Some(Len::Pt(8.5)));
+        assert_eq!(parse_len("50%"), Some(Len::Pct(0.5)));
+        assert_eq!(parse_len("auto"), Some(Len::Auto));
+    }
+
+    #[test]
+    fn len_rejects_unknown_units_and_garbage() {
+        assert_eq!(parse_len("12em"), None);
+        assert_eq!(parse_len("abc"), None);
+        assert_eq!(parse_len(""), None);
+    }
+
+    #[test]
+    fn box_shorthand_expands_one_to_four_values_like_css() {
+        let pt = Len::Pt;
+        assert_eq!(parse_box("8"), Some([pt(8.0); 4]));
+        assert_eq!(parse_box("8 16"), Some([pt(8.0), pt(16.0), pt(8.0), pt(16.0)]));
+        assert_eq!(parse_box("1 2 3"), Some([pt(1.0), pt(2.0), pt(3.0), pt(2.0)]));
+        assert_eq!(parse_box("1 2 3 4"), Some([pt(1.0), pt(2.0), pt(3.0), pt(4.0)]));
+    }
+
+    #[test]
+    fn box_shorthand_rejects_five_values_empty_and_bad_parts() {
+        assert_eq!(parse_box("1 2 3 4 5"), None);
+        assert_eq!(parse_box(""), None);
+        assert_eq!(parse_box("1 x"), None);
+    }
+
+    #[test]
+    fn color_hex_short_long_and_with_alpha() {
+        assert_eq!(parse_color("#abc"), Some(rgba(0xAA, 0xBB, 0xCC, 1.0)));
+        assert_eq!(parse_color("#1F2933"), Some(rgba(0x1F, 0x29, 0x33, 1.0)));
+        assert_eq!(parse_color("#abcd"), Some(rgba(0xAA, 0xBB, 0xCC, f32::from(0xDDu8) / 255.0)));
+        assert_eq!(parse_color("#00000080"), Some(rgba(0, 0, 0, 128.0 / 255.0)));
+    }
+
+    #[test]
+    fn color_names_are_case_insensitive_and_transparent_has_no_alpha() {
+        assert_eq!(parse_color("Red"), Some(rgba(0xFF, 0, 0, 1.0)));
+        assert_eq!(parse_color("grey"), parse_color("gray"));
+        assert_eq!(parse_color("transparent").map(|c| c.a), Some(0.0));
+    }
+
+    #[test]
+    fn color_rgb_functions_with_commas_spaces_percent_and_slash_alpha() {
+        assert_eq!(parse_color("rgb(255, 0, 0)"), Some(rgba(255, 0, 0, 1.0)));
+        assert_eq!(parse_color("rgba(0,0,0,0.5)"), Some(rgba(0, 0, 0, 0.5)));
+        assert_eq!(parse_color("rgb(100% 0% 0% / 50%)"), Some(rgba(255, 0, 0, 0.5)));
+        // Canal fora da faixa é limitado, como no navegador.
+        assert_eq!(parse_color("rgb(300, -5, 0)"), Some(rgba(255, 0, 0, 1.0)));
+    }
+
+    #[test]
+    fn color_rejects_malformed_values() {
+        for bad in ["#12345", "#gg0000", "notacolor", "rgb(1, 2)", "rgb(1, 2, 3", ""] {
+            assert_eq!(parse_color(bad), None, "{bad:?}");
+        }
+    }
+
+    #[test]
+    fn color_hex_and_alpha_helpers() {
+        assert_eq!(rgba(1, 2, 255, 1.0).hex(), "0102FF");
+        assert_eq!(rgba(0, 0, 0, 0.5).with_alpha(0.5).a, 0.25);
+    }
+
+    #[test]
+    fn border_reads_width_style_and_color_in_any_order() {
+        let b = parse_border("1px solid #ccc").expect("borda");
+        assert_eq!((b.width, b.color, b.dash), (1.0, rgba(0xCC, 0xCC, 0xCC, 1.0), Dash::Solid));
+        let b = parse_border("#ccc dashed 2").expect("borda");
+        assert_eq!((b.width, b.dash), (2.0, Dash::Dashed));
+        let b = parse_border("thin dotted").expect("borda");
+        assert_eq!((b.width, b.color, b.dash), (1.0, rgba(0, 0, 0, 1.0), Dash::Dotted));
+    }
+
+    #[test]
+    fn border_without_width_is_medium_and_a_bare_number_is_solid_black() {
+        assert_eq!(parse_border("solid red").map(|b| b.width), Some(3.0));
+        let b = parse_border("2").expect("borda");
+        assert_eq!((b.width, b.color, b.dash), (2.0, rgba(0, 0, 0, 1.0), Dash::Solid));
+    }
+
+    #[test]
+    fn border_none_hidden_and_zero_width_draw_nothing() {
+        assert!(parse_border("none").is_none());
+        assert!(parse_border("1px hidden red").is_none());
+        assert!(parse_border("0 solid red").is_none());
+    }
+}

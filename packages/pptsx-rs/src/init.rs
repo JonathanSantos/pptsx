@@ -504,3 +504,118 @@ pub fn run(argv: &[String]) -> ExitCode {
     }
     ExitCode::SUCCESS
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn written(merge: Merge) -> (Obj, Option<String>) {
+        match merge {
+            Merge::Write { content, warning } => (parse_object(&content).expect("JSON gravado"), warning),
+            Merge::Keep => panic!("esperava Write, veio Keep"),
+            Merge::Warn(w) => panic!("esperava Write, veio Warn: {w}"),
+        }
+    }
+
+    fn str_of(o: &Obj, key: &str) -> String {
+        o.get(key).map(Value::to_js_string).unwrap_or_default()
+    }
+
+    fn options_of(o: &Obj) -> Obj {
+        match o.get("compilerOptions") {
+            Some(Value::Object(opts)) => (**opts).clone(),
+            _ => panic!("sem compilerOptions"),
+        }
+    }
+
+    #[test]
+    fn package_name_is_lowercase_ascii_with_single_dashes() {
+        assert_eq!(package_name_of("Meu Deck"), "meu-deck");
+        assert_eq!(package_name_of("Apresentações Clientes"), "apresenta-es-clientes");
+        assert_eq!(package_name_of("Q3.2026_final"), "q3.2026_final");
+        assert_eq!(package_name_of("__.deck-"), "deck");
+    }
+
+    #[test]
+    fn package_name_falls_back_when_nothing_is_left() {
+        assert_eq!(package_name_of("!!!"), "pptsx-deck");
+        assert_eq!(package_name_of(""), "pptsx-deck");
+    }
+
+    #[test]
+    fn gitignore_appends_dist_once_and_respects_the_missing_newline() {
+        assert_eq!(gitignore_content(None), "dist/\n");
+        assert_eq!(gitignore_content(Some("node_modules")), "node_modules\ndist/\n");
+        assert_eq!(gitignore_content(Some("node_modules\n")), "node_modules\ndist/\n");
+        assert_eq!(gitignore_content(Some("x\ndist\n")), "x\ndist\n");
+        assert_eq!(gitignore_content(Some("  dist/  \n")), "  dist/  \n");
+    }
+
+    #[test]
+    fn jsonc_loses_comments_and_trailing_commas_but_not_string_contents() {
+        let raw = "{\n  // comentário\n  \"url\": \"http://x/*y*/\", /* bloco */\n  \"q\": \"a\\\"//b\",\n  \"list\": [1, 2,],\n}\n";
+        let o = parse_object(&strip_jsonc(raw)).expect("JSON depois do strip");
+        assert_eq!(str_of(&o, "url"), "http://x/*y*/");
+        assert_eq!(str_of(&o, "q"), "a\"//b");
+        assert_eq!(str_of(&o, "list"), "1,2");
+    }
+
+    #[test]
+    fn tsconfig_without_jsx_gains_jsx_import_source_and_type_roots() {
+        let (ts, warning) = written(merge_tsconfig("{ \"compilerOptions\": { \"strict\": true } }"));
+        let opts = options_of(&ts);
+        assert_eq!(str_of(&opts, "jsx"), REQUIRED_JSX);
+        assert_eq!(str_of(&opts, "jsxImportSource"), REQUIRED_JSX_IMPORT_SOURCE);
+        assert_eq!(str_of(&opts, "strict"), "true");
+        assert_eq!(str_of(&opts, "typeRoots"), crate::types::TYPE_ROOTS.join(","));
+        assert!(warning.is_some_and(|w| w.contains("jsx")));
+    }
+
+    #[test]
+    fn tsconfig_type_roots_get_the_local_types_in_front() {
+        let (ts, _) = written(merge_tsconfig("{ \"compilerOptions\": { \"jsx\": \"react-jsx\", \"jsxImportSource\": \"pptsx\", \"typeRoots\": [\"./types\"] } }"));
+        assert_eq!(str_of(&options_of(&ts), "typeRoots"), format!("{},./types", crate::types::TYPE_ROOTS[0]));
+    }
+
+    #[test]
+    fn tsconfig_already_complete_is_kept() {
+        let complete = format!("{{ \"compilerOptions\": {{ \"jsx\": \"react-jsx\", \"jsxImportSource\": \"pptsx\", \"typeRoots\": [\"{}\"] }} }}", crate::types::TYPE_ROOTS[0]);
+        assert!(matches!(merge_tsconfig(&complete), Merge::Keep));
+    }
+
+    #[test]
+    fn tsconfig_with_another_jsx_or_invalid_json_only_warns() {
+        assert!(matches!(merge_tsconfig("{ \"compilerOptions\": { \"jsx\": \"preserve\" } }"), Merge::Warn(w) if w.contains("jsx = \"preserve\"")));
+        assert!(matches!(merge_tsconfig("{ nada"), Merge::Warn(w) if w.contains("não é um JSON válido")));
+    }
+
+    #[test]
+    fn package_json_new_has_name_private_and_module() {
+        let (pkg, warning) = written(merge_package_json(None, "Meu Deck"));
+        assert_eq!((str_of(&pkg, "name"), str_of(&pkg, "private"), str_of(&pkg, "type")), ("meu-deck".into(), "true".into(), "module".into()));
+        assert!(warning.is_none());
+    }
+
+    #[test]
+    fn package_json_commonjs_becomes_module_with_a_warning_and_keeps_the_rest() {
+        let (pkg, warning) = written(merge_package_json(Some("{ \"name\": \"legado\", \"type\": \"commonjs\" }"), "x"));
+        assert_eq!((str_of(&pkg, "name"), str_of(&pkg, "type")), ("legado".into(), "module".into()));
+        assert!(warning.is_some_and(|w| w.contains("commonjs")));
+        let (pkg, warning) = written(merge_package_json(Some("{ \"name\": \"sem-type\" }"), "x"));
+        assert_eq!(str_of(&pkg, "type"), "module");
+        assert!(warning.is_none());
+    }
+
+    #[test]
+    fn package_json_module_is_kept_and_odd_values_only_warn() {
+        assert!(matches!(merge_package_json(Some("{ \"type\": \"module\" }"), "x"), Merge::Keep));
+        assert!(matches!(merge_package_json(Some("{ \"type\": 3 }"), "x"), Merge::Warn(w) if w.contains("\"type\": 3")));
+        assert!(matches!(merge_package_json(Some("não é json"), "x"), Merge::Warn(_)));
+    }
+
+    #[test]
+    fn scaffold_without_ds_writes_the_six_files_of_a_deck_folder() {
+        let names: Vec<String> = scaffold_files("deck", None).into_iter().map(|(name, _)| name).collect();
+        assert_eq!(names, [DECK_FILE, TSCONFIG_FILE, "pptsx.config.ts", "assets/.gitkeep", GITIGNORE_FILE, PACKAGE_FILE]);
+    }
+}

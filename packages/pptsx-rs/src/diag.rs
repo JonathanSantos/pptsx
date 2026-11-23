@@ -121,3 +121,48 @@ pub fn round(v: f64) -> f64 {
 pub fn fmt(v: f64) -> String {
     crate::js::value::num_to_string(round(v))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn round_is_one_decimal_with_half_up_like_js_math_round() {
+        assert_eq!(round(1.25), 1.3);
+        // Math.round(-12.5) é -12 no JS: o meio sobe para +∞, inclusive nos negativos.
+        assert_eq!(round(-1.25), -1.2);
+        assert_eq!(round(2.04), 2.0);
+    }
+
+    #[test]
+    fn fmt_prints_numbers_like_js_without_trailing_zero() {
+        assert_eq!(fmt(12.0), "12");
+        assert_eq!(fmt(2.71), "2.7");
+        assert_eq!(fmt(-0.04), "0");
+    }
+
+    #[test]
+    fn diags_keep_one_copy_of_the_same_warning_on_the_same_node() {
+        let diags = Diags::default();
+        diags.add(Diag::new(Level::Warn, "x", 1, "Slide > Text", "m"));
+        diags.add(Diag::new(Level::Warn, "x", 1, "Slide > Text", "m"));
+        diags.add(Diag::new(Level::Warn, "x", 2, "Slide > Text", "m"));
+        assert_eq!(diags.into_vec().len(), 2);
+    }
+
+    #[test]
+    fn notes_have_the_note_code_and_no_path() {
+        let diags = Diags::default();
+        diags.warn(3, "imagem".into());
+        let d = &diags.into_vec()[0];
+        assert_eq!((d.level, d.code, d.slide, d.path.as_str()), (Level::Warn, "note", 3, ""));
+    }
+
+    #[test]
+    fn data_set_replaces_the_value_of_an_existing_key() {
+        let d = Diag::new(Level::Error, "box-overflow", 1, "", "").num("overflowPt", 1.0).num("overflowPt", 2.0).with("axis", Data::Str("x".into()));
+        assert_eq!(d.get_num("overflowPt"), Some(2.0));
+        assert_eq!(d.get_str("axis"), Some("x"));
+        assert_eq!(d.data.len(), 2);
+    }
+}

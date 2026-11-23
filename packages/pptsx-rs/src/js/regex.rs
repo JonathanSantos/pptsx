@@ -229,3 +229,72 @@ pub fn match_all(s: &str, r: &JsRegex) -> Value {
 pub fn search(s: &str, r: &JsRegex) -> Value {
     Value::Num(r.re.find(s).map_or(-1.0, |m| byte_to_char(s, m.start()) as f64))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn re(source: &str, flags: &str) -> JsRegex {
+        compile(source, flags).expect("regex válida")
+    }
+
+    fn strings(v: &Value) -> Vec<String> {
+        match v {
+            Value::Array(items) => items.borrow().iter().map(Value::to_js_string).collect(),
+            other => panic!("esperava array, veio {}", other.to_js_string()),
+        }
+    }
+
+    #[test]
+    fn compile_maps_js_flags_and_unescapes_the_slash() {
+        assert!(re("a\\/b", "").re.is_match("a/b"));
+        assert!(re("abc", "i").re.is_match("ABC"));
+        assert!(re("^b$", "m").re.is_match("a\nb"));
+        assert!(re("global", "gy").global());
+    }
+
+    #[test]
+    fn compile_reports_lookaround_as_unsupported() {
+        let err = compile("\\B(?=(\\d{3})+(?!\\d))", "g").err().expect("lookahead não existe no crate regex");
+        assert!(err.contains("não suportada"), "{err}");
+    }
+
+    #[test]
+    fn expand_handles_groups_whole_match_and_escaped_dollar() {
+        let r = re("(\\w+)@(\\w+)", "");
+        let caps = r.re.captures("ana@acme").expect("casa");
+        assert_eq!(expand("$2:$1 [$&] $$ $x", &caps), "acme:ana [ana@acme] $ $x");
+    }
+
+    #[test]
+    fn split_keeps_captured_groups_like_js() {
+        assert_eq!(strings(&split("a, b,c", &re(",\\s*", ""), usize::MAX)), ["a", "b", "c"]);
+        assert_eq!(strings(&split("a1b2c", &re("(\\d)", ""), usize::MAX)), ["a", "1", "b", "2", "c"]);
+        assert_eq!(strings(&split("a,b,", &re(",", ""), usize::MAX)), ["a", "b", ""]);
+    }
+
+    #[test]
+    fn split_by_empty_regex_gives_characters_and_empty_string_rules_follow_js() {
+        assert_eq!(strings(&split("abç", &re("", ""), usize::MAX)), ["a", "b", "ç"]);
+        // "".split(/,/) → [""]; "".split(/(?:)/) → [].
+        assert_eq!(strings(&split("", &re(",", ""), usize::MAX)), [""]);
+        assert!(strings(&split("", &re("", ""), usize::MAX)).is_empty());
+    }
+
+    #[test]
+    fn split_honours_the_limit() {
+        assert_eq!(strings(&split("a,b,c", &re(",", ""), 2)), ["a", "b"]);
+    }
+
+    #[test]
+    fn search_returns_char_index_not_byte_index() {
+        assert_eq!(search("çãab", &re("ab", "")).to_js_string(), "2");
+        assert_eq!(search("abc", &re("z", "")).to_js_string(), "-1");
+    }
+
+    #[test]
+    fn global_match_lists_all_and_no_match_is_null() {
+        assert_eq!(strings(&string_match("a1b22", &re("\\d+", "g"))), ["1", "22"]);
+        assert!(matches!(string_match("abc", &re("\\d", "g")), Value::Null));
+    }
+}
